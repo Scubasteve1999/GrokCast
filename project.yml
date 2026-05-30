@@ -1,0 +1,73 @@
+name: GrokCast
+options:
+  bundleIdPrefix: com.grokcast
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  defaultConfig: Debug
+
+configs:
+  Debug: debug
+  Release: release
+
+targetTemplates:
+  AppTarget:
+    type: application
+    platform: iOS
+    sources:
+      - path: GrokCast
+        excludes:
+          - "**/Info.plist"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast
+        INFOPLIST_FILE: GrokCast/Info.plist
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: 1,2
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        SUPPORTS_MACCATALYST: NO
+    dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: CoreLocation.framework
+      - sdk: MapKit.framework
+      - sdk: Foundation.framework
+      - sdk: SwiftData.framework
+      - sdk: UserNotifications.framework
+      - sdk: PhotosUI.framework
+      - sdk: WidgetKit.framework
+
+targets:
+  GrokCast:
+    templates:
+      - AppTarget
+    entitlements:
+      path: GrokCast/GrokCast.entitlements
+    info:
+      path: GrokCast/Info.plist
+      properties:
+        CFBundleDisplayName: GrokCast
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen:
+          - ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+        NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates." # optional
+        NSWeatherKitUsageDescription: "GrokCast uses Apple Weather to provide forecasts and current conditions."
+
+schemes:
+  GrokCast:
+    build:
+      targets:
+        GrokCast: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
