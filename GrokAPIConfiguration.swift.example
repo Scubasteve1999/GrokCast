@@ -1,0 +1,22 @@
+//
+//  GrokAPIConfiguration.swift.example
+//  GrokCast
+//
+//  Copy this file to GrokAPIConfiguration.swift and fill in any public configuration values.
+//  NOTE: The real xAI API key is NEVER stored here.
+//  It lives securely in the iOS Keychain via KeychainService.
+//
+
+import Foundation
+
+struct GrokAPIConfiguration {
+    
+    // MARK: - Public Configuration (safe to commit)
+    static let baseURL = "https://api.x.ai"
+    static let defaultModel = "grok-3"           // or whichever model you're using
+    static let chatEndpoint = "/v1/chat/completions"
+    static let visionEndpoint = "/v1/chat/completions" // vision uses same endpoint with image input
+    
+    // Add any other non-secret configuration here
+    static let requestTimeout: TimeInterval = 30
+}

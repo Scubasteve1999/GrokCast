@@ -1,0 +1,155 @@
+name: GrokCast
+options:
+  bundleIdPrefix: com.grokcast
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  defaultConfig: Debug
+
+configs:
+  Debug: debug
+  Release: release
+
+targetTemplates:
+  AppTarget:
+    type: application
+    platform: iOS
+    sources:
+      - path: GrokCast
+        excludes:
+          - "**/Info.plist"
+    settings:
+      base:
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "2"
+        PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast
+        INFOPLIST_FILE: GrokCast/Info.plist
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: 1,2
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        SUPPORTS_MACCATALYST: NO
+      configs:
+        Debug:
+          # Avoids GrokCast.debug.dylib injection that can fail simulator preflight checks (Xcode 16+).
+          ENABLE_DEBUG_DYLIB: NO
+    dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: CoreLocation.framework
+      - sdk: MapKit.framework
+      - sdk: Foundation.framework
+      - sdk: SwiftData.framework
+      - sdk: UserNotifications.framework
+      - sdk: BackgroundTasks.framework
+      - sdk: PhotosUI.framework
+      - sdk: WidgetKit.framework
+
+targets:
+  GrokCast:
+    templates:
+      - AppTarget
+    entitlements:
+      path: GrokCast/GrokCast.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.grokcast.GrokCast
+    info:
+      path: GrokCast/Info.plist
+      properties:
+        CFBundleDisplayName: GrokCast
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleIconName: AppIcon
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates." # optional
+        NSWeatherKitUsageDescription: "GrokCast uses Apple Weather to provide forecasts and current conditions."
+        UIBackgroundModes:
+          - location
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.grokcast.alerts.refresh
+        CFBundleURLTypes:
+          - CFBundleURLName: com.grokcast.GrokCast
+            CFBundleURLSchemes:
+              - grokcast
+    dependencies:
+      - target: GrokCastWidgets
+        embed: true
+
+  GrokCastWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: GrokCastWidgets
+        excludes:
+          - "**/Info.plist"
+      - path: GrokCast/Shared/Widget
+      - path: GrokCast/Shared/Models/Location.swift
+      - path: GrokCast/Shared/Models/OpenMeteoModels.swift
+    entitlements:
+      path: GrokCastWidgets/GrokCastWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.grokcast.GrokCast
+    info:
+      path: GrokCastWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: GrokCast Widgets
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "2"
+        # Nested under host app bundle ID (required for embedded widget extensions).
+        PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast.GrokCastWidgets
+        INFOPLIST_FILE: GrokCastWidgets/Info.plist
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        APPLICATION_EXTENSION_API_ONLY: YES
+        TARGETED_DEVICE_FAMILY: 1,2
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        SUPPORTS_MACCATALYST: NO
+        SKIP_INSTALL: YES
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: AppIntents.framework
+      - sdk: CoreLocation.framework
+
+schemes:
+  GrokCast:
+    build:
+      targets:
+        GrokCast: all
+        GrokCastWidgets: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
+
+  GrokCastWidgets:
+    build:
+      targets:
+        GrokCastWidgets: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release

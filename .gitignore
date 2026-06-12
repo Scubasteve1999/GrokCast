@@ -1,0 +1,140 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+
+## User settings
+xcuserdata/
+
+## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
+*.xcscmblueprint
+*.xccheckout
+
+## compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+## Obj-C/Swift specific
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode - .xcodeproj
+# !*.xcodeproj
+# *.xcodeproj/*
+# !*.xcodeproj/project.pbxproj
+# !*.xcodeproj/xcshareddata/
+# !*.xcodeproj/project.xcworkspace/
+# *.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Xcode - .xcworkspace (CocoaPods, etc.)
+*.xcworkspace
+!default.xcworkspace
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+*.swiftpm
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# ==========================================
+# Secrets & API Keys - NEVER COMMIT THESE
+# ==========================================
+
+# xAI / Grok API Keys and configuration files containing secrets
+GrokConfig.swift
+Secrets.swift
+GrokCast/Config/Secrets.swift
+GrokCast/Config/DeveloperAPIKey.swift
+*.key
+*.pem
+.env
+.env.local
+.env.*.local
+
+# Do NOT ignore our safe public configuration file
+!GrokAPIConfiguration.swift
+!Shared/Configuration/GrokAPIConfiguration.swift
+
+# Allow example templates (safe to commit with placeholders)
+!GrokConfig.swift.example
+!Secrets.swift.example
+!GrokCast/Config/Secrets.swift.example
+!GrokCast/Config/DeveloperAPIKey.swift.example
+!GrokAPIConfiguration.swift.example
+!Shared/Configuration/GrokAPIConfiguration.swift.example
+
+# Any file that might accidentally contain an API key
+*api-key*
+*secret*
+*credentials*
+
+# ==========================================
+# macOS / General
+# ==========================================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ==========================================
+# Project Specific
+# ==========================================
+
+# Local development overrides
+Debug.xcconfig
+*.local
+
+# Build artifacts we don't want in git
+build/
+*.o
+*.a
+*.so
+
+# Logs
+*.log
+logs/

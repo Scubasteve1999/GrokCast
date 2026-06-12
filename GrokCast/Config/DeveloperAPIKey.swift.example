@@ -1,0 +1,18 @@
+//
+//  DeveloperAPIKey.swift.example
+//
+//  Copy this file to DeveloperAPIKey.swift (which is gitignored)
+//  and paste your xAI developer key below.
+//
+//  This is ONLY for internal/TestFlight builds so that users don't have to
+//  manually enter the key.
+//
+//  DO NOT commit the real DeveloperAPIKey.swift file.
+//
+
+import Foundation
+
+enum DeveloperAPIKey {
+    // Replace with your actual key for TestFlight builds
+    static let xai: String? = "a1OCDKqjUSSEtGEIZ5sLYsI1sR9KOmpREq8GI4DPysnfxeTA60zGoL8BymtJNIg15YIahRzzdpcej7t6"
+}

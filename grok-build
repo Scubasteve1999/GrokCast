@@ -1,0 +1,226 @@
+#!/bin/bash
+
+# grok-build
+# A lightweight local CLI for common GrokCast development tasks.
+# Usage: ./grok-build <command>
+
+set -e
+
+COMMAND=${1:-help}
+
+case $COMMAND in
+  increment-build)
+    echo "🔢 Running build number increment..."
+    shift
+    ./Scripts/increment_build.sh "$@"
+    ;;
+  
+  regenerate)
+    echo "🔄 Regenerating Xcode project..."
+    shift
+    if [[ "$1" == "--force" ]]; then
+        echo "🧹 Force mode: removing existing .xcodeproj..."
+        rm -rf GrokCast.xcodeproj
+    fi
+    /opt/homebrew/bin/xcodegen generate --spec project.yml
+    echo "✅ Project regenerated."
+    ;;
+
+  generate-icons)
+    echo "🎨 Generating App Icons..."
+    shift
+    ./Scripts/generate_app_icons.sh "$@"
+    ;;
+
+  clean)
+    shift
+    CLEAN_DERIVED=false
+    CLEAN_SIM=false
+
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --derived-data)
+          CLEAN_DERIVED=true
+          shift
+          ;;
+        --simulator)
+          CLEAN_SIM=true
+          shift
+          ;;
+        --deep)
+          CLEAN_DERIVED=true
+          CLEAN_SIM=true
+          shift
+          ;;
+        *)
+          echo "Unknown option for clean: $1"
+          exit 1
+          ;;
+      esac
+    done
+
+    if ! $CLEAN_DERIVED && ! $CLEAN_SIM; then
+      # Default: clean derived data only (safe default)
+      CLEAN_DERIVED=true
+    fi
+
+    echo "🧹 Running clean for GrokCast..."
+
+    if $CLEAN_DERIVED; then
+      echo "→ Removing GrokCast DerivedData..."
+      rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+      echo "   DerivedData cleaned."
+    fi
+
+    if $CLEAN_SIM; then
+      echo ""
+      echo "⚠️  WARNING: This will ERASE ALL content and settings from EVERY iOS Simulator."
+      read -p "Are you sure you want to continue? (y/N) " -n 1 -r
+      echo
+      if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "→ Erasing all simulators..."
+        xcrun simctl erase all
+        echo "   Simulators erased."
+      else
+        echo "   Simulator erase cancelled."
+      fi
+    fi
+
+    echo ""
+    echo "✅ Clean complete."
+    ;;
+
+  radar)
+    echo "🔄 Running v10 radar overlay/anim compaction (isolated to RadarView.swift)..."
+    shift
+    V10_STABLE_OVERLAY_REUSE=false
+    V10_FORCE_CROSSFADE_ON_ANIM=false
+    V10_ENHANCE_DEBUG=false
+    V10_KEEP_V9_ADVANCEMENT=false
+    V11_FORCE_UNCONDITIONAL_REUSE=false
+    V11_AGGRESSIVE_STABLE_GUARD=false
+    V11_LOUD_REUSE_DEBUG=false
+    V11_KEEP_V10_ADVANCEMENT=false
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --v10-stable-overlay-reuse)
+          V10_STABLE_OVERLAY_REUSE=true
+          shift
+          ;;
+        --force-crossfade-on-anim)
+          V10_FORCE_CROSSFADE_ON_ANIM=true
+          shift
+          ;;
+        --enhance-debug)
+          V10_ENHANCE_DEBUG=true
+          shift
+          ;;
+        --keep-v9-advancement)
+          V10_KEEP_V9_ADVANCEMENT=true
+          shift
+          ;;
+        --v11-force-unconditional-reuse)
+          V11_FORCE_UNCONDITIONAL_REUSE=true
+          shift
+          ;;
+        --aggressive-stable-guard)
+          V11_AGGRESSIVE_STABLE_GUARD=true
+          shift
+          ;;
+        --loud-reuse-debug)
+          V11_LOUD_REUSE_DEBUG=true
+          shift
+          ;;
+        --keep-v10-advancement)
+          V11_KEEP_V10_ADVANCEMENT=true
+          shift
+          ;;
+        *)
+          echo "Unknown option for radar: $1"
+          exit 1
+          ;;
+      esac
+    done
+
+    if $V10_STABLE_OVERLAY_REUSE; then
+      echo "→ --v10-stable-overlay-reuse: prefer single persistent overlay reuse/mutate on existing RadarTileOverlay instance (persistent instance reuse + force redraw via preserved seq; ts for diagnostics/new debug only; actual per-frame IEM may require NWS/future subclass) over per-frame full recreation to avoid flicker. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V10_FORCE_CROSSFADE_ON_ANIM; then
+      echo "→ --force-crossfade-on-anim: ensure/force the restored v6 alpha dip/restore crossfade block (dedicated .alpha, captures/guards) to execute on every animation frame (for anim loads in the stable reuse path). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V10_ENHANCE_DEBUG; then
+      echo "→ --enhance-debug: add exactly one new [RADAR] diagnostic print (new string only) for v10 paths (e.g. stable reuse + crossfade-forced). Never alter/remove any existing [RADAR] prints/strings/placement/counts. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V10_KEEP_V9_ADVANCEMENT; then
+      echo "→ --keep-v9-advancement: pure guard flag; do not touch/edit any code inside the v9 section of displayLinkFired (large-delta reset, advanceDelta capture *before* +=, last +=, 3 count re-checks with // v9 comments, dummy assigns, % modulo, parent hoist, 3 v9 prints). The v9 block and let advanceDelta before mutation stay byte-for-byte identical. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_FORCE_UNCONDITIONAL_REUSE; then
+      echo "→ --v11-force-unconditional-reuse: force the stable reuse path unconditionally for animation frames (pre-create persistent overlay in refreshRadar if nil so loadCurrent anim path hits reuse/mutate else; smallest while preserving if-nil-create/else-mutate structure + unconditional remove/add/nudges seq). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_AGGRESSIVE_STABLE_GUARD; then
+      echo "→ --aggressive-stable-guard: add aggressive/stable guards for the reuse path (strong guard currentRadarOverlay != nil + isRadarAnimating checks before common force seq in anim; protects stable reuse and prevents accidental recreation or bad state in hot path using existing guard style). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_LOUD_REUSE_DEBUG; then
+      echo "→ --loud-reuse-debug: add exactly one new [RADAR] diagnostic print (new string only, loud e.g. v11 LOUD REUSE for unconditional reuse path). Never alter/remove any existing [RADAR] prints/strings/placement/counts. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_KEEP_V10_ADVANCEMENT; then
+      echo "→ --keep-v10-advancement: pure guard flag; do not touch/edit the v10 reuse decision structure or the long v10 comment in the else (including the IEM CDL harness note) or the v10 debug print or the post-seq renderer wiring (if currentRadarRenderer == nil after unconditional seq) or crossfade block. The v10 code and placement stay byte-for-byte identical. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+
+    if $V10_STABLE_OVERLAY_REUSE; then
+      echo "   --v10-stable-overlay-reuse applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V10_FORCE_CROSSFADE_ON_ANIM; then
+      echo "   --force-crossfade-on-anim applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V10_ENHANCE_DEBUG; then
+      echo "   --enhance-debug applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V10_KEEP_V9_ADVANCEMENT; then
+      echo "   --keep-v9-advancement applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V11_FORCE_UNCONDITIONAL_REUSE; then
+      echo "   --v11-force-unconditional-reuse applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V11_AGGRESSIVE_STABLE_GUARD; then
+      echo "   --aggressive-stable-guard applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V11_LOUD_REUSE_DEBUG; then
+      echo "   --loud-reuse-debug applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V11_KEEP_V10_ADVANCEMENT; then
+      echo "   --keep-v10-advancement applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+
+    echo "🧹 Removing GrokCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "   DerivedData cleaned."
+    unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
+    echo "🔄 Regenerating Xcode project (xcodegen)..."
+    /opt/homebrew/bin/xcodegen generate --spec project.yml
+    echo "✅ v10 + v11 radar flags applied."
+    ;;
+
+  help|*)
+    echo "GrokCast Build Helper"
+    echo ""
+    echo "Usage: ./grok-build <command> [options]"
+    echo ""
+    echo "Available commands:"
+    echo "  increment-build [--tag]     Bump the Xcode build number"
+    echo "  regenerate [--force]        Regenerate the Xcode project from project.yml"
+    echo "  generate-icons <1024.png>   Generate all iOS app icon sizes from a 1024x1024 source"
+    echo "  clean [--deep]              Clean DerivedData (use --deep for full reset)"
+    echo "  radar [--v10-stable-overlay-reuse] [--force-crossfade-on-anim] [--enhance-debug] [--keep-v9-advancement] [--v11-force-unconditional-reuse] [--aggressive-stable-guard] [--loud-reuse-debug] [--keep-v10-advancement]   v10 IEM radar stable single-overlay compaction + crossfade force + one debug print (changes strictly limited to RadarView.swift) + v11 unconditional reuse + aggressive guard + loud debug (all isolated to RadarView.swift)"
+    echo "  help                        Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./grok-build regenerate"
+    echo "  ./grok-build regenerate --force"
+    echo "  ./grok-build increment-build --tag"
+    echo "  ./grok-build generate-icons ~/Desktop/my-icon-1024.png"
+    echo "  ./grok-build clean              # Safe: only clears DerivedData"
+    echo "  ./grok-build clean --deep       # Full reset (DerivedData + Simulator)"
+    echo "  ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    ;;
+esac
