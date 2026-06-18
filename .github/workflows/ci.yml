@@ -40,7 +40,7 @@ jobs:
           # === Robust scheme detection (from Copilot fix) ===
           SCHEME=$(xcodebuild -list -json 2>/dev/null | ruby -e '
             require "json"
-            data = JSON.parse(STDIN.read rescue "{}")
+            data = JSON.parse((STDIN.read rescue "{}"))
             schemes = data.dig("project", "schemes") || data.dig("workspace", "schemes") || []
             puts schemes.first.to_s.strip
           ')
