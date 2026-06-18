@@ -52,12 +52,10 @@ jobs:
           fi
           echo "✅ Using scheme: $SCHEME"
 
-          # === Detect workspace vs project ===
-          if ls -1 *.xcworkspace 1>/dev/null 2>&1; then
-            FILE_PARAMETER="-workspace $(ls *.xcworkspace | head -n1)"
-          else
-            FILE_PARAMETER="-project $(ls *.xcodeproj | head -n1)"
-          fi
+          # === Use known project file (after regeneration) ===
+          # We always regenerate GrokCast.xcodeproj, so hardcode for reliability.
+          # This avoids glob failures or picking wrong files like project.pbxproj
+          FILE_PARAMETER="-project GrokCast.xcodeproj"
           echo "📦 Building with: $FILE_PARAMETER"
 
           # === iOS Simulator destination (critical fix) ===
