@@ -59,7 +59,7 @@ jobs:
           echo "📦 Building with: $FILE_PARAMETER"
 
           # === iOS Simulator destination (critical fix) ===
-          DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
+          DESTINATION="platform=iOS Simulator,name=iPhone 17"
 
           echo "🚀 Building for $DESTINATION ..."
 
