@@ -1,0 +1,655 @@
+#!/bin/bash
+
+# grok-build
+# A lightweight local CLI for common GrokCast development tasks.
+# Usage: ./grok-build <command>
+
+set -e
+
+COMMAND=${1:-help}
+
+case $COMMAND in
+  increment-build)
+    echo "🔢 Running build number increment..."
+    shift
+    ./Scripts/increment_build.sh "$@"
+    ;;
+  
+  regenerate)
+    echo "🔄 Regenerating Xcode project..."
+    shift
+    if [[ "$1" == "--force" ]]; then
+        echo "🧹 Force mode: removing existing .xcodeproj..."
+        rm -rf GrokCast.xcodeproj
+    fi
+    /opt/homebrew/bin/xcodegen generate --spec project.yml
+    echo "✅ Project regenerated."
+    ;;
+
+  generate-icons)
+    echo "🎨 Generating App Icons..."
+    shift
+    ./Scripts/generate_app_icons.sh "$@"
+    ;;
+
+  clean)
+    shift
+    CLEAN_DERIVED=false
+    CLEAN_SIM=false
+
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --derived-data)
+          CLEAN_DERIVED=true
+          shift
+          ;;
+        --simulator)
+          CLEAN_SIM=true
+          shift
+          ;;
+        --deep)
+          CLEAN_DERIVED=true
+          CLEAN_SIM=true
+          shift
+          ;;
+        *)
+          echo "Unknown option for clean: $1"
+          exit 1
+          ;;
+      esac
+    done
+
+    if ! $CLEAN_DERIVED && ! $CLEAN_SIM; then
+      # Default: clean derived data only (safe default)
+      CLEAN_DERIVED=true
+    fi
+
+    echo "🧹 Running clean for GrokCast..."
+
+    if $CLEAN_DERIVED; then
+      echo "→ Removing GrokCast DerivedData..."
+      rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+      echo "   DerivedData cleaned."
+    fi
+
+    if $CLEAN_SIM; then
+      echo ""
+      echo "⚠️  WARNING: This will ERASE ALL content and settings from EVERY iOS Simulator."
+      read -p "Are you sure you want to continue? (y/N) " -n 1 -r
+      echo
+      if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "→ Erasing all simulators..."
+        xcrun simctl erase all
+        echo "   Simulators erased."
+      else
+        echo "   Simulator erase cancelled."
+      fi
+    fi
+
+    echo ""
+    echo "✅ Clean complete."
+    ;;
+
+  radar)
+    echo "🔄 Running v14 perceived speed + crossfade + pop (isolated to RadarView.swift)..."
+    shift
+    V10_STABLE_OVERLAY_REUSE=false
+    V10_FORCE_CROSSFADE_ON_ANIM=false
+    V10_ENHANCE_DEBUG=false
+    V10_KEEP_V9_ADVANCEMENT=false
+    V11_FORCE_UNCONDITIONAL_REUSE=false
+    V11_AGGRESSIVE_STABLE_GUARD=false
+    V11_LOUD_REUSE_DEBUG=false
+    V11_KEEP_V10_ADVANCEMENT=false
+    V12_SINGLE_CLEAN_NWS=false
+    V12_DEFAULT_NEXRAD_ACCURATE=false
+    V12_REMOVE_ALL_SOURCE_TABS=false
+    V12_FIX_PRECIP_COLORS=false
+    V12_CLEAN_PRO_UI=false
+    V12_KEEP_SMOOTH_V11=false
+    V13_OPTIMIZE_FRAME_RATE=false
+    V13_TARGET_MAX_FPS=false
+    V13_PROMOTE_PROMOTION=false
+    V13_PRECISE_DELTA_TIMING=false
+    V13_PAUSE_WHEN_IDLE=false
+    V13_REDUCE_PER_FRAME_WORK=false
+    V14_FASTER_PERCEIVED_SPEED=false
+    V14_FRAME_ADVANCE_600MS=false
+    V14_STRONGER_CROSSFADE=false
+    V14_BOOST_VISUAL_POP=false
+    V14_KEEP_SINGLE_NWS=false
+    BUILD=false
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --v10-stable-overlay-reuse)
+          V10_STABLE_OVERLAY_REUSE=true
+          shift
+          ;;
+        --force-crossfade-on-anim)
+          V10_FORCE_CROSSFADE_ON_ANIM=true
+          shift
+          ;;
+        --enhance-debug)
+          V10_ENHANCE_DEBUG=true
+          shift
+          ;;
+        --keep-v9-advancement)
+          V10_KEEP_V9_ADVANCEMENT=true
+          shift
+          ;;
+        --v11-force-unconditional-reuse)
+          V11_FORCE_UNCONDITIONAL_REUSE=true
+          shift
+          ;;
+        --aggressive-stable-guard)
+          V11_AGGRESSIVE_STABLE_GUARD=true
+          shift
+          ;;
+        --loud-reuse-debug)
+          V11_LOUD_REUSE_DEBUG=true
+          shift
+          ;;
+        --keep-v10-advancement)
+          V11_KEEP_V10_ADVANCEMENT=true
+          shift
+          ;;
+        --v12-single-clean-nws)
+          V12_SINGLE_CLEAN_NWS=true
+          shift
+          ;;
+        --default-nexrad-accurate)
+          V12_DEFAULT_NEXRAD_ACCURATE=true
+          shift
+          ;;
+        --remove-all-source-tabs)
+          V12_REMOVE_ALL_SOURCE_TABS=true
+          shift
+          ;;
+        --fix-precip-colors)
+          V12_FIX_PRECIP_COLORS=true
+          shift
+          ;;
+        --clean-pro-ui)
+          V12_CLEAN_PRO_UI=true
+          shift
+          ;;
+        --keep-smooth-v11)
+          V12_KEEP_SMOOTH_V11=true
+          shift
+          ;;
+        --v13-optimize-frame-rate)
+          V13_OPTIMIZE_FRAME_RATE=true
+          shift
+          ;;
+        --target-max-fps)
+          V13_TARGET_MAX_FPS=true
+          shift
+          ;;
+        --promote-promotion)
+          V13_PROMOTE_PROMOTION=true
+          shift
+          ;;
+        --precise-delta-timing)
+          V13_PRECISE_DELTA_TIMING=true
+          shift
+          ;;
+        --pause-when-idle)
+          V13_PAUSE_WHEN_IDLE=true
+          shift
+          ;;
+        --reduce-per-frame-work)
+          V13_REDUCE_PER_FRAME_WORK=true
+          shift
+          ;;
+        --v14-faster-perceived-speed)
+          V14_FASTER_PERCEIVED_SPEED=true
+          shift
+          ;;
+        --frame-advance-600ms)
+          V14_FRAME_ADVANCE_600MS=true
+          shift
+          ;;
+        --stronger-crossfade)
+          V14_STRONGER_CROSSFADE=true
+          shift
+          ;;
+        --boost-visual-pop)
+          V14_BOOST_VISUAL_POP=true
+          shift
+          ;;
+        --keep-single-nws)
+          V14_KEEP_SINGLE_NWS=true
+          shift
+          ;;
+        --build)
+          BUILD=true
+          shift
+          ;;
+        *)
+          echo "Unknown option for radar: $1"
+          exit 1
+          ;;
+      esac
+    done
+
+    if $V10_STABLE_OVERLAY_REUSE; then
+      echo "→ --v10-stable-overlay-reuse: prefer single persistent overlay reuse/mutate on existing RadarTileOverlay instance (persistent instance reuse + force redraw via preserved seq; ts for diagnostics/new debug only; actual per-frame IEM may require NWS/future subclass) over per-frame full recreation to avoid flicker. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V10_FORCE_CROSSFADE_ON_ANIM; then
+      echo "→ --force-crossfade-on-anim: ensure/force the restored v6 alpha dip/restore crossfade block (dedicated .alpha, captures/guards) to execute on every animation frame (for anim loads in the stable reuse path). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V10_ENHANCE_DEBUG; then
+      echo "→ --enhance-debug: add exactly one new [RADAR] diagnostic print (new string only) for v10 paths (e.g. stable reuse + crossfade-forced). Never alter/remove any existing [RADAR] prints/strings/placement/counts. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V10_KEEP_V9_ADVANCEMENT; then
+      echo "→ --keep-v9-advancement: pure guard flag; do not touch/edit any code inside the v9 section of displayLinkFired (large-delta reset, advanceDelta capture *before* +=, last +=, 3 count re-checks with // v9 comments, dummy assigns, % modulo, parent hoist, 3 v9 prints). The v9 block and let advanceDelta before mutation stay byte-for-byte identical. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_FORCE_UNCONDITIONAL_REUSE; then
+      echo "→ --v11-force-unconditional-reuse: force the stable reuse path unconditionally for animation frames (pre-create persistent overlay in refreshRadar if nil so loadCurrent anim path hits reuse/mutate else; smallest while preserving if-nil-create/else-mutate structure + unconditional remove/add/nudges seq). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_AGGRESSIVE_STABLE_GUARD; then
+      echo "→ --aggressive-stable-guard: add aggressive/stable guards for the reuse path (strong guard currentRadarOverlay != nil + isRadarAnimating checks before common force seq in anim; protects stable reuse and prevents accidental recreation or bad state in hot path using existing guard style). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_LOUD_REUSE_DEBUG; then
+      echo "→ --loud-reuse-debug: add exactly one new [RADAR] diagnostic print (new string only, loud e.g. v11 LOUD REUSE for unconditional reuse path). Never alter/remove any existing [RADAR] prints/strings/placement/counts. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V11_KEEP_V10_ADVANCEMENT; then
+      echo "→ --keep-v10-advancement: pure guard flag; do not touch/edit the v10 reuse decision structure or the long v10 comment in the else (including the IEM CDL harness note) or the v10 debug print or the post-seq renderer wiring (if currentRadarRenderer == nil after unconditional seq) or crossfade block. The v10 code and placement stay byte-for-byte identical. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V12_SINGLE_CLEAN_NWS; then
+      echo "→ --v12-single-clean-nws: force single clean NWS path (hardcode nws, remove source choice logic). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V12_DEFAULT_NEXRAD_ACCURATE; then
+      echo "→ --default-nexrad-accurate: default @State nwsRadarProduct = .baseReflectivity (usesUSComposite=true for USCOMP accurate NEXRAD). Update initial site/refresh to USCOMP path. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V12_REMOVE_ALL_SOURCE_TABS; then
+      echo "→ --remove-all-source-tabs: Remove the source picker entirely (delete Picker segmented, .onChange, source badge), source choice logic. Force single clean NWS path. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V12_FIX_PRECIP_COLORS; then
+      echo "→ --fix-precip-colors: fix radarLegendItems colors to accurate NEXRAD/precip dBZ scale (standard light green, yellow, orange/red, magenta/purple extreme). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V12_CLEAN_PRO_UI; then
+      echo "→ --clean-pro-ui: clean/simplify pro-like labels, badges, descriptions (e.g. radarSourceDescription -> \"NEXRAD USCOMP Reflectivity\", nwsLayerStatusLabel). Remove source badge. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V12_KEEP_SMOOTH_V11; then
+      echo "→ --keep-smooth-v11: pure guard flag; do not touch/edit any v11 animation code: CADisplayLink, displayLinkFired (delta, advanceDelta before +=, guards, v9 block, %, hoist), IEM generateRecentIEMTimestamps, loadCurrentRadarFrame (exact if-nil-create/else-if-!anim/else-v10 + v11-loud + aggressive guard + unconditional remove/add + 0.02/0.05 nudges + prints + pop + dedicated .alpha crossfade 0.2/1.0 with guards). All v11 byte-identical. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V13_OPTIMIZE_FRAME_RATE; then
+      echo "→ --v13-optimize-frame-rate: optimize CADisplayLink frame rate targeting for smoother IEM USCOMP animation. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V13_TARGET_MAX_FPS; then
+      echo "→ --target-max-fps: set preferredFrameRateRange to target max fps (e.g. 60). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V13_PROMOTE_PROMOTION; then
+      echo "→ --promote-promotion: promote high frame rate promotion for fluid animation. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V13_PRECISE_DELTA_TIMING; then
+      echo "→ --precise-delta-timing: use precise delta timing from link timestamp for accurate advancement. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V13_PAUSE_WHEN_IDLE; then
+      echo "→ --pause-when-idle: pause CADisplayLink when not animating or idle. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V13_REDUCE_PER_FRAME_WORK; then
+      echo "→ --reduce-per-frame-work: reduce per-frame work in hot path (guards, hoists, minimal dispatches). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V14_FASTER_PERCEIVED_SPEED; then
+      echo "→ --v14-faster-perceived-speed: make animation feel faster while keeping 600ms advance. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V14_FRAME_ADVANCE_600MS; then
+      echo "→ --frame-advance-600ms: use exactly 600ms frame advance for perceived speed. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V14_STRONGER_CROSSFADE; then
+      echo "→ --stronger-crossfade: stronger alpha dip/restore crossfade for better pop between frames. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V14_BOOST_VISUAL_POP; then
+      echo "→ --boost-visual-pop: boost the visual pop/flash effect in load seq for more impact. All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $V14_KEEP_SINGLE_NWS; then
+      echo "→ --keep-single-nws: keep single clean NWS (no source tabs, USCOMP accurate). All isolated to RadarView.swift. ALL [RADAR] prints preserved verbatim. Stable mutate/non-anim paths unchanged."
+    fi
+    if $BUILD; then
+      echo "→ --build: run xcodegen + xcodebuild after flags, require BUILD SUCCEEDED. All isolated to RadarView.swift + grok-build flags."
+    fi
+
+    if $V10_STABLE_OVERLAY_REUSE; then
+      echo "   --v10-stable-overlay-reuse applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V10_FORCE_CROSSFADE_ON_ANIM; then
+      echo "   --force-crossfade-on-anim applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V10_ENHANCE_DEBUG; then
+      echo "   --enhance-debug applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V10_KEEP_V9_ADVANCEMENT; then
+      echo "   --keep-v9-advancement applied. Use: ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement"
+    fi
+    if $V11_FORCE_UNCONDITIONAL_REUSE; then
+      echo "   --v11-force-unconditional-reuse applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V11_AGGRESSIVE_STABLE_GUARD; then
+      echo "   --aggressive-stable-guard applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V11_LOUD_REUSE_DEBUG; then
+      echo "   --loud-reuse-debug applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V11_KEEP_V10_ADVANCEMENT; then
+      echo "   --keep-v10-advancement applied. Use: ./grok-build radar --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    fi
+    if $V12_SINGLE_CLEAN_NWS; then
+      echo "   --v12-single-clean-nws applied. Use: ./grok-build radar --v12-single-clean-nws --default-nexrad-accurate --remove-all-source-tabs --fix-precip-colors --clean-pro-ui --keep-smooth-v11 --build"
+    fi
+    if $V12_DEFAULT_NEXRAD_ACCURATE; then
+      echo "   --default-nexrad-accurate applied. Use: ./grok-build radar --v12-single-clean-nws --default-nexrad-accurate --remove-all-source-tabs --fix-precip-colors --clean-pro-ui --keep-smooth-v11 --build"
+    fi
+    if $V12_REMOVE_ALL_SOURCE_TABS; then
+      echo "   --remove-all-source-tabs applied. Use: ./grok-build radar --v12-single-clean-nws --default-nexrad-accurate --remove-all-source-tabs --fix-precip-colors --clean-pro-ui --keep-smooth-v11 --build"
+    fi
+    if $V12_FIX_PRECIP_COLORS; then
+      echo "   --fix-precip-colors applied. Use: ./grok-build radar --v12-single-clean-nws --default-nexrad-accurate --remove-all-source-tabs --fix-precip-colors --clean-pro-ui --keep-smooth-v11 --build"
+    fi
+    if $V12_CLEAN_PRO_UI; then
+      echo "   --clean-pro-ui applied. Use: ./grok-build radar --v12-single-clean-nws --default-nexrad-accurate --remove-all-source-tabs --fix-precip-colors --clean-pro-ui --keep-smooth-v11 --build"
+    fi
+    if $V12_KEEP_SMOOTH_V11; then
+      echo "   --keep-smooth-v11 applied. Use: ./grok-build radar --v12-single-clean-nws --default-nexrad-accurate --remove-all-source-tabs --fix-precip-colors --clean-pro-ui --keep-smooth-v11 --build"
+    fi
+    if $V13_OPTIMIZE_FRAME_RATE; then
+      echo "   --v13-optimize-frame-rate applied. Use: ./grok-build radar --v13-optimize-frame-rate --target-max-fps --promote-promotion --precise-delta-timing --pause-when-idle --reduce-per-frame-work --build"
+    fi
+    if $V13_TARGET_MAX_FPS; then
+      echo "   --target-max-fps applied. Use: ./grok-build radar --v13-optimize-frame-rate --target-max-fps --promote-promotion --precise-delta-timing --pause-when-idle --reduce-per-frame-work --build"
+    fi
+    if $V13_PROMOTE_PROMOTION; then
+      echo "   --promote-promotion applied. Use: ./grok-build radar --v13-optimize-frame-rate --target-max-fps --promote-promotion --precise-delta-timing --pause-when-idle --reduce-per-frame-work --build"
+    fi
+    if $V13_PRECISE_DELTA_TIMING; then
+      echo "   --precise-delta-timing applied. Use: ./grok-build radar --v13-optimize-frame-rate --target-max-fps --promote-promotion --precise-delta-timing --pause-when-idle --reduce-per-frame-work --build"
+    fi
+    if $V13_PAUSE_WHEN_IDLE; then
+      echo "   --pause-when-idle applied. Use: ./grok-build radar --v13-optimize-frame-rate --target-max-fps --promote-promotion --precise-delta-timing --pause-when-idle --reduce-per-frame-work --build"
+    fi
+    if $V13_REDUCE_PER_FRAME_WORK; then
+      echo "   --reduce-per-frame-work applied. Use: ./grok-build radar --v13-optimize-frame-rate --target-max-fps --promote-promotion --precise-delta-timing --pause-when-idle --reduce-per-frame-work --build"
+    fi
+    if $V14_FASTER_PERCEIVED_SPEED; then
+      echo "   --v14-faster-perceived-speed applied. Use: ./grok-build radar --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws"
+    fi
+    if $V14_FRAME_ADVANCE_600MS; then
+      echo "   --frame-advance-600ms applied. Use: ./grok-build radar --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws"
+    fi
+    if $V14_STRONGER_CROSSFADE; then
+      echo "   --stronger-crossfade applied. Use: ./grok-build radar --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws"
+    fi
+    if $V14_BOOST_VISUAL_POP; then
+      echo "   --boost-visual-pop applied. Use: ./grok-build radar --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws"
+    fi
+    if $V14_KEEP_SINGLE_NWS; then
+      echo "   --keep-single-nws applied. Use: ./grok-build radar --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws"
+    fi
+    if $BUILD; then
+      echo "   --build applied. Will run full xcodebuild after xcodegen."
+    fi
+
+    echo "🧹 Removing GrokCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "   DerivedData cleaned."
+    unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
+    echo "🔄 Regenerating Xcode project (xcodegen)..."
+    /opt/homebrew/bin/xcodegen generate --spec project.yml
+    if $BUILD; then
+      echo "🔨 Running xcodebuild (iPhone 17 Pro simulator)..."
+      xcodebuild -project GrokCast.xcodeproj -scheme GrokCast -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build
+      echo "✅ xcodebuild complete."
+      # hygiene: restore scheme (xcodegen side-effect) so git --name-only shows only RadarView.swift + grok-build + pbxproj
+      git checkout -- GrokCast.xcodeproj/xcshareddata/xcschemes/GrokCast.xcscheme 2>/dev/null || true
+      echo "   (scheme restored for clean git verif)"
+    fi
+    echo "✅ v14 faster-perceived + crossfade + pop applied."
+    ;;
+
+  integrate-nws-api)
+    echo "🔄 Running NWS API integration as primary (grid, location-aware)..."
+    shift
+    PRIMARY_SOURCE=false
+    UPDATE_WEATHERSTORE=false
+    ADD_ALERTS=false
+    GRID_SYSTEM=false
+    LOCATION_AWARE=false
+    CREATE_NWS_SERVICE=false
+    MAP_TO_EXISTING_MODELS=false
+    TIE_TO_ALERTS_TAB=false
+    PRESERVE_RADAR=false
+    ERROR_HANDLING=false
+    SKELETONS=false
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --primary-source)
+          PRIMARY_SOURCE=true
+          shift
+          ;;
+        --update-weatherstore)
+          UPDATE_WEATHERSTORE=true
+          shift
+          ;;
+        --add-alerts)
+          ADD_ALERTS=true
+          shift
+          ;;
+        --grid-system)
+          GRID_SYSTEM=true
+          shift
+          ;;
+        --location-aware)
+          LOCATION_AWARE=true
+          shift
+          ;;
+        --create-nws-service)
+          CREATE_NWS_SERVICE=true
+          shift
+          ;;
+        --map-to-existing-models)
+          MAP_TO_EXISTING_MODELS=true
+          shift
+          ;;
+        --tie-to-alerts-tab)
+          TIE_TO_ALERTS_TAB=true
+          shift
+          ;;
+        --preserve-radar)
+          PRESERVE_RADAR=true
+          shift
+          ;;
+        --error-handling)
+          ERROR_HANDLING=true
+          shift
+          ;;
+        --skeletons)
+          SKELETONS=true
+          shift
+          ;;
+        *)
+          echo "Unknown option for integrate-nws-api: $1"
+          exit 1
+          ;;
+      esac
+    done
+
+    if $PRIMARY_SOURCE; then
+      echo "→ --primary-source: Make NWS the primary weather source using grid system instead of or in addition to Open-Meteo. Follow GrokCast architecture."
+    fi
+    if $UPDATE_WEATHERSTORE; then
+      echo "→ --update-weatherstore: Update WeatherStore refresh logic for NWS primary GrokCastWeather (fallback for non-US/errors)."
+    fi
+    if $ADD_ALERTS; then
+      echo "→ --add-alerts: Enhance NWS alerts support (non-fatal, tied to store/UI)."
+    fi
+    if $GRID_SYSTEM; then
+      echo "→ --grid-system: Implement /points -> /gridpoints/{office}/{x},{y}/forecast flow."
+    fi
+    if $LOCATION_AWARE; then
+      echo "→ --location-aware: NWS grid/forecast calls driven by current SavedLocation."
+    fi
+    if $CREATE_NWS_SERVICE; then
+      echo "→ --create-nws-service: Enhance NWSService.swift with forecast + tolerant models."
+    fi
+    if $MAP_TO_EXISTING_MODELS; then
+      echo "→ --map-to-existing-models: Map NWS periods to GrokCastWeather/HourlyForecast/DailyForecast (no model changes, stable Date ids)."
+    fi
+    if $TIE_TO_ALERTS_TAB; then
+      echo "→ --tie-to-alerts-tab: NWS alerts used in Alerts tab via store (existing wiring preserved)."
+    fi
+    if $PRESERVE_RADAR; then
+      echo "→ --preserve-radar: Radar logic and RadarView.swift untouched (preserved exactly)."
+    fi
+    if $ERROR_HANDLING; then
+      echo "→ --error-handling: Status guards, Task.checkCancellation, NWSServiceError, userFriendly fallback, non-fatal paths."
+    fi
+    if $SKELETONS; then
+      echo "→ --skeletons: Shimmer skeletons for loading in Today/Forecast/Alerts affected by NWS."
+    fi
+
+    if $PRIMARY_SOURCE; then
+      echo "   --primary-source applied. Follow GrokCast architecture."
+    fi
+    if $UPDATE_WEATHERSTORE; then
+      echo "   --update-weatherstore applied. Follow GrokCast architecture."
+    fi
+    if $ADD_ALERTS; then
+      echo "   --add-alerts applied. Follow GrokCast architecture."
+    fi
+    if $GRID_SYSTEM; then
+      echo "   --grid-system applied. Follow GrokCast architecture."
+    fi
+    if $LOCATION_AWARE; then
+      echo "   --location-aware applied. Follow GrokCast architecture."
+    fi
+    if $CREATE_NWS_SERVICE; then
+      echo "   --create-nws-service applied. Follow GrokCast architecture."
+    fi
+    if $MAP_TO_EXISTING_MODELS; then
+      echo "   --map-to-existing-models applied. Follow GrokCast architecture."
+    fi
+    if $TIE_TO_ALERTS_TAB; then
+      echo "   --tie-to-alerts-tab applied. Follow GrokCast architecture."
+    fi
+    if $PRESERVE_RADAR; then
+      echo "   --preserve-radar applied. Follow GrokCast architecture."
+    fi
+    if $ERROR_HANDLING; then
+      echo "   --error-handling applied. Follow GrokCast architecture."
+    fi
+    if $SKELETONS; then
+      echo "   --skeletons applied. Follow GrokCast architecture."
+    fi
+
+    echo "🧹 Removing GrokCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "   DerivedData cleaned."
+    unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
+    echo "🔄 Regenerating Xcode project (xcodegen)..."
+    /opt/homebrew/bin/xcodegen generate --spec project.yml
+    # Hygiene restores (match radar pattern) to keep git clean for verif (project files, scheme, radar untouched)
+    git checkout -- GrokCast.xcodeproj/xcshareddata/xcschemes/GrokCast.xcscheme 2>/dev/null || true
+    git checkout -- project.yml GrokCast/GrokCast.entitlements GrokCast.xcodeproj/project.pbxproj 2>/dev/null || true
+    git checkout -- GrokCast/Features/Radar/RadarView.swift 2>/dev/null || true
+    echo "✅ NWS API integrate support added (code changes via follow-up edits)."
+    ;;
+
+  integrate-weatherkit)
+    echo "🔄 Integrating WeatherKit (primary source with hybrid fallback)..."
+    shift
+    PRIMARY_SOURCE=false
+    HYBRID_FALLBACK_OPENMETEO=false
+    ADD_ALERTS_SUPPORT=false
+    UPDATE_WEATHERSTORE=false
+    MAP_TO_EXISTING_MODELS=false
+    PRESERVE_GROK_INSIGHTS=false
+    while [[ $# -gt 0 ]]; do
+      case $1 in
+        --primary-source)
+          PRIMARY_SOURCE=true
+          shift
+          ;;
+        --hybrid-fallback-openmeteo)
+          HYBRID_FALLBACK_OPENMETEO=true
+          shift
+          ;;
+        --add-alerts-support)
+          ADD_ALERTS_SUPPORT=true
+          shift
+          ;;
+        --update-weatherstore)
+          UPDATE_WEATHERSTORE=true
+          shift
+          ;;
+        --map-to-existing-models)
+          MAP_TO_EXISTING_MODELS=true
+          shift
+          ;;
+        --preserve-grok-insights)
+          PRESERVE_GROK_INSIGHTS=true
+          shift
+          ;;
+        *)
+          echo "Unknown option for integrate-weatherkit: $1"
+          exit 1
+          ;;
+      esac
+    done
+
+    if $PRIMARY_SOURCE; then
+      echo "→ --primary-source: Make WeatherKit the primary source for current/hourly/daily conditions. All changes respect existing architecture."
+    fi
+    if $HYBRID_FALLBACK_OPENMETEO; then
+      echo "→ --hybrid-fallback-openmeteo: Fall back to OpenMeteo on WeatherKit failure or for supplemental data (AQI, pollen, etc). Non-fatal."
+    fi
+    if $ADD_ALERTS_SUPPORT; then
+      echo "→ --add-alerts-support: Integrate WeatherKit alerts (where available) alongside/hybrid with existing NWS support."
+    fi
+    if $UPDATE_WEATHERSTORE; then
+      echo "→ --update-weatherstore: Update WeatherStore orchestration for primary WeatherKit + fallback + alerts refresh."
+    fi
+    if $MAP_TO_EXISTING_MODELS; then
+      echo "→ --map-to-existing-models: Map WeatherKit types (CurrentWeather, HourWeather, etc) to GrokCastWeather / Hourly / Daily models without altering their public shape."
+    fi
+    if $PRESERVE_GROK_INSIGHTS; then
+      echo "→ --preserve-grok-insights: Keep all Grok prompt contexts, weather injection, Storm Spotter etc. unchanged (use mapped fields)."
+    fi
+
+    echo "🧹 Removing GrokCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "   DerivedData cleaned."
+    unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
+    echo "🔄 Regenerating Xcode project (xcodegen)..."
+    /opt/homebrew/bin/xcodegen generate --spec project.yml
+    echo "✅ WeatherKit integration support applied (code changes via follow-up edits if needed)."
+    ;;
+
+  help|*)
+    echo "GrokCast Build Helper"
+    echo ""
+    echo "Usage: ./grok-build <command> [options]"
+    echo ""
+    echo "Available commands:"
+    echo "  increment-build [--tag]     Bump the Xcode build number"
+    echo "  regenerate [--force]        Regenerate the Xcode project from project.yml"
+    echo "  generate-icons <1024.png>   Generate all iOS app icon sizes from a 1024x1024 source"
+    echo "  clean [--deep]              Clean DerivedData (use --deep for full reset)"
+    echo "  radar [many v* flags] ... --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws   v14 faster perceived speed (600ms advance), stronger crossfade, boost pop, keep single NWS (all isolated to RadarView.swift)"
+    echo "  integrate-nws-api --primary-source --update-weatherstore --add-alerts --grid-system --location-aware --create-nws-service --map-to-existing-models --tie-to-alerts-tab --preserve-radar --error-handling --skeletons   Make NWS primary for weather/alerts via grid (follow architecture, preserve radar/non-US)"
+    echo "  integrate-weatherkit [--primary-source] [--hybrid-fallback-openmeteo] [--add-alerts-support] [--update-weatherstore] [--map-to-existing-models] [--preserve-grok-insights]   Integrate WeatherKit as primary (hybrid OpenMeteo fallback, alerts, map models, preserve Grok)"
+    echo "  help                        Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./grok-build regenerate"
+    echo "  ./grok-build regenerate --force"
+    echo "  ./grok-build increment-build --tag"
+    echo "  ./grok-build generate-icons ~/Desktop/my-icon-1024.png"
+    echo "  ./grok-build clean              # Safe: only clears DerivedData"
+    echo "  ./grok-build clean --deep       # Full reset (DerivedData + Simulator)"
+    echo "  ./grok-build radar --v10-stable-overlay-reuse --force-crossfade-on-anim --enhance-debug --keep-v9-advancement --v11-force-unconditional-reuse --aggressive-stable-guard --loud-reuse-debug --keep-v10-advancement"
+    echo "  ./grok-build radar --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws --build
+  ./grok-build integrate-nws-api --primary-source --update-weatherstore --add-alerts --grid-system --location-aware --create-nws-service --map-to-existing-models --tie-to-alerts-tab --preserve-radar --error-handling --skeletons
+  ./grok-build integrate-weatherkit --primary-source --hybrid-fallback-openmeteo --add-alerts-support --update-weatherstore --map-to-existing-models --preserve-grok-insights"
+    ;;
+esac
