@@ -1,0 +1,90 @@
+name: GrokCast CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-validate:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Make grok-build executable
+        run: chmod +x ./grok-build || true
+
+      - name: Regenerate Xcode project (XcodeGen)
+        run: |
+          ./grok-build regenerate --force || {
+            echo "Falling back to direct xcodegen generate"
+            xcodegen generate
+          }
+
+      - name: Determine scheme and build for iOS Simulator
+        run: |
+          set -euo pipefail
+
+          # === Robust scheme detection (from Copilot fix) ===
+          SCHEME=$(xcodebuild -list -json 2>/dev/null | ruby -e '
+            require "json"
+            data = JSON.parse(STDIN.read rescue "{}")
+            schemes = data.dig("project", "schemes") || data.dig("workspace", "schemes") || []
+            puts schemes.first.to_s.strip
+          ')
+
+          if [ -z "$SCHEME" ]; then
+            echo "❌ ERROR: No scheme found via xcodebuild -list -json"
+            xcodebuild -list || true
+            exit 1
+          fi
+          echo "✅ Using scheme: $SCHEME"
+
+          # === Detect workspace vs project ===
+          if ls -1 *.xcworkspace 1>/dev/null 2>&1; then
+            FILE_PARAMETER="-workspace $(ls *.xcworkspace | head -n1)"
+          else
+            FILE_PARAMETER="-project $(ls *.xcodeproj | head -n1)"
+          fi
+          echo "📦 Building with: $FILE_PARAMETER"
+
+          # === iOS Simulator destination (critical fix) ===
+          DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
+
+          echo "🚀 Building for $DESTINATION ..."
+
+          xcodebuild clean build \
+            $FILE_PARAMETER \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.raw.log | xcpretty --color --simple
+
+          exit ${PIPESTATUS[0]}
+
+      - name: Upload raw xcodebuild log (for debugging)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.raw.log
+          retention-days: 14
+
+      - name: Upload build artifacts (optional)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-products
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/Build/Products
+          retention-days: 7
