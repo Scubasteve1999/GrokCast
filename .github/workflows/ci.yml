@@ -20,6 +20,9 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
       - name: Make grok-build executable
         run: chmod +x ./grok-build || true
 
