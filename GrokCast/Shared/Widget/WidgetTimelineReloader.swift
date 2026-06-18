@@ -2,6 +2,14 @@
   import Foundation
   import WidgetKit
 
+  extension NSLocking {
+    func withLock<T>(_ body: () throws -> T) rethrows -> T {
+      lock()
+      defer { unlock() }
+      return try body()
+    }
+  }
+
   /// Coalesces rapid `WidgetCenter.reloadAllTimelines()` calls (e.g. weather + alerts in one refresh).
   /// Main-app only — widget extension reads App Group data; it does not trigger reloads.
   enum WidgetTimelineReloader {
@@ -10,20 +18,19 @@
     private static let debounceNanoseconds: UInt64 = 150_000_000
 
     static func requestReload() {
-      lock.lock()
-      if scheduled {
-        lock.unlock()
-        return
+      lock.withLock {
+        if scheduled {
+          return
+        }
+        scheduled = true
       }
-      scheduled = true
-      lock.unlock()
 
       Task { @MainActor in
         try? await Task.sleep(nanoseconds: debounceNanoseconds)
         WidgetCenter.shared.reloadAllTimelines()
-        lock.lock()
-        scheduled = false
-        lock.unlock()
+        lock.withLock {
+          scheduled = false
+        }
       }
     }
   }
