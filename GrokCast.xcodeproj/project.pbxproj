@@ -24,14 +24,23 @@
 		1DFE263F1874BC408AC7639E /* StreamingText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000473706CC11B378865D801 /* StreamingText.swift */; };
 		1F35553435CD430AE80FAC2A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ECD9260D700E4495FF3FA562 /* Foundation.framework */; };
 		1F6B5BDFE3A934D2B7274289 /* Haptic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43F6CA17AA9855355A8C98D /* Haptic.swift */; };
-		23B6A225B2D99BA31759A730 /* RadarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 269A2DDE12CDFF95D04E08E8 /* RadarView.swift */; };
 		2653C865253A08CE9E0774E1 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F3FE6A5319338585ED1587 /* WeatherService.swift */; };
 		270D8678C5DD7F5306846A12 /* OpenMeteoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24FB7E4175CD6258A98696CC /* OpenMeteoService.swift */; };
-		2772433EAB2BFD07B20389B2 /* ReadableContentWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C31BEEE919910805A68FBD8 /* ReadableContentWidth.swift */; };
 		2826BBB21B6550E51ABE237D /* BackgroundAlertRefreshService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D450AF927C40BCFD71D355 /* BackgroundAlertRefreshService.swift */; };
 		2A437EDEF4BEE9BAB1CC63C8 /* DailyRowSkeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3854F2065DFCF152A995064C /* DailyRowSkeleton.swift */; };
 		2ECF69535EB2B890199AE981 /* NWSRadarOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 573E1074236685FA1D02A077 /* NWSRadarOverlay.swift */; };
 		2F4E3C5C66331848B40CB614 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B4DAED0A7D4A44604FD047D /* UserNotifications.framework */; };
+		351717792FE372A50039D622 /* RadarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 269A2DDE12CDFF95D04E08E8 /* RadarView.swift */; };
+		351D4A9B2FE367FC000A3951 /* Haptic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43F6CA17AA9855355A8C98D /* Haptic.swift */; };
+		351D4A9C2FE36812000A3951 /* IEMRadarSiteResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43C64E5A862F2154CC1912F9 /* IEMRadarSiteResolver.swift */; };
+		351D4A9D2FE36844000A3951 /* NWSAlertStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B25127C7266D0E2E7A66848 /* NWSAlertStyle.swift */; };
+		351D4A9E2FE3685C000A3951 /* NWSModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FFBF7C3C65CC0E02C2DE4E2 /* NWSModels.swift */; };
+		351D4AA02FE36878000A3951 /* NWSRadarProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56BC33FFC50164CC8A620840 /* NWSRadarProduct.swift */; };
+		351D4AA12FE36889000A3951 /* RadarTileClamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8AC1470ACF3576507AE465 /* RadarTileClamp.swift */; };
+		351D4AA22FE36899000A3951 /* RadarTileRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 230539150919BCDB541698D0 /* RadarTileRenderer.swift */; };
+		351D4AA32FE368AB000A3951 /* ReadableContentWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C31BEEE919910805A68FBD8 /* ReadableContentWidth.swift */; };
+		351D4AA42FE368AB000A3951 /* ReadableContentWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C31BEEE919910805A68FBD8 /* ReadableContentWidth.swift */; };
+		351D4AA52FE368B6000A3951 /* WeatherBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF3C18A1E60EDAD941F82F5F /* WeatherBackgroundView.swift */; };
 		359A32765089F957122817FF /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 334F43C43821F602DA1BC600 /* AppIntents.framework */; };
 		37CF015288F0DBFD3C2FE3F3 /* WidgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D08A58D32AD99EB4F158B2B /* WidgetEmptyStateView.swift */; };
 		38CBAFFE49952AE7C16A9C11 /* WidgetTimelineReloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDE61C5FC12333B750B20B2 /* WidgetTimelineReloader.swift */; };
@@ -637,6 +646,7 @@
 				DD6C591E2C681D9F63DF7701 /* ForecastView.swift in Sources */,
 				3A0715BE62F1933258C9890C /* GrokAIView.swift in Sources */,
 				4B4FABC679FBECD1C7C78906 /* GrokAIViewModel.swift in Sources */,
+				BCDCC73DCC2FE8CE08049F8C /* WeatherStore.swift in Sources */,
 				09362CC89882058B056C2C8F /* GrokAPIConfiguration.swift in Sources */,
 				93EFFAA2190B0073A0529EAA /* GrokBuildService.swift in Sources */,
 				64F2BF8E298A9E5F4534032D /* GrokCastApp.swift in Sources */,
@@ -647,11 +657,12 @@
 				B45E7A3C12EEEC8E2DC9B540 /* HourlyRowSkeleton.swift in Sources */,
 				9E4A56FA5AC7132551A86BDA /* IEMRadarSiteResolver.swift in Sources */,
 				63D7F15AF0EA0A2A5909C473 /* KeychainService.swift in Sources */,
+				0E0AE4CA208510D36CEF7624 /* LocationService.swift in Sources */,
 				11384DFB4267A896523B8CAD /* Location.swift in Sources */,
 				CE8F60B1177430FED5ABABA6 /* LocationPermissionView.swift in Sources */,
-				0E0AE4CA208510D36CEF7624 /* LocationService.swift in Sources */,
 				4228D04C787FE9E6015A9CC1 /* LocationsView.swift in Sources */,
 				651A17047946F6C59AEA4A17 /* NWSAlertStyle.swift in Sources */,
+				351D4AA32FE368AB000A3951 /* ReadableContentWidth.swift in Sources */,
 				B3449A1B9E2ED2F008B86AA9 /* NWSModels.swift in Sources */,
 				2ECF69535EB2B890199AE981 /* NWSRadarOverlay.swift in Sources */,
 				A387CC97F993320F68549F33 /* NWSRadarProduct.swift in Sources */,
@@ -660,16 +671,14 @@
 				270D8678C5DD7F5306846A12 /* OpenMeteoService.swift in Sources */,
 				7F3A92FDB91109642896BDC2 /* RadarTileClamp.swift in Sources */,
 				5C78FBB3771D4923F325E9E6 /* RadarTileRenderer.swift in Sources */,
-				23B6A225B2D99BA31759A730 /* RadarView.swift in Sources */,
-				2772433EAB2BFD07B20389B2 /* ReadableContentWidth.swift in Sources */,
 				1D2217A98D55A707C50E2C6A /* SettingsView.swift in Sources */,
 				DC7D1D52C497E6E9088C9EB4 /* Shimmer.swift in Sources */,
 				1DFE263F1874BC408AC7639E /* StreamingText.swift in Sources */,
+				351717792FE372A50039D622 /* RadarView.swift in Sources */,
 				08F32FDDADC623CA25852DCE /* TodayView.swift in Sources */,
 				E7839600B0282E17FFB770A1 /* WeatherBackgroundView.swift in Sources */,
 				C0FBA0E8E92B95E9205CEE4A /* WeatherModels.swift in Sources */,
 				2653C865253A08CE9E0774E1 /* WeatherService.swift in Sources */,
-				BCDCC73DCC2FE8CE08049F8C /* WeatherStore.swift in Sources */,
 				FF293D55F7BFEE68D9D5D7B6 /* WidgetAlertSummary.swift in Sources */,
 				9084E07225003CE460D2D6E5 /* WidgetAppGroup.swift in Sources */,
 				B680099A0202BEED8001B0D1 /* WidgetDataStore.swift in Sources */,
@@ -684,26 +693,35 @@
 			buildActionMask = 2147483647;
 			files = (
 				D67543EDA18A7636D750473C /* GrokCastDeepLinks.swift in Sources */,
+				351D4AA52FE368B6000A3951 /* WeatherBackgroundView.swift in Sources */,
 				795C30E1D4C75C2C9CC764D9 /* GrokCastWidgets.swift in Sources */,
+				351D4AA12FE36889000A3951 /* RadarTileClamp.swift in Sources */,
 				EC01DB10ADD743F7486AB9C5 /* Location.swift in Sources */,
 				A702E4C94BC5AFF637EC25BD /* LockScreenWeatherWidgetView.swift in Sources */,
 				9FA3D4D8CC1752459D3866ED /* MediumWeatherWidgetView.swift in Sources */,
 				9CBBA9F50A155B1825F4DCAF /* OpenMeteoModels.swift in Sources */,
 				D70C986E83DB0734158F4D9F /* SmallWeatherWidgetView.swift in Sources */,
 				45C22EB7D9110676FFC2FDC8 /* WeatherTimelineProvider.swift in Sources */,
+				351D4A9E2FE3685C000A3951 /* NWSModels.swift in Sources */,
+				351D4A9B2FE367FC000A3951 /* Haptic.swift in Sources */,
+				351D4A9D2FE36844000A3951 /* NWSAlertStyle.swift in Sources */,
+				351D4A9C2FE36812000A3951 /* IEMRadarSiteResolver.swift in Sources */,
 				A1691607D06C3BC8C453D46F /* WidgetAlertStyle.swift in Sources */,
 				DB24156E40308D4E0189E8AE /* WidgetAlertSummary.swift in Sources */,
 				1B9C5722653653AB6596E4C7 /* WidgetAppGroup.swift in Sources */,
+				351D4AA42FE368AB000A3951 /* ReadableContentWidth.swift in Sources */,
 				13A7B4406ABDDF374D83EF77 /* WidgetBackground.swift in Sources */,
 				5E0E48EDC8AF2B6EDCC7BB44 /* WidgetDataStore.swift in Sources */,
 				0DD703DB27238EDF990283C8 /* WidgetDeepLink.swift in Sources */,
 				37CF015288F0DBFD3C2FE3F3 /* WidgetEmptyStateView.swift in Sources */,
 				C3F503905E2418BC7D831233 /* WidgetLocationIntent.swift in Sources */,
+				351D4AA22FE36899000A3951 /* RadarTileRenderer.swift in Sources */,
 				7E824C8EE434EF883E0F842B /* WidgetRelativeTime.swift in Sources */,
 				D01CC608C9DCB16105963108 /* WidgetStyle.swift in Sources */,
 				38CBAFFE49952AE7C16A9C11 /* WidgetTimelineReloader.swift in Sources */,
 				DB9B46854F661B42869BF3DC /* WidgetUpdatedFooter.swift in Sources */,
 				BAD319DF2AC175A3BA6EAFF3 /* WidgetWeatherSnapshot.swift in Sources */,
+				351D4AA02FE36878000A3951 /* NWSRadarProduct.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

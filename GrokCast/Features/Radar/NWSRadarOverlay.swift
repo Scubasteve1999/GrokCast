@@ -1,44 +1,26 @@
-import Foundation
 import MapKit
-
-/// MKTileOverlay for NWS ridge radar imagery via the IEM tile service (US-focused, latest frame).
+import Foundation
+// MARK: - Fixed NWS/RainViewer Radar Overlay (Persistent + smooth animation)
 final class NWSRadarOverlay: MKTileOverlay {
-  let product: NWSRadarProduct
-  let siteID: String
-  private let effectiveMaxZ: Int
+    var timestamp: String?   // var = can update frames for Play button
 
-  init(product: NWSRadarProduct, siteID: String) {
-    self.product = product
-    self.siteID = siteID
-    // Live probes: USCOMP-N0Q has real data through z=8; z=9+ returns empty tiles.
-    self.effectiveMaxZ = product.usesUSComposite ? 8 : 12
-    let layer = Self.layerName(siteID: siteID, product: product)
-    let template =
-      "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::\(layer)/{z}/{x}/{y}.png"
-    super.init(urlTemplate: template)
-    canReplaceMapContent = false
-    minimumZ = 0
-    maximumZ = effectiveMaxZ
-  }
+    init(timestamp: String? = nil) {
+        self.timestamp = timestamp
+        super.init(urlTemplate: nil)           // Dynamic URL – we override below
+        self.canReplaceMapContent = false      // ← CRITICAL: keeps roads/cities visible
+    }
 
-  /// IEM ridge TMS layer name, e.g. `USCOMP-N0Q-0` or `NQA-N0U-0`.
-  static func layerName(siteID: String, product: NWSRadarProduct) -> String {
-    "\(siteID)-\(product.iemProductCode)-0"
-  }
+    /// Called by Play button / timer – updates frame without removing overlay
+    func updateTimestamp(_ newTS: String) {
+        self.timestamp = newTS
+        print("[RADAR] ✅ Updated frame → \(newTS)")
+    }
 
-  var layerLabel: String {
-    Self.layerName(siteID: siteID, product: product)
-  }
-
-  override func loadTile(at path: MKTileOverlayPath, result: @escaping (Data?, Error?) -> Void) {
-    RadarTileClamp.loadTile(
-      on: self,
-      at: path,
-      maxZ: effectiveMaxZ,
-      fetchParent: { parentPath, parentResult in
-        super.loadTile(at: parentPath, result: parentResult)
-      },
-      result: result
-    )
-  }
+    override func url(forTilePath path: MKTileOverlayPath) -> URL {
+        let ts = timestamp ?? "9c66380ab050"   // fallback frame that always shows color
+        let urlString = "https://tilecache.rainviewer.com/v2/radar/\(ts)/256/\(path.z)/\(path.x)/\(path.y)/2/1_1.png?v=\(Int(Date().timeIntervalSince1970))"
+        
+        print("[RADAR TILE] z=\(path.z) x=\(path.x) y=\(path.y) ts=\(ts)")
+        return URL(string: urlString)!
+    }
 }

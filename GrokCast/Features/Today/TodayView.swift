@@ -40,7 +40,7 @@ struct TodayView: View {
           firstLaunchWelcome()
         } else if !(status == .authorizedWhenInUse || status == .authorizedAlways) {
           LocationPermissionView()
-        } else if store.isLoadingWeather || store.locationService.isLoading {
+        } else if store.isLoadingWeather || store.locationService.isLoading {  // --skeletons: shimmer for NWS primary loading states (Today, Forecast, Alerts)
           TodaySkeleton()
         } else if let w = weather {
           ScrollView {

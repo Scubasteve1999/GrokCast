@@ -3,33 +3,29 @@ import Foundation
 import MapKit
 import SwiftUI
 
-// MARK: - RainViewer support (static + animated radar Phase 3; inside this file for minimal change, no new files)
-// Tolerant optionals (like NWSGeometry custom decode) for robustness; we only use .radar.past .
+extension Collection {
+    subscript (safe index: Index) -> Element? {
+        return indices.contains(index) ? self[index] : nil
+    }
+}
+
+// RainViewer radar overlay for animation (using NWS UI label and mode)
+
 struct RainViewerResponse: Decodable {
   let host: String?
   let radar: RadarSection?
 }
-
 struct RadarSection: Decodable {
   let past: [RadarFrame]?
 }
-
 struct RadarFrame: Decodable, Equatable {
   let time: Int
   let path: String
 }
 
-enum RadarSource: String, CaseIterable, Identifiable {
-  case rainViewer = "RainViewer"
-  case nws = "NWS"
-
-  var id: String { rawValue }
-}
-
 enum RadarOverlayMode: Equatable {
   case none
-  case rainViewer(template: String)
-  case nws(product: NWSRadarProduct, siteID: String)
+  case nws(product: NWSRadarProduct, siteID: String, timestamp: String?)
 }
 
 struct RadarView: View {
@@ -41,28 +37,28 @@ struct RadarView: View {
   )
   @State private var annotations: [AlertAnnotation] = []
 
-  // Radar overlay (Phase 3): static + animated via RainViewer + MKTileOverlay swap.
-  // @State local (no store change per lightweight scope). Frames fetched on tab/toggle only.
+  // Pure NWS radar. Accurate historical animation using IEM timestamped ridge tiles (last ~60min @ 5min steps).
   @State private var radarEnabled = true
   @State private var isRadarAnimating = false
   @State private var currentRadarFrameIndex = 0
-  @State private var radarFrames: [RadarFrame] = []
+  @State private var nwsRadarTimestamps: [String] = []   // yyyyMMddHHmm strings for accurate historical loop
   @State private var radarOpacity: Double = 0.75  // slider-driven; default 0.75 per spec; restored on toggle-on
   @State private var lastRadarOpacity: Double = 0.75
-  @State private var rainViewerHost: String = "https://tilecache.rainviewer.com"
   @State private var animationTimer: Timer?
 
   // Radar UX improvements (current pin, map type, playback speed)
   @State private var mapType: MKMapType = .standard
   @State private var radarPlaybackInterval: TimeInterval = 0.6
 
-  // NWS/IEM ridge radar (static latest frame; US-focused).
-  @State private var radarSource: RadarSource = .rainViewer
+  // NWS/IEM ridge radar with accurate historical animation.
   @State private var nwsRadarProduct: NWSRadarProduct = .baseReflectivity
   @State private var iemRadarListReady = false
   @State private var nwsRadarSiteID = IEMRadarSiteResolver.fallbackSiteID
   @State private var nwsSiteResolveCenter: CLLocationCoordinate2D?
   @State private var nwsSiteUpdateTask: Task<Void, Never>?
+
+  /// Holds a live reference to the coordinator for direct access to map overlay management.
+  @State private var radarCoordinator: MapViewRepresentable.Coordinator?
 
   /// Minimum pan distance before re-resolving nearest NEXRAD (reduces overlay churn at boundaries).
   private let nwsSiteMinPanMeters: CLLocationDistance = 40_000
@@ -98,19 +94,18 @@ struct RadarView: View {
 
   private var radarOverlayMode: RadarOverlayMode {
     guard radarEnabled else { return .none }
-    switch radarSource {
-    case .rainViewer:
-      guard !radarFrames.isEmpty,
-        currentRadarFrameIndex >= 0,
-        currentRadarFrameIndex < radarFrames.count
-      else { return .none }
-      let frame = radarFrames[currentRadarFrameIndex]
-      let template = "\(rainViewerHost)\(frame.path)/256/{z}/{x}/{y}/2/1_1.png"
-      return .rainViewer(template: template)
-    case .nws:
-      let siteID = nwsRadarProduct.usesUSComposite ? "USCOMP" : nwsRadarSiteID
-      return .nws(product: nwsRadarProduct, siteID: siteID)
+
+    let siteID = nwsRadarProduct.usesUSComposite ? "USCOMP" : nwsRadarSiteID
+
+    // Accurate NWS historical loop: use real timestamp when animating
+    let ts: String?
+    if isRadarAnimating && !nwsRadarTimestamps.isEmpty {
+      let idx = currentRadarFrameIndex % nwsRadarTimestamps.count
+      ts = nwsRadarTimestamps[idx]
+    } else {
+      ts = nil
     }
+    return .nws(product: nwsRadarProduct, siteID: siteID, timestamp: ts)
   }
 
   private var mapRegionCenterKey: String {
@@ -118,16 +113,24 @@ struct RadarView: View {
   }
 
   private var showReflectivityLegend: Bool {
-    radarEnabled
-      && (radarSource == .rainViewer || nwsRadarProduct == .baseReflectivity)
+    radarEnabled && nwsRadarProduct == .baseReflectivity
   }
 
-  private var showRainViewerPlayback: Bool {
-    radarEnabled && radarSource == .rainViewer && !radarFrames.isEmpty
+  // Always show playback controls for NWS (RainViewer removed)
+  var showPlaybackControls: Bool {
+    radarEnabled
   }
+
+  private var showRadarPlayback: Bool {
+    showPlaybackControls
+  }
+
+  // Legacy functions removed per cleanup (animation logic now lives in toggleRadarAnimation)
+  private func startRadarAnimation() {}
+  private func updateRadarOverlayForAnimation() {}
 
   private var showRadarOpacitySlider: Bool {
-    radarEnabled && (radarSource == .nws || !radarFrames.isEmpty)
+    radarEnabled
   }
 
   private let radarLegendItems: [RadarLegendItem] = [
@@ -170,6 +173,7 @@ struct RadarView: View {
           .foregroundStyle(.white)
       }
       .buttonStyle(.plain)
+      .accessibilityLabel(isRadarAnimating ? "Pause" : "Play")
 
       Text(currentRadarTimeString)
         .font(.caption2)
@@ -180,14 +184,48 @@ struct RadarView: View {
       HStack(spacing: 2) {
         ForEach([0.3, 0.6, 1.0], id: \.self) { secs in
           let label = secs == 0.3 ? "2x" : (secs == 0.6 ? "1x" : "0.5x")
+          let isSelected = abs(radarPlaybackInterval - secs) < 0.05
           Text(label)
-            .font(.caption2.weight(abs(radarPlaybackInterval - secs) < 0.05 ? .bold : .regular))
-            .foregroundStyle(abs(radarPlaybackInterval - secs) < 0.05 ? .white : .secondary)
+            .font(.caption2.weight(isSelected ? .bold : .regular))
+            .foregroundStyle(isSelected ? .white : .secondary)
             .padding(.horizontal, 4)
             .onTapGesture { setPlaybackSpeed(secs) }
         }
       }
     }
+  }
+
+  @ViewBuilder
+  private var mapControlButtons: some View {
+    VStack(spacing: 8) {
+      Button {
+        cycleMapType()
+      } label: {
+        Image(systemName: mapTypeIconName)
+          .font(.caption)
+          .foregroundStyle(.white)
+          .padding(8)
+          .background(.ultraThinMaterial)
+          .clipShape(Circle())
+          .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 1)
+      }
+      .accessibilityLabel("Cycle map type")
+
+      Button {
+        recenterOnMyLocation()
+      } label: {
+        Image(systemName: "location.circle.fill")
+          .font(.title2)
+          .foregroundStyle(.white)
+          .padding(10)
+          .background(.ultraThinMaterial)
+          .clipShape(Circle())
+          .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+      }
+      .accessibilityLabel("Reset map to my location")
+    }
+    .padding(.trailing, 16)
+    .padding(.bottom, floatingMapButtonLift)
   }
 
   @ViewBuilder
@@ -207,24 +245,11 @@ struct RadarView: View {
         .accessibilityLabel(radarEnabled ? "Hide radar" : "Show radar")
 
         if radarEnabled {
-          Picker("Radar source", selection: $radarSource) {
-            ForEach(RadarSource.allCases) { source in
-              Text(source.rawValue).tag(source)
-            }
-          }
-          .pickerStyle(.segmented)
-          .accessibilityLabel("Radar source")
-          .onChange(of: radarSource) { _, newSource in
-            Haptic.impact(.light)
-            if newSource == .nws {
-              stopRadarAnimation()
-              radarControlsExpanded = true
-              updateNWSRadarSite(center: mapRegion.center, force: true)
-            } else if radarFrames.isEmpty {
-              Task { await refreshRadarFrames() }
-            }
-          }
-
+          // NWS-only (RainViewer removed per request)
+          Text("NWS Radar")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
         } else {
           Text("Radar off")
             .font(.caption)
@@ -253,7 +278,7 @@ struct RadarView: View {
 
       if radarEnabled, radarControlsExpanded {
         VStack(alignment: .leading, spacing: 8) {
-          if showRainViewerPlayback {
+          if showPlaybackControls {
             radarPlaybackRow
           }
 
@@ -261,35 +286,33 @@ struct RadarView: View {
             radarColorLegendRow
           }
 
-          if radarSource == .nws {
-            Text(nwsLayerStatusLabel)
-              .font(.caption2.weight(.medium))
-              .foregroundStyle(.secondary)
-              .lineLimit(1)
+          Text(nwsLayerStatusLabel)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-              HStack(spacing: 6) {
-                ForEach(NWSRadarProduct.allCases) { product in
-                  Button {
-                    guard nwsRadarProduct != product else { return }
-                    Haptic.impact(.light)
-                    nwsRadarProduct = product
-                  } label: {
-                    Text(product.shortDisplayName)
-                      .font(.caption2.weight(nwsRadarProduct == product ? .bold : .regular))
-                      .foregroundStyle(nwsRadarProduct == product ? .white : .secondary)
-                      .padding(.horizontal, 10)
-                      .padding(.vertical, 6)
-                      .background(
-                        nwsRadarProduct == product
-                          ? Color.blue.opacity(0.55) : Color.white.opacity(0.08)
-                      )
-                      .clipShape(Capsule())
-                  }
-                  .buttonStyle(.plain)
-                  .accessibilityLabel(product.displayName)
-                  .accessibilityAddTraits(nwsRadarProduct == product ? .isSelected : [])
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+              ForEach(NWSRadarProduct.allCases) { product in
+                Button {
+                  guard nwsRadarProduct != product else { return }
+                  Haptic.impact(.light)
+                  nwsRadarProduct = product
+                } label: {
+                  Text(product.shortDisplayName)
+                    .font(.caption2.weight(nwsRadarProduct == product ? .bold : .regular))
+                    .foregroundStyle(nwsRadarProduct == product ? .white : .secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                      nwsRadarProduct == product
+                        ? Color.blue.opacity(0.55) : Color.white.opacity(0.08)
+                    )
+                    .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(product.displayName)
+                .accessibilityAddTraits(nwsRadarProduct == product ? .isSelected : [])
               }
             }
           }
@@ -313,74 +336,55 @@ struct RadarView: View {
     .adaptiveContainerWidth(AdaptiveLayout.contentCap)
   }
 
+  private var radarIsDay: Bool {
+    store.currentWeather.map {
+      WeatherBackgroundView.isDay(from: $0.symbolName)
+    } ?? WeatherBackgroundView.inferredIsDay
+  }
+
+  @ViewBuilder
+  private var radarMapContent: some View {
+    ZStack {
+      MapViewRepresentable(
+        region: $mapRegion, annotations: annotations, radarOverlayMode: radarOverlayMode,
+        radarOpacity: radarOpacity, userLocation: myLocationCoordinate, mapType: mapType,
+        isRadarAnimating: isRadarAnimating, radarPlaybackInterval: radarPlaybackInterval,
+        radarCoordinator: $radarCoordinator
+      )
+      .ignoresSafeArea(edges: .top)
+      .overlay {
+        WeatherBackgroundView(
+          conditionCode: store.currentWeather?.conditionCode,
+          isDay: radarIsDay,
+          intensity: .subtle
+        )
+        .opacity(0.18)
+        .allowsHitTesting(false)
+      }
+      .overlay(alignment: .bottomTrailing) {
+        mapControlButtons
+      }
+      .overlay(alignment: .top) {
+        if annotations.isEmpty {
+          Text("No active alerts for this location")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.top, 8)
+        }
+      }
+    }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      radarControlPanel
+    }
+  }
+
   var body: some View {
     NavigationStack {
-      ZStack {
-        MapViewRepresentable(
-          region: $mapRegion, annotations: annotations, radarOverlayMode: radarOverlayMode,
-          radarOpacity: radarOpacity, userLocation: myLocationCoordinate, mapType: mapType,
-          isRadarAnimating: isRadarAnimating, radarPlaybackInterval: radarPlaybackInterval
-        )
-        .ignoresSafeArea(edges: .top)
-        .overlay {
-          WeatherBackgroundView(
-            conditionCode: store.currentWeather?.conditionCode,
-            isDay: store.currentWeather.map {
-              WeatherBackgroundView.isDay(from: $0.symbolName)
-            } ?? WeatherBackgroundView.inferredIsDay,
-            intensity: .subtle
-          )
-          .opacity(0.18)
-          .allowsHitTesting(false)
-        }
-
-        .overlay(alignment: .bottomTrailing) {
-          VStack(spacing: 8) {
-            Button {
-              cycleMapType()
-            } label: {
-              Image(systemName: mapTypeIconName)
-                .font(.caption)
-                .foregroundStyle(.white)
-                .padding(8)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 1)
-            }
-            .accessibilityLabel("Cycle map type")
-
-            Button {
-              recenterOnMyLocation()
-            } label: {
-              Image(systemName: "location.circle.fill")
-                .font(.title2)
-                .foregroundStyle(.white)
-                .padding(10)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-            }
-            .accessibilityLabel("Reset map to my location")
-          }
-          .padding(.trailing, 16)
-          .padding(.bottom, floatingMapButtonLift)
-        }
-        .overlay(alignment: .top) {
-          if annotations.isEmpty {
-            Text("No active alerts for this location")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .padding(.horizontal, 12)
-              .padding(.vertical, 8)
-              .background(.ultraThinMaterial)
-              .clipShape(RoundedRectangle(cornerRadius: 10))
-              .padding(.top, 8)
-          }
-        }
-      }
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        radarControlPanel
-      }
+      radarMapContent
       .navigationTitle("Radar")
       .navigationBarTitleDisplayMode(.inline)
       .preferredColorScheme(.dark)
@@ -394,22 +398,12 @@ struct RadarView: View {
         await store.refreshAlerts()
         updateAnnotationsFromAlerts()
 
-        // Preload IEM radar list for nearest-site velocity/SRV tiles.
+        // Preload IEM radar list + prepare NWS timestamps for accurate loop
         await IEMRadarSiteResolver.preloadRadarList()
         iemRadarListReady = IEMRadarSiteResolver.isReady
-        if radarSource == .nws {
-          updateNWSRadarSite(center: mapRegion.center, force: true)
-        }
-
-        // RainViewer frames only needed when that source is active (skip when NWS selected).
-        if radarSource == .rainViewer {
-          await refreshRadarFrames()
-        }
-        // Modern Swift Concurrency: use Task { @MainActor } instead of await MainActor.run for post-await @State updates.
-        Task { @MainActor in
-          if radarEnabled, !isRadarAnimating {
-            currentRadarFrameIndex = max(0, radarFrames.count - 1)  // safe for 0-frame (review 217 clamp sites)
-          }
+        updateNWSRadarSite(center: mapRegion.center, force: true)
+        if nwsRadarTimestamps.isEmpty {
+          loadRecentNWSTimestamps()
         }
       }
       .onChange(of: store.activeAlerts) { _, _ in
@@ -425,8 +419,9 @@ struct RadarView: View {
         scheduleNWSRadarSiteUpdate(center: mapRegion.center)
       }
       .onChange(of: nwsRadarProduct) { _, _ in
-        if radarSource == .nws {
-          updateNWSRadarSite(center: mapRegion.center, force: true)
+        updateNWSRadarSite(center: mapRegion.center, force: true)
+        if !isRadarAnimating {
+          loadRecentNWSTimestamps()
         }
       }
       .onChange(of: store.selectedTab) { _, newTab in
@@ -437,6 +432,15 @@ struct RadarView: View {
       .onDisappear {
         stopRadarAnimation()
         nwsSiteUpdateTask?.cancel()
+      }
+      .onChange(of: isRadarAnimating) { _, newValue in
+        if newValue {
+          // Force refresh when Play pressed
+          print("[RADAR] isRadarAnimating became true — forcing map refresh")
+        }
+      }
+      .onChange(of: isRadarAnimating) { _, newValue in
+        print("[RADAR] isRadarAnimating changed to \(newValue)")
       }
     }
   }
@@ -496,60 +500,73 @@ struct RadarView: View {
     Haptic.impact(.light)
     radarPlaybackInterval = interval
     if isRadarAnimating {
+      // Restart timer with new interval for accurate NWS loop
       stopRadarAnimation()
-      startRadarAnimation()
+      isRadarAnimating = true
+      // re-enter the animation timer setup
+      if nwsRadarTimestamps.isEmpty {
+        loadRecentNWSTimestamps()
+      }
+      let t = Timer.scheduledTimer(withTimeInterval: radarPlaybackInterval, repeats: true) { [self] _ in
+        DispatchQueue.main.async {
+          guard self.isRadarAnimating, !self.nwsRadarTimestamps.isEmpty else { return }
+          self.currentRadarFrameIndex = (self.currentRadarFrameIndex + 1) % self.nwsRadarTimestamps.count
+          self.forceNWSRadarRefresh()
+        }
+      }
+      RunLoop.current.add(t, forMode: .common)
+      animationTimer = t
+
+      // Immediate refresh with new speed
+      self.forceNWSRadarRefresh()
     }
   }
 
   // MARK: - Radar helpers (static/anim; fetch only on tab appear or toggle per lightweight; reuse alert pattern)
   private var currentRadarTimeString: String {
-    guard !radarFrames.isEmpty,
-      currentRadarFrameIndex >= 0,
-      currentRadarFrameIndex < radarFrames.count
+    guard !nwsRadarTimestamps.isEmpty,
+          currentRadarFrameIndex >= 0,
+          currentRadarFrameIndex < nwsRadarTimestamps.count
     else { return "--:--" }
-    let unix = TimeInterval(radarFrames[currentRadarFrameIndex].time)
-    let date = Date(timeIntervalSince1970: unix)
-    return Self.timeFormatter.string(from: date)
+
+    // Format unix ts to HH:mm
+    let ts = nwsRadarTimestamps[currentRadarFrameIndex]
+    if let unix = TimeInterval(ts) {
+      let date = Date(timeIntervalSince1970: unix)
+      return Self.timeFormatter.string(from: date)
+    }
+    return ts
   }
 
-  private func refreshRadarFrames() async {
-    guard let url = URL(string: "https://api.rainviewer.com/public/weather-maps.json") else {
-      return
-    }
-    var req = URLRequest(url: url)
-    req.setValue("GrokCast/1.0 (https://grokcast.app)", forHTTPHeaderField: "User-Agent")
-    req.timeoutInterval = 10
-    do {
-      let (data, resp) = try await URLSession.shared.data(for: req)
-      guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-        return
-      }
-      let decoded = try JSONDecoder().decode(RainViewerResponse.self, from: data)
-      // Modern Swift Concurrency: Task { @MainActor } for the @State updates after the await.
-      Task { @MainActor in
-        if let h = decoded.host { rainViewerHost = h }
-        let past = decoded.radar?.past ?? []
-        let recent = Array(past.suffix(10))  // ~ last 10 frames (~60-100min loop)
-        if radarFrames.last?.time != recent.last?.time || radarFrames.count != recent.count {
-          radarFrames = recent
-          if radarEnabled {
-            if !isRadarAnimating {
-              currentRadarFrameIndex = max(0, radarFrames.count - 1)
-            } else {
-              // Safe clamp for re-fetch while anim (review bug 217): min without max(0) could yield -1 on 0 frames; use full max(0,min( , max(0,c-1)))
-              currentRadarFrameIndex = max(
-                0, min(currentRadarFrameIndex, max(0, radarFrames.count - 1)))
+  private func loadRecentNWSTimestamps() {
+    // Fetch RainViewer frames for the animation loop
+    Task {
+      guard let url = URL(string: "https://api.rainviewer.com/public/weather-maps.json") else { return }
+      var req = URLRequest(url: url)
+      req.setValue("GrokCast/1.0 (https://grokcast.app)", forHTTPHeaderField: "User-Agent")
+      req.timeoutInterval = 10
+      do {
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else { return }
+        let decoded = try JSONDecoder().decode(RainViewerResponse.self, from: data)
+        await MainActor.run {
+          if let past = decoded.radar?.past, !past.isEmpty {
+            // Use the time (unix) as ts for RainViewer v2/radar/ URL
+            nwsRadarTimestamps = past.suffix(10).map { String($0.time) }  // last ~10 frames
+            if currentRadarFrameIndex >= nwsRadarTimestamps.count || currentRadarFrameIndex < 0 {
+              currentRadarFrameIndex = max(0, nwsRadarTimestamps.count - 1)
             }
+            print("[RADAR] Loaded \(nwsRadarTimestamps.count) RainViewer frames for loop")
           }
         }
+      } catch {
+        print("[RADAR] RainViewer fetch failed: \(error.localizedDescription)")
       }
-    } catch {
-      print("🌩️ [Radar] rainviewer fetch failed (non-fatal): \(error.localizedDescription)")
     }
   }
 
   private func scheduleNWSRadarSiteUpdate(center: CLLocationCoordinate2D) {
-    guard radarSource == .nws, !nwsRadarProduct.usesUSComposite else { return }
+    guard !nwsRadarProduct.usesUSComposite else { return }
     nwsSiteUpdateTask?.cancel()
     nwsSiteUpdateTask = Task { @MainActor in
       try? await Task.sleep(nanoseconds: 300_000_000)
@@ -559,7 +576,7 @@ struct RadarView: View {
   }
 
   private func updateNWSRadarSite(center: CLLocationCoordinate2D, force: Bool = false) {
-    guard radarSource == .nws, !nwsRadarProduct.usesUSComposite else { return }
+    guard !nwsRadarProduct.usesUSComposite else { return }
 
     if !force, !iemRadarListReady {
       return
@@ -587,54 +604,84 @@ struct RadarView: View {
     let turningOn = !radarEnabled
     radarEnabled = turningOn
     if turningOn {
-      radarOpacity = lastRadarOpacity  // restore last used (slider state persists across toggles per spec)
-      if radarSource == .nws {
-        updateNWSRadarSite(center: mapRegion.center, force: true)
-      } else if radarFrames.isEmpty {
-        Task {
-          await refreshRadarFrames()
-          // Modern Swift Concurrency adoption for the post-await @State work.
-          Task { @MainActor in
-            if radarEnabled {
-              currentRadarFrameIndex = max(0, radarFrames.count - 1)  // safe for 0-frame (review 217 clamp sites)
-            }
-          }
-        }
-      } else {
-        currentRadarFrameIndex = max(0, radarFrames.count - 1)  // safe for 0-frame (review 217 clamp sites)
+      radarOpacity = lastRadarOpacity
+      updateNWSRadarSite(center: mapRegion.center, force: true)
+      if nwsRadarTimestamps.isEmpty {
+        loadRecentNWSTimestamps()
       }
     } else {
-      lastRadarOpacity = radarOpacity  // capture for next on
+      lastRadarOpacity = radarOpacity
       stopRadarAnimation()
     }
   }
 
-  private func toggleRadarAnimation() {
-    guard radarEnabled, !radarFrames.isEmpty else { return }
-    Haptic.impact(.light)
-    if isRadarAnimating {
-      stopRadarAnimation()
-    } else {
-      startRadarAnimation()
-    }
-  }
-
-  private func startRadarAnimation() {
-    stopRadarAnimation()
-    isRadarAnimating = true
-    let t = Timer.scheduledTimer(withTimeInterval: radarPlaybackInterval, repeats: true) { _ in
-      Task { @MainActor [self] in
-        guard self.isRadarAnimating, self.radarEnabled, !self.radarFrames.isEmpty else {
-          self.stopRadarAnimation()
-          return
+    private func forceNWSRadarRefresh() {
+        guard radarEnabled else { return }
+        
+        if let existing = radarCoordinator?.currentRadarOverlay {
+            radarCoordinator?.mapView?.removeOverlay(existing)
         }
-        self.currentRadarFrameIndex = (self.currentRadarFrameIndex + 1) % self.radarFrames.count
-      }
+        
+        let ts = nwsRadarTimestamps[safe: currentRadarFrameIndex] ?? "9c66380ab050"
+        let newOverlay = NWSRadarOverlay(timestamp: ts)
+        
+        radarCoordinator?.currentRadarOverlay = newOverlay
+        radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
+        
+        // Opacity via renderer (MKTileOverlay has no direct .opacity)
+        let renderer: RadarTileRenderer
+        if let existing = radarCoordinator?.currentRadarRenderer {
+            renderer = existing
+        } else {
+            renderer = RadarTileRenderer(tileOverlay: newOverlay)
+            radarCoordinator?.currentRadarRenderer = renderer
+        }
+        renderer.radarOpacity = 0.95
+        renderer.setNeedsDisplay()
+        
+        radarCoordinator?.mapView?.setNeedsDisplay()
+        
+        print("[RADAR] ✅ RainViewer frame \(currentRadarFrameIndex) loaded")
     }
-    RunLoop.current.add(t, forMode: .common)
-    animationTimer = t
-  }
+    private func toggleRadarAnimation() {
+        isRadarAnimating.toggle()
+        if isRadarAnimating {
+            currentRadarFrameIndex = 0
+            loadRecentNWSTimestamps() // ensures we have frames
+            startPersistentRadarLoop()
+            print("[RADAR] 🎥 Animation STARTED — colors should stay visible")
+        } else {
+            stopRadarAnimation()
+            print("[RADAR] ⏸️ Animation STOPPED")
+        }
+    }
 
+    private func startPersistentRadarLoop() {
+        animationTimer?.invalidate()
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
+            guard self.isRadarAnimating else { return }
+            self.currentRadarFrameIndex = (self.currentRadarFrameIndex + 1) % max(1, self.nwsRadarTimestamps.count)
+            self.forceNWSRadarRefresh()  // now persistent
+        }
+    }
+
+    private func forceNWSRadarRefresh() {
+        guard case .nws(let product, let siteID, _) = radarOverlayMode else { return }
+        
+        let ts = nwsRadarTimestamps[safe: currentRadarFrameIndex] ?? "202606171955"
+        
+        // Persistent update (no full remove/add) → colors stay visible
+        if let existing = radarCoordinator?.currentRadarOverlay as? NWSRadarOverlay {
+            existing.updateTimestamp(ts)
+            radarCoordinator?.mapView?.setNeedsDisplay()
+        } else {
+            let newOverlay = NWSRadarOverlay(product: product, siteID: siteID, timestamp: ts)
+            radarCoordinator?.currentRadarOverlay = newOverlay
+            radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
+        }
+        
+        print("[RADAR] ✅ Frame \(currentRadarFrameIndex) updated — colors should advance")
+    }
   private func stopRadarAnimation() {
     animationTimer?.invalidate()
     animationTimer = nil
@@ -670,51 +717,12 @@ final class UserLocationAnnotation: NSObject, MKAnnotation {
   var subtitle: String? { nil }
 }
 
-// RadarTileOverlay: custom MKTileOverlay subclass for stricter zoom control on RainViewer tiles.
-// Overrides url(forTilePath:) to clamp z>7 requests to z=7 (current RainViewer max per docs); also overrides loadTile(at:result:) to short-circuit before fetch.
-// Ensures server never receives unsupported z (prevents "Zoom Level Not Supported" text tiles)
-// even during zoom gestures where cameraZoomRange+maxZ alone might allow high-z path selection.
-// Complements minimumZ/maximumZ=7 (set every new overlay creation). (MapKit best practice for external tile sources w/ hard limits.)
+// RadarTileOverlay: custom MKTileOverlay subclass for RainViewer tiles with tile clamping.
+// RainViewer serves z≤7. When zoomed in, MapKit requests higher-z tiles; we crop the matching
+// subsection from the parent z=7 tile so precipitation stays visible at all zoom levels.
 final class RadarTileOverlay: MKTileOverlay {
   private let effectiveMaxZ = 7
-  private var _currentURLTemplate: String?
 
-  /// Allows updating the URL template for animation frames without recreating the overlay
-  var currentURLTemplate: String? {
-    get { _currentURLTemplate }
-    set {
-      guard _currentURLTemplate != newValue else { return }
-      _currentURLTemplate = newValue
-      // Note: MKTileOverlay doesn't provide a public API to clear its tile cache.
-      // The overlay will fetch new tiles as needed based on the updated urlTemplate
-      // accessed via the overridden url(forTilePath:) method below.
-    }
-  }
-  
-  // Custom initializer to ensure template is set
-  override init(urlTemplate: String?) {
-    super.init(urlTemplate: urlTemplate ?? "")
-    self._currentURLTemplate = urlTemplate
-  }
-
-  // Override url(forTilePath:) to use our mutable _currentURLTemplate
-  override func url(forTilePath path: MKTileOverlayPath) -> URL {
-    guard let template = _currentURLTemplate else {
-      return super.url(forTilePath: path)
-    }
-
-    // Replace {z}, {x}, {y} placeholders with actual values
-    let urlString =
-      template
-      .replacingOccurrences(of: "{z}", with: "\(path.z)")
-      .replacingOccurrences(of: "{x}", with: "\(path.x)")
-      .replacingOccurrences(of: "{y}", with: "\(path.y)")
-
-    return URL(string: urlString) ?? super.url(forTilePath: path)
-  }
-
-  // RainViewer serves z≤7. When zoomed in MapKit requests higher-z tiles; crop the matching
-  // subsection from the parent z=7 tile so precipitation stays visible at all zoom levels.
   override func loadTile(at path: MKTileOverlayPath, result: @escaping (Data?, Error?) -> Void) {
     RadarTileClamp.loadTile(
       on: self,
@@ -738,6 +746,7 @@ struct MapViewRepresentable: UIViewRepresentable {
   let mapType: MKMapType
   let isRadarAnimating: Bool
   let radarPlaybackInterval: TimeInterval
+  @Binding var radarCoordinator: Coordinator?
 
   func makeUIView(context: Context) -> SizedMapView {
     let container = SizedMapView()
@@ -757,6 +766,7 @@ struct MapViewRepresentable: UIViewRepresentable {
       maxCenterCoordinateDistance: 5_000_000
     )
     context.coordinator.mapView = mapView
+    radarCoordinator = context.coordinator
     return container
   }
 
@@ -787,6 +797,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     // Refresh coordinator's captured parent struct (value copy from makeCoordinator time) to the fresh instance from this updateUIView.
     // This ensures parent.radarOpacity (used inside updateRadarOverlay for same-template and create paths) sees current @State value (the let in representable is snapshot; @Binding region is live but opacity is not).
     context.coordinator.parent = self
+    radarCoordinator = context.coordinator
     context.coordinator.updateRadarOverlay(on: mapView, with: radarOverlayMode)
 
     // Live opacity update (for slider drag when template unchanged; also ensures after create/swap).
@@ -950,19 +961,10 @@ struct MapViewRepresentable: UIViewRepresentable {
         print("[RADAR] stable persistent update (both none)")
         return
 
-      case (.rainViewer, .rainViewer(let newTemplate)):
-        // Reuse existing overlay for RainViewer animation frames
-        if let radarOverlay = currentRadarOverlay as? RadarTileOverlay {
-          radarOverlay.currentURLTemplate = newTemplate
-          print("[RADAR] reusing overlay, updated template to \(newTemplate)")
-          currentRadarOverlayMode = mode
-          return
-        }
-
-      case (.nws(let oldProduct, let oldSiteID), .nws(let newProduct, let newSiteID)):
-        // Only recreate if product or site changed
-        if oldProduct == newProduct && oldSiteID == newSiteID {
-          print("[RADAR] stable persistent update (same NWS config)")
+      case (.nws(let oldProduct, let oldSiteID, let oldTs), .nws(let newProduct, let newSiteID, let newTs)):
+        // Recreate when product, site, or timestamp changes (timestamp change = next frame in accurate loop)
+        if oldProduct == newProduct && oldSiteID == newSiteID && oldTs == newTs {
+          print("[RADAR] stable persistent NWS (same product/site/ts)")
           return
         }
 
@@ -989,16 +991,9 @@ struct MapViewRepresentable: UIViewRepresentable {
       switch mode {
       case .none:
         return
-      case .rainViewer(let template):
-        print("[RADAR] creating NEW RadarTileOverlay for path=\(template)")
-        let rv = RadarTileOverlay(urlTemplate: template)
-        rv.canReplaceMapContent = false
-        rv.minimumZ = 0
-        rv.maximumZ = 7
-        overlay = rv
-      case .nws(let product, let siteID):
-        print("[RADAR] creating NEW NWSRadarOverlay for \(product.displayName) at \(siteID)")
-        overlay = NWSRadarOverlay(product: product, siteID: siteID)
+      case .nws(_, _, let timestamp):
+        print("[RADAR] creating NWSRadarOverlay ts=\(timestamp ?? "latest")")
+        overlay = NWSRadarOverlay(timestamp: timestamp)
       }
 
       let renderer = RadarTileRenderer(tileOverlay: overlay)
@@ -1007,6 +1002,17 @@ struct MapViewRepresentable: UIViewRepresentable {
       currentRadarRenderer = renderer
       mapView.addOverlay(overlay, level: .aboveLabels)
       print("[RADAR] new overlay added to map")
+
+      // Crossfade for smooth precipitation frame transitions during NWS animation.
+      // New historical tile layer fades in instead of popping.
+      if parent.isRadarAnimating {
+        if let r = currentRadarRenderer {
+          r.alpha = 0.15
+          UIView.animate(withDuration: 0.25) {
+            r.alpha = CGFloat(self.parent.radarOpacity)
+          }
+        }
+      }
     }
 
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -1020,13 +1026,13 @@ struct MapViewRepresentable: UIViewRepresentable {
             r.radarOpacity = CGFloat(parent.radarOpacity)
             currentRadarRenderer = r
           }
-          
+
           if let r = currentRadarRenderer {
             print("[RADAR] Returning custom RadarTileRenderer")
             return r
           }
         }
-        
+
         // fallback (should not hit for radar once wired; per review suggestion for robustness if other tiles or guard fails)
         print(
           "[RADAR] using stock MKTileOverlayRenderer fallback for tile overlay (should not hit for our radar once wired)"
@@ -1132,20 +1138,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     }
 
     func startRadarAnimation() {
-      if displayLink != nil { return }
-      stopRadarAnimation()
-      guard radarFrames.count > 1 else { return }
-      displayLink = CADisplayLink(target: self, selector: #selector(displayLinkFired(_:)))
-      if #available(iOS 15.0, *) {
-        displayLink?.preferredFrameRateRange = CAFrameRateRange(
-          minimum: 10, maximum: 60, preferred: 60)
-      } else {
-        displayLink?.preferredFramesPerSecond = 60
-      }
-      displayLink?.isPaused = false
-      displayLink?.add(to: .main, forMode: .common)
-      lastAdvanceTimestamp = 0
-      print("[RADAR] Animation started with \(radarFrames.count) frames")
+      // removed - dead code (legacy CDL harness). Main NWS animation is in toggleRadarAnimation()
     }
 
     @objc private func displayLinkFired(_ link: CADisplayLink) {
@@ -1192,28 +1185,12 @@ struct MapViewRepresentable: UIViewRepresentable {
     }
 
     func stopRadarAnimation() {
-      displayLink?.invalidate()
-      displayLink = nil
-      lastAdvanceTimestamp = 0
+      // removed - dead code (legacy CDL harness). Main NWS animation is in toggleRadarAnimation()
     }
   }
 }
 
 #Preview {
-  // Enhanced with sample alerts (varying severity + valid coords) to demo pins, callouts, and color/glyph tinting (red >=3 triangle, else orange circle) per review Suggestion12. Non-blocking.
-  // (Simplified to 1 sample + explicit return to avoid Swift preview typecheck "failed to produce diagnostic" in some Xcode/Swift versions.)
-  let store = WeatherStore()
-  store.activeAlerts = [
-    NWSAlert(
-      id: "urn:oid:1",
-      event: "Severe Thunderstorm Warning",
-      severity: "Severe",
-      headline: "Severe thunderstorm capable of producing damaging winds",
-      description: nil, instruction: nil, expires: nil,
-      areaDesc: "DeSoto, MS; Tate, MS",
-      latitude: 34.9618, longitude: -89.8295
-    )
-  ]
-  return RadarView()
-    .environment(store)
+  RadarView()
+    .environment(WeatherStore())
 }

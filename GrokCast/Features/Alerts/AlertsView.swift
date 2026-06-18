@@ -19,7 +19,16 @@ struct AlertsView: View {
   var body: some View {
     NavigationStack {
       Group {
-        if activeAlerts.isEmpty && historicalAlerts.isEmpty {
+        if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty {
+          // --skeletons: shimmer for NWS primary loading states (Today, Forecast, Alerts)
+          VStack(spacing: 8) {
+            ForEach(0..<3, id: \.self) { _ in
+              ShimmerBlock(width: nil, height: 52, cornerRadius: 10)
+                .padding(.horizontal, 4)
+            }
+          }
+          .padding(.top, 20)
+        } else if activeAlerts.isEmpty && historicalAlerts.isEmpty {
           emptyState
         } else {
           alertsList

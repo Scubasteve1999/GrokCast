@@ -101,7 +101,11 @@ final class NWSService {
   /// Uses the exact flow from the NWS hybrid plan: /points -> first observationStation -> /observations/latest.
   func fetchLatestObservation(for location: SavedLocation) async throws -> NWSObservation? {
     // 1. Get points for the lat/lon to discover observation stations
-    let pointsURL = URL(string: "\(baseURL)/points/\(location.latitude),\(location.longitude)")!
+    guard
+      let pointsURL = URL(string: "\(baseURL)/points/\(location.latitude),\(location.longitude)")
+    else {
+      return nil
+    }
     var pointsRequest = URLRequest(url: pointsURL)
     pointsRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     pointsRequest.timeoutInterval = 15
@@ -165,7 +169,9 @@ final class NWSService {
     let firstStationURL = firstStation.id  // e.g. https://api.weather.gov/stations/KOLV
 
     // 2. Fetch latest observation for that station
-    let obsURL = URL(string: "\(firstStationURL)/observations/latest")!
+    guard let obsURL = URL(string: "\(firstStationURL)/observations/latest") else {
+      return nil
+    }
     var obsRequest = URLRequest(url: obsURL)
     obsRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     obsRequest.timeoutInterval = 15
@@ -253,6 +259,219 @@ final class NWSService {
       windDirectionDegrees: windDir
     )
   }
+
+  // MARK: - Primary forecast via NWS grid system (location-aware, --grid-system --primary-source)
+  // Exact flow: /points/{lat,lon} -> gridId/X/Y -> /gridpoints/{office}/{x},{y}/forecast
+  // Returns mapped to existing GrokCastWeather (no struct changes, Date ids preserved)
+  private func fetchPoints(for location: SavedLocation) async throws -> NWSPointsResponse {
+    guard
+      let pointsURL = URL(string: "\(baseURL)/points/\(location.latitude),\(location.longitude)")
+    else {
+      throw NWSServiceError.invalidURL
+    }
+    var pointsRequest = URLRequest(url: pointsURL)
+    pointsRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+    pointsRequest.timeoutInterval = 15
+
+    let (pointsData, pointsResponse) = try await URLSession.shared.data(for: pointsRequest)
+    guard let pointsHTTP = pointsResponse as? HTTPURLResponse else {
+      throw NWSServiceError.networkError
+    }
+    if !(200...299).contains(pointsHTTP.statusCode) {
+      let body = String(data: pointsData, encoding: .utf8) ?? ""
+      throw NWSServiceError.httpError(pointsHTTP.statusCode, body)
+    }
+    return try JSONDecoder().decode(NWSPointsResponse.self, from: pointsData)
+  }
+
+  func fetchForecast(for location: SavedLocation) async throws -> GrokCastWeather {
+    try Task.checkCancellation()
+
+    // 1. /points (shared helper for dupe reduction) to discover grid (location-aware)
+    let points = try await fetchPoints(for: location)
+
+    // Strictly use grid fields to construct (exact spec, no direct forecast shortcut)
+    guard let gid = points.properties.gridId,
+      let gx = points.properties.gridX,
+      let gy = points.properties.gridY
+    else {
+      throw NWSServiceError.invalidURL
+    }
+    guard let fURL = URL(string: "\(baseURL)/gridpoints/\(gid)/\(gx),\(gy)/forecast") else {
+      throw NWSServiceError.invalidURL
+    }
+
+    var fRequest = URLRequest(url: fURL)
+    fRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+    fRequest.timeoutInterval = 15
+
+    let (fData, fResp) = try await URLSession.shared.data(for: fRequest)
+    guard let fHTTP = fResp as? HTTPURLResponse else {
+      throw NWSServiceError.networkError
+    }
+
+    if !(200...299).contains(fHTTP.statusCode) {
+      let body = String(data: fData, encoding: .utf8) ?? ""
+      throw NWSServiceError.httpError(fHTTP.statusCode, body)
+    }
+
+    let decoder = JSONDecoder()
+    let forecastResp: NWSForecastResponse
+    do {
+      forecastResp = try decoder.decode(NWSForecastResponse.self, from: fData)
+    } catch {
+      throw error
+    }
+
+    return try mapNWSForecastResponse(location: location, response: forecastResp)
+  }
+
+  private func mapNWSForecastResponse(location: SavedLocation, response: NWSForecastResponse)
+    throws -> GrokCastWeather
+  {
+    let periods = response.properties.periods
+    guard !periods.isEmpty else {
+      throw NWSServiceError.noData
+    }
+
+    let first = periods[0]
+    let currentTemp = Double(first.temperature ?? 0)
+    let isDay = first.isDaytime
+    let wcode = wmoCode(fromNWSShortForecast: first.shortForecast ?? "")
+    let (symbol, text) = mapWeatherCode(wcode, isDay: isDay)
+
+    // wind parse (optional)
+    var windSpeed: Double = 0
+    if let ws = first.windSpeed {
+      let parts = ws.split(separator: " ")
+      if let n = Double(parts.first ?? "") { windSpeed = n }
+    }
+
+    // hourly: map available periods (NWS /forecast gives ~14; UI accepts variable count, use startTime as stable Date id)
+    var hourlyForecasts: [HourlyForecast] = []
+    for p in periods.prefix(24) {
+      let time = parseNWSDate(p.startTime) ?? Date()
+      let tempD = Double(p.temperature ?? 0)
+      let pwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
+      let (sym, _) = mapWeatherCode(pwcode, isDay: p.isDaytime)
+      let pChance = shortForecastMentionsPrecip(p.shortForecast ?? "") ? 40 : 0
+      hourlyForecasts.append(
+        HourlyForecast(
+          time: time,
+          temp: tempD,
+          precipChance: pChance,
+          weatherCode: pwcode,
+          symbolName: sym,
+          rain: nil,
+          showers: nil,
+          snowfall: nil
+        )
+      )
+    }
+
+    // daily: simplified index-based pairing of daytime + optional following night (robust to varying NWS period counts)
+    var dailyForecasts: [DailyForecast] = []
+    for i in 0..<periods.count where dailyForecasts.count < 10 {
+      let p = periods[i]
+      if p.isDaytime {
+        let high = Double(p.temperature ?? 0)
+        var low = high - 10.0
+        let dDate = parseNWSDate(p.startTime) ?? Date()
+        if i + 1 < periods.count {
+          let np = periods[i + 1]
+          if !np.isDaytime {
+            low = Double(np.temperature ?? Int(low))
+          }
+        }
+        let dwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
+        let (sym, _) = mapWeatherCode(dwcode, isDay: true)
+        let pChance = shortForecastMentionsPrecip(p.shortForecast ?? "") ? 40 : 0
+        dailyForecasts.append(
+          DailyForecast(
+            date: dDate,
+            high: high,
+            low: low,
+            precipChance: pChance,
+            weatherCode: dwcode,
+            symbolName: sym,
+            uvMax: nil,
+            rainSum: nil,
+            showersSum: nil,
+            snowfallSum: nil
+          )
+        )
+      }
+    }
+    if dailyForecasts.isEmpty {
+      let dwcode = wmoCode(fromNWSShortForecast: first.shortForecast ?? "")
+      let (sym, _) = mapWeatherCode(dwcode, isDay: true)
+      dailyForecasts.append(
+        DailyForecast(
+          date: Date(), high: currentTemp + 5, low: currentTemp - 5,
+          precipChance: 0, weatherCode: dwcode, symbolName: sym,
+          uvMax: nil, rainSum: nil, showersSum: nil, snowfallSum: nil
+        )
+      )
+    }
+
+    let high = dailyForecasts.first?.high ?? currentTemp + 5
+    let low = dailyForecasts.first?.low ?? currentTemp - 5
+    let precip = hourlyForecasts.first?.precipChance ?? 0
+
+    // Note: NWS periods mapped to existing models with approximations (e.g. humidity/UV/wind as best-effort; no amounts; ~14 slots for hourly). Matches map-to-existing without model changes.
+    return GrokCastWeather(
+      location: location,
+      currentTemp: currentTemp,
+      feelsLike: currentTemp,
+      conditionCode: wcode,
+      conditionText: text,
+      humidity: 50,
+      windSpeed: windSpeed,
+      uvIndex: 3.0,
+      precipitationChance: precip,
+      high: high,
+      low: low,
+      symbolName: symbol,
+      fetchedAt: Date(),
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: hourlyForecasts,
+      daily: dailyForecasts
+    )
+  }
+
+  private func parseNWSDate(_ string: String) -> Date? {
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let d = iso.date(from: string) { return d }
+    iso.formatOptions = [.withInternetDateTime]
+    return iso.date(from: string)
+  }
+
+  private func shortForecastMentionsPrecip(_ short: String) -> Bool {
+    let s = short.lowercased()
+    return s.contains("rain") || s.contains("snow") || s.contains("shower") || s.contains("drizzle")
+      || s.contains("storm") || s.contains("precip")
+  }
+
+  // Centralized error mapping for NWS (mirrors OpenMeteoService for consistency with --error-handling)
+  static func userFriendlyMessage(for error: Error) -> String {
+    if let nwsErr = error as? NWSServiceError {
+      switch nwsErr {
+      case .noData:
+        return "NWS forecast data unavailable for this location."
+      case .invalidURL:
+        return "Invalid location for NWS forecast."
+      case .networkError:
+        return "Network error contacting NWS."
+      case .httpError(let code, _):
+        if code == 404 { return "NWS data not available (location may be outside supported area)." }
+        return "NWS service temporarily unavailable (error \(code)). Tap RETRY."
+      }
+    }
+    return OpenMeteoService.userFriendlyMessage(for: error)
+  }
 }
 
 // MARK: - Errors (non-fatal at call sites)
@@ -261,6 +480,7 @@ enum NWSServiceError: Error, LocalizedError {
   case invalidURL
   case networkError
   case httpError(Int, String)
+  case noData
 
   var errorDescription: String? {
     switch self {
@@ -270,6 +490,8 @@ enum NWSServiceError: Error, LocalizedError {
       return "Network error contacting NWS"
     case .httpError(let code, let body):
       return "NWS HTTP \(code): \(body.prefix(200))"
+    case .noData:
+      return "No NWS forecast periods available"
     }
   }
 }

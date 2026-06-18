@@ -93,6 +93,7 @@ final class WeatherStore {
   }
 
   let locationService = LocationService()
+  private let weatherKit = WeatherService()
   private let openMeteo = OpenMeteoService()
   private let nwsService = NWSService()
 
@@ -110,7 +111,7 @@ final class WeatherStore {
   private let savedLocationsKey = "grokcast_saved_locations"
   private let hasRequestedLocationPermissionKey = "grokcast_has_requested_location_permission"
 
-  // NWS hybrid (alerts + observations; additive, US-only, never affects Open-Meteo/GrokCastWeather)
+  // NWS: primary for GrokCastWeather via grid (--primary-source --grid-system); alerts/obs remain additive hybrid US-only non-fatal
   var activeAlerts: [NWSAlert] = []
   var alertHistory: [NWSAlert] = []
   private var lastAlertsFetch: Date?
@@ -493,22 +494,31 @@ final class WeatherStore {
     weatherError = nil
 
     do {
-      let data = try await openMeteo.fetchForecast(for: loc)
+      // --primary-source --update-weatherstore: NWS grid primary (location-aware) for forecast; alerts/obs remain prior additive hybrid non-fatal. OpenMeteo fallback for non-US/errors.
+      let data: GrokCastWeather
+      do {
+        data = try await nwsService.fetchForecast(for: loc)
+      } catch {
+        data = try await openMeteo.fetchForecast(for: loc)
+      }
       currentWeather = data
       persistWidgetSnapshot(from: data)
       // TODO: Cache to SwiftData here
 
       // Fire-and-forget NWS alerts + observation refresh for normal paths (Today/Forecast refresh).
       // Explicit "use my position" and Storm Spotter force paths await directly.
-      Task { await refreshAlerts() }
-      Task { await refreshNWSObservation() }
+      // (combined Task to reduce accumulating dispatches)
+      Task {
+        await refreshAlerts()
+        await refreshNWSObservation()
+      }
     } catch {
       // Prefer explicit offline message when we know there's no connection (proactive via monitor).
       // Otherwise fall back to the (now centralized in service too) friendly mapper.
       weatherError =
         isOffline
         ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
-        : OpenMeteoService.userFriendlyMessage(for: error)
+        : NWSService.userFriendlyMessage(for: error)
     }
     isLoadingWeather = false
   }

@@ -241,6 +241,11 @@ struct NWSPointsResponse: Decodable {
 
 struct NWSPointsProperties: Decodable {
   let observationStations: String  // URL to the stations collection (e.g. /gridpoints/.../stations) - not an array anymore
+  // Grid fields for --grid-system / --primary-source (optional for tolerant non-US + obs compatibility)
+  let gridId: String?
+  let gridX: Int?
+  let gridY: Int?
+  let forecast: String?  // direct /forecast URL (often grid equivalent); impl derives strictly from grid* for exact flow
 }
 
 struct NWSObservationResponse: Decodable {
@@ -287,4 +292,28 @@ struct NWSStationsResponse: Decodable {
 
 struct NWSStationFeature: Decodable {
   let id: String  // full station URL, e.g. https://api.weather.gov/stations/KOLV
+}
+
+// MARK: - NWS Grid Forecast response models (tolerant decoders for /gridpoints/.../forecast ; periods drive mapping to existing models)
+struct NWSForecastResponse: Decodable {
+  let properties: NWSForecastProperties
+}
+
+struct NWSForecastProperties: Decodable {
+  let periods: [NWSForecastPeriod]
+}
+
+struct NWSForecastPeriod: Decodable {
+  let number: Int
+  let name: String
+  let startTime: String
+  let endTime: String
+  let isDaytime: Bool
+  let temperature: Int?
+  let temperatureUnit: String?
+  let windSpeed: String?
+  let windDirection: String?
+  let icon: String?
+  let shortForecast: String?
+  let detailedForecast: String?
 }
