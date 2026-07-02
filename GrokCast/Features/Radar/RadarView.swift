@@ -31,13 +31,17 @@ struct RadarView: View {
       .task {
         await store.refreshAlerts()
         let center = store.currentLocation?.coordinate ?? defaultMapCenter
-        await radarState.loadDefaultRadar(for: center)
+        await radarState.reloadIfStale(for: center)
         if store.selectedTab == .radar, radarState.showContent {
           radarState.start()
         }
       }
       .task(id: store.selectedTab) {
         if store.selectedTab == .radar {
+          // Re-entering Radar after a long idle rebuilds stale frames so FUTURE
+          // reflects the provider's newest run; a quick switch is a no-op.
+          let center = store.currentLocation?.coordinate ?? defaultMapCenter
+          await radarState.reloadIfStale(for: center)
           autoCenterIfAuthorized()
           if radarState.showContent {
             radarState.start()

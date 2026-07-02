@@ -66,6 +66,12 @@ final class RadarState {
   /// Drops stale async site resolutions when the location changes again mid-flight.
   private var siteResolutionToken = UUID()
 
+  /// When the composite timeline was last (re)built. Frames encode relative
+  /// offsets, so on re-entry after a long gap the forecast/labels drift from
+  /// the provider's newest run — reload past this age to stay current.
+  private var lastLoadedAt: Date?
+  private static let staleReloadThreshold: TimeInterval = 15 * 60
+
   private let loader = RadarLoader()
   var playback = RadarPlayback()
   private var manualIsLoading = false
@@ -372,6 +378,15 @@ extension RadarState {
     print("[RadarState] \(product.displayName) moved to NWS \(site.id) (\(frames.count) scans)")
   }
 
+  /// Rebuild the timeline only if the last load is stale (or never happened).
+  /// Cheap no-op on quick tab switches; refreshes after a long idle session.
+  func reloadIfStale(for coordinate: CLLocationCoordinate2D) async {
+    if let lastLoadedAt, Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold {
+      return
+    }
+    await loadDefaultRadar(for: coordinate)
+  }
+
   func loadDefaultRadar(for coordinate: CLLocationCoordinate2D) async {
     _ = coordinate  // Site resolution tracks the selected location (updateNearestSite).
     guard !isLoading else { return }
@@ -412,6 +427,7 @@ extension RadarState {
       print("[RadarState] Forecast timeline unavailable")
     }
 
+    lastLoadedAt = Date()
     isLoading = false
   }
 }
