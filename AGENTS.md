@@ -4,7 +4,7 @@ This document governs all AI agent (Grok) work on the GrokCast iOS project.
 
 ## Project Overview
 
-**GrokCast** is a premium-feeling native SwiftUI iOS weather app that pairs Apple WeatherKit with xAI's Grok models for delightful, contextual AI weather experiences ("Grok's Take", outfit advice, activity suggestions, free chat).
+**GrokCast** is a premium-feeling native SwiftUI iOS weather app that pairs Open-Meteo (primary) + NWS hybrid with xAI's Grok models for delightful, contextual AI weather experiences ("Grok's Take", outfit advice, activity suggestions, free chat).
 
 Core pillars:
 - Beautiful, dark, typographic-heavy weather UI (Today hero + forecasts)
@@ -58,7 +58,7 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
 - **SwiftUI + Observation** (`@Observable`, `@State`, `@Environment`)
 - All business logic and API calls live in `Shared/Services/`
 - Views live in `Features/<Feature>/<Feature>View.swift`
-- Keep WeatherKit types mostly wrapped or lightly extended (see WeatherModels.swift)
+- Weather models are GrokCastWeather (from OpenMeteo/NWS) 
 - xAI integration is deliberately simple URLSession — do not introduce heavy networking libs unless justified
 - Dark mode first. Gradients, large numbers, SF Symbols, and subtle materials.
 - Haptics via the tiny `Haptic` helper when actions succeed
@@ -69,17 +69,17 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
 - `*Store.swift` for the central observable state holder
 - Feature views end in `View.swift`
 
-## xAI + WeatherKit Specifics
+## xAI + Data Specifics
 
 - xAI endpoint: `https://api.x.ai/v1/chat/completions` (OpenAI compatible)
 - Default model: `grok-3-mini` (fast). Upgrade to `grok-3` when responses need more depth.
 - Always inject current weather as a strong system prompt for best results.
 - API key handling: Currently UserDefaults (fine for prototype). Production → Keychain + SecureField.
-- WeatherKit capability + entitlements already configured in project.yml.
+- No WeatherKit; uses OpenMeteo + NWS.
 
 ## Common Gotchas
 
-1. **WeatherKit on Simulator**: Works without paid Apple dev account for development.
+1. **Simulator testing**: Location + Open-Meteo works without paid account.
 2. **Location permission**: Both "When In Use" descriptions are in Info.plist.
 3. **After adding files**: If Xcode complains about missing files, regenerate with xcodegen or add manually in the navigator.
 4. **API key not persisting?** Check UserDefaults in the simulator.

@@ -1,5 +1,16 @@
 import SwiftUI
 
+// Follows GrokCast Design System v1 exactly (see /DesignSystem.md at project root).
+// Colors via DesignTokens.Palette, spacing/radius/shadows per spec.
+// IA: large hero (icon left of dominant temp + prominent FEELS LIKE) + dedicated TONIGHT'S WEATHER + clean 2-col grid.
+
+// Shared bottom clearance for Today tab states (data, skeleton, non-scroll) to clear
+// the custom tab bar on .compact (iPhone) incl. large phones like iPhone 16 Pro Max.
+// Using space32 (vs prior space24) to guarantee the refresh button, last shimmer,
+// and centered cards are fully above the ~60-65pt CustomTabBar + home indicator.
+private let bottomTabClearance = DesignTokens.Spacing.space32
+private let topChromeClearance = DesignTokens.Spacing.space48 + 72
+
 struct TodayView: View {
   @Environment(WeatherStore.self) private var store
 
@@ -20,12 +31,11 @@ struct TodayView: View {
   var body: some View {
     NavigationStack {
       ZStack {
-        WeatherBackgroundView(
+        DynamicWeatherBackground(
           conditionCode: store.currentWeather?.conditionCode,
           isDay: store.currentWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay,
-          intensity: .full
+          } ?? WeatherBackgroundView.inferredIsDay
         )
         .ignoresSafeArea()
 
@@ -38,9 +48,11 @@ struct TodayView: View {
           // transition to the normal Today UI. Build directly on the welcome state added
           // in empty-states work; uses identical TacticalCard styling + Haptic.
           firstLaunchWelcome()
+            .padding(.bottom, bottomTabClearance)
         } else if !(status == .authorizedWhenInUse || status == .authorizedAlways) {
           LocationPermissionView()
-        } else if store.isLoadingWeather || store.locationService.isLoading {  // --skeletons: shimmer for NWS primary loading states (Today, Forecast, Alerts)
+            .padding(.bottom, bottomTabClearance)
+        } else if store.isLoadingWeather || store.locationService.isLoading {
           TodaySkeleton()
         } else if let w = weather {
           ScrollView {
@@ -49,9 +61,9 @@ struct TodayView: View {
               isGeneratingImage: isGeneratingImage,
               generateImageAction: generateImageForToday
             )
-            .padding(.horizontal, 20)
-            .padding(.top, 80)
-            .padding(.bottom, 60)
+            .padding(.horizontal, DesignTokens.Spacing.space20)
+            .padding(.top, topChromeClearance)  // tab bar + safe area (non-DS chrome clearance)
+            .padding(.bottom, bottomTabClearance)  // bottom clearance for CustomTabBar on compact + large phones (guarantees vs ~65pt tab)
             .adaptiveContainerWidth(AdaptiveLayout.contentCap)
           }
           .refreshable {
@@ -74,7 +86,7 @@ struct TodayView: View {
                     .tint(.white)
                   Text("ACQUIRING...")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignTokens.Palette.textTertiary)
                 }
               } else if store.weatherError != nil
                 && !(store.locationService.isLoading || store.isLoadingWeather)
@@ -85,10 +97,10 @@ struct TodayView: View {
                   Image(
                     systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill"
                   )
-                  .foregroundStyle(.red)
+                  .foregroundStyle(DesignTokens.Palette.danger)
                   Text(store.weatherError ?? "")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DesignTokens.Palette.danger)
                     .lineLimit(2)
                   Spacer(minLength: 8)
                   Button("Retry") {
@@ -97,11 +109,11 @@ struct TodayView: View {
                   }
                   .font(.caption.bold())
                   .buttonStyle(.bordered)
-                  .tint(.red)
+                  .tint(DesignTokens.Palette.danger)
                   .controlSize(.small)
                 }
                 .padding(8)
-                .background(Color.red.opacity(0.08))
+                .background(DesignTokens.Palette.danger.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
               } else {
                 Button("USE MY POSITION") {
@@ -109,18 +121,19 @@ struct TodayView: View {
                   Task { await store.useCurrentDeviceLocation() }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.indigo.opacity(0.7))
+                .tint(DesignTokens.Palette.accent)
               }
             }
             // TacticalCard-inspired styling for the actions container (pure empty or error state).
             .padding(16)
-            .background(Color.white.opacity(0.06))
+            .background(DesignTokens.Palette.cardBackground)
             .overlay(
               RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
           }
+          .padding(.bottom, bottomTabClearance)
         }
       }
       .navigationTitle("")
@@ -181,14 +194,15 @@ struct TodayView: View {
       VStack(spacing: 20) {
         Image(systemName: "sun.max")
           .font(.system(size: 48))
-          .foregroundStyle(.secondary)
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
         Text("Welcome to GrokCast")
           .font(.title2.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(
           "Your AI-powered weather companion. Get accurate, localized forecasts with smart insights."
         )
         .font(.callout)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
         .multilineTextAlignment(.center)
         .padding(.horizontal, 8)
         Button("Get Started") {
@@ -196,15 +210,14 @@ struct TodayView: View {
           showPermissionExplanation = true
         }
         .buttonStyle(.borderedProminent)
-        .tint(.indigo.opacity(0.7))
+        .tint(DesignTokens.Palette.accent)
       }
-      .padding(16)
-      .background(Color.white.opacity(0.06))
-      .overlay(
-        RoundedRectangle(cornerRadius: 14)
-          .stroke(Color.white.opacity(0.1), lineWidth: 1)
+      .padding(DesignTokens.Spacing.space16)
+      .cardStyle(
+        background: DesignTokens.Palette.cardBackground,
+        stroke: DesignTokens.Palette.cardStroke,
+        cornerRadius: DesignTokens.Card.cornerRadiusMedium
       )
-      .clipShape(RoundedRectangle(cornerRadius: 14))
       .padding(.horizontal, 20)
       .readableContentWidth(ReadableContentWidth.compact)
       Spacer()
@@ -223,15 +236,16 @@ struct TodayView: View {
     VStack(spacing: 20) {
       Image(systemName: "location.fill")
         .font(.system(size: 48))
-        .foregroundStyle(.white)
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
       VStack(spacing: 12) {
         Text("GrokCast uses your location to show accurate weather forecasts for where you are.")
           .font(.body)
           .multilineTextAlignment(.center)
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text("Your location is only used for weather — we don’t track or store it.")
           .font(.body)
           .multilineTextAlignment(.center)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Button("Continue") {
         Haptic.impact(.medium)
@@ -240,7 +254,7 @@ struct TodayView: View {
         showPermissionExplanation = false
       }
       .buttonStyle(.borderedProminent)
-      .tint(.indigo.opacity(0.7))
+      .tint(DesignTokens.Palette.accent)
     }
     .padding(24)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -280,19 +294,33 @@ private struct TodayWeatherPanel: View {
   }
 
   var body: some View {
-    VStack(spacing: 32) {
+    VStack(spacing: DesignTokens.Spacing.space48) {
       header
+
+      // Minutecast-style banner outside hero for better AccuWeather-like IA/layering
+      if weather.precipitationChance < 20 {
+        Text("No precipitation for at least 60 min")
+          .font(.caption.weight(.medium))
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .padding(.vertical, DesignTokens.Spacing.space8)
+          .frame(maxWidth: .infinity)
+          .background(DesignTokens.Palette.cardElevated.opacity(0.6))
+          .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
+      }
 
       if !store.displayableActiveAlerts.isEmpty {
         alertsSection
       }
 
       if !awaitsWidthMeasurement && prefersTwoColumnLayout {
-        HStack(alignment: .top, spacing: 20) {
-          heroCard
-            .frame(maxWidth: .infinity)
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
+          VStack(spacing: DesignTokens.Spacing.space16) {
+            heroCard
+            tonightSection
+          }
+          .frame(maxWidth: .infinity)
 
-          VStack(spacing: 20) {
+          VStack(spacing: DesignTokens.Spacing.space24) {
             tacticalDetailsGrid
             GrokImagineButton(
               weather: weather,
@@ -304,12 +332,16 @@ private struct TodayWeatherPanel: View {
         }
       } else {
         heroCard
+        tonightSection
+          .padding(.top, DesignTokens.Spacing.space4)
         tacticalDetailsGrid
+          .padding(.top, DesignTokens.Spacing.space16)
         GrokImagineButton(
           weather: weather,
           isGenerating: isGeneratingImage,
           action: generateImageAction
         )
+        .padding(.top, DesignTokens.Spacing.space8)
       }
 
       errorBanner
@@ -323,66 +355,156 @@ private struct TodayWeatherPanel: View {
           .tracking(1.5)
       }
       .buttonStyle(.bordered)
-      .tint(.white.opacity(0.6))
-      .padding(.top, 12)
+      .tint(DesignTokens.Palette.textSecondary)
+      .padding(.top, DesignTokens.Spacing.space16)
     }
   }
 
+  // DesignSystem v1 header (location + date, uppercase labels per scale).
   private var header: some View {
-    HStack(alignment: .top) {
-      VStack(alignment: .leading, spacing: 2) {
+    HStack {
+      Text("GrokCast")
+        .font(.largeTitle.bold())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+      Spacer()
+      VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
         Text((store.currentLocation?.name ?? "—").uppercased())
-          .font(.system(size: 15, weight: .heavy, design: .rounded))
-          .tracking(2)
-          .foregroundStyle(.white.opacity(0.9))
-
+          .font(.system(size: DesignTokens.Spacing.space16, weight: .heavy, design: .rounded))
+          .tracking(DesignTokens.Typography.headerTracking)
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
         Text(Date.now, format: .dateTime.weekday(.wide).month(.abbreviated).day())
           .font(.caption.weight(.medium))
-          .foregroundStyle(.secondary)
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       Spacer()
-
       Text("\(weather.fetchedAt, format: .dateTime.hour().minute())")
         .font(.caption2.monospaced())
-        .foregroundStyle(.secondary)
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
     }
   }
 
   private var heroCard: some View {
-    VStack(spacing: 8) {
-      Image(systemName: weather.symbolName)
-        .font(.system(size: 72))
-        .foregroundStyle(.white)
-        .symbolEffect(.pulse, options: .repeating)
+    // DesignSystem v1: Hero card. DesignTokens.Card.cornerRadiusLarge for prominence, space20 internal padding.
+    // Dominant temperature + icon grouped with layoutPriority + aggressive scale factor to prevent
+    // truncation (e.g. "7..."). Icon left of temp, RealFeel right (or wraps gracefully). Tokens everywhere.
+    // Matches recent Radar control panel token discipline + TacticalCard patterns.
+    VStack(spacing: DesignTokens.Spacing.space4) {
+      HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
+        // Icon + dominant temp: temp gets priority and can scale down before other elements clip it.
+        HStack(alignment: .center, spacing: DesignTokens.Spacing.space8) {
+          Image(systemName: weather.symbolName)
+            .font(.system(size: 42))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .symbolRenderingMode(.hierarchical)
 
-      Text("\(Int(round(weather.currentTemp)))°")
-        .font(.system(size: 108, weight: .black, design: .rounded))
-        .foregroundStyle(.white)
-        .monospacedDigit()
-
-      Text(weather.conditionText.uppercased())
-        .font(.title3.weight(.bold))
-        .tracking(3)
-        .foregroundStyle(.white.opacity(0.85))
-
-      HStack(spacing: 28) {
-        VStack {
-          Text("HIGH").font(.caption2.weight(.medium)).foregroundStyle(.secondary)
-          Text("\(Int(round(weather.high)))°").font(.title2.weight(.semibold))
+          Text("\(Int(round(weather.currentTemp)))°")
+            .font(.system(size: 92, weight: .black, design: .rounded))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .monospacedDigit()
+            .lineLimit(1)
+            .allowsTightening(true)
+            .minimumScaleFactor(0.5)
         }
-        VStack {
-          Text("LOW").font(.caption2.weight(.medium)).foregroundStyle(.secondary)
-          Text("\(Int(round(weather.low)))°").font(.title2.weight(.semibold))
+        .layoutPriority(1)
+        .minimumScaleFactor(0.5)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+
+        Spacer(minLength: DesignTokens.Spacing.space8)
+
+        VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
+          Text("RealFeel")
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+          Text("\(Int(round(weather.feelsLike)))°")
+            .font(.system(size: DesignTokens.Spacing.space20, weight: .bold))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
         }
       }
-      .foregroundStyle(.white)
+
+      Text(weather.conditionText.uppercased())
+        .font(.system(size: DesignTokens.Spacing.space20, weight: .semibold))
+        .tracking(DesignTokens.Typography.headerTracking)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .padding(.top, DesignTokens.Spacing.space4)
+        .lineLimit(1)
     }
-    .padding(.vertical, 24)
+    .padding(.vertical, DesignTokens.Spacing.space20)
+    .padding(.horizontal, DesignTokens.Spacing.space20)
     .frame(maxWidth: .infinity)
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
+    .elevatedCardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusLarge
+    )
+  }
+
+  private var tonightSection: some View {
+    // DesignSystem v1: Dedicated TONIGHT'S WEATHER block. DesignTokens.Card.cornerRadius, space20 padding,
+    // premium shadow. Low/High with accent icons. Dynamic short desc.
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text("TONIGHT'S WEATHER")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+
+      HStack(spacing: DesignTokens.Spacing.space20) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
+          HStack(spacing: DesignTokens.Spacing.space8) {
+            Image(systemName: "moon.stars.fill")
+              .font(.title3)
+              .foregroundStyle(DesignTokens.Palette.accentCool)
+            Text("Low \(Int(round(weather.low)))°")
+              .font(.title2.weight(.bold))
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+          }
+          Text(tonightDescription)
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+        }
+
+        Spacer()
+
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
+          HStack(spacing: DesignTokens.Spacing.space8) {
+            Image(systemName: "sun.max.fill")
+              .font(.title3)
+              .foregroundStyle(DesignTokens.Palette.accentWarm)
+            Text("High \(Int(round(weather.high)))°")
+              .font(.title2.weight(.bold))
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+          }
+          Text("Tomorrow")
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+        }
+      }
+    }
+    .padding(.vertical, DesignTokens.Spacing.space20)
+    .padding(.horizontal, DesignTokens.Spacing.space20)
+    .frame(maxWidth: .infinity)
+    .elevatedCardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadius
+    )
+  }
+
+  private var tonightDescription: String {
+    let p = weather.precipitationChance
+    if p >= 50 { return "Rain or showers likely" }
+    if p >= 20 { return "Slight chance of precip" }
+    let c = weather.conditionText.lowercased()
+    if c.contains("clear") || c.contains("sun") { return "Clear skies" }
+    if c.contains("cloud") { return "Mostly cloudy" }
+    if c.contains("rain") || c.contains("storm") || c.contains("drizzle") {
+      return "Wet conditions"
+    }
+    return "Clearing overnight"
   }
 
   private var tacticalDetailsGrid: some View {
+    // DesignSystem v1: Clean 2-col condition grid. DesignTokens.Spacing.space20. No duplicate FEELS LIKE (shown in hero).
+    // Cards use .tacticalCard() + elevated shadow per spec.
     let precipValue: String = {
       let c = weather.precipitationChance
       if let d0 = weather.daily.first {
@@ -395,74 +517,89 @@ private struct TodayWeatherPanel: View {
       return "\(c)%"
     }()
 
-    return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-      TacticalCard(
-        label: "FEELS LIKE", value: "\(Int(round(weather.feelsLike)))°", icon: "thermometer.medium")
+    return LazyVGrid(
+      columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DesignTokens.Spacing.space20
+    ) {
       TacticalCard(label: "HUMIDITY", value: "\(weather.humidity)%", icon: "humidity")
+        .elevatedShadow()
       TacticalCard(label: "WIND", value: "\(Int(weather.windSpeed)) MPH", icon: "wind")
+        .elevatedShadow()
       TacticalCard(label: "UV INDEX", value: "\(Int(weather.uvIndex))", icon: "sun.max")
+        .elevatedShadow()
       TacticalCard(label: "PRECIP", value: precipValue, icon: weather.symbolName)
+        .elevatedShadow()
       if let aqi = weather.airQualityIndex {
         TacticalCard(label: "AQI", value: "\(aqi)", icon: "aqi.medium")
+          .elevatedShadow()
       }
       if let pollen = weather.pollenLevel {
         TacticalCard(label: "POLLEN", value: pollen, icon: "leaf")
+          .elevatedShadow()
       }
       if let obs = store.currentNWSObservation {
         let tempStr = obs.temperatureF.map { "\(Int(round($0)))°" } ?? "—"
         TacticalCard(
           label: "NWS", value: "\(obs.stationId) \(tempStr)",
-          icon: "antenna.radiowaves.left.and.right")
+          icon: "antenna.radiowaves.left.and.right"
+        )
+        .elevatedShadow()
+      }
+      if let owm = store.currentOpenWeatherMapWeather {
+        TacticalCard(
+          label: "OWM",
+          value: "\(Int(round(owm.temperatureF)))°",
+          icon: "cloud.sun.fill"
+        )
+        .elevatedShadow()
       }
     }
   }
 
   private var alertsSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       ForEach(store.displayableActiveAlerts.prefix(3)) { alert in
-        HStack(spacing: 10) {
+        HStack(spacing: DesignTokens.Spacing.space8) {
           Image(systemName: NWSAlertStyle.iconName(for: alert))
             .font(.title3)
             .foregroundStyle(NWSAlertStyle.tint(for: alert))
 
-          VStack(alignment: .leading, spacing: 4) {
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
             Text(alert.event.uppercased())
               .font(.caption.weight(.bold))
-              .foregroundStyle(.white)
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
 
             if let headline = alert.headline, !headline.isEmpty {
               Text(headline)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
                 .lineLimit(2)
             }
 
             if let area = alert.areaDesc, !area.isEmpty {
               Text(area)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(DesignTokens.Palette.textTertiary)
                 .lineLimit(1)
             }
 
             if let instr = alert.instruction, !instr.isEmpty {
               Text(instr)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
                 .lineLimit(2)
-                .padding(.top, 2)
+                .padding(.top, DesignTokens.Spacing.space2)
             }
           }
 
           Spacer()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color.white.opacity(0.06))
-        .overlay(
-          RoundedRectangle(cornerRadius: 14)
-            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        .padding(DesignTokens.Spacing.space16)
+        .elevatedCardStyle(
+          background: DesignTokens.Palette.cardBackground,
+          stroke: DesignTokens.Palette.cardStroke,
+          cornerRadius: DesignTokens.Card.cornerRadiusMedium
         )
-        .clipShape(RoundedRectangle(cornerRadius: 14))
       }
     }
   }
@@ -470,61 +607,29 @@ private struct TodayWeatherPanel: View {
   @ViewBuilder
   private var errorBanner: some View {
     if let error = store.weatherError, !error.isEmpty {
-      HStack(spacing: 8) {
+      HStack(spacing: DesignTokens.Spacing.space8) {
         Image(
           systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill"
         )
-        .foregroundStyle(.red)
+        .foregroundStyle(DesignTokens.Palette.danger)
         Text(error)
           .font(.caption)
-          .foregroundStyle(.red)
+          .foregroundStyle(DesignTokens.Palette.danger)
           .lineLimit(2)
-        Spacer(minLength: 8)
+        Spacer(minLength: DesignTokens.Spacing.space8)
         Button("Retry") {
           Haptic.impact(.medium)
           Task { await store.refreshWeather() }
         }
         .font(.caption.bold())
         .buttonStyle(.bordered)
-        .tint(.red)
+        .tint(DesignTokens.Palette.danger)
         .controlSize(.small)
       }
-      .padding(8)
-      .background(Color.red.opacity(0.08))
-      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .padding(DesignTokens.Spacing.space8)
+      .background(DesignTokens.Palette.danger.opacity(0.15))
+      .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
     }
-  }
-}
-
-struct TacticalCard: View {
-  let label: String
-  let value: String
-  let icon: String
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 6) {
-        Image(systemName: icon)
-          .font(.caption)
-        Text(label)
-          .font(.system(size: 10, weight: .heavy))
-          .tracking(1)
-      }
-      .foregroundStyle(.white.opacity(0.5))
-
-      Text(value)
-        .font(.system(size: 28, weight: .black, design: .rounded))
-        .foregroundStyle(.white)
-        .monospacedDigit()
-    }
-    .padding(16)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.white.opacity(0.06))
-    .overlay(
-      RoundedRectangle(cornerRadius: 14)
-        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-    )
-    .clipShape(RoundedRectangle(cornerRadius: 14))
   }
 }
 
@@ -535,22 +640,27 @@ struct GrokImagineButton: View {
 
   var body: some View {
     Button(action: action) {
-      HStack {
+      HStack(spacing: DesignTokens.Spacing.space8) {
         if isGenerating {
           ProgressView()
             .tint(.white)
-          Text("GENERATING...")
+          Text("GENERATING IMAGE...")
+            .font(.footnote.weight(.semibold))
+            .tracking(DesignTokens.Typography.cardLabelTracking)
         } else {
           Label("GENERATE WHAT TODAY LOOKS LIKE", systemImage: "sparkles.rectangle.stack")
+            .font(.footnote.weight(.semibold))
+            .tracking(DesignTokens.Typography.cardLabelTracking)
         }
       }
-      .font(.footnote.weight(.semibold))
       .frame(maxWidth: .infinity)
+      .padding(.vertical, DesignTokens.Spacing.space8)
     }
     .buttonStyle(.borderedProminent)
-    .tint(.indigo.opacity(0.7))
-    .padding(.top, 8)
+    .tint(DesignTokens.Palette.accent)
+    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
     .disabled(isGenerating)
+    .opacity(isGenerating ? 0.7 : 1.0)
   }
 }
 
@@ -602,9 +712,9 @@ struct TodaySkeleton: View {
   var body: some View {
     ScrollView {
       TodaySkeletonPanel()
-        .padding(.horizontal, 20)
-        .padding(.top, 80)
-        .padding(.bottom, 60)
+        .padding(.horizontal, DesignTokens.Spacing.space20)
+        .padding(.top, topChromeClearance)  // tab bar + safe area clearance (non-DS value)
+        .padding(.bottom, bottomTabClearance)  // bottom clearance for CustomTabBar on compact + large phones (guarantees vs ~65pt tab)
         .adaptiveContainerWidth(AdaptiveLayout.contentCap)
     }
   }
@@ -629,47 +739,67 @@ private struct TodaySkeletonPanel: View {
   }
 
   var body: some View {
-    VStack(spacing: 32) {
+    VStack(spacing: DesignTokens.Spacing.space48) {
       HStack(alignment: .top) {
-        VStack(alignment: .leading, spacing: 2) {
-          ShimmerBlock(width: 180, height: 16, cornerRadius: 4)
-          ShimmerBlock(width: 120, height: 12, cornerRadius: 3)
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
+          ShimmerBlock(width: 180, height: 16, cornerRadius: DesignTokens.Radius.small)
+          ShimmerBlock(width: 120, height: 12, cornerRadius: DesignTokens.Radius.small)
         }
         Spacer()
-        ShimmerBlock(width: 60, height: 12, cornerRadius: 3)
+        ShimmerBlock(width: 60, height: 12, cornerRadius: DesignTokens.Radius.small)
       }
 
       if !awaitsWidthMeasurement && prefersTwoColumnLayout {
-        HStack(alignment: .top, spacing: 20) {
-          HeroSkeleton(includeHorizontalPadding: false)
-            .frame(maxWidth: .infinity)
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
+          VStack(spacing: DesignTokens.Spacing.space16) {
+            HeroSkeleton(includeHorizontalPadding: false)
+            ShimmerBlock(width: nil, height: 80, cornerRadius: DesignTokens.Card.cornerRadiusLarge)
+              .elevatedCardStyle(
+                background: DesignTokens.Palette.cardBackground,
+                stroke: DesignTokens.Palette.cardStroke,
+                cornerRadius: DesignTokens.Card.cornerRadiusLarge
+              )
+          }
+          .frame(maxWidth: .infinity)
 
-          VStack(spacing: 20) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+          VStack(spacing: DesignTokens.Spacing.space24) {
+            LazyVGrid(
+              columns: [GridItem(.flexible()), GridItem(.flexible())],
+              spacing: DesignTokens.Spacing.space20
+            ) {
               ForEach(0..<8, id: \.self) { _ in
                 TacticalCardSkeleton()
               }
             }
 
-            ShimmerBlock(width: nil, height: 44, cornerRadius: 10)
+            ShimmerBlock(width: nil, height: 44, cornerRadius: DesignTokens.Radius.medium)
           }
           .frame(maxWidth: .infinity)
         }
       } else {
         HeroSkeleton(includeHorizontalPadding: false)
+        ShimmerBlock(width: nil, height: 80, cornerRadius: DesignTokens.Card.cornerRadiusLarge)
+          .elevatedCardStyle(
+            background: DesignTokens.Palette.cardBackground,
+            stroke: DesignTokens.Palette.cardStroke,
+            cornerRadius: DesignTokens.Card.cornerRadiusLarge
+          )
 
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+        LazyVGrid(
+          columns: [GridItem(.flexible()), GridItem(.flexible())],
+          spacing: DesignTokens.Spacing.space20
+        ) {
           ForEach(0..<8, id: \.self) { _ in
             TacticalCardSkeleton()
           }
         }
 
-        ShimmerBlock(width: nil, height: 44, cornerRadius: 10)
-          .padding(.top, 8)
+        ShimmerBlock(width: nil, height: 44, cornerRadius: DesignTokens.Radius.medium)
+          .padding(.top, DesignTokens.Spacing.space12)
       }
 
-      ShimmerBlock(width: 140, height: 36, cornerRadius: 8)
-        .padding(.top, 12)
+      ShimmerBlock(width: 140, height: 36, cornerRadius: DesignTokens.Radius.small)
+        .padding(.top, DesignTokens.Spacing.space16)
     }
   }
 }
@@ -678,53 +808,57 @@ struct HeroSkeleton: View {
   var includeHorizontalPadding: Bool = true
 
   var body: some View {
-    VStack(spacing: 8) {
-      // Icon placeholder
-      ShimmerBlock(width: 80, height: 80, cornerRadius: 12)
+    VStack(spacing: DesignTokens.Spacing.space4) {
+      // Minutecast banner placeholder
+      ShimmerBlock(width: 200, height: 14, cornerRadius: DesignTokens.Radius.small)
 
-      // Huge temperature
-      ShimmerBlock(width: 220, height: 90, cornerRadius: 12)
+      HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
+        // Icon
+        ShimmerBlock(width: 42, height: 42, cornerRadius: DesignTokens.Radius.small)
 
-      // Condition
-      ShimmerBlock(width: 160, height: 22, cornerRadius: 6)
+        // Big temp
+        ShimmerBlock(width: 120, height: 90, cornerRadius: DesignTokens.Radius.small)
 
-      // High / Low
-      HStack(spacing: 40) {
-        VStack(spacing: 4) {
-          ShimmerBlock(width: 40, height: 12, cornerRadius: 3)
-          ShimmerBlock(width: 50, height: 20, cornerRadius: 4)
-        }
-        VStack(spacing: 4) {
-          ShimmerBlock(width: 40, height: 12, cornerRadius: 3)
-          ShimmerBlock(width: 50, height: 20, cornerRadius: 4)
+        Spacer()
+
+        // RealFeel
+        VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
+          ShimmerBlock(width: 60, height: 12, cornerRadius: DesignTokens.Radius.small)
+          ShimmerBlock(width: 50, height: 20, cornerRadius: DesignTokens.Radius.small)
         }
       }
+
+      // Condition
+      ShimmerBlock(width: 140, height: 18, cornerRadius: DesignTokens.Radius.small)
     }
-    .padding(.vertical, 24)
+    .padding(.vertical, DesignTokens.Spacing.space20)
+    .padding(.horizontal, includeHorizontalPadding ? DesignTokens.Spacing.space20 : 0)
     .frame(maxWidth: .infinity)
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
-    .padding(.horizontal, includeHorizontalPadding ? 20 : 0)
+    .elevatedCardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusLarge
+    )
   }
 }
 
 struct TacticalCardSkeleton: View {
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack(spacing: 6) {
-        ShimmerBlock(width: 14, height: 14, cornerRadius: 3)
-        ShimmerBlock(width: 70, height: 10, cornerRadius: 2)
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      HStack(spacing: DesignTokens.Spacing.space8) {
+        ShimmerBlock(width: 16, height: 16, cornerRadius: DesignTokens.Radius.small)
+        ShimmerBlock(width: 80, height: 12, cornerRadius: DesignTokens.Radius.small)
       }
 
-      ShimmerBlock(width: 110, height: 32, cornerRadius: 6)
+      ShimmerBlock(width: 120, height: 34, cornerRadius: DesignTokens.Radius.small)
     }
-    .padding(16)
+    .padding(DesignTokens.Spacing.space20)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color.white.opacity(0.06))
-    .overlay(
-      RoundedRectangle(cornerRadius: 14)
-        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+    .elevatedCardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusMedium
     )
-    .clipShape(RoundedRectangle(cornerRadius: 14))
   }
 }
 

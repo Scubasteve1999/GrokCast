@@ -68,19 +68,14 @@ enum BackgroundAlertRefreshService {
   }
 
   private static func logSchedule(_ msg: String) {
-    print("[DIAG t=0.000] \(msg)")
+    // schedule log removed
   }
 
   private static func handle(_ task: BGAppRefreshTask) {
     scheduleAlertRefreshTask()
 
+    // bg-alerts task started (diag removed for release)
     let start = CFAbsoluteTimeGetCurrent()
-    func diag(_ msg: String) {
-      let elapsed = CFAbsoluteTimeGetCurrent() - start
-      print(String(format: "[DIAG t=%.3f] %@", elapsed, msg))
-    }
-
-    diag("bg-alerts task started")
 
     let completed = OSAllocatedUnfairLock(initialState: false)
 
@@ -96,7 +91,7 @@ enum BackgroundAlertRefreshService {
         return true
       }
       if shouldComplete {
-        diag("bg-alerts task expired")
+        // bg-alerts task expired (diag removed)
         task.setTaskCompleted(success: false)
       }
     }
@@ -110,7 +105,7 @@ enum BackgroundAlertRefreshService {
         return true
       }
       if shouldComplete {
-        diag("bg-alerts task completed success=\(success)")
+        // bg-alerts task completed (diag removed)
         task.setTaskCompleted(success: success)
       }
     }

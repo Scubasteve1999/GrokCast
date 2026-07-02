@@ -1,16 +1,29 @@
 import Foundation
 import Security
 
-enum KeychainError: Error {
+enum KeychainError: Error, LocalizedError {
   case duplicateItem
   case itemNotFound
   case unexpectedStatus(OSStatus)
   case encodingError
+
+  var errorDescription: String? {
+    switch self {
+    case .duplicateItem:
+      return "A Keychain item with this key already exists."
+    case .itemNotFound:
+      return "No API key found in Keychain. Add one in Settings."
+    case .unexpectedStatus(let status):
+      return "Keychain operation failed (status \(status))."
+    case .encodingError:
+      return "Failed to encode or decode the API key."
+    }
+  }
 }
 
 /// Supported API key types for multi-key Keychain storage.
 /// Allows separate secure storage for the main xAI key (weather Grok chat/vision)
-/// and a distinct Grok Build key (for the grok-build-0.1 model / in-app code features).
+/// and a distinct Grok Build key (optional override for special models in Grok AI features).
 enum APIKeyType {
   case xai
   case grokBuild

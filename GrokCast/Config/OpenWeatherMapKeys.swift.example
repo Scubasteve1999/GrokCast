@@ -1,0 +1,109 @@
+// Copy this file to OpenWeatherMapKeys.swift and add your real key.
+// OpenWeatherMapKeys.swift is gitignored — never commit real keys.
+
+import Foundation
+
+enum OpenWeatherMapKeys {
+
+  /// Current free tier key
+  private static let freeAPIKey: String = "YOUR_OPENWEATHERMAP_API_KEY"
+
+  /// Use this for all current calls (easy to swap later)
+  static var currentKey: String {
+    return freeAPIKey
+  }
+
+  /// REST API base endpoint
+  static let baseURL = "https://api.openweathermap.org"
+
+  /// One Call API 4.0 (requires separate "One Call by Call" subscription)
+  static let oneCallBaseURL = "https://api.openweathermap.org/data/4.0/onecall"
+
+  /// Global precipitation radar tiles (NOW)
+  static let radarTileBaseURL = "https://maps.openweathermap.org/maps/2.0/radar"
+
+  /// Weather map tiles (FUTURE precipitation intensity PR0)
+  static let weatherMapTileBaseURL = "https://maps.openweathermap.org/maps/2.0/weather/1h/PR0"
+}
+
+extension OpenWeatherMapKeys {
+  static func weatherURL(lat: Double, lon: Double, units: String = "metric") -> URL? {
+    apiURL(path: "/data/2.5/weather", queryItems: [
+      URLQueryItem(name: "lat", value: "\(lat)"),
+      URLQueryItem(name: "lon", value: "\(lon)"),
+      URLQueryItem(name: "units", value: units),
+    ])
+  }
+
+  static func forecastURL(
+    lat: Double,
+    lon: Double,
+    units: String = "imperial",
+    count: Int = 40
+  ) -> URL? {
+    apiURL(path: "/data/2.5/forecast", queryItems: [
+      URLQueryItem(name: "lat", value: "\(lat)"),
+      URLQueryItem(name: "lon", value: "\(lon)"),
+      URLQueryItem(name: "units", value: units),
+      URLQueryItem(name: "cnt", value: "\(count)"),
+    ])
+  }
+
+  static func oneCallCurrentURL(
+    lat: Double,
+    lon: Double,
+    units: String = "imperial"
+  ) -> URL? {
+    oneCallURL(path: "/current", queryItems: [
+      URLQueryItem(name: "lat", value: "\(lat)"),
+      URLQueryItem(name: "lon", value: "\(lon)"),
+      URLQueryItem(name: "units", value: units),
+      URLQueryItem(name: "lang", value: "en"),
+    ])
+  }
+
+  static func oneCallHourlyTimelineURL(
+    lat: Double,
+    lon: Double,
+    units: String = "imperial"
+  ) -> URL? {
+    oneCallURL(path: "/timeline/1h", queryItems: [
+      URLQueryItem(name: "lat", value: "\(lat)"),
+      URLQueryItem(name: "lon", value: "\(lon)"),
+      URLQueryItem(name: "units", value: units),
+      URLQueryItem(name: "lang", value: "en"),
+    ])
+  }
+
+  static func oneCall15MinTimelineURL(
+    lat: Double,
+    lon: Double,
+    units: String = "imperial"
+  ) -> URL? {
+    oneCallURL(path: "/timeline/15min", queryItems: [
+      URLQueryItem(name: "lat", value: "\(lat)"),
+      URLQueryItem(name: "lon", value: "\(lon)"),
+      URLQueryItem(name: "units", value: units),
+      URLQueryItem(name: "lang", value: "en"),
+    ])
+  }
+
+  private static func oneCallURL(path: String, queryItems: [URLQueryItem]) -> URL? {
+    guard let url = URL(string: oneCallBaseURL + path) else { return nil }
+    var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+    var items = queryItems
+    items.append(URLQueryItem(name: "appid", value: currentKey))
+    components?.queryItems = items
+    return components?.url
+  }
+
+  private static func apiURL(path: String, queryItems: [URLQueryItem]) -> URL? {
+    guard let url = URL(string: baseURL) else { return nil }
+    var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+    components?.path = path
+    var items = queryItems
+    items.append(URLQueryItem(name: "appid", value: currentKey))
+    components?.queryItems = items
+    return components?.url
+  }
+}

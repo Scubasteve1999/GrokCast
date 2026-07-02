@@ -1,7 +1,6 @@
 import CoreLocation
 import Foundation
 import Network
-import SwiftData
 import SwiftUI
 import UserNotifications
 import WidgetKit
@@ -93,19 +92,19 @@ final class WeatherStore {
   }
 
   let locationService = LocationService()
-  private let weatherKit = WeatherService()
   private let openMeteo = OpenMeteoService()
   private let nwsService = NWSService()
 
   /// Secure Grok/xAI API configuration (developer key mode)
   let grokConfig = GrokAPIConfiguration(mode: .developerKey)
   let xaiService: XAIService
-  /// Grok Build service (separate model "grok-build-0.1" for code-generation / build-oriented tasks).
+  /// Grok Build service (powers Grok AI chat via grok-3-mini + key fallback; named for historical multi-key support).
   /// Uses its own Keychain slot (.grokBuild) via the multi-key support added in KeychainService.
   /// It creates its own dedicated URLSession (not .shared) tuned for long-lived SSE streaming;
   /// this reduces certain low-level nw_connection diagnostic logs and avoids affecting the
   /// shared session used by weather/radar/NWS fetches.
   let grokBuildService = GrokBuildService()
+  let openWeatherMapService = OpenWeatherMapService()
   private let keychain = KeychainService.shared
 
   private let savedLocationsKey = "grokcast_saved_locations"
@@ -153,6 +152,12 @@ final class WeatherStore {
   private var lastObservationFetch: Date?
   private var observationForLocation: UUID?
 
+  /// Additive hybrid layer from OpenWeatherMap (current + 3-hour forecast). Open-Meteo remains primary.
+  var currentOpenWeatherMapWeather: OpenWeatherMapCurrentWeather?
+  var openWeatherMapForecast: OpenWeatherMapForecast?
+  private var lastOpenWeatherMapFetch: Date?
+  private var openWeatherMapForLocation: UUID?
+
   /// Used to debounce full refreshes triggered by significant location updates
   /// (the system often delivers an initial update shortly after starting monitoring,
   /// which can race with the MainTabView .task initial load).
@@ -174,29 +179,20 @@ final class WeatherStore {
     // Coalescing: assign initialLoadTask before awaiting so a second concurrent caller
     // sees the in-flight task and awaits .value instead of starting duplicate fetches.
     if let existing = initialLoadTask {
-      print("[DIAG t=coalesce] initial load already in-flight, awaiting")
       await existing.value
       return
     }
 
     let task = Task<Void, Never> { @MainActor in
-      let start = CFAbsoluteTimeGetCurrent()
-      func diag(_ msg: String) {
-        let elapsed = CFAbsoluteTimeGetCurrent() - start
-        print(String(format: "[DIAG t=%.3f] %@", elapsed, msg))
-      }
-
-      diag("initial load starting")
-
       let weatherWasNil = self.currentWeather == nil
       if weatherWasNil {
-        diag("refreshWeather (currentWeather nil)")
         // refreshWeather fire-and-forgets refreshAlerts + refreshNWSObservation.
         await self.refreshWeather()
-      } else if self.currentNWSObservation == nil {
-        // Weather already present (e.g. preview/cache): only obs is missing.
-        diag("refreshNWSObservation (observation nil, weather present)")
-        await self.refreshNWSObservation()
+      } else if self.currentNWSObservation == nil || self.currentOpenWeatherMapWeather == nil {
+        // Weather already present (e.g. preview/cache): only hybrid layers may be missing.
+        async let nws = self.refreshNWSObservation()
+        async let owm = self.refreshOpenWeatherMap()
+        _ = await (nws, owm)
       }
 
       // Intentional: mark complete even on fetch failure so sig-handler refreshes are not
@@ -204,7 +200,6 @@ final class WeatherStore {
       self.hasCompletedInitialLoad = true
       self.lastSignificantRefreshDate = Date()
       self.initialLoadTask = nil
-      diag("initial load complete")
     }
 
     initialLoadTask = task
@@ -410,7 +405,7 @@ final class WeatherStore {
   private func handleSignificantLocationUpdate(_ clLoc: CLLocation) async {
     guard significantLocationUpdatesEnabled else { return }
 
-    print("[DIAG t=sig] significant location update received")
+    // significant location update received (diag removed for release)
 
     let name = await locationService.reverseGeocode(clLoc) ?? "Current Location"
     updateCurrentDeviceLocationEntry(using: clLoc, name: name)
@@ -424,7 +419,6 @@ final class WeatherStore {
       // Cold launch: iOS often delivers an initial sig update before MainTabView .task runs.
       // Location entry is updated above; defer weather/NWS until performInitialLoadIfNeeded finishes.
       guard hasCompletedInitialLoad else {
-        print("[DIAG t=sig] skipping refresh trio (initial load not complete)")
         return
       }
 
@@ -432,17 +426,16 @@ final class WeatherStore {
       // Subsequent real movements will still trigger because enough time will have passed.
       let now = Date()
       if let last = lastSignificantRefreshDate, now.timeIntervalSince(last) < 45 {
-        print("[DIAG t=sig] refresh coalesced (debounce <45s)")
         lastSignificantRefreshDate = now
         return
       }
       lastSignificantRefreshDate = now
-      print("[DIAG t=sig] starting refresh trio")
 
       async let w = refreshWeather()
       async let a = refreshAlerts()
       async let o = refreshNWSObservation()
-      _ = await (w, a, o)
+      async let owm = refreshOpenWeatherMap()
+      _ = await (w, a, o, owm)
     }
   }
 
@@ -484,6 +477,7 @@ final class WeatherStore {
       async let _ = refreshWeather()
       async let _ = refreshAlerts()
       async let _ = refreshNWSObservation()
+      async let _ = refreshOpenWeatherMap()
     }
   }
 
@@ -494,31 +488,30 @@ final class WeatherStore {
     weatherError = nil
 
     do {
-      // --primary-source --update-weatherstore: NWS grid primary (location-aware) for forecast; alerts/obs remain prior additive hybrid non-fatal. OpenMeteo fallback for non-US/errors.
+      // Primary: OpenMeteo for accurate numeric weather_code + real precipitation_probability (no fake 40% or text heuristics).
+      // NWS fallback only (for non-US or rare OpenMeteo outage). NWS is still used for alerts + station observations.
       let data: GrokCastWeather
       do {
-        data = try await nwsService.fetchForecast(for: loc)
-      } catch {
         data = try await openMeteo.fetchForecast(for: loc)
+      } catch {
+        data = try await nwsService.fetchForecast(for: loc)
       }
       currentWeather = data
       persistWidgetSnapshot(from: data)
       // TODO: Cache to SwiftData here
 
-      // Fire-and-forget NWS alerts + observation refresh for normal paths (Today/Forecast refresh).
-      // Explicit "use my position" and Storm Spotter force paths await directly.
-      // (combined Task to reduce accumulating dispatches)
+      // Fire-and-forget NWS + OpenWeatherMap hybrid refresh (additive, non-fatal).
       Task {
-        await refreshAlerts()
-        await refreshNWSObservation()
+        async let alerts = refreshAlerts()
+        async let nws = refreshNWSObservation()
+        async let owm = refreshOpenWeatherMap()
+        _ = await (alerts, nws, owm)
       }
     } catch {
-      // Prefer explicit offline message when we know there's no connection (proactive via monitor).
-      // Otherwise fall back to the (now centralized in service too) friendly mapper.
       weatherError =
         isOffline
         ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
-        : NWSService.userFriendlyMessage(for: error)
+        : OpenMeteoService.userFriendlyMessage(for: error)
     }
     isLoadingWeather = false
   }
@@ -532,7 +525,8 @@ final class WeatherStore {
     async let w = refreshWeather()
     async let a = refreshAlerts()
     async let o = refreshNWSObservation()
-    _ = await (w, a, o)
+    async let owm = refreshOpenWeatherMap()
+    _ = await (w, a, o, owm)
   }
 
   /// Explicitly updates (or creates) the "Current Location" entry using the device's
@@ -568,7 +562,8 @@ final class WeatherStore {
       async let w = refreshWeather()
       async let a = refreshAlerts()
       async let o = refreshNWSObservation()
-      _ = await (w, a, o)
+      async let owm = refreshOpenWeatherMap()
+      _ = await (w, a, o, owm)
 
       lastSignificantRefreshDate = Date()  // mark fresh so a near-term sig delivery doesn't re-fetch
     } catch {
@@ -606,9 +601,7 @@ final class WeatherStore {
       currentLocation = def
     }
 
-    print(
-      "🌍 [WeatherStore] Falling back to default location: \(currentLocation?.name ?? "unknown") @ \(currentLocation?.latitude ?? 0), \(currentLocation?.longitude ?? 0)"
-    )
+    // Falling back to default location (log removed for release)
 
     // Always (re)load the weather for it. This is what transitions out of NO SIGNAL
     // once currentWeather becomes non-nil.
@@ -621,18 +614,17 @@ final class WeatherStore {
         || err.contains("Bad Gateway")
         || err.contains("502")
     {
-      print(
-        "🌍 [WeatherStore] Default weather load failed transiently, retrying once after delay...")
       try? await Task.sleep(nanoseconds: 1_000_000_000)
       weatherError = nil
       isLoadingWeather = true  // ensure loading state for UI
       await refreshWeather()
     }
 
-    // Parallel for the two additive NWS calls (recovery path).
+    // Parallel for additive hybrid calls (recovery path).
     async let a = refreshAlerts()
     async let o = refreshNWSObservation()
-    _ = await (a, o)
+    async let owm = refreshOpenWeatherMap()
+    _ = await (a, o, owm)
   }
 
   // MARK: - NWS Alerts + Observations (hybrid, additive to Open-Meteo)
@@ -665,12 +657,12 @@ final class WeatherStore {
         enabled: alertNotificationsEnabled
       )
     } catch is CancellationError {
-      print("[DIAG t=foreground] foreground-alerts fetch cancelled")
+      // foreground-alerts fetch cancelled (log removed)
     } catch {
       // Non-fatal: retain last-known active alerts so offline UI stays accurate.
       // Only a successful fetch with an empty list authoritatively clears activeAlerts.
       lastAlertsFetchSucceeded = false
-      print("[DIAG t=foreground] foreground-alerts fetch failed: \(error.localizedDescription)")
+      // foreground-alerts fetch failed (log removed for release)
     }
   }
 
@@ -691,21 +683,13 @@ final class WeatherStore {
   @MainActor
   @discardableResult
   func performBackgroundAlertCheck(taskStart: CFAbsoluteTime? = nil) async -> Bool {
-    let start = taskStart ?? CFAbsoluteTimeGetCurrent()
-    func diag(_ msg: String) {
-      let elapsed = CFAbsoluteTimeGetCurrent() - start
-      print(String(format: "[DIAG t=%.3f] %@", elapsed, msg))
-    }
-
     guard alertNotificationsEnabled else {
-      diag("bg-alerts fetch skipped (notifications disabled)")
       return true
     }
 
     let locations = loadLocationsForBackgroundCheck()
     guard let loc = locations.first else {
       // Stable empty state: no saved locations means nothing to poll; success avoids penalizing BG retries.
-      diag("bg-alerts fetch skipped (no saved locations)")
       return true
     }
 
@@ -721,25 +705,18 @@ final class WeatherStore {
       AlertHistoryStore.saveHistory(alertHistory)
       persistWidgetAlertSummary(for: loc, alerts: alerts)
 
-      let severe = alerts.filter(\.isSevereEvent)
-      let notified = AlertHistoryStore.loadNotifiedIDs()
-      let newSevereCount = severe.filter { !notified.contains($0.id) }.count
-      diag("bg-alerts fetch complete (\(alerts.count) alerts, \(newSevereCount) new severe)")
-
       await AlertNotificationService.shared.notifyIfNeeded(
         for: alerts,
         enabled: alertNotificationsEnabled,
-        taskStart: start
+        taskStart: taskStart
       )
       return true
     } catch is CancellationError {
-      diag("bg-alerts fetch cancelled (BG task expired)")
       return false
     } catch {
       if loc.id == currentLocation?.id {
         lastAlertsFetchSucceeded = false
       }
-      diag("bg-alerts fetch failed: \(error.localizedDescription)")
       return false
     }
   }
@@ -796,9 +773,50 @@ final class WeatherStore {
       observationForLocation = loc.id
     } catch {
       // Non-fatal: NWS is secondary data. Silently nil so UI/prompts see no observation.
-      print("🌩️ [NWS] observation fetch failed (non-fatal): \(error.localizedDescription)")
+      // NWS observation fetch failed (non-fatal, log removed for release)
       currentNWSObservation = nil
     }
+  }
+
+  @MainActor
+  func refreshOpenWeatherMap() async {
+    guard let loc = currentLocation else { return }
+    guard OpenWeatherMapRadarService.apiKeyConfigured else { return }
+
+    if let last = lastOpenWeatherMapFetch,
+      let cachedLocId = openWeatherMapForLocation,
+      cachedLocId == loc.id,
+      Date().timeIntervalSince(last) < 300
+    {
+      return
+    }
+
+    do {
+      let (current, forecast) = try await openWeatherMapService.fetchHybrid(for: loc)
+      currentOpenWeatherMapWeather = current
+      openWeatherMapForecast = forecast
+      lastOpenWeatherMapFetch = Date()
+      openWeatherMapForLocation = loc.id
+    } catch {
+      // Non-fatal: preserve last-known-good hybrid data on failure.
+    }
+  }
+
+  /// Nearest OpenWeatherMap 3-hour forecast entry within `toleranceMinutes` of `date`.
+  func openWeatherMapEntry(closestTo date: Date, toleranceMinutes: Int = 60)
+    -> OpenWeatherMapForecastEntry?
+  {
+    guard let forecast = openWeatherMapForecast else { return nil }
+    let tolerance = TimeInterval(toleranceMinutes * 60)
+    var best: OpenWeatherMapForecastEntry?
+    var bestDelta = TimeInterval.greatestFiniteMagnitude
+    for entry in forecast.entries {
+      let delta = abs(entry.time.timeIntervalSince(date))
+      guard delta <= tolerance, delta < bestDelta else { continue }
+      bestDelta = delta
+      best = entry
+    }
+    return best
   }
 
   func addLocation(_ location: SavedLocation) {
@@ -827,7 +845,7 @@ final class WeatherStore {
       try grokConfig.saveDeveloperKey(key)
     } catch {
       // During development only — log for debugging
-      print("Failed to save Grok key securely: \(error)")
+      // Failed to save Grok key securely (log removed)
       // For embedded developer key builds, we don't fall back to the old path
     }
   }
@@ -839,45 +857,4 @@ final class WeatherStore {
     currentLocation = olive
   }
 
-  /// Maps raw errors (especially URLSession TLS/network and CoreLocation) to calmer,
-  /// actionable messages for the UI. Raw details are still useful in console for debugging.
-  private func friendlyMessage(for error: Error) -> String {
-    if let urlError = error as? URLError {
-      switch urlError.code {
-      case .secureConnectionFailed,
-        .serverCertificateUntrusted,
-        .serverCertificateHasBadDate,
-        .serverCertificateHasUnknownRoot,
-        .serverCertificateNotYetValid:
-        return
-          "Weather service connection failed (TLS/secure error). This is common in the iOS Simulator. Tap RETRY or try again in a moment."
-      case .notConnectedToInternet, .networkConnectionLost:
-        return "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
-      case .timedOut:
-        return "The weather service timed out. Tap RETRY in a moment."
-      case .badServerResponse:
-        return "Weather service is temporarily unavailable (server error). Tap RETRY in a moment."
-      default:
-        return "Network error: \(urlError.localizedDescription)"
-      }
-    }
-    if let clError = error as? CLError {
-      switch clError.code {
-      case .denied:
-        return "Location permission denied."
-      default:
-        return clError.localizedDescription
-      }
-    }
-    if error is DecodingError {
-      return
-        "Weather data from the service was in an unexpected format (decode failed). Tap RETRY or try again in a moment."
-    }
-    return error.localizedDescription
-  }
 }
-
-// Minimal conformance to support @EnvironmentObject<WeatherStore> in SwiftUI views
-// (e.g. the updated GrokAIView) while the rest of the app continues to use
-// @Environment(WeatherStore.self) + @Observable. This is the standard interop bridge.
-extension WeatherStore: ObservableObject {}

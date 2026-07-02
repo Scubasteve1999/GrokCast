@@ -50,13 +50,13 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     let now = Date()
     let hourly = (0..<4).map { offset in
       let time = Calendar.current.date(byAdding: .hour, value: offset, to: now) ?? now
-      let (symbol, _) = mapWeatherCode(offset == 0 ? 1 : 3)
+      let weatherCode = offset == 0 ? 1 : 3
       return HourlyForecast(
         time: time,
         temp: 72 + Double(offset),
         precipChance: 10,
-        weatherCode: offset == 0 ? 1 : 3,
-        symbolName: symbol,
+        weatherCode: weatherCode,
+        symbolName: offset == 0 ? "cloud.sun.fill" : "cloud.fill",
         rain: nil,
         showers: nil,
         snowfall: nil

@@ -133,40 +133,6 @@ struct DailyForecast: Equatable, Codable, Identifiable {
   }
 }
 
-// WMO Weather Code to symbol + text (simplified tactical mapping)
-func mapWeatherCode(_ code: Int, isDay: Bool = true) -> (symbol: String, text: String) {
-  switch code {
-  case 0: return (isDay ? "sun.max.fill" : "moon.stars.fill", "Clear")
-  case 1, 2: return (isDay ? "cloud.sun.fill" : "cloud.moon.fill", "Mainly Clear")
-  case 3: return ("cloud.fill", "Overcast")
-  case 45, 48: return ("cloud.fog.fill", "Fog")
-  case 51, 53, 55: return ("cloud.drizzle.fill", "Drizzle")
-  case 61, 63, 65: return ("cloud.rain.fill", "Rain")
-  case 66, 67: return ("cloud.sleet.fill", "Sleet")
-  case 71, 73, 75: return ("cloud.snow.fill", "Snow")
-  case 77: return ("cloud.snow.fill", "Snow Grains")
-  case 80, 81, 82: return ("cloud.heavyrain.fill", "Rain Showers")
-  case 85, 86: return ("cloud.snow.fill", "Snow Showers")
-  case 95, 96, 99: return ("cloud.bolt.rain.fill", "Thunderstorm")
-  default: return ("cloud.sun.fill", "Variable")
-  }
-}
-
-// Helper to map NWS shortForecast string to WMO code so that mapWeatherCode can be reused for symbol/text
-// (avoids logic duplication for --map-to-existing-models)
-func wmoCode(fromNWSShortForecast short: String) -> Int {
-  let s = short.lowercased()
-  if s.contains("thunder") { return 95 }
-  if s.contains("snow") { return 71 }
-  if s.contains("sleet") || s.contains("freez") { return 66 }
-  if s.contains("rain") { return 61 }
-  if s.contains("drizzle") { return 51 }
-  if s.contains("fog") { return 45 }
-  if s.contains("overcast") || s.contains("cloudy") { return 3 }
-  if s.contains("clear") || s.contains("sunny") { return 0 }
-  return 2
-}
-
 // MARK: - Precipitation amount helpers (lightweight addition for display)
 // Values received from Open-Meteo are already in inches (see precipitation_unit=inch + hourly_units/daily_units).
 // mmToInches / cmToInches provided per requirements for reference / future-proofing / if unit param ever omitted.

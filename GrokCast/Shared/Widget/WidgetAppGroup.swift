@@ -2,7 +2,7 @@ import Foundation
 
 /// Shared App Group identifier for main app ↔ widget extension data exchange.
 enum WidgetAppGroup {
-  static let identifier = "group.com.grokcast.GrokCast"
+  static let identifier = "group.com.scubasteve1999.GrokCast"
 
   private static let lock = NSLock()
   private static var cachedDefaults: UserDefaults?
@@ -31,11 +31,6 @@ enum WidgetAppGroup {
       FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier) != nil
     else {
       isContainerAvailable = false
-      #if DEBUG
-        print(
-          "⚠️ [WidgetAppGroup] container unavailable for \(identifier) — using standard UserDefaults fallback"
-        )
-      #endif
       return nil
     }
 

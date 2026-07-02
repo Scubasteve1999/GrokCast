@@ -13,6 +13,26 @@
 import Foundation
 
 enum DeveloperAPIKey {
-    // Replace with your actual key for TestFlight builds
-    static let xai: String? = "a1OCDKqjUSSEtGEIZ5sLYsI1sR9KOmpREq8GI4DPysnfxeTA60zGoL8BymtJNIg15YIahRzzdpcej7t6"
+  // Replace with your actual key for TestFlight builds
+  static let xai: String? =
+    "a1OCDKqjUSSEtGEIZ5sLYsI1sR9KOmpREq8GI4DPysnfxeTA60zGoL8BymtJNIg15YIahRzzdpcej7t6"
+
+  // Xweather (primary radar provider)
+  static let xweatherClientID: String? = nil  // e.g. "q0xMc77vu9jpcny7E4n4S"
+  static let xweatherClientSecret: String? = nil  // e.g. "0fOFY3n9OAAc8Ko97k8Zh7WRIFqM4Da7sagRc9NV"
+
+  static var xweatherMapsAuth: String? {
+    guard let id = xweatherClientID, let secret = xweatherClientSecret, !id.isEmpty, !secret.isEmpty
+    else {
+      return nil
+    }
+    return "\(id)_\(secret)"
+  }
+}
+
+// OpenWeatherMap API key lives in OpenWeatherMapKeys.swift (committed).
+enum OpenWeatherMap {
+  static var apiKey: String {
+    return OpenWeatherMapKeys.currentKey
+  }
 }

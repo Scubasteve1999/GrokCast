@@ -7,10 +7,9 @@ struct GrokBuildConfiguration {
   let model: String
 
   static func make() -> GrokBuildConfiguration {
-    // Prefer dedicated grokBuild key; fall back to the main xAI key so existing users
-    // who saved their key via Settings immediately get a working Grok AI tab without
-    // extra configuration. A separate key can still be saved under the .grokBuild slot
-    // if desired (e.g. for different rate limits or accounts).
+    // Prefer dedicated grokBuild key if present; fall back to the main xAI key.
+    // Regular Grok AI chat (quick prompts + free text) uses grok-3-mini for broad compatibility
+    // with standard xAI developer keys. A separate .grokBuild key can be used for special models.
     let apiKey =
       KeychainService.shared.getAPIKey(for: .grokBuild)
       ?? KeychainService.shared.getAPIKey(for: .xai)
@@ -21,7 +20,7 @@ struct GrokBuildConfiguration {
     return GrokBuildConfiguration(
       apiKey: apiKey,
       baseURL: URL(string: "https://api.x.ai/v1")!,
-      model: "grok-build-0.1"
+      model: "grok-3-mini"
     )
   }
 }
@@ -64,6 +63,7 @@ final class GrokBuildService {
       Task {
         do {
           if configuration.apiKey.isEmpty {
+            // missing API key (log removed)
             continuation.finish(throwing: GrokBuildError.missingAPIKey)
             return
           }
@@ -79,19 +79,38 @@ final class GrokBuildService {
             model: configuration.model,
             messages: messages,
             temperature: temperature,
-            maxTokens: maxTokens
+            maxTokens: maxTokens,
+            stream: true
           )
 
           request.httpBody = try JSONEncoder().encode(body)
+          // POST /chat/completions (log removed)
 
           let (bytes, response) = try await session.bytes(for: request)
 
           if let httpResponse = response as? HTTPURLResponse,
             !(200...299).contains(httpResponse.statusCode)
           {
-            print("[GrokBuildService] HTTP \(httpResponse.statusCode) from \(url.absoluteString)")
-            continuation.finish(
-              throwing: GrokBuildError.invalidResponse(statusCode: httpResponse.statusCode))
+            // HTTP error (log removed)
+            // Best-effort extract error body for actionable message (e.g. model not allowed, auth)
+            var errorData = Data()
+            for try await byte in bytes {
+              errorData.append(byte)
+            }
+            let bodyStr = String(data: errorData, encoding: .utf8) ?? ""
+            if let json = try? JSONSerialization.jsonObject(with: errorData) as? [String: Any],
+              let err = json["error"] as? [String: Any],
+              let message = err["message"] as? String
+            {
+              continuation.finish(
+                throwing: GrokBuildError.apiError(
+                  statusCode: httpResponse.statusCode, message: message))
+            } else {
+              continuation.finish(
+                throwing: GrokBuildError.apiError(
+                  statusCode: httpResponse.statusCode,
+                  message: bodyStr.isEmpty ? "No details" : bodyStr))
+            }
             return
           }
 
@@ -101,22 +120,24 @@ final class GrokBuildService {
           }
 
           for try await line in bytes.lines {
-            if line.hasPrefix("data: ") {
-              let jsonString = String(line.dropFirst(6))
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.hasPrefix("data: ") else { continue }
 
-              if jsonString == "[DONE]" {
-                continuation.finish()
-                return
-              }
+            let jsonString = String(trimmed.dropFirst(6)).trimmingCharacters(
+              in: .whitespacesAndNewlines)
 
-              guard let data = jsonString.data(using: .utf8) else { continue }
+            if jsonString == "[DONE]" {
+              continuation.finish()
+              return
+            }
 
-              if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data),
-                let content = chunk.choices.first?.delta.content,
-                !content.isEmpty
-              {
-                continuation.yield(content)
-              }
+            guard let data = jsonString.data(using: .utf8) else { continue }
+
+            if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data),
+              let content = chunk.choices.first?.delta.content,
+              !content.isEmpty
+            {
+              continuation.yield(content)
             }
           }
 
@@ -141,9 +162,10 @@ struct GrokBuildRequest: Codable {
   let messages: [GrokBuildMessage]
   let temperature: Double?
   let maxTokens: Int?
+  let stream: Bool?
 
   enum CodingKeys: String, CodingKey {
-    case model, messages, temperature
+    case model, messages, temperature, stream
     case maxTokens = "max_tokens"
   }
 }
@@ -169,12 +191,12 @@ enum GrokBuildError: Error, LocalizedError {
     switch self {
     case .missingAPIKey:
       return
-        "Grok Build API key is missing. The Grok AI tab uses your saved xAI key (or a separate key saved for .grokBuild). Add it in Settings → Developer Key if you haven't already."
+        "No xAI API key found. The Grok AI tab uses your saved xAI key (or a separate key saved for .grokBuild). Add it in Settings → Developer Key."
     case .invalidResponse(let code):
       if let c = code {
-        return "Invalid response from Grok Build (HTTP \(c)). Check your API key and model access."
+        return "Invalid response from Grok (HTTP \(c)). Check your API key and model access."
       }
-      return "Invalid response from Grok Build"
+      return "Invalid response from Grok"
     case .apiError(let code, let msg): return "API Error (\(code)): \(msg)"
     }
   }

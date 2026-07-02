@@ -1,47 +1,44 @@
 import Foundation
 
-/// NWS ridge radar products served via the Iowa Environmental Mesonet (IEM) tile cache.
 enum NWSRadarProduct: String, CaseIterable, Identifiable {
-  // USCOMP composite reflectivity serves N0Q (USCOMP-N0B returns 503 as of 2026-06).
-  case baseReflectivity = "N0Q"
-  case baseVelocity = "N0U"
+  case reflectivity = "N0Q"
+  case superResReflectivity = "N0B"
+  case velocity = "N0V"
   case stormRelativeVelocity = "N0S"
+  case correlationCoefficient = "N0C"
+  case differentialReflectivity = "N0X"
+  case compositeReflectivity = "NCR"
 
   var id: String { rawValue }
+  var iemCode: String { rawValue }
 
   var displayName: String {
     switch self {
-    case .baseReflectivity: "Reflectivity"
-    case .baseVelocity: "Velocity"
-    case .stormRelativeVelocity: "Storm Relative Velocity"
+    case .reflectivity: return "Reflectivity"
+    case .superResReflectivity: return "Super-Res Reflectivity"
+    case .velocity: return "Velocity"
+    case .stormRelativeVelocity: return "Storm Relative Velocity"
+    case .correlationCoefficient: return "Correlation Coefficient"
+    case .differentialReflectivity: return "Differential Reflectivity"
+    case .compositeReflectivity: return "Composite Reflectivity"
     }
   }
 
-  /// Compact label for radar control chips (especially on iPad/narrow panels).
-  var shortDisplayName: String {
-    switch self {
-    case .baseReflectivity: "Reflectivity"
-    case .baseVelocity: "Velocity"
-    case .stormRelativeVelocity: "SRV"
+  static func from(iemCode: String) -> NWSRadarProduct? {
+    Self(rawValue: iemCode)
+  }
+
+  /// Returns the best available product for a site based on IEM's product list.
+  static func bestAvailable(preferred: NWSRadarProduct, available: [NWSRadarProduct])
+    -> NWSRadarProduct
+  {
+    if available.contains(preferred) { return preferred }
+
+    if preferred == .reflectivity || preferred == .superResReflectivity {
+      if available.contains(.reflectivity) { return .reflectivity }
+      if available.contains(.superResReflectivity) { return .superResReflectivity }
     }
-  }
 
-  var description: String {
-    switch self {
-    case .baseReflectivity:
-      "Nationwide composite reflectivity (dBZ) — precipitation intensity and storm structure."
-    case .baseVelocity:
-      "Nearest-site base velocity — radial wind motion toward/away from the radar."
-    case .stormRelativeVelocity:
-      "Nearest-site storm-relative velocity — wind motion relative to storm motion."
-    }
+    return available.first ?? preferred
   }
-
-  /// Nationwide composite layer (reflectivity only); velocity/SRV require a site-specific radar ID.
-  var usesUSComposite: Bool {
-    self == .baseReflectivity
-  }
-
-  /// IEM ridge TMS product code embedded in the layer name.
-  var iemProductCode: String { rawValue }
 }

@@ -71,6 +71,7 @@ GrokConfig.swift
 Secrets.swift
 GrokCast/Config/Secrets.swift
 GrokCast/Config/DeveloperAPIKey.swift
+GrokCast/Config/OpenWeatherMapKeys.swift
 *.key
 *.pem
 .env
@@ -86,6 +87,7 @@ GrokCast/Config/DeveloperAPIKey.swift
 !Secrets.swift.example
 !GrokCast/Config/Secrets.swift.example
 !GrokCast/Config/DeveloperAPIKey.swift.example
+!GrokCast/Config/OpenWeatherMapKeys.swift.example
 !GrokAPIConfiguration.swift.example
 !Shared/Configuration/GrokAPIConfiguration.swift.example
 
@@ -131,9 +133,20 @@ Debug.xcconfig
 
 # Build artifacts we don't want in git
 build/
+DerivedData*
+.derived-data-log-*
 *.o
 *.a
 *.so
+*.xcarchive/
+*.mov
+.video-frames*/
+GrokCast */
+
+# Grok Build session artifacts (local review/summary notes)
+grok-impl-summary-*.md
+review-*.md
+rereview-*.md
 
 # Logs
 *.log

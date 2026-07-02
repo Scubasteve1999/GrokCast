@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MainTabView: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @Namespace private var tabBarNamespace
 
   var body: some View {
     TabView(selection: Bindable(store).selectedTab) {
@@ -30,7 +32,6 @@ struct MainTabView: View {
         .tag(WeatherStore.Tab.alerts)
 
       GrokAIView()
-        .environmentObject(store)
         .tabItem {
           Label("Grok AI", systemImage: "sparkles")
         }
@@ -51,6 +52,17 @@ struct MainTabView: View {
     // Intentionally TabView + sidebarAdaptable (not NavigationSplitView): split navigation
     // would duplicate chrome and risk regressing the tab-based model on iPad.
     .tabViewStyle(.sidebarAdaptable)
+    .toolbar(.hidden, for: .tabBar)
+    .animation(nil, value: store.selectedTab)
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      Group {
+        if horizontalSizeClass == .compact {
+          CompactTabBar(selection: Bindable(store).selectedTab, namespace: tabBarNamespace)
+        } else {
+          EmptyView().frame(height: 0)
+        }
+      }
+    }
     .onOpenURL { url in
       handleDeepLink(url)
     }
@@ -84,5 +96,4 @@ struct MainTabView: View {
 #Preview {
   MainTabView()
     .environment(WeatherStore.shared)
-    .environmentObject(WeatherStore.shared)
 }

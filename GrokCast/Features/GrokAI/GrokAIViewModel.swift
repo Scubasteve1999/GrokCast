@@ -1,25 +1,36 @@
 import Foundation
-import SwiftUI
+import Observation
 
 @MainActor
-final class GrokAIViewModel: ObservableObject {
-  @Published var responseText: String = ""
-  @Published var isStreaming: Bool = false
-  @Published var errorMessage: String?
-  @Published var stormAnalysisMode: Bool = false
-  @Published var stormThumbnailData: Data?
+@Observable
+final class GrokAIViewModel {
+  var responseText: String = ""
+  var isStreaming: Bool = false
+  var errorMessage: String?
+  var stormAnalysisMode: Bool = false
+  var stormThumbnailData: Data?
+  var isGeneratingImage: Bool = false
 
   private let weatherStore: WeatherStore
-  private let grokBuildService: GrokBuildService
-  private var generationTask: Task<Void, Never>?
+  private let grokAIService = GrokAIService()
+  private let conversationStore = GrokAIConversationStore()
+  @ObservationIgnored private nonisolated(unsafe) var generationTask: Task<Void, Never>?
   private(set) var generationWasCancelled = false
 
   private(set) var lastStormImageData: Data?
   private(set) var lastStormNotes: String?
 
+  // Conversation history for multi-turn context
+  private(set) var conversationHistory: [ChatMessage] = []
+  private let maxContextMessages = 16  // simple limit for context window (~8 turns)
+
   init(weatherStore: WeatherStore) {
     self.weatherStore = weatherStore
-    self.grokBuildService = weatherStore.grokBuildService
+
+    // Load persisted history asynchronously (non-blocking). Trim is applied on load.
+    Task {
+      await loadPersistedHistory()
+    }
   }
 
   deinit {
@@ -29,6 +40,22 @@ final class GrokAIViewModel: ObservableObject {
   func askGrok(question: String) async {
     guard !question.trimmingCharacters(in: .whitespaces).isEmpty else { return }
 
+    // Prevent overlapping generations from rapid taps
+    guard !isStreaming && !isGeneratingImage else { return }
+
+    // Early key guard (prevents append + silent fail; GrokBuild falls back to xai key)
+    if !grokAIService.hasValidKey {
+      errorMessage =
+        "No xAI API key found. Add your developer key in Settings → Developer Key to use Grok AI."
+      return
+    }
+
+    // Detect image generation requests in free-text (or route quick prompts that match)
+    if isImageGenerationRequest(question) {
+      await generateWeatherImage(description: question)
+      return
+    }
+
     generationTask?.cancel()
     generationWasCancelled = false
     stormAnalysisMode = false
@@ -36,21 +63,52 @@ final class GrokAIViewModel: ObservableObject {
     responseText = ""
     errorMessage = nil
 
-    let messages = buildMessages(with: question)
+    // Append user to history immediately so it shows in transcript
+    let userMsg = ChatMessage.user(question)
+    conversationHistory.append(userMsg)
+    conversationHistory = trimHistory(conversationHistory)
+    persistCurrentHistory()
+
+    let systemPrompt = buildWeatherSystemPrompt()
+
+    // Build API messages: system first + history turns
+    var apiMessages: [GrokBuildMessage] = [
+      GrokBuildMessage(role: "system", content: systemPrompt)
+    ]
+    for msg in conversationHistory {
+      apiMessages.append(GrokBuildMessage(role: msg.role.rawValue, content: msg.content))
+    }
+
+    // Starting askGrok (log removed)
 
     generationTask = Task { @MainActor [weak self] in
       guard let self else { return }
       do {
-        for try await token in self.grokBuildService.streamChat(messages: messages) {
-          if Task.isCancelled || !isStreaming { break }
-          self.responseText += token
+        // Use streaming for progressive token display
+        for try await token in self.grokAIService.streamResponse(messages: apiMessages) {
+          if Task.isCancelled || !self.isStreaming { break }
+          // Defensive: ensure mutation happens on main even if stream resumes off-actor
+          await MainActor.run {
+            self.responseText += token
+          }
         }
       } catch {
+        // caught in askGrok (log removed)
         if !(error is CancellationError) {
           self.errorMessage = error.localizedDescription
         }
       }
       self.isStreaming = false
+
+      // On completion, append the full assistant message to history
+      if !self.responseText.isEmpty {
+        let assistantMsg = ChatMessage.assistant(self.responseText)
+        self.conversationHistory.append(assistantMsg)
+        self.conversationHistory = self.trimHistory(self.conversationHistory)
+        self.persistCurrentHistory()
+      } else {
+        // stream ended with empty responseText (log removed)
+      }
       self.generationTask = nil
     }
     await generationTask?.value
@@ -124,6 +182,13 @@ final class GrokAIViewModel: ObservableObject {
     errorMessage = nil
     stormThumbnailData = nil
     stormAnalysisMode = false
+    isGeneratingImage = false
+    conversationHistory.removeAll()  // start fresh conversation
+
+    // Also clear persisted data so it doesn't come back on next launch.
+    Task {
+      try? conversationStore.deleteAll()
+    }
   }
 
   public func stopGeneration() {
@@ -148,35 +213,22 @@ final class GrokAIViewModel: ObservableObject {
     if let apiError = error as? GrokAPIError {
       switch apiError {
       case .missingAPIKey:
-        return
-          "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
+        return "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
       case .networkError(let underlying):
         if let urlError = underlying as? URLError, urlError.code == .timedOut {
-          return
-            "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
+          return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
         }
-        return "Network error during storm analysis. Check your connection and try again."
-      case .apiError(let message):
+        return apiError.errorDescription ?? error.localizedDescription
+      case .apiError(let statusCode, let message) where statusCode == 400 || statusCode == 422:
         let lower = message.lowercased()
-        if lower.contains("http 401") || lower.contains("http 403") {
-          return "Invalid or unauthorized xAI API key. Check Settings → Developer Key."
+        if lower.contains("image") || lower.contains("vision") || lower.contains("format")
+          || lower.contains("base64")
+        {
+          return "That photo couldn't be analyzed. Try a clearer sky image (JPEG/PNG)."
         }
-        if lower.contains("http 422") || lower.contains("http 400") {
-          if lower.contains("image") || lower.contains("vision") || lower.contains("format")
-            || lower.contains("base64")
-          {
-            return "That photo couldn't be analyzed. Try a clearer sky image (JPEG/PNG)."
-          }
-          return "Storm analysis request was rejected. \(message)"
-        }
-        if lower.contains("http 5") {
-          return "Storm analysis service is temporarily unavailable. Tap Retry in a moment."
-        }
-        return message
-      case .invalidKeyFormat:
-        return "Invalid xAI API key format. Keys must start with 'xai-'."
-      case .invalidMode(let message):
-        return message
+        return "Storm analysis request was rejected. \(message)"
+      default:
+        return apiError.errorDescription ?? error.localizedDescription
       }
     }
 
@@ -203,17 +255,6 @@ final class GrokAIViewModel: ObservableObject {
     }
   }
 
-  private func buildMessages(with question: String) -> [GrokBuildMessage] {
-    var messages: [GrokBuildMessage] = []
-
-    let systemPrompt = buildWeatherSystemPrompt()
-    messages.append(GrokBuildMessage(role: "system", content: systemPrompt))
-
-    messages.append(GrokBuildMessage(role: "user", content: question))
-
-    return messages
-  }
-
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
       return "You are a helpful weather assistant inside the GrokCast app."
@@ -236,5 +277,125 @@ final class GrokAIViewModel: ObservableObject {
       Be concise, friendly, and practical. When giving recommendations (outfits, activities, etc.),
       base them on the current weather data.
       """
+  }
+
+  private func isImageGenerationRequest(_ text: String) -> Bool {
+    let lower = text.lowercased()
+    return lower.contains("image") || lower.contains("picture") || lower.contains("imagine")
+      || lower.contains("draw") || lower.contains("visualize") || lower.contains("generate a scene")
+      || lower.contains("show me the weather as")
+  }
+
+  private func buildImagePrompt(userDescription: String?) -> String {
+    guard let current = weatherStore.currentWeather else {
+      let base =
+        userDescription?.isEmpty == false ? userDescription! : "A beautiful cinematic weather scene"
+      return "\(base), photorealistic, high detail, atmospheric lighting, no text or logos"
+    }
+
+    let temp = Int(round(current.currentTemp))
+    let feels = Int(round(current.feelsLike))
+    let condition = current.conditionText
+    let location = current.location.name
+    let wind = Int(round(current.windSpeed))
+    let humidity = current.humidity
+    let high = Int(round(current.high))
+    let low = Int(round(current.low))
+
+    let base = userDescription?.isEmpty == false ? "\(userDescription!). " : ""
+    let timeOfDay =
+      (current.symbolName.contains("sun") || current.symbolName.contains("day"))
+      ? "daytime" : "evening or night"
+
+    return """
+      \(base)Create a highly detailed, cinematic weather visualization for \(location) right now.
+      Conditions: \(condition), \(temp)°F (feels like \(feels)°F), wind \(wind) mph, humidity \(humidity)%.
+      Today's range \(high)° / \(low)°. \(timeOfDay) lighting.
+      Photorealistic or atmospheric digital art style, dramatic natural light, rich colors, 
+      moody and immersive, no text, no logos, no people unless they naturally enhance the scene.
+      """
+  }
+
+  func generateWeatherImage(description: String? = nil) async {
+    guard !isStreaming && !isGeneratingImage else { return }
+
+    guard weatherStore.xaiService.hasValidKey else {
+      errorMessage =
+        "No xAI API key found. Add your developer key in Settings → Developer Key to generate images."
+      return
+    }
+
+    generationTask?.cancel()
+    stormAnalysisMode = false
+    isGeneratingImage = true
+    responseText = ""
+    errorMessage = nil
+
+    let userContent =
+      description?.trimmingCharacters(in: .whitespaces).isEmpty == false
+      ? description!
+      : "Generate an image of the current weather"
+    let userMsg = ChatMessage.user(userContent)
+    conversationHistory.append(userMsg)
+    conversationHistory = trimHistory(conversationHistory)
+    persistCurrentHistory()
+
+    do {
+      let prompt = buildImagePrompt(userDescription: description)
+      let url = try await weatherStore.xaiService.generateDayImage(prompt: prompt)
+
+      let assistantMsg = ChatMessage(
+        role: .assistant,
+        content: "Here's a generated visualization based on the current conditions:",
+        generatedImageURL: url
+      )
+      conversationHistory.append(assistantMsg)
+      conversationHistory = trimHistory(conversationHistory)
+      persistCurrentHistory()
+    } catch {
+      errorMessage = "Image generation failed: \(error.localizedDescription)"
+    }
+
+    isGeneratingImage = false
+  }
+
+  private func trimHistory(_ history: [ChatMessage]) -> [ChatMessage] {
+    var trimmed = history
+    let maxTokens = 2048  // conservative rough budget (leaves room for system + generation)
+    while estimateTokens(trimmed) > maxTokens && trimmed.count > 2 {
+      trimmed.removeFirst()
+    }
+    return trimmed
+  }
+
+  private func estimateTokens(_ messages: [ChatMessage]) -> Int {
+    // Rough estimate: ~4 characters per token
+    let chars = messages.reduce(0) { $0 + $1.content.count }
+    return chars / 4
+  }
+
+  // MARK: - SwiftData Persistence
+
+  private func loadPersistedHistory() async {
+    do {
+      var loaded = try conversationStore.loadHistory()
+      loaded = trimHistory(loaded)
+      conversationHistory = loaded
+    } catch {
+      // Start with empty history on error (non-fatal for the feature).
+      conversationHistory = []
+    }
+  }
+
+  private func persistCurrentHistory() {
+    // Snapshot to avoid capturing mutable state across the Task boundary
+    let snapshot = conversationHistory
+    Task {
+      do {
+        try conversationStore.saveHistory(snapshot)
+      } catch {
+        // Silent fail is acceptable; history is in-memory for this session.
+      }
+    }
   }
 }

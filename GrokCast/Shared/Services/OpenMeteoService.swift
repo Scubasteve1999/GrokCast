@@ -83,10 +83,8 @@ final class OpenMeteoService {
     // Do not attempt JSON decode on error responses (e.g. 502 returns HTML error page).
     // This prevents "data corrupted / not valid JSON" parsing errors on server issues.
     if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-      let bodyStr = String(data: data, encoding: .utf8) ?? "<non-text body>"
-      print("=== OPEN-METEO BAD HTTP STATUS (no JSON decode attempted) ===")
-      print("Status: \(http.statusCode)")
-      print("Body (first 500 chars):\n\(String(bodyStr.prefix(500)))")
+        _ = String(data: data, encoding: .utf8) ?? "<non-text body>"
+      // OPEN-METEO BAD HTTP STATUS (logs removed for release)
       throw URLError(
         .badServerResponse,
         userInfo: [NSLocalizedDescriptionKey: "Weather service returned HTTP \(http.statusCode)"]
@@ -97,11 +95,7 @@ final class OpenMeteoService {
     do {
       decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
     } catch {
-      print("=== OPEN-METEO DECODE ERROR ===")
-      print("Error: \(error)")
-      if let str = String(data: data, encoding: .utf8) {
-        print("RAW JSON (first 1500 chars):\n\(String(str.prefix(1500)))")
-      }
+      // OPEN-METEO DECODE ERROR (logs removed)
       throw error
     }
 
@@ -131,9 +125,6 @@ final class OpenMeteoService {
     let (data, response) = try await URLSession.shared.data(from: components.url!)
 
     if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-      let bodyStr = String(data: data, encoding: .utf8) ?? "<non-text>"
-      print("=== OPEN-METEO AIR BAD STATUS (skipping decode) ===")
-      print("Status: \(http.statusCode) body: \(String(bodyStr.prefix(200)))")
       throw URLError(
         .badServerResponse,
         userInfo: [NSLocalizedDescriptionKey: "Air quality service HTTP \(http.statusCode)"])

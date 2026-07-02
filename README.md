@@ -2,7 +2,7 @@
 
 **GrokCast** — AI-powered weather forecasts with Grok (xAI).
 
-A beautiful native SwiftUI iOS app that combines Apple WeatherKit for accurate forecasts with xAI's Grok for witty, contextual weather insights, outfit suggestions, activity recommendations, and free-form chat about the weather.
+A beautiful native SwiftUI iOS app that combines Open-Meteo (primary) + NWS for accurate forecasts with xAI's Grok for witty, contextual weather insights, outfit suggestions, activity recommendations, and free-form chat about the weather.
 
 Built with the `grok build new swiftui-ios-app` template (weather-forecast + xai-api integration).
 
@@ -21,7 +21,7 @@ Built with the `grok build new swiftui-ios-app` template (weather-forecast + xai
 
 - iOS 17.0+
 - Xcode 16+
-- Apple Developer account (for WeatherKit capability on device; simulator works without paid account for basic testing)
+- Apple Developer account (for App Store / TestFlight + location / background capabilities; simulator works for most dev)
 - Free xAI API key from https://console.x.ai/
 
 ## Getting Started
@@ -44,7 +44,7 @@ Built with the `grok build new swiftui-ios-app` template (weather-forecast + xai
    - Select a simulator (iPhone 17 Pro recommended)
    - Build & Run (⌘R)
    - Grant location permission when prompted
-   - WeatherKit works great in Simulator.
+   - Open-Meteo + location works great in Simulator.
 
 ## Secrets & API Keys
 
@@ -83,7 +83,7 @@ GrokCast/
 │   ├── Models/         # SavedLocation, WeatherData, ChatMessage, QuickPrompt
 │   ├── Services/
 │   │   ├── LocationService.swift      # CLLocationManager + reverse geocode
-│   │   ├── WeatherService.swift       # Thin wrapper over WeatherKit
+│   │   ├── (legacy WeatherService.swift removed in cleanup)
 │   │   ├── XAIService.swift           # OpenAI-compatible /v1/chat/completions to api.x.ai
 │   │   └── WeatherStore.swift         # Central @Observable state + persistence
 │   └── Components/
@@ -94,7 +94,7 @@ GrokCast/
 
 **Key Design Decisions** (weather-forecast template):
 - Pure SwiftUI + Observation framework (no Combine boilerplate)
-- Weather data powered 100% by native **WeatherKit** (no extra API keys for weather)
+- Weather data powered primarily by **Open-Meteo** (with NWS hybrid for US alerts/obs; no extra keys)
 - xAI calls use simple `URLSession` + JSON (no third-party networking libs)
 - Dark-first beautiful UI with glassmorphism and large weather typography
 - One central `WeatherStore` injected via `.environment()`
@@ -105,9 +105,9 @@ GrokCast/
 - SwiftData persistence for saved locations + chat history
 - WidgetKit + Live Activities for current weather + "Grok score"
 - Streaming responses from xAI (SSE)
-- Air quality + pollen from WeatherKit
+- Air quality + pollen from Open-Meteo (supplemental)
 - Haptic feedback on refresh / prompt send
-- Onboarding flow explaining Grok + WeatherKit
+- Onboarding flow explaining Grok + location / data sources
 - App Icon & Launch Screen
 
 ## Building from Source

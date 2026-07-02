@@ -121,13 +121,7 @@ final class NWSService {
     do {
       points = try JSONDecoder().decode(NWSPointsResponse.self, from: pointsData)
     } catch {
-      print("🌩️ [NWS] points decode failed: \(error)")
-      if let decodingError = error as? DecodingError {
-        print("🌩️ [NWS] points decode details: \(decodingError)")
-      }
-      if let jsonStr = String(data: pointsData, encoding: .utf8) {
-        print("🌩️ [NWS] raw points JSON (first 600 chars): \(jsonStr.prefix(600))")
-      }
+      // NWS points decode failed (logs removed for release)
       return nil
     }
 
@@ -153,13 +147,7 @@ final class NWSService {
     do {
       stations = try JSONDecoder().decode(NWSStationsResponse.self, from: stationsData)
     } catch {
-      print("🌩️ [NWS] stations collection decode failed: \(error)")
-      if let decodingError = error as? DecodingError {
-        print("🌩️ [NWS] stations decode details: \(decodingError)")
-      }
-      if let jsonStr = String(data: stationsData, encoding: .utf8) {
-        print("🌩️ [NWS] raw stations JSON (first 600 chars): \(jsonStr.prefix(600))")
-      }
+      // NWS stations collection decode failed (logs removed)
       return nil
     }
 
@@ -187,14 +175,7 @@ final class NWSService {
     do {
       decodedObs = try JSONDecoder().decode(NWSObservationResponse.self, from: obsData)
     } catch {
-      print("🌩️ [NWS] obs decode failed: \(error)")
-      if let decodingError = error as? DecodingError {
-        print("🌩️ [NWS] obs decode details: \(decodingError)")
-      }
-      // Optionally print raw for debug, but truncate
-      if let jsonStr = String(data: obsData, encoding: .utf8) {
-        print("🌩️ [NWS] raw obs JSON (first 500 chars): \(jsonStr.prefix(500))")
-      }
+      // NWS obs decode failed (logs removed)
       return nil
     }
     let props = decodedObs.properties
@@ -217,7 +198,7 @@ final class NWSService {
       observedAt = iso.date(from: props.timestamp)
     }
     guard let observedAt = observedAt else {
-      print("🌩️ [NWS] observation timestamp parse failed for: \(props.timestamp)")
+      // observation timestamp parse failed (log removed)
       return nil
     }
 
@@ -354,7 +335,9 @@ final class NWSService {
       let tempD = Double(p.temperature ?? 0)
       let pwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
       let (sym, _) = mapWeatherCode(pwcode, isDay: p.isDaytime)
-      let pChance = shortForecastMentionsPrecip(p.shortForecast ?? "") ? 40 : 0
+      // Removed hardcoded 40% fake precip (was causing false "40% RAIN" even when clear).
+      // NWS path is now only fallback; real % comes from OpenMeteo primary.
+      let pChance = 0
       hourlyForecasts.append(
         HourlyForecast(
           time: time,
@@ -385,7 +368,8 @@ final class NWSService {
         }
         let dwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
         let (sym, _) = mapWeatherCode(dwcode, isDay: true)
-        let pChance = shortForecastMentionsPrecip(p.shortForecast ?? "") ? 40 : 0
+        // Removed hardcoded 40% fake precip (NWS fallback only).
+        let pChance = 0
         dailyForecasts.append(
           DailyForecast(
             date: dDate,

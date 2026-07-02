@@ -69,7 +69,7 @@ struct LocationsView: View {
         searchResults = response.mapItems
       }
     } catch {
-      print("Search error: \(error)")
+      // Search error (log removed for release)
     }
   }
 }
@@ -90,7 +90,10 @@ struct LocationRow: View {
             .foregroundStyle(.secondary)
         }
         Spacer()
-        if isSelected {
+        if location.isCurrent {
+          Image(systemName: "mappin.circle.fill")
+            .foregroundStyle(.tint)
+        } else if isSelected {
           Image(systemName: "checkmark.circle.fill")
             .foregroundStyle(.tint)
         }

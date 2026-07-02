@@ -31,7 +31,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
       await refreshAuthorizationStatus()
       return granted
     } catch {
-      print("🔔 [Alerts] notification permission failed: \(error.localizedDescription)")
+      // notification permission failed (log removed for release)
       await refreshAuthorizationStatus()
       return false
     }
@@ -99,20 +99,9 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
 
     do {
       try await center.add(request)
-      if let start = taskStart {
-        let elapsed = CFAbsoluteTimeGetCurrent() - start
-        print(
-          String(
-            format: "[DIAG t=%.3f] bg-alerts notification posted: %@ (%@)",
-            elapsed,
-            alert.event,
-            alert.id
-          )
-        )
-      }
       return true
     } catch {
-      print("🔔 [Alerts] failed to schedule notification: \(error.localizedDescription)")
+      // failed to schedule notification (log removed)
       return false
     }
   }

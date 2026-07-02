@@ -9,11 +9,6 @@ enum WidgetDataStore {
 
   private static var groupDefaults: UserDefaults? {
     guard let defaults = WidgetAppGroup.userDefaults else {
-      #if DEBUG
-        print(
-          "⚠️ [WidgetDataStore] App Group UserDefaults unavailable — check entitlements for \(WidgetAppGroup.identifier)"
-        )
-      #endif
       return nil
     }
     return defaults

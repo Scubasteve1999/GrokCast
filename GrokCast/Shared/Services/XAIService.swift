@@ -114,11 +114,11 @@ final class XAIService {
               let error = json["error"] as? [String: Any],
               let message = error["message"] as? String
             {
-              continuation.finish(throwing: GrokAPIError.apiError(message))
+              continuation.finish(throwing: GrokAPIError.apiError(statusCode: http.statusCode, message: message))
             } else {
               let bodyString = String(data: errorData, encoding: .utf8) ?? ""
               continuation.finish(
-                throwing: GrokAPIError.apiError("HTTP \(http.statusCode): \(bodyString)"))
+                throwing: GrokAPIError.apiError(statusCode: http.statusCode, message: bodyString))
             }
             return
           }
@@ -217,10 +217,10 @@ final class XAIService {
         let error = json["error"] as? [String: Any],
         let message = error["message"] as? String
       {
-        throw GrokAPIError.apiError(message)
+        throw GrokAPIError.apiError(statusCode: http.statusCode, message: message)
       }
       let bodyString = String(data: data, encoding: .utf8) ?? ""
-      throw GrokAPIError.apiError("HTTP \(http.statusCode): \(bodyString)")
+      throw GrokAPIError.apiError(statusCode: http.statusCode, message: bodyString)
     }
 
     guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -229,7 +229,7 @@ final class XAIService {
       let urlString = first["url"] as? String,
       let url = URL(string: urlString)
     else {
-      throw GrokAPIError.apiError("Failed to parse image response")
+      throw GrokAPIError.decodingError
     }
 
     return url
@@ -254,10 +254,10 @@ final class XAIService {
         let error = json["error"] as? [String: Any],
         let message = error["message"] as? String
       {
-        throw GrokAPIError.apiError(message)
+        throw GrokAPIError.apiError(statusCode: http.statusCode, message: message)
       }
       let bodyString = String(data: data, encoding: .utf8) ?? ""
-      throw GrokAPIError.apiError("HTTP \(http.statusCode): \(bodyString)")
+      throw GrokAPIError.apiError(statusCode: http.statusCode, message: bodyString)
     }
 
     guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -266,7 +266,7 @@ final class XAIService {
       let message = first["message"] as? [String: Any],
       let content = message["content"] as? String
     else {
-      throw GrokAPIError.apiError("Failed to parse response")
+      throw GrokAPIError.decodingError
     }
 
     return content

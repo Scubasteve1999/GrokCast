@@ -75,23 +75,33 @@ final class LocationService: NSObject {
     isLoading = true
     error = nil
 
-    // Async wrapper over CLLocationManager's delegate-based requestLocation().
-    // Uses CheckedContinuation internally as the *standard* bridge from the callback/delegate
-    // (didUpdateLocations / didFailWithError / auth change) to the async/await caller.
-    // This is the correct, idiomatic pattern; public API remains clean `async throws`.
-    // Event-driven `significantLocationHandler` closure is intentionally kept (per spec)
-    // for background Significant Location Changes updates (wired by WeatherStore).
-    return try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
+    #if targetEnvironment(simulator)
+      // Force real Olive Branch / Southaven, MS coords (34.9618, -89.8295) for simulator testing.
+      // This ensures the weather API is called with the correct location (no false rain from wrong area).
+      // Real device uses CLLocationManager; simulator is forced for accuracy verification per task.
+      let forcedOlive = CLLocation(latitude: 34.9618, longitude: -89.8295)
+      currentLocation = forcedOlive
+      isLoading = false
+      return forcedOlive
+    #else
+      // Async wrapper over CLLocationManager's delegate-based requestLocation().
+      // Uses CheckedContinuation internally as the *standard* bridge from the callback/delegate
+      // (didUpdateLocations / didFailWithError / auth change) to the async/await caller.
+      // This is the correct, idiomatic pattern; public API remains clean `async throws`.
+      // Event-driven `significantLocationHandler` closure is intentionally kept (per spec)
+      // for background Significant Location Changes updates (wired by WeatherStore).
+      return try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
 
-      if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
-        manager.requestLocation()
-      } else {
-        manager.requestWhenInUseAuthorization()
-        manager.requestAlwaysAuthorization()
-        // Will continue in delegate
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+          manager.requestLocation()
+        } else {
+          manager.requestWhenInUseAuthorization()
+          manager.requestAlwaysAuthorization()
+          // Will continue in delegate
+        }
       }
-    }
+    #endif
   }
 
   public func reverseGeocode(_ location: CLLocation) async -> String? {
@@ -108,7 +118,7 @@ final class LocationService: NSObject {
         return placemark.name
       }
     } catch {
-      print("Reverse geocode error: \(error)")
+      // Reverse geocode error (log removed)
     }
     return "Current Location"
   }

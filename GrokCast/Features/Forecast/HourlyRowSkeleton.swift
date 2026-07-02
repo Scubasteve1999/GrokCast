@@ -1,22 +1,29 @@
 import SwiftUI
 
 struct HourlyRowSkeleton: View {
-    var isNow: Bool = false
+  var isNow: Bool = false
 
-    var body: some View {
-        VStack(spacing: 6) {
-            // Time / Now placeholder
-            ShimmerBlock(width: isNow ? 32 : 28, height: 12, cornerRadius: 3)
+  var body: some View {
+    VStack(spacing: 9) {
+      // Time / Now placeholder
+      ShimmerBlock(width: isNow ? 30 : 28, height: 14, cornerRadius: 3)
 
-            // Icon area
-            ShimmerBlock(width: 32, height: 32, cornerRadius: 6)
+      // Icon area
+      ShimmerBlock(width: 32, height: 32, cornerRadius: 6)
 
-            // Temperature
-            ShimmerBlock(width: 28, height: 18, cornerRadius: 4)
+      // Temperature
+      ShimmerBlock(width: 36, height: 22, cornerRadius: 4)
 
-            // Precip chance placeholder
-            ShimmerBlock(width: 20, height: 10, cornerRadius: 3)
-        }
-        .frame(width: 52)
+      // Precip + bar placeholder
+      ShimmerBlock(width: 46, height: 12, cornerRadius: 3)
+      ShimmerBlock(width: 46, height: 5, cornerRadius: 2)
     }
+    .frame(width: 88)
+    .padding(.vertical, DesignTokens.Spacing.space16)
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadius
+    )
+  }
 }

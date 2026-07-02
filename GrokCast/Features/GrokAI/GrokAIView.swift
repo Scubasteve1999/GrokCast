@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 struct GrokAIView: View {
-  @EnvironmentObject private var weatherStore: WeatherStore
+  @Environment(WeatherStore.self) private var weatherStore
 
   var body: some View {
     GrokAIViewContent(weatherStore: weatherStore)
@@ -11,8 +11,8 @@ struct GrokAIView: View {
 }
 
 private struct GrokAIViewContent: View {
-  @EnvironmentObject private var weatherStore: WeatherStore
-  @StateObject private var viewModel: GrokAIViewModel
+  @Environment(WeatherStore.self) private var weatherStore
+  @State private var viewModel: GrokAIViewModel
 
   @State private var question: String = ""
   @State private var showPhotoPicker = false
@@ -21,8 +21,12 @@ private struct GrokAIViewContent: View {
   @State private var showNotesSheet = false
   @State private var stormNotes: String = ""
 
+  @State private var previewImageURL: URL?
+  @State private var previewCaption: String?
+  @State private var showImagePreview = false
+
   init(weatherStore: WeatherStore) {
-    _viewModel = StateObject(wrappedValue: GrokAIViewModel(weatherStore: weatherStore))
+    _viewModel = State(wrappedValue: GrokAIViewModel(weatherStore: weatherStore))
   }
 
   var body: some View {
@@ -38,89 +42,118 @@ private struct GrokAIViewContent: View {
         .ignoresSafeArea()
 
         VStack(spacing: 0) {
-          ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-              headerSection
+          ScrollViewReader { proxy in
+            ScrollView {
+              VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+                headerSection
+                quickPromptsSection
 
-              quickPromptsSection
+                ForEach(viewModel.conversationHistory) { message in
+                  messageBubble(for: message)
+                    .id(message.id)
+                }
 
-              if let thumbnailData = viewModel.stormThumbnailData,
-                let uiImage = UIImage(data: thumbnailData)
-              {
-                Image(uiImage: uiImage)
-                  .resizable()
-                  .scaledToFill()
-                  .frame(maxWidth: 120, maxHeight: 80)
-                  .clipShape(RoundedRectangle(cornerRadius: 8))
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                      .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                if viewModel.isStreaming && !viewModel.stormAnalysisMode {
+                  GrokAIResponseView(
+                    response: viewModel.responseText.isEmpty ? nil : viewModel.responseText,
+                    isThinking: viewModel.responseText.isEmpty,
+                    isStreaming: !viewModel.responseText.isEmpty
                   )
-              }
-
-              if viewModel.isStreaming && viewModel.responseText.isEmpty {
-                responseCard {
-                  HStack(spacing: 12) {
-                    ProgressView()
-                      .tint(.white)
-                    Text(viewModel.stormAnalysisMode ? "ANALYZING SKY..." : "THINKING...")
-                      .font(.footnote.weight(.semibold))
-                      .tracking(1.5)
-                      .foregroundStyle(.secondary)
-                  }
-                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .id(viewModel.responseText.isEmpty ? "thinking" : "streaming")
                 }
-              } else if !viewModel.responseText.isEmpty {
-                responseCard {
-                  StreamingText(text: viewModel.responseText, isStreaming: viewModel.isStreaming)
-                    .font(.body)
-                    .foregroundStyle(.white.opacity(0.9))
-                }
-              }
 
-              if let error = viewModel.errorMessage {
-                VStack(alignment: .leading, spacing: 8) {
-                  HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                      .foregroundStyle(.red)
-                    Text(error)
-                      .font(.caption)
-                      .foregroundStyle(.red)
-                      .lineLimit(4)
-                  }
-
-                  if viewModel.lastStormImageData != nil {
-                    Button {
-                      Task { await viewModel.retryStormAnalysis() }
-                    } label: {
-                      Label("Retry", systemImage: "arrow.clockwise")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.red.opacity(0.2))
-                        .clipShape(Capsule())
+                if viewModel.isGeneratingImage {
+                  responseCard {
+                    HStack(spacing: 12) {
+                      ProgressView()
+                        .tint(.white)
+                      Text("GENERATING IMAGE...")
+                        .font(.footnote.weight(.semibold))
+                        .tracking(1.5)
+                        .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.isStreaming)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                   }
+                  .id("generating-image")
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.red.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                if let thumbnailData = viewModel.stormThumbnailData,
+                  let uiImage = UIImage(data: thumbnailData)
+                {
+                  Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: 120, maxHeight: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+                    .id("storm-thumb")
+                }
+
+                if viewModel.stormAnalysisMode {
+                  GrokAIResponseView(
+                    response: viewModel.responseText.isEmpty ? nil : viewModel.responseText,
+                    isThinking: viewModel.isStreaming && viewModel.responseText.isEmpty,
+                    isStreaming: viewModel.isStreaming && !viewModel.responseText.isEmpty
+                  )
+                }
+
+                if let error = viewModel.errorMessage {
+                  GrokErrorView(
+                    message: error,
+                    retryAction: {
+                      guard !(viewModel.isStreaming || viewModel.isGeneratingImage) else { return }
+                      Task {
+                        if viewModel.lastStormImageData != nil {
+                          await viewModel.retryStormAnalysis()
+                          return
+                        }
+                        guard
+                          let lastUser = viewModel.conversationHistory.last(where: {
+                            $0.role == .user
+                          })
+                        else { return }
+                        await viewModel.askGrok(question: lastUser.content)
+                      }
+                    },
+                    isStormError: viewModel.lastStormImageData != nil
+                  )
+                  .id("error")
+                }
+              }
+              .padding(.horizontal, 20)
+              .padding(.top, 16)
+              .padding(.bottom, 12)
+              .adaptiveContainerWidth(AdaptiveLayout.contentCap)
+            }
+            .onChange(of: viewModel.conversationHistory.count) {
+              scrollToBottom(proxy: proxy)
+            }
+            .onChange(of: viewModel.responseText) {
+              if viewModel.isStreaming && !viewModel.stormAnalysisMode {
+                scrollToBottom(proxy: proxy)
               }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
-            .adaptiveContainerWidth(AdaptiveLayout.contentCap)
+            .onChange(of: viewModel.isStreaming) {
+              if viewModel.isStreaming && !viewModel.stormAnalysisMode
+                && viewModel.responseText.isEmpty
+              {
+                scrollToBottom(proxy: proxy)
+              }
+            }
+            .onChange(of: viewModel.isGeneratingImage) {
+              if viewModel.isGeneratingImage {
+                scrollToBottom(proxy: proxy)
+              }
+            }
           }
 
-          inputBar
+          inputArea
             .adaptiveContainerWidth(AdaptiveLayout.contentCap)
             .padding(.horizontal, 20)
-            .padding(.bottom, 12)
+            .padding(.bottom, 8)
         }
       }
       .navigationTitle("GROK AI")
@@ -147,6 +180,11 @@ private struct GrokAIViewContent: View {
     }
     .sheet(isPresented: $showNotesSheet) {
       stormNotesSheet
+    }
+    .sheet(isPresented: $showImagePreview) {
+      if let url = previewImageURL {
+        imagePreviewSheet(url: url, caption: previewCaption)
+      }
     }
   }
 
@@ -179,24 +217,72 @@ private struct GrokAIViewContent: View {
 
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
-          StormSpotterButton {
-            Task { await beginStormSpotterFlow() }
-          }
-          QuickPromptButton(title: "What should I wear?") {
+          GrokQuickPromptButton(title: "What should I wear?") {
             askQuickPrompt("What should I wear today based on the current weather?")
           }
-          QuickPromptButton(title: "Good for hiking?") {
+          GrokQuickPromptButton(title: "Good for hiking?") {
             askQuickPrompt("Is today a good day for hiking or outdoor activities?")
           }
-          QuickPromptButton(title: "Summarize the week") {
+          GrokQuickPromptButton(title: "Summarize the week") {
             askQuickPrompt("Give me a short summary of the weather for the next few days.")
           }
-          QuickPromptButton(title: "Any weather risks?") {
+          GrokQuickPromptButton(title: "Any weather risks?") {
             askQuickPrompt("Are there any weather risks or severe conditions I should know about?")
+          }
+          GrokQuickPromptButton(title: "Imagine the scene") {
+            Task { await viewModel.generateWeatherImage() }
+          }
+          GrokStormSpotterButton {
+            Task {
+              guard weatherStore.xaiService.hasValidKey else {
+                viewModel.errorMessage =
+                  "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
+                return
+              }
+              let targetLocation =
+                weatherStore.savedLocations.first(where: {
+                  $0.name.localizedCaseInsensitiveContains("Olive Branch")
+                })
+                ?? weatherStore.savedLocations.first(where: { !$0.isCurrent })
+              if let location = targetLocation {
+                await weatherStore.refreshWeather(for: location)
+              } else if let current = weatherStore.savedLocations.first(where: { $0.isCurrent }) {
+                await weatherStore.refreshWeather(for: current)
+              } else {
+                await weatherStore.useCurrentDeviceLocation()
+              }
+              showPhotoPicker = true
+            }
           }
         }
       }
+      .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
     }
+  }
+
+  private var inputArea: some View {
+    HStack(spacing: 12) {
+      GrokInputBar(text: $question) {
+        Task {
+          await viewModel.askGrok(question: question)
+          question = ""
+        }
+      }
+
+      Button {
+        Task {
+          await viewModel.generateWeatherImage(description: question.isEmpty ? nil : question)
+          question = ""
+        }
+      } label: {
+        Image(systemName: "sparkles")
+          .font(.title3)
+          .foregroundStyle(.white.opacity(0.85))
+      }
+      .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+      .help("Generate image from weather + prompt")
+    }
+    .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
   }
 
   private var stormNotesSheet: some View {
@@ -245,41 +331,6 @@ private struct GrokAIViewContent: View {
     .preferredColorScheme(.dark)
   }
 
-  private var inputBar: some View {
-    HStack(spacing: 12) {
-      TextField("Ask anything about the weather...", text: $question, axis: .vertical)
-        .lineLimit(1...4)
-        .textFieldStyle(.plain)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(
-          RoundedRectangle(cornerRadius: 14)
-            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .disabled(viewModel.isStreaming)
-
-      Button {
-        Task {
-          await viewModel.askGrok(question: question)
-          question = ""
-        }
-      } label: {
-        Image(systemName: "arrow.up.circle.fill")
-          .font(.title2)
-          .symbolRenderingMode(.palette)
-          .foregroundStyle(.white, .indigo.opacity(0.8))
-      }
-      .disabled(viewModel.isStreaming || question.trimmingCharacters(in: .whitespaces).isEmpty)
-    }
-    .padding(12)
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
-    .overlay(
-      RoundedRectangle(cornerRadius: 18)
-        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-    )
-  }
-
   private func responseCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
     content()
       .padding(16)
@@ -292,86 +343,183 @@ private struct GrokAIViewContent: View {
       .clipShape(RoundedRectangle(cornerRadius: 14))
   }
 
+  private func messageBubble(for message: ChatMessage) -> some View {
+    HStack {
+      if message.role == .user {
+        Spacer(minLength: 60)
+        VStack(alignment: .trailing, spacing: 4) {
+          Text(message.content)
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.vertical, DesignTokens.Spacing.space12)
+            .cardStyle(
+              background: DesignTokens.Palette.accent.opacity(0.22),
+              stroke: DesignTokens.Palette.accent.opacity(0.35),
+              cornerRadius: DesignTokens.Card.cornerRadiusMedium
+            )
+            .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
+            .frame(maxWidth: 280, alignment: .trailing)
+          Text(timeString(from: message.timestamp))
+            .font(.caption2)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+        }
+      } else if let url = message.generatedImageURL {
+        VStack(alignment: .leading, spacing: 6) {
+          Text(message.content)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .padding(.horizontal, DesignTokens.Spacing.space12)
+            .padding(.vertical, DesignTokens.Spacing.space8)
+            .frame(maxWidth: 280, alignment: .leading)
+          Button {
+            previewImageURL = url
+            previewCaption = message.content
+            showImagePreview = true
+          } label: {
+            AsyncImage(url: url) { phase in
+              switch phase {
+              case .empty:
+                ProgressView().frame(height: 180)
+              case .success(let img):
+                img.resizable().scaledToFit().frame(maxHeight: 220)
+              case .failure:
+                Image(systemName: "photo").foregroundStyle(.secondary)
+              @unknown default: EmptyView()
+              }
+            }
+            .frame(maxWidth: 280)
+            .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
+            .overlay(
+              RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+                .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
+            )
+          }
+          .buttonStyle(.plain)
+
+          Text(timeString(from: message.timestamp))
+            .font(.caption2)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+        }
+        Spacer(minLength: 60)
+      } else {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(message.content)
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.vertical, DesignTokens.Spacing.space12)
+            .cardStyle(
+              background: DesignTokens.Palette.cardBackground,
+              stroke: DesignTokens.Palette.cardStroke,
+              cornerRadius: DesignTokens.Card.cornerRadiusMedium
+            )
+            .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
+            .frame(maxWidth: 280, alignment: .leading)
+          Text(timeString(from: message.timestamp))
+            .font(.caption2)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+        }
+        Spacer(minLength: 60)
+      }
+    }
+  }
+
+  private func scrollToBottom(proxy: ScrollViewProxy) {
+    withAnimation {
+      if viewModel.isStreaming && !viewModel.stormAnalysisMode && !viewModel.responseText.isEmpty {
+        proxy.scrollTo("streaming", anchor: .bottom)
+      } else if let last = viewModel.conversationHistory.last {
+        proxy.scrollTo(last.id, anchor: .bottom)
+      } else if viewModel.isStreaming && !viewModel.stormAnalysisMode {
+        proxy.scrollTo("thinking", anchor: .bottom)
+      } else if viewModel.isGeneratingImage {
+        proxy.scrollTo("generating-image", anchor: .bottom)
+      }
+    }
+  }
+
+  private func timeString(from date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return formatter.string(from: date)
+  }
+
+  private func imagePreviewSheet(url: URL, caption: String? = nil) -> some View {
+    NavigationStack {
+      ScrollView {
+        VStack(spacing: DesignTokens.Spacing.space16) {
+          AsyncImage(url: url) { phase in
+            switch phase {
+            case .empty:
+              ProgressView().frame(height: 400)
+            case .success(let image):
+              image
+                .resizable()
+                .scaledToFit()
+                .cornerRadius(DesignTokens.Radius.medium)
+                .shadow(radius: 12)
+            case .failure:
+              Image(systemName: "photo")
+                .font(.system(size: 80))
+                .foregroundStyle(.secondary)
+                .frame(height: 400)
+            @unknown default:
+              EmptyView()
+            }
+          }
+          .padding(.horizontal)
+
+          if let caption = caption, !caption.isEmpty {
+            Text(caption)
+              .font(.subheadline)
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
+              .multilineTextAlignment(.center)
+              .padding(.horizontal)
+          }
+
+          VStack(spacing: DesignTokens.Spacing.space12) {
+            ShareLink(item: url) {
+              Label("Share Image", systemImage: "square.and.arrow.up")
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+
+            Button {
+              showImagePreview = false
+              Task {
+                await viewModel.generateWeatherImage(description: caption)
+              }
+            } label: {
+              Label("Regenerate", systemImage: "arrow.clockwise")
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(viewModel.isGeneratingImage)
+          }
+          .padding(.horizontal)
+        }
+        .padding(.vertical)
+      }
+      .navigationTitle("Generated Image")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Done") {
+            showImagePreview = false
+          }
+        }
+      }
+    }
+    .preferredColorScheme(.dark)
+  }
+
   private func askQuickPrompt(_ prompt: String) {
     Task {
       await viewModel.askGrok(question: prompt)
     }
   }
 
-  private func beginStormSpotterFlow() async {
-    guard weatherStore.xaiService.hasValidKey else {
-      viewModel.errorMessage =
-        "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
-      return
-    }
-
-    let targetLocation =
-      weatherStore.savedLocations.first(where: {
-        $0.name.localizedCaseInsensitiveContains("Olive Branch")
-      })
-      ?? weatherStore.savedLocations.first(where: { !$0.isCurrent })
-
-    if let location = targetLocation {
-      await weatherStore.refreshWeather(for: location)
-    } else if let current = weatherStore.savedLocations.first(where: { $0.isCurrent }) {
-      await weatherStore.refreshWeather(for: current)
-    } else {
-      await weatherStore.useCurrentDeviceLocation()
-    }
-
-    showPhotoPicker = true
-  }
-}
-
-struct QuickPromptButton: View {
-  let title: String
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Text(title)
-        .font(.caption.weight(.medium))
-        .foregroundStyle(.white.opacity(0.9))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(Color.white.opacity(0.08))
-        .overlay(
-          Capsule()
-            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .clipShape(Capsule())
-    }
-    .buttonStyle(.plain)
-  }
-}
-
-struct StormSpotterButton: View {
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      HStack(spacing: 6) {
-        Image(systemName: "camera.fill")
-          .font(.caption)
-        Text("Storm Spotter")
-          .font(.caption.weight(.semibold))
-      }
-      .foregroundStyle(.white)
-      .padding(.horizontal, 14)
-      .padding(.vertical, 9)
-      .background(Color.orange.opacity(0.25))
-      .overlay(
-        Capsule()
-          .stroke(Color.orange.opacity(0.5), lineWidth: 1)
-      )
-      .clipShape(Capsule())
-    }
-    .buttonStyle(.plain)
-  }
 }
 
 #Preview {
   GrokAIView()
     .environment(WeatherStore.shared)
-    .environmentObject(WeatherStore.shared)
 }

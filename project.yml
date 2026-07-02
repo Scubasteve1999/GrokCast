@@ -1,15 +1,25 @@
 name: GrokCast
 options:
-  bundleIdPrefix: com.grokcast
+  bundleIdPrefix: com.scubasteve1999
   deploymentTarget:
     iOS: "18.0"
   xcodeVersion: "16.0"
   createIntermediateGroups: true
   defaultConfig: Debug
 
+settings:
+  base:
+    MARKETING_VERSION: "1.0.1"
+    CURRENT_PROJECT_VERSION: "9"
+
 configs:
   Debug: debug
   Release: release
+
+packages:
+  MapboxMaps:
+    url: https://github.com/mapbox/mapbox-maps-ios.git
+    majorVersion: 11.0.0
 
 targetTemplates:
   AppTarget:
@@ -19,13 +29,12 @@ targetTemplates:
       - path: GrokCast
         excludes:
           - "**/Info.plist"
+          - "Features/Radar/NWSRadarOverlay.swift"
     settings:
       base:
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "2"
-        PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast
         INFOPLIST_FILE: GrokCast/Info.plist
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: "742YD3WJAR"
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: 1,2
@@ -38,13 +47,13 @@ targetTemplates:
     dependencies:
       - sdk: SwiftUI.framework
       - sdk: CoreLocation.framework
-      - sdk: MapKit.framework
+      - sdk: MapKit.framework  # Used by Locations search (MKLocalSearch); Radar is Mapbox-only after cleanup.
       - sdk: Foundation.framework
-      - sdk: SwiftData.framework
       - sdk: UserNotifications.framework
       - sdk: BackgroundTasks.framework
       - sdk: PhotosUI.framework
       - sdk: WidgetKit.framework
+      - sdk: SwiftData.framework
 
 targets:
   GrokCast:
@@ -54,7 +63,7 @@ targets:
       path: GrokCast/GrokCast.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.grokcast.GrokCast
+          - group.com.scubasteve1999.GrokCast
     info:
       path: GrokCast/Info.plist
       properties:
@@ -73,7 +82,6 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
         NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates." # optional
-        NSWeatherKitUsageDescription: "GrokCast uses Apple Weather to provide forecasts and current conditions."
         UIBackgroundModes:
           - location
           - fetch
@@ -86,6 +94,7 @@ targets:
     dependencies:
       - target: GrokCastWidgets
         embed: true
+      - package: MapboxMaps
 
   GrokCastWidgets:
     type: app-extension
@@ -101,7 +110,7 @@ targets:
       path: GrokCastWidgets/GrokCastWidgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.grokcast.GrokCast
+          - group.com.scubasteve1999.GrokCast
     info:
       path: GrokCastWidgets/Info.plist
       properties:
@@ -112,12 +121,10 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "2"
         # Nested under host app bundle ID (required for embedded widget extensions).
-        PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast.GrokCastWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast.GrokCastWidgets
         INFOPLIST_FILE: GrokCastWidgets/Info.plist
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: "742YD3WJAR"
         CODE_SIGN_STYLE: Automatic
         APPLICATION_EXTENSION_API_ONLY: YES
         TARGETED_DEVICE_FAMILY: 1,2

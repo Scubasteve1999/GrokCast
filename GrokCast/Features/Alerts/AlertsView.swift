@@ -1,5 +1,7 @@
 import SwiftUI
 
+private let bottomTabClearance = DesignTokens.Spacing.space32
+
 struct AlertsView: View {
   @Environment(WeatherStore.self) private var store
   @State private var selectedAlert: NWSAlert?
@@ -21,13 +23,15 @@ struct AlertsView: View {
       Group {
         if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty {
           // --skeletons: shimmer for NWS primary loading states (Today, Forecast, Alerts)
-          VStack(spacing: 8) {
+          VStack(spacing: DesignTokens.Spacing.space8) {
             ForEach(0..<3, id: \.self) { _ in
-              ShimmerBlock(width: nil, height: 52, cornerRadius: 10)
-                .padding(.horizontal, 4)
+              ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.small)
+                .padding(.horizontal, DesignTokens.Spacing.space4)
             }
           }
-          .padding(.top, 20)
+          .padding(.horizontal, DesignTokens.Spacing.space20)
+          .padding(.top, DesignTokens.Spacing.space24)
+          .padding(.bottom, bottomTabClearance)
         } else if activeAlerts.isEmpty && historicalAlerts.isEmpty {
           emptyState
         } else {
@@ -40,9 +44,6 @@ struct AlertsView: View {
       .navigationDestination(item: $selectedAlert) { alert in
         AlertDetailView(alert: alert)
       }
-      .refreshable {
-        await store.refreshAlerts(force: true)
-      }
       .task {
         // Initial load already triggers refreshAlerts via refreshWeather; skip duplicate launch fetch.
         guard store.hasCompletedInitialLoad else { return }
@@ -52,41 +53,56 @@ struct AlertsView: View {
   }
 
   private var alertsList: some View {
-    List {
-      Section {
-        if activeAlerts.isEmpty {
-          Text("No active alerts right now")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-          ForEach(activeAlerts) { alert in
-            alertRow(alert, isActive: true)
-          }
-        }
-      } header: {
-        Label("ACTIVE NOW", systemImage: "bolt.fill")
-          .font(.caption.weight(.bold))
-          .foregroundStyle(.red)
-      }
+    ScrollView {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+          Label("ACTIVE NOW", systemImage: "bolt.fill")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.danger)
+            .tracking(DesignTokens.Typography.cardLabelTracking)
 
-      if !historicalAlerts.isEmpty {
-        Section {
-          ForEach(historicalAlerts) { alert in
-            alertRow(alert, isActive: false)
+          if activeAlerts.isEmpty {
+            Text("No active alerts right now")
+              .font(.subheadline)
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          } else {
+            VStack(spacing: DesignTokens.Spacing.space12) {
+              ForEach(activeAlerts) { alert in
+                alertRow(alert, isActive: true)
+              }
+            }
           }
-        } header: {
-          Text("RECENT HISTORY")
-            .font(.caption.weight(.bold))
-        } footer: {
-          Text("Showing alerts from the last \(AlertHistoryStore.retentionDays) days.")
-            .font(.caption2)
+        }
+
+        if !historicalAlerts.isEmpty {
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+            Text("RECENT HISTORY")
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+              .tracking(DesignTokens.Typography.cardLabelTracking)
+
+            VStack(spacing: DesignTokens.Spacing.space12) {
+              ForEach(historicalAlerts) { alert in
+                alertRow(alert, isActive: false)
+              }
+            }
+
+            Text("Showing alerts from the last \(AlertHistoryStore.retentionDays) days.")
+              .font(.caption2)
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+          }
         }
       }
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.bottom, bottomTabClearance)
     }
-    .listStyle(.insetGrouped)
+    .refreshable {
+      await store.refreshAlerts(force: true)
+    }
     .scrollContentBackground(.hidden)
-    .background(Color.black)
+    .background(DesignTokens.Palette.bgPrimary)
   }
 
   private func alertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
@@ -94,22 +110,22 @@ struct AlertsView: View {
       Haptic.impact(.light)
       selectedAlert = alert
     } label: {
-      HStack(alignment: .top, spacing: 12) {
+      HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
         Image(systemName: NWSAlertStyle.iconName(for: alert))
           .font(.title3)
           .foregroundStyle(NWSAlertStyle.tint(for: alert))
           .frame(width: 28)
 
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
           Text(alert.event)
             .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
             .multilineTextAlignment(.leading)
 
           if let headline = alert.headline, !headline.isEmpty {
             Text(headline)
               .font(.caption)
-              .foregroundStyle(.white.opacity(0.75))
+              .foregroundStyle(DesignTokens.Palette.textPrimary.opacity(0.75))
               .lineLimit(2)
               .multilineTextAlignment(.leading)
           }
@@ -117,13 +133,13 @@ struct AlertsView: View {
           if let area = alert.areaDesc, !area.isEmpty {
             Text(area)
               .font(.caption2)
-              .foregroundStyle(.secondary)
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
               .lineLimit(1)
           }
 
           Text(rowTimestamp(for: alert, isActive: isActive))
             .font(.caption2.monospaced())
-            .foregroundStyle(.secondary)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
 
         Spacer(minLength: 0)
@@ -132,17 +148,23 @@ struct AlertsView: View {
           Text("LIVE")
             .font(.caption2.weight(.heavy))
             .tracking(1)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, DesignTokens.Spacing.space8)
+            .padding(.vertical, DesignTokens.Spacing.space4)
             .background(NWSAlertStyle.tint(for: alert).opacity(0.2), in: Capsule())
             .foregroundStyle(NWSAlertStyle.tint(for: alert))
         }
 
         Image(systemName: "chevron.right")
           .font(.caption.weight(.semibold))
-          .foregroundStyle(.tertiary)
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
-      .padding(.vertical, 4)
+      .padding(DesignTokens.Spacing.space16)
+      .cardStyle(
+        background: DesignTokens.Palette.cardBackground,
+        stroke: DesignTokens.Palette.cardStroke,
+        cornerRadius: DesignTokens.Card.cornerRadiusMedium
+      )
+      .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
     }
     .buttonStyle(.plain)
   }
@@ -155,20 +177,29 @@ struct AlertsView: View {
   }
 
   private var emptyState: some View {
-    ContentUnavailableView {
-      Label("No Alerts", systemImage: "checkmark.shield")
-    } description: {
-      Text(
-        "No active or recent NWS alerts for \(store.currentLocation?.name ?? "your location"). Severe weather Warnings and Watches will appear here."
-      )
-    } actions: {
-      Button("REFRESH") {
-        Haptic.impact(.medium)
-        Task { await store.refreshAlerts(force: true) }
+    ScrollView {
+      ContentUnavailableView {
+        Label("No Alerts", systemImage: "checkmark.shield")
+      } description: {
+        Text(
+          "No active or recent NWS alerts for \(store.currentLocation?.name ?? "your location"). Severe weather Warnings and Watches will appear here."
+        )
+      } actions: {
+        Button("REFRESH") {
+          Haptic.impact(.medium)
+          Task { await store.refreshAlerts(force: true) }
+        }
+        .buttonStyle(.borderedProminent)
       }
-      .buttonStyle(.borderedProminent)
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.bottom, bottomTabClearance)
     }
-    .padding()
+    .refreshable {
+      await store.refreshAlerts(force: true)
+    }
+    .scrollContentBackground(.hidden)
+    .background(DesignTokens.Palette.bgPrimary)
   }
 }
 
