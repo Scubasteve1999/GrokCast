@@ -81,8 +81,8 @@ final class IEMRadarService {
       URLQueryItem(name: "operation", value: "list"),
       URLQueryItem(name: "radar", value: site),
       URLQueryItem(name: "product", value: code),
-      URLQueryItem(name: "start", value: Self.queryTimestamp(from: start)),
-      URLQueryItem(name: "end", value: Self.queryTimestamp(from: end)),
+      URLQueryItem(name: "start", value: Self.scanFormatter.string(from: start)),
+      URLQueryItem(name: "end", value: Self.scanFormatter.string(from: end)),
     ]
     guard let url = components.url,
       let response: ScanListResponse = await fetchJSON(url)
@@ -90,8 +90,11 @@ final class IEMRadarService {
       return []
     }
 
-    return response.scans.suffix(maxFrames).compactMap { scan -> RadarFrame? in
-      guard let date = Self.scanFormatter.date(from: scan.ts) else { return nil }
+    // Sort ascending (oldest→newest) so `suffix` keeps the most recent scans and
+    // the last frame is genuinely "now" — don't rely on the API's response order.
+    let dates = response.scans.compactMap { Self.scanFormatter.date(from: $0.ts) }
+      .sorted()
+    return dates.suffix(maxFrames).map { date in
       let layer = "ridge::\(site)-\(code)-\(Self.layerTimestamp(from: date))"
       return RadarFrame(
         provider: .iem,
@@ -124,7 +127,8 @@ final class IEMRadarService {
     }
   }
 
-  /// e.g. "2026-07-02T14:36Z" (scan list response format)
+  /// e.g. "2026-07-02T14:36Z" — parses scan-list responses and formats the
+  /// start/end query timestamps (same ISO-minute format both directions).
   private static let scanFormatter: DateFormatter = {
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX")
@@ -139,14 +143,6 @@ final class IEMRadarService {
     f.locale = Locale(identifier: "en_US_POSIX")
     f.timeZone = TimeZone(secondsFromGMT: 0)!
     f.dateFormat = "yyyyMMddHHmm"
-    return f.string(from: date)
-  }
-
-  private static func queryTimestamp(from date: Date) -> String {
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = TimeZone(secondsFromGMT: 0)!
-    f.dateFormat = "yyyy-MM-dd'T'HH:mm'Z'"
     return f.string(from: date)
   }
 }

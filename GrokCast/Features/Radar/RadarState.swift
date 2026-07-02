@@ -306,6 +306,12 @@ extension RadarState {
     guard !showsFuture, let site = nearestSite else { return }
 
     let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
+
+    // Re-validate across the await: the user may have entered FUTURE mode or the
+    // resolved site may have changed while this load was in flight. Without this,
+    // stale site frames stomp the new state (mirrors updateNearestSite's guard).
+    guard !showsFuture, selectedProduct == .reflectivity, nearestSite?.id == site.id else { return }
+
     guard !frames.isEmpty else {
       print("[RadarState] \(product.displayName) unavailable for \(site.id) — keeping current view")
       return
