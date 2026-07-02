@@ -7,6 +7,8 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
   case xweather
   case openWeatherMap
+  /// NWS NEXRAD single-site products (Velocity/SRV) via IEM RIDGE cache. Live-only.
+  case iem
 
   /// Default live (NOW) radar — works without a paid Maps plan.
   static let preferredLive: RadarTileProvider = .rainViewer
@@ -19,6 +21,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .rainViewer: "RainViewer"
     case .xweather: "Xweather"
     case .openWeatherMap: "OpenWeatherMap"
+    case .iem: "NWS NEXRAD"
     }
   }
 
@@ -27,6 +30,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .rainViewer: "Live radar · RainViewer"
     case .xweather: "Radar · Xweather"
     case .openWeatherMap: "Radar · OpenWeatherMap"
+    case .iem: "Live radar · NWS NEXRAD"
     }
   }
 
@@ -36,6 +40,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .xweather: "Forecast radar · Xweather"
     case .openWeatherMap:
       "Forecast radar · OpenWeatherMap"
+    case .iem: "Forecast radar · NWS NEXRAD"
     }
   }
 
@@ -45,6 +50,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .rainViewer: 10
     case .xweather: 8
     case .openWeatherMap: 7
+    case .iem: 10
     }
   }
 }

@@ -3,7 +3,8 @@ import Foundation
 enum NWSRadarProduct: String, CaseIterable, Identifiable {
   case reflectivity = "N0Q"
   case superResReflectivity = "N0B"
-  case velocity = "N0V"
+  // IEM RIDGE serves base velocity as N0U (N0V returns 503 — verified 2026-07).
+  case velocity = "N0U"
   case stormRelativeVelocity = "N0S"
   case correlationCoefficient = "N0C"
   case differentialReflectivity = "N0X"

@@ -77,6 +77,9 @@ final class RadarLoader {
     switch provider {
     case .rainViewer:
       return .available
+    case .iem:
+      // Single-site NEXRAD products are live-only; never a forecast provider.
+      return .unavailable(message: "Forecast radar unavailable.")
     case .xweather:
       if XweatherRadarService.mapsAuthConfigured {
         // Probe is advisory; serve as available so tiles can be attempted.

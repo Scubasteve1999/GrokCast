@@ -112,6 +112,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       var tileKey: String
       var maxZoom: Double
       var opacity: Double
+      var saturation: Double
+      var contrast: Double
       var showsFuture: Bool
       var isAnimating: Bool
       var visible: Bool
@@ -121,6 +123,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         tileKey: "",
         maxZoom: 0,
         opacity: 0,
+        saturation: 0,
+        contrast: 0,
         showsFuture: false,
         isAnimating: false,
         visible: false
@@ -209,6 +213,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         tileKey: frame.tileKey,
         maxZoom: frame.provider.maxZoom,
         opacity: opacity,
+        saturation: radarState.colorScheme.rasterSaturation,
+        contrast: radarState.colorScheme.rasterContrast,
         showsFuture: radarState.showsFuture,
         isAnimating: radarState.isAnimating,
         visible: true
@@ -234,12 +240,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
 
       if appliedRasterState == nil {
-        setupLayer(
-          mapView: mapView,
-          tileURLs: desired.tileURLs,
-          maxZoom: desired.maxZoom,
-          opacity: desired.opacity
-        )
+        setupLayer(mapView: mapView, desired: desired)
         appliedRasterState = desired
         lastTileUpdateDate = Date()
         #if DEBUG
@@ -256,12 +257,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         // On mode switch (NOW <-> FUTURE), remove and re-add the source/layer to avoid
         // "Updated style is ignored due to runtime changes" warnings and ensure clean update.
         removeLayer(mapView)
-        setupLayer(
-          mapView: mapView,
-          tileURLs: desired.tileURLs,
-          maxZoom: desired.maxZoom,
-          opacity: desired.opacity
-        )
+        setupLayer(mapView: mapView, desired: desired)
         appliedRasterState = desired
         lastTileUpdateDate = Date()
         #if DEBUG
@@ -283,6 +279,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       if desired.opacity != applied.opacity {
         updateOpacity(mapView: mapView, opacity: desired.opacity)
         appliedRasterState = appliedRasterState?.updatingOpacity(desired.opacity)
+      }
+
+      if desired.saturation != applied.saturation || desired.contrast != applied.contrast {
+        updateColorTreatment(
+          mapView: mapView, saturation: desired.saturation, contrast: desired.contrast)
+        appliedRasterState?.saturation = desired.saturation
+        appliedRasterState?.contrast = desired.contrast
       }
     }
 
@@ -327,19 +330,14 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       mapView.mapboxMap.setCamera(to: CameraOptions(center: center, zoom: zoom))
     }
 
-    private func setupLayer(
-      mapView: MapView,
-      tileURLs: [String],
-      maxZoom: Double,
-      opacity: Double
-    ) {
+    private func setupLayer(mapView: MapView, desired: DesiredRasterState) {
       MapViewHostingSanitizer.sanitize(mapView)
       do {
         var source = RasterSource(id: sourceId)
-        source.tiles = tileURLs
+        source.tiles = desired.tileURLs
         source.tileSize = 256
         source.minzoom = 0
-        source.maxzoom = maxZoom
+        source.maxzoom = desired.maxZoom
         source.prefetchZoomDelta = 0
         source.minimumTileUpdateInterval = Self.tileThrottleInterval
         source.tileNetworkRequestsDelay = Self.tileNetworkRequestsDelay
@@ -348,7 +346,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         var layer = RasterLayer(id: layerId, source: sourceId)
         layer.rasterFadeDuration = .constant(0)
         layer.rasterEmissiveStrength = .constant(1)
-        layer.rasterOpacity = .constant(opacity)
+        layer.rasterOpacity = .constant(desired.opacity)
+        layer.rasterSaturation = .constant(desired.saturation)
+        layer.rasterContrast = .constant(desired.contrast)
         layer.rasterResampling = .constant(.linear)
         try mapView.mapboxMap.addLayer(layer)
       } catch {
@@ -394,6 +394,20 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         for: layerId,
         property: "raster-opacity",
         value: opacity
+      )
+    }
+
+    private func updateColorTreatment(mapView: MapView, saturation: Double, contrast: Double) {
+      guard appliedRasterState != nil, mapView.mapboxMap.layerExists(withId: layerId) else { return }
+      try? mapView.mapboxMap.setLayerProperty(
+        for: layerId,
+        property: "raster-saturation",
+        value: saturation
+      )
+      try? mapView.mapboxMap.setLayerProperty(
+        for: layerId,
+        property: "raster-contrast",
+        value: contrast
       )
     }
 

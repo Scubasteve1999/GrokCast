@@ -9,8 +9,6 @@ struct RadarControlPanel: View {
   @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
 
   @State private var autoResumeAfterScrub = true
-  @State private var selectedProduct = "Reflectivity"
-  @State private var colorScheme = "Vibrant"
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
@@ -19,7 +17,7 @@ struct RadarControlPanel: View {
         Image(systemName: "cloud.rain.fill")
           .font(.caption)
           .foregroundStyle(DesignTokens.Palette.radarAccent)
-        Text("Radar · \(selectedProduct)")
+        Text("Radar · \(radarState.selectedProduct.displayName)")
           .font(.caption.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
 
@@ -78,8 +76,14 @@ struct RadarControlPanel: View {
       .clipShape(Capsule())
       .disabled(!radarState.hasFutureFrames)
 
-      legendPill
-        .frame(maxWidth: .infinity, alignment: .leading)
+      Group {
+        if showsVelocityLegend {
+          velocityLegendPill
+        } else {
+          legendPill
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
 
       // Product chips row (restored style: NQA, Reflectivity, Velocity, SRV)
       productChips
@@ -100,13 +104,35 @@ struct RadarControlPanel: View {
   private var productChips: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 6) {
-        chip("NQA", systemImage: "wifi", isSelected: selectedProduct == "NQA") { selectedProduct = "NQA" }
-        chip("Reflectivity", systemImage: nil, isSelected: selectedProduct == "Reflectivity") { selectedProduct = "Reflectivity" }
-        chip("Velocity", systemImage: nil, isSelected: selectedProduct == "Velocity") { selectedProduct = "Velocity" }
-        chip("SRV", systemImage: nil, isSelected: selectedProduct == "SRV") { selectedProduct = "SRV" }
+        // Resolved nearest NEXRAD site — lights up when a single-site product is active.
+        if let site = radarState.nearestSite {
+          chip(
+            site.id, systemImage: "wifi",
+            isSelected: radarState.selectedProduct.isSiteProduct
+          ) {}
+        }
+        productChip(.reflectivity)
+        productChip(.superResReflectivity)
+        productChip(.stormRelativeVelocity)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func productChip(_ product: RadarProduct) -> some View {
+    // Site products need a resolved US site and only exist for live scans.
+    let enabled =
+      !product.isSiteProduct
+      || (radarState.siteProductsAvailable && !radarState.showsFuture)
+    return chip(
+      product.displayName, systemImage: nil,
+      isSelected: radarState.selectedProduct == product
+    ) {
+      guard enabled else { return }
+      Haptic.impact(.light)
+      Task { await radarState.setProduct(product) }
+    }
+    .opacity(enabled ? 1 : 0.35)
   }
 
   private func chip(_ title: String, systemImage: String?, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -133,23 +159,22 @@ struct RadarControlPanel: View {
 
   private var colorSchemePicker: some View {
     HStack(spacing: 0) {
-      Text("Vibrant")
-        .font(.caption2.weight(colorScheme == "Vibrant" ? .semibold : .regular))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .background(colorScheme == "Vibrant" ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-        .clipShape(Capsule())
-        .foregroundStyle(colorScheme == "Vibrant" ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-        .onTapGesture { colorScheme = "Vibrant" }
-
-      Text("Balanced")
-        .font(.caption2.weight(colorScheme == "Balanced" ? .semibold : .regular))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .background(colorScheme == "Balanced" ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-        .clipShape(Capsule())
-        .foregroundStyle(colorScheme == "Balanced" ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-        .onTapGesture { colorScheme = "Balanced" }
+      ForEach(RadarColorScheme.allCases, id: \.self) { scheme in
+        let isSelected = radarState.colorScheme == scheme
+        Text(scheme.displayName)
+          .font(.caption2.weight(isSelected ? .semibold : .regular))
+          .padding(.horizontal, 12)
+          .padding(.vertical, 4)
+          .background(isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
+          .clipShape(Capsule())
+          .foregroundStyle(
+            isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+          )
+          .onTapGesture {
+            Haptic.impact(.light)
+            radarState.colorScheme = scheme
+          }
+      }
     }
     .background(DesignTokens.Palette.radarTrack)
     .clipShape(Capsule())
@@ -162,6 +187,32 @@ struct RadarControlPanel: View {
         .font(.caption.monospacedDigit())
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
     }
+  }
+
+  /// Velocity products get a toward/away legend instead of the dBZ scale.
+  private var showsVelocityLegend: Bool {
+    radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
+  }
+
+  private var velocityLegendPill: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      LinearGradient(
+        colors: [.green, DesignTokens.Palette.radarTrack, .red],
+        startPoint: .leading, endPoint: .trailing
+      )
+      .frame(height: 8)
+      .clipShape(RoundedRectangle(cornerRadius: 2))
+
+      HStack {
+        Text("Toward radar").font(.caption2)
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        Spacer()
+        Text("Away from radar").font(.caption2)
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+      }
+    }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("Radial velocity legend: green toward the radar, red away")
   }
 
   private var legendPill: some View {
@@ -211,6 +262,11 @@ struct RadarControlPanel: View {
 
   /// Real active tile source for the current mode (replaces the old hardcoded badge).
   private var sourceBadgeText: String {
+    if !radarState.showsFuture, radarState.selectedProduct.isSiteProduct,
+      let site = radarState.nearestSite
+    {
+      return "NWS \(site.id)"
+    }
     let provider =
       radarState.showsFuture
       ? radarState.activeForecastProvider

@@ -53,6 +53,16 @@ final class RadarState {
 
   var showModeSwitchOverlay: Bool { transition != nil }
 
+  /// Composite reflectivity vs single-site NEXRAD products (Velocity/SRV).
+  private(set) var selectedProduct: RadarProduct = .reflectivity
+  /// Client-side raster color treatment (applied in the Mapbox layer).
+  var colorScheme: RadarColorScheme = .vibrant
+  /// Nearest NEXRAD site (resolved from the load coordinate; nil outside the US).
+  private(set) var nearestSite: IEMRadarService.Site?
+
+  /// Composite live timeline saved so product switches can restore it without a reload.
+  private var compositeLive: (frames: [RadarFrame], availability: RadarTileAvailability)?
+
   private let loader = RadarLoader()
   var playback = RadarPlayback()
   private var manualIsLoading = false
@@ -142,7 +152,7 @@ final class RadarState {
     if let provider = activeLiveProvider {
       return RadarStatusFooter(
         text: provider.liveFooterLabel,
-        style: provider == .rainViewer ? .secondary : .warning
+        style: (provider == .rainViewer || provider == .iem) ? .secondary : .warning
       )
     }
     if let message = liveUnavailableMessage {
@@ -177,6 +187,11 @@ final class RadarState {
     }
 
     guard timeline.hasForecast, !showsFuture, transition == nil else { return }
+
+    // Site products (Velocity/SRV) have no forecast — return to composite reflectivity.
+    if selectedProduct.isSiteProduct {
+      restoreCompositeLive()
+    }
 
     beginTransition(targetIsFuture: true)
   }
@@ -269,10 +284,61 @@ extension RadarState {
     requestModeChange(toFuture: isFuture)
   }
 
+  /// Whether Velocity/SRV chips can do anything (US live mode with a resolved site).
+  var siteProductsAvailable: Bool {
+    nearestSite != nil
+  }
+
+  /// Switch between composite reflectivity and single-site NEXRAD products.
+  /// Silent no-op when the site products aren't available or frames fail to load.
+  func setProduct(_ product: RadarProduct) async {
+    guard product != selectedProduct else { return }
+
+    guard product.isSiteProduct else {
+      selectedProduct = .reflectivity
+      restoreCompositeLive()
+      return
+    }
+
+    guard !showsFuture, let site = nearestSite else { return }
+
+    let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
+    guard !frames.isEmpty else {
+      print("[RadarState] \(product.displayName) unavailable for \(site.id) — keeping current view")
+      return
+    }
+
+    selectedProduct = product
+    timeline.live = frames
+    liveTileAvailability = .available
+    playback.currentIndex = max(0, frames.count - 1)
+    print("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
+  }
+
+  private func restoreCompositeLive() {
+    selectedProduct = .reflectivity
+    guard let composite = compositeLive else { return }
+    timeline.live = composite.frames
+    liveTileAvailability = composite.availability
+    if !showsFuture {
+      playback.currentIndex = max(0, composite.frames.count - 1)
+    }
+  }
+
   func loadDefaultRadar(for coordinate: CLLocationCoordinate2D) async {
-    _ = coordinate
     guard !isLoading else { return }
     isLoading = true
+
+    // Resolve the nearest NEXRAD site for Velocity/SRV (non-fatal, non-US → nil).
+    if nearestSite == nil {
+      Task { [weak self] in
+        let site = await IEMRadarService.nearestSite(to: coordinate)
+        self?.nearestSite = site
+        if let site {
+          print("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
+        }
+      }
+    }
 
     print(
       "[RadarState] Loading radar → \(RadarTileProvider.preferredLive.displayName) (NOW)"
@@ -280,6 +346,8 @@ extension RadarState {
     )
     let result = await loader.loadAll()
 
+    selectedProduct = .reflectivity
+    compositeLive = (result.live, result.liveAvailability)
     timeline.live = result.live
     timeline.forecast = result.forecast
     liveTileAvailability = result.liveAvailability
