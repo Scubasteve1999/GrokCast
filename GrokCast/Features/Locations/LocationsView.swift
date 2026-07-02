@@ -98,6 +98,7 @@ struct LocationRow: View {
             .foregroundStyle(.tint)
         }
       }
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
   }

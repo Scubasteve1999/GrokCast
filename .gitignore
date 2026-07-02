@@ -40,10 +40,20 @@ DerivedData/
 *.xcworkspace
 !default.xcworkspace
 
+# Xcode Cloud needs the pinned SPM manifest committed (resolves mapbox-maps-ios).
+# Re-include the workspace dir chain so git can descend into it; the file itself
+# is un-ignored below, after the broad `Package.resolved` rule that would re-ignore it.
+!GrokCast.xcodeproj/project.xcworkspace/
+!GrokCast.xcodeproj/project.xcworkspace/xcshareddata/
+!GrokCast.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+# ...but keep the user-specific workspace settings the re-inclusion above exposes ignored
+GrokCast.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+
 # Swift Package Manager
 .build/
 Packages/
 Package.resolved
+!GrokCast.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 *.swiftpm
 
 # CocoaPods
