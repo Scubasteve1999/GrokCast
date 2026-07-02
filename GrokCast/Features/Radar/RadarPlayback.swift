@@ -14,6 +14,10 @@ final class RadarPlayback {
 
   private static let baselineScreenInterval: TimeInterval = 2.5
   private static let referenceDataGap: TimeInterval = 5 * 60
+  /// Upper bound on a single frame's screen time (before speed). Without this,
+  /// wide real gaps — hourly FUTURE frames are 60 min apart — scale to ~30s per
+  /// frame, so playback looks frozen. Caps every mode to a watchable cadence.
+  private static let maxScreenInterval: TimeInterval = 2.5
 
   func start() {
     let count = frameCount()
@@ -113,8 +117,10 @@ final class RadarPlayback {
   }
 
   private func compressedInterval(_ realGap: TimeInterval) -> TimeInterval {
-    let scaled =
-      realGap * (Self.baselineScreenInterval / Self.referenceDataGap) / max(playbackSpeed, 0.25)
-    return max(0.15, scaled)
+    let speed = max(playbackSpeed, 0.25)
+    let scaled = realGap * (Self.baselineScreenInterval / Self.referenceDataGap) / speed
+    // Ceiling scales with speed too, so 2x/4x still accelerate FUTURE playback.
+    let ceiling = Self.maxScreenInterval / speed
+    return min(ceiling, max(0.15, scaled))
   }
 }
