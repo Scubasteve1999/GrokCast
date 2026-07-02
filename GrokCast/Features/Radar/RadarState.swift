@@ -63,6 +63,9 @@ final class RadarState {
   /// Composite live timeline saved so product switches can restore it without a reload.
   private var compositeLive: (frames: [RadarFrame], availability: RadarTileAvailability)?
 
+  /// Drops stale async site resolutions when the location changes again mid-flight.
+  private var siteResolutionToken = UUID()
+
   private let loader = RadarLoader()
   var playback = RadarPlayback()
   private var manualIsLoading = false
@@ -325,20 +328,48 @@ extension RadarState {
     }
   }
 
+  /// Resolve the nearest NEXRAD site for the selected weather location and keep
+  /// any active site product pointed at it. Non-fatal; non-US resolves to nil
+  /// (site chips silently unavailable). Superseded calls are dropped.
+  func updateNearestSite(for coordinate: CLLocationCoordinate2D) async {
+    let token = UUID()
+    siteResolutionToken = token
+
+    let site = await IEMRadarService.nearestSite(to: coordinate)
+    guard siteResolutionToken == token, site != nearestSite else { return }
+
+    nearestSite = site
+    if let site {
+      print("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
+    }
+
+    // The active site product belongs to the old site — reload it for the new one.
+    guard selectedProduct.isSiteProduct else { return }
+    guard let site else {
+      restoreCompositeLive()
+      return
+    }
+
+    let product = selectedProduct
+    let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
+    guard siteResolutionToken == token, selectedProduct == product else { return }
+
+    guard !frames.isEmpty else {
+      restoreCompositeLive()
+      return
+    }
+    timeline.live = frames
+    liveTileAvailability = .available
+    if !showsFuture {
+      playback.currentIndex = max(0, frames.count - 1)
+    }
+    print("[RadarState] \(product.displayName) moved to NWS \(site.id) (\(frames.count) scans)")
+  }
+
   func loadDefaultRadar(for coordinate: CLLocationCoordinate2D) async {
+    _ = coordinate  // Site resolution tracks the selected location (updateNearestSite).
     guard !isLoading else { return }
     isLoading = true
-
-    // Resolve the nearest NEXRAD site for Velocity/SRV (non-fatal, non-US → nil).
-    if nearestSite == nil {
-      Task { [weak self] in
-        let site = await IEMRadarService.nearestSite(to: coordinate)
-        self?.nearestSite = site
-        if let site {
-          print("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
-        }
-      }
-    }
 
     print(
       "[RadarState] Loading radar → \(RadarTileProvider.preferredLive.displayName) (NOW)"

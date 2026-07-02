@@ -44,6 +44,11 @@ struct RadarView: View {
           }
         }
       }
+      // Site products (Super-Res/SRV) follow the selected weather location.
+      .task(id: store.currentLocation?.id) {
+        let center = store.currentLocation?.coordinate ?? defaultMapCenter
+        await radarState.updateNearestSite(for: center)
+      }
       .task(id: radarState.transition?.id) {
         await runModeTransitionIfNeeded()
       }
