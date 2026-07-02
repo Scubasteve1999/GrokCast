@@ -377,13 +377,21 @@ extension RadarState {
     )
     let result = await loader.loadAll()
 
-    selectedProduct = .reflectivity
+    // Always cache the composite result so a site product can restore it later —
+    // even if the user selected one while this initial load was in flight.
     compositeLive = (result.live, result.liveAvailability)
-    timeline.live = result.live
     timeline.forecast = result.forecast
-    liveTileAvailability = result.liveAvailability
     forecastTileAvailability = result.forecastAvailability
-    activateCurrentForCommittedMode()
+
+    // Don't stomp a site product (Super-Res/SRV) the user chose during the load.
+    if selectedProduct.isSiteProduct {
+      print("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
+    } else {
+      selectedProduct = .reflectivity
+      timeline.live = result.live
+      liveTileAvailability = result.liveAvailability
+      activateCurrentForCommittedMode()
+    }
 
     if let provider = result.liveProvider, !result.live.isEmpty {
       print("[RadarState] \(provider.displayName) loaded (\(result.live.count) frames)")

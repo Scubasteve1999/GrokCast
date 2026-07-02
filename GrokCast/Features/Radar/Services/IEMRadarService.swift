@@ -17,7 +17,9 @@ final class IEMRadarService {
   /// Beyond this the site's low-level beam is too high to be useful (and we're likely non-US).
   private static let maxSiteDistanceMeters: CLLocationDistance = 400_000
 
-  private static var cachedSites: [Site]?
+  /// Main-actor isolated: the sole caller (RadarState) is @MainActor, and this
+  /// avoids an unsynchronized static-var data race across concurrent resolutions.
+  @MainActor private static var cachedSites: [Site]?
 
   struct Site: Decodable, Equatable {
     let id: String
@@ -38,6 +40,7 @@ final class IEMRadarService {
   }
 
   /// Nearest NEXRAD site to the coordinate, or nil when none is close enough (non-US).
+  @MainActor
   static func nearestSite(to coordinate: CLLocationCoordinate2D) async -> Site? {
     let sites: [Site]
     if let cachedSites {

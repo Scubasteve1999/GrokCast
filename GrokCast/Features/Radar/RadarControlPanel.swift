@@ -197,7 +197,10 @@ struct RadarControlPanel: View {
   private var velocityLegendPill: some View {
     VStack(alignment: .leading, spacing: 4) {
       LinearGradient(
-        colors: [.green, DesignTokens.Palette.radarTrack, .red],
+        colors: [
+          DesignTokens.Palette.success, DesignTokens.Palette.radarTrack,
+          DesignTokens.Palette.danger,
+        ],
         startPoint: .leading, endPoint: .trailing
       )
       .frame(height: 8)
