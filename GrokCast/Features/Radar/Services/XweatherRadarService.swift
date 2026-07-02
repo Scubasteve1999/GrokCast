@@ -121,7 +121,7 @@ final class XweatherRadarService {
       case .past:
         timestamp = roundedNow.addingTimeInterval(-Double(step) * intervalSeconds)
       case .future:
-        timestamp = roundedNow.addingTimeInterval(Double(offsetMinutes) * intervalSeconds)
+        timestamp = roundedNow.addingTimeInterval(Double(step) * intervalSeconds)
       }
 
       let layer: XweatherRadarLayer = direction == .past ? .radar : .fradar

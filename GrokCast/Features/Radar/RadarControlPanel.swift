@@ -23,7 +23,7 @@ struct RadarControlPanel: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
 
-        Text("IEM • NQA (fallback)")
+        Text(sourceBadgeText)
           .font(.caption2)
           .padding(.horizontal, 6)
           .padding(.vertical, 2)
@@ -33,9 +33,11 @@ struct RadarControlPanel: View {
 
         Spacer()
 
-        Text("Updated 3 min. ago")
-          .font(.caption2)
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        if let updatedText {
+          Text(updatedText)
+            .font(.caption2)
+            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        }
       }
 
       RadarPlaybackControls(
@@ -205,6 +207,24 @@ struct RadarControlPanel: View {
     }
     .accessibilityElement(children: .combine)
     .accessibilityLabel("Precipitation intensity legend with dBZ scale")
+  }
+
+  /// Real active tile source for the current mode (replaces the old hardcoded badge).
+  private var sourceBadgeText: String {
+    let provider =
+      radarState.showsFuture
+      ? radarState.activeForecastProvider
+      : radarState.activeLiveProvider
+    return provider?.displayName ?? "No source"
+  }
+
+  /// Freshness of the newest live radar frame; nil until frames load.
+  private var updatedText: String? {
+    guard let latest = radarState.timeline.live.last?.timestamp else { return nil }
+    let minutes = Int(-latest.timeIntervalSinceNow / 60)
+    if minutes < 1 { return "Updated just now" }
+    if minutes < 60 { return "Updated \(minutes) min. ago" }
+    return "Updated \(minutes / 60)h ago"
   }
 
   private var showsFutureUnavailableHint: Bool {
