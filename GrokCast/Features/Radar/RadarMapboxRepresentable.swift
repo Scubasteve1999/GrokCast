@@ -18,7 +18,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     let scale = MapViewHostingSanitizer.screenScale
     let options = MapInitOptions(
       mapOptions: MapOptions(pixelRatio: CGFloat(scale)),
-      styleURI: .dark
+      styleURI: .satelliteStreets
     )
     let mapView = MapView(
       frame: MapViewHostingSanitizer.initialFrame,
