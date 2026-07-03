@@ -1,8 +1,16 @@
 import SwiftUI
 
+enum GrokCastScoreCardLayout {
+  /// Ring progress + location subtitle (legacy Today layout).
+  case ring
+  /// Figma Today screen: uppercase label + icon row with score headline.
+  case figma
+}
+
 struct GrokCastScoreCard: View {
   let score: GrokCastScore
   let locationName: String
+  var layout: GrokCastScoreCardLayout = .ring
 
   private var ringColor: Color {
     switch score.accentTier {
@@ -13,6 +21,48 @@ struct GrokCastScoreCard: View {
   }
 
   var body: some View {
+    switch layout {
+    case .ring:
+      ringLayout
+    case .figma:
+      figmaLayout
+    }
+  }
+
+  private var figmaLayout: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text("GROKCAST SCORE")
+        .font(.caption.weight(.bold))
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+
+      HStack(spacing: DesignTokens.Spacing.space12) {
+        Image(systemName: score.icon)
+          .font(.system(size: 28))
+          .foregroundStyle(ringColor)
+          .symbolRenderingMode(.hierarchical)
+
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
+          Text("\(score.value) · \(score.label)")
+            .font(.body.weight(.bold))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+          Text(score.subtitle)
+            .font(.subheadline)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+
+        Spacer(minLength: 0)
+      }
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .cardStyle()
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("GrokCast score \(score.value). \(score.label). \(score.subtitle)")
+  }
+
+  private var ringLayout: some View {
     HStack(spacing: DesignTokens.Spacing.space16) {
       ZStack {
         Circle()
@@ -62,6 +112,16 @@ struct GrokCastScoreCard: View {
 }
 
 #if DEBUG
+#Preview("Figma layout") {
+  GrokCastScoreCard(
+    score: GrokCastScore(value: 84, label: "Go Outside", subtitle: "Great conditions this afternoon", icon: "figure.walk"),
+    locationName: "Olive Branch",
+    layout: .figma
+  )
+  .padding()
+  .background(DesignTokens.Palette.bgPrimary)
+}
+
 #Preview {
   GrokCastScoreCard(
     score: GrokCastScore(value: 82, label: "Go Outside", subtitle: "Great conditions", icon: "figure.walk"),

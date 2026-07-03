@@ -6,10 +6,9 @@ import SwiftUI
 
 // Shared bottom clearance for Today tab states (data, skeleton, non-scroll) to clear
 // the custom tab bar on .compact (iPhone) incl. large phones like iPhone 16 Pro Max.
-// Using space32 (vs prior space24) to guarantee the refresh button, last shimmer,
-// and centered cards are fully above the ~60-65pt CustomTabBar + home indicator.
 private let bottomTabClearance = DesignTokens.Spacing.space32
-private let topChromeClearance = DesignTokens.Spacing.space48 + 72
+/// Figma Today screen: content starts below status bar with modest top inset.
+private let todayContentTopPadding = DesignTokens.Spacing.space16
 
 struct TodayView: View {
   @Environment(WeatherStore.self) private var store
@@ -31,13 +30,7 @@ struct TodayView: View {
   var body: some View {
     NavigationStack {
       ZStack {
-        DynamicWeatherBackground(
-          conditionCode: store.currentWeather?.conditionCode,
-          isDay: store.currentWeather.map {
-            WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay
-        )
-        .ignoresSafeArea()
+        todayWeatherBackground
 
         let status = store.locationService.authorizationStatus
         if !store.hasRequestedLocationPermission {
@@ -62,8 +55,8 @@ struct TodayView: View {
               generateImageAction: generateImageForToday
             )
             .padding(.horizontal, DesignTokens.Spacing.space20)
-            .padding(.top, topChromeClearance)  // tab bar + safe area (non-DS chrome clearance)
-            .padding(.bottom, bottomTabClearance)  // bottom clearance for CustomTabBar on compact + large phones (guarantees vs ~65pt tab)
+            .padding(.top, todayContentTopPadding)
+            .padding(.bottom, bottomTabClearance)
             .adaptiveContainerWidth(AdaptiveLayout.contentCap)
           }
           .refreshable {
@@ -260,14 +253,25 @@ struct TodayView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
-  private var backgroundGradient: some View {
-    LinearGradient(
-      colors: [Color.blue.opacity(0.85), Color.indigo.opacity(0.9)],
-      startPoint: .topLeading,
-      endPoint: .bottomTrailing
-    )
-  }
+  /// Animated condition-aware backdrop (gradients + particles) over the base palette.
+  private var todayWeatherBackground: some View {
+    ZStack {
+      DesignTokens.Palette.bgPrimary
+        .ignoresSafeArea()
 
+      WeatherBackgroundView(
+        conditionCode: store.currentWeather?.conditionCode,
+        isDay: store.currentWeather.map {
+          WeatherBackgroundView.isDay(from: $0.symbolName)
+        } ?? WeatherBackgroundView.inferredIsDay,
+        intensity: .full
+      )
+      .ignoresSafeArea()
+      .opacity(0.88)
+      .animation(.easeInOut(duration: 1.0), value: store.currentWeather?.conditionCode)
+    }
+    .allowsHitTesting(false)
+  }
 }
 
 private struct TodayWeatherPanel: View {
@@ -303,10 +307,45 @@ private struct TodayWeatherPanel: View {
   }
 
   var body: some View {
+    if !awaitsWidthMeasurement && prefersTwoColumnLayout {
+      wideTodayLayout
+    } else {
+      compactFigmaTodayLayout
+    }
+  }
+
+  /// Figma Today screen — location, hero temp, score, minutecast, Grok brief.
+  private var compactFigmaTodayLayout: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+      figmaHeroSection
+
+      GrokCastScoreCard(
+        score: currentScore,
+        locationName: store.currentLocation?.name ?? weather.location.name,
+        layout: .figma
+      )
+
+      MinutecastStrip(summary: currentMinutecast)
+
+      GrokBriefCard(presentation: .figma)
+
+      if !store.displayableActiveAlerts.isEmpty {
+        alertsSection
+      }
+
+      extendedTodayDetails
+    }
+  }
+
+  private var wideTodayLayout: some View {
     VStack(spacing: DesignTokens.Spacing.space48) {
       header
 
-      GrokCastScoreCard(score: currentScore, locationName: store.currentLocation?.name ?? weather.location.name)
+      GrokCastScoreCard(
+        score: currentScore,
+        locationName: store.currentLocation?.name ?? weather.location.name,
+        layout: .ring
+      )
 
       MinutecastStrip(summary: currentMinutecast)
 
@@ -316,52 +355,91 @@ private struct TodayWeatherPanel: View {
         alertsSection
       }
 
-      if !awaitsWidthMeasurement && prefersTwoColumnLayout {
-        HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
-          VStack(spacing: DesignTokens.Spacing.space16) {
-            heroCard
-            tonightSection
-          }
-          .frame(maxWidth: .infinity)
-
-          VStack(spacing: DesignTokens.Spacing.space24) {
-            tacticalDetailsGrid
-            GrokImagineButton(
-              weather: weather,
-              isGenerating: isGeneratingImage,
-              action: generateImageAction
-            )
-          }
-          .frame(maxWidth: .infinity)
+      HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
+        VStack(spacing: DesignTokens.Spacing.space16) {
+          heroCard
+          tonightSection
         }
-      } else {
-        heroCard
-        tonightSection
-          .padding(.top, DesignTokens.Spacing.space4)
-        tacticalDetailsGrid
-          .padding(.top, DesignTokens.Spacing.space16)
-        GrokImagineButton(
-          weather: weather,
-          isGenerating: isGeneratingImage,
-          action: generateImageAction
-        )
-        .padding(.top, DesignTokens.Spacing.space8)
+        .frame(maxWidth: .infinity)
+
+        VStack(spacing: DesignTokens.Spacing.space24) {
+          tacticalDetailsGrid
+          GrokImagineButton(
+            weather: weather,
+            isGenerating: isGeneratingImage,
+            action: generateImageAction
+          )
+        }
+        .frame(maxWidth: .infinity)
       }
 
       errorBanner
 
-      Button {
-        Haptic.impact(.medium)
-        Task { await store.refreshWeather() }
-      } label: {
-        Label("REFRESH DATA", systemImage: "arrow.clockwise")
-          .font(.footnote.weight(.semibold))
-          .tracking(1.5)
-      }
-      .buttonStyle(.bordered)
-      .tint(DesignTokens.Palette.textSecondary)
-      .padding(.top, DesignTokens.Spacing.space16)
+      refreshButton
     }
+  }
+
+  private var figmaHeroSection: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+      Text((store.currentLocation?.name ?? weather.location.name).uppercased())
+        .font(.caption.weight(.bold))
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+
+      HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
+        Image(systemName: weather.symbolName)
+          .font(.system(size: 48))
+          .symbolRenderingMode(.multicolor)
+
+        Text(store.formatTemperatureShort(weather.currentTemp))
+          .font(DesignTokens.Typography.heroTemperature())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .monospacedDigit()
+          .lineLimit(1)
+          .allowsTightening(true)
+          .minimumScaleFactor(0.5)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      Text("\(feelsLikeSubtitle) · \(weather.conditionText)")
+        .font(.subheadline)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+  }
+
+  private var feelsLikeSubtitle: String {
+    "Feels like \(store.formatTemperatureShort(weather.feelsLike))"
+  }
+
+  @ViewBuilder
+  private var extendedTodayDetails: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
+      tonightSection
+      tacticalDetailsGrid
+      GrokImagineButton(
+        weather: weather,
+        isGenerating: isGeneratingImage,
+        action: generateImageAction
+      )
+      errorBanner
+      refreshButton
+    }
+    .padding(.top, DesignTokens.Spacing.space8)
+  }
+
+  private var refreshButton: some View {
+    Button {
+      Haptic.impact(.medium)
+      Task { await store.refreshWeather() }
+    } label: {
+      Label("REFRESH DATA", systemImage: "arrow.clockwise")
+        .font(.footnote.weight(.semibold))
+        .tracking(1.5)
+    }
+    .buttonStyle(.bordered)
+    .tint(DesignTokens.Palette.textSecondary)
+    .padding(.top, DesignTokens.Spacing.space8)
   }
 
   // DesignSystem v1 header (location + date, uppercase labels per scale).
@@ -713,7 +791,7 @@ struct TodaySkeleton: View {
     ScrollView {
       TodaySkeletonPanel()
         .padding(.horizontal, DesignTokens.Spacing.space20)
-        .padding(.top, topChromeClearance)  // tab bar + safe area clearance (non-DS value)
+        .padding(.top, todayContentTopPadding)
         .padding(.bottom, bottomTabClearance)  // bottom clearance for CustomTabBar on compact + large phones (guarantees vs ~65pt tab)
         .adaptiveContainerWidth(AdaptiveLayout.contentCap)
     }
