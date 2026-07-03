@@ -265,7 +265,9 @@ final class NWSService {
     return try JSONDecoder().decode(NWSPointsResponse.self, from: pointsData)
   }
 
-  func fetchForecast(for location: SavedLocation) async throws -> GrokCastWeather {
+  func fetchForecast(for location: SavedLocation, units: TemperatureUnit = .fahrenheit)
+    async throws -> GrokCastWeather
+  {
     try Task.checkCancellation()
 
     // 1. /points (shared helper for dupe reduction) to discover grid (location-aware)
@@ -304,10 +306,12 @@ final class NWSService {
       throw error
     }
 
-    return try mapNWSForecastResponse(location: location, response: forecastResp)
+    return try mapNWSForecastResponse(location: location, response: forecastResp, units: units)
   }
 
-  private func mapNWSForecastResponse(location: SavedLocation, response: NWSForecastResponse)
+  private func mapNWSForecastResponse(
+    location: SavedLocation, response: NWSForecastResponse, units: TemperatureUnit
+  )
     throws -> GrokCastWeather
   {
     let periods = response.properties.periods
@@ -315,8 +319,15 @@ final class NWSService {
       throw NWSServiceError.noData
     }
 
+    // NWS /forecast returns °F and mph. Convert to the user's selected units so the
+    // fallback path never renders Fahrenheit numbers under °C / km/h labels.
+    let convertTemp: (Double) -> Double =
+      units == .celsius ? { ($0 - 32) * 5 / 9 } : { $0 }
+    let convertWind: (Double) -> Double =
+      units == .celsius ? { $0 * 1.609344 } : { $0 }
+
     let first = periods[0]
-    let currentTemp = Double(first.temperature ?? 0)
+    let currentTemp = convertTemp(Double(first.temperature ?? 0))
     let isDay = first.isDaytime
     let wcode = wmoCode(fromNWSShortForecast: first.shortForecast ?? "")
     let (symbol, text) = mapWeatherCode(wcode, isDay: isDay)
@@ -325,14 +336,14 @@ final class NWSService {
     var windSpeed: Double = 0
     if let ws = first.windSpeed {
       let parts = ws.split(separator: " ")
-      if let n = Double(parts.first ?? "") { windSpeed = n }
+      if let n = Double(parts.first ?? "") { windSpeed = convertWind(n) }
     }
 
     // hourly: map available periods (NWS /forecast gives ~14; UI accepts variable count, use startTime as stable Date id)
     var hourlyForecasts: [HourlyForecast] = []
     for p in periods.prefix(24) {
       let time = parseNWSDate(p.startTime) ?? Date()
-      let tempD = Double(p.temperature ?? 0)
+      let tempD = convertTemp(Double(p.temperature ?? 0))
       let pwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
       let (sym, _) = mapWeatherCode(pwcode, isDay: p.isDaytime)
       // Removed hardcoded 40% fake precip (was causing false "40% RAIN" even when clear).
@@ -357,15 +368,17 @@ final class NWSService {
     for i in 0..<periods.count where dailyForecasts.count < 10 {
       let p = periods[i]
       if p.isDaytime {
-        let high = Double(p.temperature ?? 0)
-        var low = high - 10.0
+        let rawHigh = Double(p.temperature ?? 0)
+        var rawLow = rawHigh - 10.0
         let dDate = parseNWSDate(p.startTime) ?? Date()
         if i + 1 < periods.count {
           let np = periods[i + 1]
           if !np.isDaytime {
-            low = Double(np.temperature ?? Int(low))
+            rawLow = Double(np.temperature ?? Int(rawLow))
           }
         }
+        let high = convertTemp(rawHigh)
+        let low = convertTemp(rawLow)
         let dwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
         let (sym, _) = mapWeatherCode(dwcode, isDay: true)
         // Removed hardcoded 40% fake precip (NWS fallback only).

@@ -9,18 +9,21 @@ struct ForecastView: View {
 
   var body: some View {
     NavigationStack {
-      ForecastAdaptiveBody()
-        .adaptiveContainerWidth(AdaptiveLayout.contentCap)
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+      ZStack {
+        TodaySkyBackground(
+          conditionCode: store.currentWeather?.conditionCode ?? 1,
+          isDay: store.currentWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          } ?? WeatherBackgroundView.inferredIsDay
+        )
+        .ignoresSafeArea()
+
+        ForecastAdaptiveBody()
+          .adaptiveContainerWidth(AdaptiveLayout.contentCap)
+          .navigationTitle("")
+          .navigationBarTitleDisplayMode(.inline)
+      }
     }
-    .weatherBackground(
-      conditionCode: store.currentWeather?.conditionCode,
-      isDay: store.currentWeather.map {
-        WeatherBackgroundView.isDay(from: $0.symbolName)
-      } ?? WeatherBackgroundView.inferredIsDay,
-      intensity: .subtle
-    )
     .preferredColorScheme(.dark)
   }
 }
@@ -142,29 +145,24 @@ private struct ForecastAdaptiveBody: View {
   private var compactForecastSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "FORECAST")
+        Text("FORECAST")
+          .font(DesignTokens.Figma.Typography.screenTitle)
+          .foregroundStyle(TodayBright.textPrimary)
+          .skyTextShadow()
 
-        FigmaSubsectionLabel(title: "Hourly")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            ForEach(0..<8, id: \.self) { index in
-              HourlyRowSkeleton(isNow: index == 0, layout: .figma)
-            }
-          }
-        }
-        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
+        TodaySectionHeader(title: "HOURLY", systemImage: "clock")
+        ShimmerBlock(width: nil, height: 140, cornerRadius: DesignTokens.Card.cornerRadiusMedium)
+          .todayGlassCard()
 
-        FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-          ForEach(0..<6, id: \.self) { _ in
-            DailyRowSkeleton(layout: .figma)
-          }
-        }
+        TodaySectionHeader(title: "10-DAY", systemImage: "calendar")
+        ShimmerBlock(width: nil, height: 220, cornerRadius: DesignTokens.Card.cornerRadiusMedium)
+          .todayGlassCard()
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
+    .scrollContentBackground(.hidden)
     .refreshable {
       await store.refreshWeather()
     }
@@ -247,32 +245,16 @@ private struct ForecastAdaptiveBody: View {
 
   private func compactForecastList(for weather: GrokCastWeather) -> some View {
     ScrollView {
-      let hourly24 = Array(weather.hourly.prefix(24))
-      let now = Date()
-      let nowHourIndex = hourly24.firstIndex(where: { h in
-        Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
-      }) ?? 0
-
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "FORECAST")
+        Text("FORECAST")
+          .font(DesignTokens.Figma.Typography.screenTitle)
+          .foregroundStyle(TodayBright.textPrimary)
+          .skyTextShadow()
 
-        FigmaSubsectionLabel(title: "Hourly")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            ForEach(Array(hourly24.enumerated()), id: \.element.time) {
-              index, hour in
-              hourlyRow(forecast: hour, isNow: index == nowHourIndex, layout: .figma)
-            }
-          }
-        }
-        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
+        TodaySectionHeader(title: "HOURLY", systemImage: "clock")
+        TodaySummaryHourlyCard(weather: weather)
 
-        FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-          ForEach(weather.daily) { day in
-            DailyRow(forecast: day, layout: .figma)
-          }
-        }
+        TodayTenDayCard(daily: weather.daily, currentTemp: weather.currentTemp)
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, forecastContentTopPadding)

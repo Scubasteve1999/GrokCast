@@ -27,16 +27,26 @@ struct AlertsView: View {
 
   var body: some View {
     NavigationStack {
-      Group {
-        if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty {
-          alertsSkeleton
-        } else if activeAlerts.isEmpty && historicalAlerts.isEmpty {
-          emptyState
-        } else {
-          alertsList
+      ZStack {
+        TodaySkyBackground(
+          conditionCode: store.currentWeather?.conditionCode ?? 1,
+          isDay: store.currentWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          } ?? WeatherBackgroundView.inferredIsDay
+        )
+        .ignoresSafeArea()
+
+        Group {
+          if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty {
+            alertsSkeleton
+          } else if activeAlerts.isEmpty && historicalAlerts.isEmpty {
+            emptyState
+          } else {
+            alertsList
+          }
         }
+        .readableContentWidth(ReadableContentWidth.wide)
       }
-      .readableContentWidth(ReadableContentWidth.wide)
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(item: $selectedAlert) { alert in
@@ -47,12 +57,16 @@ struct AlertsView: View {
         await store.refreshAlerts()
       }
     }
+    .preferredColorScheme(.dark)
   }
 
   private var alertsSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
+        Text("ALERTS")
+          .font(DesignTokens.Figma.Typography.screenTitle)
+          .foregroundStyle(TodayBright.textPrimary)
+          .skyTextShadow()
 
         FigmaAccentSectionLabel(
           title: "ACTIVE NOW",
@@ -68,25 +82,32 @@ struct AlertsView: View {
       .padding(.bottom, bottomTabClearance)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
   }
 
   private var alertsList: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
+        Text("ALERTS")
+          .font(DesignTokens.Figma.Typography.screenTitle)
+          .foregroundStyle(TodayBright.textPrimary)
+          .skyTextShadow()
 
         VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
-          FigmaAccentSectionLabel(
-            title: "ACTIVE NOW",
-            icon: "bolt.fill",
-            color: DesignTokens.Palette.danger
-          )
+          Label {
+            Text("ACTIVE NOW")
+              .font(.caption.weight(.semibold))
+              .tracking(0.6)
+          } icon: {
+            Image(systemName: "bolt.fill")
+              .font(.caption)
+          }
+          .foregroundStyle(DesignTokens.Palette.danger)
+          .skyTextShadow()
 
           if activeAlerts.isEmpty {
             Text("No active alerts right now")
               .font(.subheadline)
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
+              .foregroundStyle(TodayBright.textSecondary)
               .frame(maxWidth: .infinity, alignment: .leading)
           } else {
             AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
@@ -101,7 +122,8 @@ struct AlertsView: View {
 
         if !historicalAlerts.isEmpty {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-            FigmaSectionLabel(title: "RECENT")
+            TodaySectionHeader(title: "RECENT", systemImage: "clock.arrow.circlepath")
+              .skyTextShadow()
 
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(historicalAlerts) { alert in
@@ -111,7 +133,7 @@ struct AlertsView: View {
 
             Text("Showing alerts from the last \(AlertHistoryStore.retentionDays) days.")
               .font(.caption2)
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
+              .foregroundStyle(TodayBright.textTertiary)
           }
         }
       }
@@ -123,7 +145,6 @@ struct AlertsView: View {
       await store.refreshAlerts(force: true)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
   }
 
   private func alertRow(_ alert: NWSAlert, isActive: Bool, layout: AlertRowLayout) -> some View {
@@ -142,33 +163,43 @@ struct AlertsView: View {
   }
 
   private func figmaAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text(alert.event)
-        .font(.system(size: isActive ? 17 : 15, weight: isActive ? .bold : .semibold))
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .multilineTextAlignment(.leading)
+    HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
+      Image(systemName: NWSAlertStyle.iconName(for: alert))
+        .font(.title3.weight(.semibold))
+        .foregroundStyle(NWSAlertStyle.tint(for: alert))
+        .padding(.top, 2)
 
-      Text(figmaMetaLine(for: alert, isActive: isActive))
-        .font(.system(size: 13))
-        .foregroundStyle(isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary)
-        .lineLimit(2)
-        .multilineTextAlignment(.leading)
-
-      if isActive, let headline = alert.headline, !headline.isEmpty {
-        Text(headline)
-          .font(.system(size: 14))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .lineLimit(3)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+        Text(alert.event)
+          .font(.system(size: isActive ? 17 : 15, weight: isActive ? .bold : .semibold))
+          .foregroundStyle(TodayBright.textPrimary)
           .multilineTextAlignment(.leading)
+
+        Text(figmaMetaLine(for: alert, isActive: isActive))
+          .font(.system(size: 13))
+          .foregroundStyle(isActive ? TodayBright.textSecondary : TodayBright.textTertiary)
+          .lineLimit(2)
+          .multilineTextAlignment(.leading)
+
+        if isActive, let headline = alert.headline, !headline.isEmpty {
+          Text(headline)
+            .font(.system(size: 14))
+            .foregroundStyle(TodayBright.textPrimary)
+            .lineLimit(3)
+            .multilineTextAlignment(.leading)
+        }
       }
+
+      Spacer(minLength: 0)
+
+      Image(systemName: "chevron.right")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(TodayBright.textTertiary)
+        .padding(.top, 4)
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
-    )
+    .todayGlassCard(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
   }
 
   private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {
@@ -259,7 +290,10 @@ struct AlertsView: View {
   private var emptyState: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
+        Text("ALERTS")
+          .font(DesignTokens.Figma.Typography.screenTitle)
+          .foregroundStyle(TodayBright.textPrimary)
+          .skyTextShadow()
 
         ContentUnavailableView {
           Label("No Alerts", systemImage: "checkmark.shield")
@@ -283,7 +317,6 @@ struct AlertsView: View {
       await store.refreshAlerts(force: true)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
   }
 }
 

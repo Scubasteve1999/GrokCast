@@ -44,17 +44,17 @@ struct AlertsGrokSummaryCard: View {
           ProgressView().scaleEffect(0.75)
           Text("Grok is summarizing alerts…")
             .font(DesignTokens.Figma.Typography.rowSubtitle)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .foregroundStyle(TodayBright.textSecondary)
         }
       } else if let summary {
         Text(summary)
           .font(DesignTokens.Figma.Typography.body)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .foregroundStyle(TodayBright.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
       } else if let errorMessage {
         Text(errorMessage)
           .font(DesignTokens.Figma.Typography.body)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .foregroundStyle(TodayBright.textSecondary)
         if store.xaiService.hasValidKey {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
             .font(.caption.weight(.semibold))
@@ -62,11 +62,11 @@ struct AlertsGrokSummaryCard: View {
       } else if !store.xaiService.hasValidKey {
         Text(figmaPlaceholder)
           .font(DesignTokens.Figma.Typography.body)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .foregroundStyle(TodayBright.textSecondary)
       } else {
         Text(figmaPlaceholder)
           .font(DesignTokens.Figma.Typography.body)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .foregroundStyle(TodayBright.textSecondary)
           .onTapGesture {
             Task { await fetchSummary(force: false) }
           }
@@ -74,11 +74,7 @@ struct AlertsGrokSummaryCard: View {
     }
     .padding(DesignTokens.Figma.Metrics.cardPadding)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.cardRadius
-    )
+    .todayGlassCard(cornerRadius: DesignTokens.Figma.Metrics.cardRadius)
   }
 
   private var figmaPlaceholder: String {

@@ -268,12 +268,17 @@ final class OpenMeteoService {
 
     var minutelyForecasts: [MinutelyForecast] = []
     if let m = response.minutely_15 {
-      let count = min(8, m.time.count)
-      for i in 0..<count {
-        let date = parseHourlyDate(m.time[i])
+      // Open-Meteo's minutely_15 array is day-aligned (starts at local midnight when
+      // forecast_days is set), so slicing from index 0 returns the small hours of the
+      // morning instead of the next two hours. Locate the slot covering "now" first.
+      let times = m.time.map(parseHourlyDate)
+      let cutoff = Date().addingTimeInterval(-15 * 60)
+      let start = times.firstIndex(where: { $0 >= cutoff }) ?? 0
+      let end = min(start + 8, times.count)
+      for i in start..<end {
         minutelyForecasts.append(
           MinutelyForecast(
-            time: date,
+            time: times[i],
             precipitation: m.precipitation?[i] ?? 0,
             precipChance: m.precipitation_probability?[i] ?? 0
           ))

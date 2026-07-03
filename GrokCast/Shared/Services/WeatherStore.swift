@@ -39,6 +39,11 @@ final class WeatherStore {
   var savedLocations: [SavedLocation] = []
   var isLoadingWeather = false
   var weatherError: String?
+  /// True when `currentWeather` came from the lightweight App Group snapshot (cold-launch
+  /// hydration) and has not yet been replaced by a real fetch. Such data has placeholder
+  /// humidity/wind/UV (0) and an empty daily list, so a failed refresh must still surface a
+  /// retry affordance rather than presenting the fabricated zeros as real.
+  private(set) var isShowingCachedWeather = false
 
   var selectedTab: Tab = .today
 
@@ -456,7 +461,7 @@ final class WeatherStore {
         for: weather, alerts: activeAlerts, units: temperatureUnit)
     let computedMinutecast =
       minutecast
-      ?? MinutecastEngine.summary(from: weather.minutely15, units: temperatureUnit)
+      ?? MinutecastEngine.summary(from: weather.minutely15)
     let brief: String?
     if EntitlementChecker.canUseWidgetGrokBrief(subscription: SubscriptionManager.shared) {
       brief =
@@ -482,8 +487,7 @@ final class WeatherStore {
     guard let weather = currentWeather else { return }
     let score = GrokCastScoreCalculator.score(
       for: weather, alerts: activeAlerts, units: temperatureUnit)
-    let minutecast = MinutecastEngine.summary(
-      from: weather.minutely15, units: temperatureUnit)
+    let minutecast = MinutecastEngine.summary(from: weather.minutely15)
     persistWidgetSnapshot(
       from: weather,
       score: score,
@@ -532,6 +536,7 @@ final class WeatherStore {
     guard currentWeather == nil, let loc = currentLocation else { return }
     guard let snapshot = WidgetDataStore.loadSnapshot(for: loc.id) else { return }
     currentWeather = GrokCastWeather(snapshot: snapshot)
+    isShowingCachedWeather = true
   }
 
   /// Persists a lightweight alert summary for widgets after a successful NWS fetch.
@@ -700,7 +705,8 @@ final class WeatherStore {
     await withTaskGroup(of: WeatherFetchResult.self) { group in
       group.addTask {
         do {
-          let data = try await self.nwsService.fetchForecast(for: location)
+          let data = try await self.nwsService.fetchForecast(
+            for: location, units: self.temperatureUnit)
           return .success(data)
         } catch {
           return .failure(error)
@@ -743,6 +749,7 @@ final class WeatherStore {
         }
       }
       currentWeather = data
+      isShowingCachedWeather = false
       syncScoreSurfacesFromCurrentWeather()
       // TODO: Cache to SwiftData here
 
@@ -754,8 +761,10 @@ final class WeatherStore {
         _ = await (alerts, nws, owm)
       }
     } catch {
-      // Keep showing cached weather on refresh failure; only surface errors when nothing to display.
-      if currentWeather == nil {
+      // Keep showing real cached weather on refresh failure, but if all we have is the
+      // lightweight cold-launch snapshot (placeholder humidity/wind/UV, empty forecast),
+      // surface the error + RETRY so the user isn't stranded on fabricated zeros.
+      if currentWeather == nil || isShowingCachedWeather {
         weatherError =
           isOffline
           ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."

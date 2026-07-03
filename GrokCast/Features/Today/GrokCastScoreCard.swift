@@ -45,10 +45,10 @@ struct GrokCastScoreCard: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
           Text("\(score.value) · \(score.label)")
             .font(.body.weight(.bold))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .foregroundStyle(TodayBright.textPrimary)
           Text(score.subtitle)
             .font(.subheadline)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .foregroundStyle(TodayBright.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
         }
 

@@ -28,19 +28,19 @@ struct GrokBriefCard: View {
         Label("GROK'S TAKE", systemImage: "sparkles")
           .font(.caption.weight(.heavy))
           .tracking(DesignTokens.Typography.cardLabelTracking)
-          .foregroundStyle(DesignTokens.Palette.accent)
+          .foregroundStyle(presentation == .figma ? TodayBright.textSecondary : DesignTokens.Palette.accent)
         Spacer()
         if isLoading {
           ProgressView()
             .scaleEffect(0.75)
-            .tint(DesignTokens.Palette.accent)
+            .tint(presentation == .figma ? TodayBright.textPrimary : DesignTokens.Palette.accent)
         }
       }
 
       if let briefText {
         Text(briefText)
           .font(.body.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .foregroundStyle(presentation == .figma ? TodayBright.textPrimary : DesignTokens.Palette.textPrimary)
           .lineLimit(isExpanded ? nil : (presentation == .figma ? 6 : 3))
           .fixedSize(horizontal: false, vertical: true)
           .animation(.easeInOut(duration: 0.2), value: isExpanded)
@@ -51,7 +51,7 @@ struct GrokBriefCard: View {
       } else if let errorMessage {
         Text(errorMessage)
           .font(.subheadline)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .foregroundStyle(presentation == .figma ? TodayBright.textSecondary : DesignTokens.Palette.textSecondary)
 
         if !store.xaiService.hasValidKey {
           Button("Upgrade to GrokCast Pro") {
@@ -72,7 +72,7 @@ struct GrokBriefCard: View {
       } else {
         Text("A quick, practical read on today's weather — outfit tips, outdoor windows, and anything worth watching.")
           .font(.subheadline)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .foregroundStyle(presentation == .figma ? TodayBright.textSecondary : DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
 
         if presentation == .full {

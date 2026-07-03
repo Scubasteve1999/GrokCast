@@ -19,12 +19,12 @@ struct MinutecastStrip: View {
           .foregroundStyle(accent)
         Text(summary.message)
           .font(.caption.weight(.semibold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .foregroundStyle(TodayBright.textPrimary)
         Spacer(minLength: 0)
         Text("MINUTECAST")
           .font(.system(size: 9, weight: .heavy))
           .tracking(1.2)
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .foregroundStyle(TodayBright.textTertiary)
       }
 
       if !summary.strip.isEmpty {
@@ -41,21 +41,21 @@ struct MinutecastStrip: View {
     }
     .padding(.vertical, DesignTokens.Spacing.space12)
     .padding(.horizontal, DesignTokens.Spacing.space12)
-    .glassCardStyle(cornerRadius: DesignTokens.Radius.small)
+    .todayGlassCard(cornerRadius: DesignTokens.Radius.small)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("Minutecast. \(summary.message)")
   }
 
   private func barColor(for slot: MinutelyForecast) -> Color {
-    let wet = slot.precipitation >= 0.008 || slot.precipChance >= 45
+    let wet = MinutecastEngine.isWet(slot)
     if wet {
       return DesignTokens.Palette.accentCool.opacity(0.35 + Double(min(slot.precipChance, 100)) / 200)
     }
-    return DesignTokens.Palette.cardStroke.opacity(0.6)
+    return TodayBright.divider
   }
 
   private func barHeight(for slot: MinutelyForecast) -> CGFloat {
-    let wet = slot.precipitation >= 0.008 || slot.precipChance >= 45
+    let wet = MinutecastEngine.isWet(slot)
     guard wet else { return 6 }
     return 6 + CGFloat(min(slot.precipChance, 100)) / 100 * 22
   }

@@ -69,6 +69,7 @@ final class RadarState {
 
   /// Drops stale async site resolutions when the location changes again mid-flight.
   private var siteResolutionToken = UUID()
+  private var productLoadToken = UUID()
 
   /// When the composite timeline was last (re)built. Frames encode relative
   /// offsets, so on re-entry after a long gap the forecast/labels drift from
@@ -327,12 +328,18 @@ extension RadarState {
 
     guard !showsFuture, let site = nearestSite else { return }
 
+    let token = UUID()
+    productLoadToken = token
+
     let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
 
-    // Re-validate across the await: the user may have entered FUTURE mode or the
-    // resolved site may have changed while this load was in flight. Without this,
-    // stale site frames stomp the new state (mirrors updateNearestSite's guard).
-    guard !showsFuture, selectedProduct == .reflectivity, nearestSite?.id == site.id else { return }
+    // Re-validate across the await: the user may have entered FUTURE mode, the resolved
+    // site may have changed, or a newer product selection may have superseded this load
+    // while it was in flight. A newer setProduct call replaces productLoadToken, so a
+    // stale load bails out here instead of stomping the current view. (The previous
+    // `selectedProduct == .reflectivity` check wrongly blocked direct Super-Res ↔ SRV
+    // switches, since selectedProduct is only a site product by then.)
+    guard productLoadToken == token, !showsFuture, nearestSite?.id == site.id else { return }
 
     guard !frames.isEmpty else {
       print("[RadarState] \(product.displayName) unavailable for \(site.id) — keeping current view")

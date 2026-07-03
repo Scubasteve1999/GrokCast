@@ -17,15 +17,22 @@ struct MinutecastSummary: Equatable {
 
 enum MinutecastEngine {
   private static let chanceThreshold = 45
+  /// Open-Meteo precipitation is always requested in inches, so the "wet" threshold is
+  /// inch-based regardless of the user's temperature-unit preference.
+  static let precipThresholdInches = 0.008
   /// Half a 15-minute slot — treat precip starting within this window as "now".
   private static let ongoingWindowMinutes = 8
 
+  /// A slot counts as "wet" when measurable precip is expected or the chance is high
+  /// enough. Shared by the summary text and the strip visualization so they always agree.
+  static func isWet(_ slot: MinutelyForecast) -> Bool {
+    slot.precipitation >= precipThresholdInches || slot.precipChance >= chanceThreshold
+  }
+
   static func summary(
     from slots: [MinutelyForecast],
-    units: TemperatureUnit = .fahrenheit,
     now: Date = Date()
   ) -> MinutecastSummary {
-    let precipThreshold = units == .fahrenheit ? 0.008 : 0.2
     let upcoming = slots.filter { $0.time >= now.addingTimeInterval(-60) }.prefix(8)
     let strip = Array(upcoming)
 
@@ -36,10 +43,6 @@ enum MinutecastEngine {
         icon: "cloud.fill",
         strip: []
       )
-    }
-
-    func isWet(_ slot: MinutelyForecast) -> Bool {
-      slot.precipitation >= precipThreshold || slot.precipChance >= chanceThreshold
     }
 
     func minutesUntil(_ slot: MinutelyForecast) -> Int {

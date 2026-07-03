@@ -2,7 +2,7 @@
 
 **Purpose**: This document defines the visual language, spacing, typography, and component rules for GrokCast. All future UI work should follow these rules for consistency and professional quality.
 
-> **Today tab exception (bright theme).** The **Today** tab intentionally departs from the dark-first palette below: it uses a full-bleed, condition + day/night **bright sky** backdrop with translucent frosted cards and white text — an Apple-Weather-style look requested by the owner. The tokens and components live in `GrokCast/Features/Today/TodayBrightTheme.swift` (`TodaySkyBackground`, `.todayGlassCard`, `TodayBright.textPrimary/Secondary/Tertiary`, `.skyTextShadow()`) and `TodayAppleSections.swift`. Spacing/radius still use `DesignTokens`. Every **other** tab follows the dark system defined here. When editing Today, extend `TodayBright`/`todayGlassCard` rather than the dark palette; everywhere else, use the tokens below.
+> **Bright sky exception (Today, Forecast, Alerts).** **Today**, **Forecast**, and **Alerts** intentionally depart from the dark-first palette below: they use a full-bleed, condition + day/night **bright sky** backdrop (`TodaySkyBackground`) with translucent frosted cards and white text — an Apple-Weather-style look. Tokens and components live in `GrokCast/Features/Today/TodayBrightTheme.swift` (`.todayGlassCard`, `TodayBright.*`, `.skyTextShadow()`) and shared sections in `TodayAppleSections.swift`. Spacing/radius still use `DesignTokens`. **Radar, Grok AI, Locations, and Settings** follow the dark system defined here. When editing the bright tabs, extend `TodayBright`/`todayGlassCard`; everywhere else, use the tokens below.
 
 ---
 
