@@ -9,19 +9,22 @@ struct ForecastView: View {
 
   var body: some View {
     NavigationStack {
-      ForecastAdaptiveBody()
-        .adaptiveContainerWidth(AdaptiveLayout.contentCap)
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+      ZStack {
+        WeatherBackgroundLayer(
+          conditionCode: store.currentWeather?.conditionCode,
+          isDay: store.currentWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          } ?? WeatherBackgroundView.inferredIsDay,
+          intensity: .subtle,
+          extraOpacity: 0.88
+        )
+
+        ForecastAdaptiveBody()
+          .adaptiveContainerWidth(AdaptiveLayout.contentCap)
+      }
+      .navigationTitle("")
+      .navigationBarTitleDisplayMode(.inline)
     }
-    .weatherBackground(
-      conditionCode: store.currentWeather?.conditionCode,
-      isDay: store.currentWeather.map {
-        WeatherBackgroundView.isDay(from: $0.symbolName)
-      } ?? WeatherBackgroundView.inferredIsDay,
-      intensity: .subtle,
-      extraOpacity: 0.88
-    )
     .preferredColorScheme(.dark)
   }
 }

@@ -486,6 +486,30 @@ extension View {
   }
 }
 
+struct WeatherBackgroundLayer: View {
+  let conditionCode: Int?
+  var isDay: Bool = WeatherBackgroundView.inferredIsDay
+  var intensity: BackgroundIntensity = .full
+  var extraOpacity: Double = 1.0
+
+  var body: some View {
+    ZStack {
+      DesignTokens.Palette.bgPrimary
+        .ignoresSafeArea()
+
+      WeatherBackgroundView(
+        conditionCode: conditionCode,
+        isDay: isDay,
+        intensity: intensity
+      )
+      .ignoresSafeArea()
+      .opacity(extraOpacity)
+      .animation(.easeInOut(duration: 1.0), value: conditionCode)
+    }
+    .allowsHitTesting(false)
+  }
+}
+
 extension WeatherBackgroundView {
   /// Heuristic day/night when Open-Meteo `is_day` is not on `GrokCastWeather`.
   static var inferredIsDay: Bool {

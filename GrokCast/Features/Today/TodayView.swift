@@ -29,7 +29,15 @@ struct TodayView: View {
 
   var body: some View {
     NavigationStack {
-      Group {
+      ZStack {
+        WeatherBackgroundLayer(
+          conditionCode: store.currentWeather?.conditionCode,
+          isDay: store.currentWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          } ?? WeatherBackgroundView.inferredIsDay,
+          extraOpacity: 0.88
+        )
+
         let status = store.locationService.authorizationStatus
         if !store.hasRequestedLocationPermission {
           // First-launch onboarding welcome (Today tab). Shown *only* on true first launch
@@ -169,13 +177,6 @@ struct TodayView: View {
           .preferredColorScheme(.dark)
       }
     }
-    .weatherBackground(
-      conditionCode: store.currentWeather?.conditionCode,
-      isDay: store.currentWeather.map {
-        WeatherBackgroundView.isDay(from: $0.symbolName)
-      } ?? WeatherBackgroundView.inferredIsDay,
-      extraOpacity: 0.88
-    )
     .preferredColorScheme(.dark)
   }
 
