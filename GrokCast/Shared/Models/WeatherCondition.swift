@@ -111,6 +111,24 @@ enum WeatherCondition: Equatable {
     }
   }
 
+  /// Forecast row label aligned with precip chance (avoids "0% T-Storm" when probability is nil/zero).
+  func rowPrecipTypeLabel(precipChance: Int) -> String {
+    precipChance >= 15 ? shortPrecipType : "Precip"
+  }
+
+  /// Forecast row icon aligned with precip chance (don't show storm/rain icons at 0% precip).
+  func rowSymbolName(precipChance: Int, isDay: Bool = true) -> String {
+    guard precipChance >= 15 else {
+      switch self {
+      case .thunderstorm, .rain, .rainShowers, .drizzle, .sleet, .snow, .snowGrains, .snowShowers:
+        return WeatherCondition.mainlyClear.symbolName(isDay: isDay)
+      default:
+        return symbolName(isDay: isDay)
+      }
+    }
+    return symbolName(isDay: isDay)
+  }
+
   // MARK: - Background categorization (for WeatherBackgroundView + DynamicBackgroundView delegation)
   // Single source; eliminates duplicated WMO case lists.
 

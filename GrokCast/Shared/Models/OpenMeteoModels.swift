@@ -112,6 +112,86 @@ struct MinutelyForecast: Equatable, Codable, Identifiable {
   var id: Date { time }
 }
 
+// MARK: - Daily forecast derivation (hourly → daily precip % + representative code)
+
+enum OpenMeteoDailyDerivation {
+  struct HourlySlice {
+    let time: Date
+    let precipChance: Int
+    let weatherCode: Int
+  }
+
+  /// Max hourly precip probability for a calendar day (Open-Meteo timezone=auto).
+  static func hourlySlices(
+    for day: Date,
+    hourly: Hourly,
+    parseHour: (String) -> Date,
+    calendar: Calendar = .current
+  ) -> [HourlySlice] {
+    let start = calendar.startOfDay(for: day)
+    guard let end = calendar.date(byAdding: .day, value: 1, to: start) else { return [] }
+
+    var slices: [HourlySlice] = []
+    let count = hourly.time.count
+    for i in 0..<count {
+      let time = parseHour(hourly.time[i])
+      guard time >= start, time < end else { continue }
+      slices.append(
+        HourlySlice(
+          time: time,
+          precipChance: hourly.precipitation_probability?[i] ?? 0,
+          weatherCode: hourly.weather_code[i] ?? 0
+        ))
+    }
+    return slices
+  }
+
+  /// Prefer the higher of daily API max and hourly-derived max (hourly often more accurate).
+  static func derivedPrecipChance(dailyAPI: Int, slices: [HourlySlice]) -> Int {
+    let hourlyMax = slices.map(\.precipChance).max() ?? 0
+    return max(dailyAPI, hourlyMax)
+  }
+
+  /// Pick a weather code that matches derived precip (mode from hourly when dry, peak hour when wet).
+  static func derivedWeatherCode(dailyAPI: Int, precipChance: Int, slices: [HourlySlice]) -> Int {
+    guard !slices.isEmpty else {
+      return softenWetDailyCodeIfDry(dailyAPI, precipChance: precipChance)
+    }
+
+    if precipChance >= 15 {
+      let peak = slices.max(by: { $0.precipChance < $1.precipChance })
+      return peak?.weatherCode ?? dailyAPI
+    }
+
+    var counts: [Int: Int] = [:]
+    for slice in slices {
+      counts[slice.weatherCode, default: 0] += 1
+    }
+    let mode = counts.max(by: { $0.value < $1.value })?.key ?? dailyAPI
+    if isWetWeatherCode(dailyAPI), !isWetWeatherCode(mode) {
+      return mode
+    }
+    if isWetWeatherCode(dailyAPI), precipChance < 15 {
+      return mode
+    }
+    return dailyAPI
+  }
+
+  private static func softenWetDailyCodeIfDry(_ code: Int, precipChance: Int) -> Int {
+    guard precipChance < 15, isWetWeatherCode(code) else { return code }
+    return 2
+  }
+
+  private static func isWetWeatherCode(_ code: Int) -> Bool {
+    switch code {
+    case 51, 53, 55, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99:
+      return true
+    default:
+      return false
+    }
+  }
+}
+
 struct HourlyForecast: Equatable, Codable, Identifiable {
   let time: Date
   let temp: Double

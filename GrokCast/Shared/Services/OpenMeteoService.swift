@@ -210,20 +210,30 @@ final class OpenMeteoService {
       }
     }
 
-    // Build daily (10 days)
+    // Build daily (10 days) — derive precip % + weather code from hourly when daily aggregates disagree.
     var dailyForecasts: [DailyForecast] = []
     if let d = daily {
       let count = min(10, d.time.count)
       for i in 0..<count {
         let date = parseDailyDate(d.time[i])
-        let (sym, _) = mapWeatherCode(d.weather_code[i] ?? 0)
+        let slices =
+          hourly.map { h in
+            OpenMeteoDailyDerivation.hourlySlices(for: date, hourly: h, parseHour: parseHourlyDate)
+          } ?? []
+        let apiPrecip = d.precipitation_probability_max?[i] ?? 0
+        let precipChance = OpenMeteoDailyDerivation.derivedPrecipChance(
+          dailyAPI: apiPrecip, slices: slices)
+        let apiCode = d.weather_code[i] ?? 0
+        let weatherCode = OpenMeteoDailyDerivation.derivedWeatherCode(
+          dailyAPI: apiCode, precipChance: precipChance, slices: slices)
+        let (sym, _) = mapWeatherCode(weatherCode, isDay: true)
         dailyForecasts.append(
           DailyForecast(
             date: date,
             high: d.temperature_2m_max[i] ?? 0,
             low: d.temperature_2m_min[i] ?? 0,
-            precipChance: d.precipitation_probability_max?[i] ?? 0,
-            weatherCode: d.weather_code[i] ?? 0,
+            precipChance: precipChance,
+            weatherCode: weatherCode,
             symbolName: sym,
             uvMax: d.uv_index_max?[i] ?? nil,
             rainSum: d.rain_sum?[i] ?? nil,

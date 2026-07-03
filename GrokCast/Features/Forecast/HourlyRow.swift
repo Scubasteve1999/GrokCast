@@ -7,6 +7,18 @@ struct HourlyRow: View {
   var openWeatherMapPrecipChance: Int? = nil
   @State private var appeared = false
 
+  private var condition: WeatherCondition {
+    WeatherCondition(fromWMO: forecast.weatherCode)
+  }
+
+  private var rowSymbol: String {
+    condition.rowSymbolName(precipChance: forecast.precipChance, isDay: true)
+  }
+
+  private var precipLabel: String {
+    condition.rowPrecipTypeLabel(precipChance: forecast.precipChance)
+  }
+
   var body: some View {
     VStack(spacing: 8) {
       Text(isNow ? "Now" : formattedTime)
@@ -17,7 +29,7 @@ struct HourlyRow: View {
         )
         .lineLimit(1)
 
-      Image(systemName: forecast.symbolName)
+      Image(systemName: rowSymbol)
         .font(.system(size: 32))
         .symbolRenderingMode(.multicolor)
 
@@ -28,9 +40,8 @@ struct HourlyRow: View {
         .lineLimit(1)
 
       // Always show precip + visual bar (DesignSystem: use accent for chance)
-      let type = WeatherCondition(fromWMO: forecast.weatherCode).shortPrecipType
       VStack(spacing: 3) {
-        Text("\(forecast.precipChance)% \(type)")
+        Text("\(forecast.precipChance)% \(precipLabel)")
           .font(.caption2.weight(.medium))
           .foregroundStyle(DesignTokens.Palette.accent)
           .lineLimit(1)

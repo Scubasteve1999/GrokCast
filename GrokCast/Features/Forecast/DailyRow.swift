@@ -4,6 +4,18 @@ struct DailyRow: View {
   let forecast: DailyForecast
   @State private var appeared = false
 
+  private var condition: WeatherCondition {
+    WeatherCondition(fromWMO: forecast.weatherCode)
+  }
+
+  private var rowSymbol: String {
+    condition.rowSymbolName(precipChance: forecast.precipChance)
+  }
+
+  private var precipLabel: String {
+    condition.rowPrecipTypeLabel(precipChance: forecast.precipChance)
+  }
+
   var body: some View {
     HStack(alignment: .center, spacing: 18) {
       Text(forecast.date, format: .dateTime.weekday(.abbreviated))
@@ -11,7 +23,7 @@ struct DailyRow: View {
         .frame(width: 56, alignment: .leading)
         .lineLimit(1)
 
-      Image(systemName: forecast.symbolName)
+      Image(systemName: rowSymbol)
         .font(.system(size: 28))
         .symbolRenderingMode(.multicolor)
         .frame(width: 32, alignment: .center)
@@ -21,10 +33,8 @@ struct DailyRow: View {
       DailyTempRangeBar(low: forecast.low, high: forecast.high)
 
       HStack(spacing: 16) {
-        // Precip always shown (use textSecondary + accent for % per DS)
-        let type = WeatherCondition(fromWMO: forecast.weatherCode).shortPrecipType
         VStack(alignment: .trailing, spacing: 2) {
-          Text("\(forecast.precipChance)% \(type)")
+          Text("\(forecast.precipChance)% \(precipLabel)")
             .font(.caption2.weight(.medium))
             .foregroundStyle(DesignTokens.Palette.accent)
             .lineLimit(1)
