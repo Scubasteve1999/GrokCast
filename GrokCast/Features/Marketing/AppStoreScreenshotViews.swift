@@ -152,6 +152,35 @@ struct AppStoreScreenshotGrok: View {
 }
 
 #if DEBUG
+enum MarketingScreenshotMode: String {
+  case today
+  case radar
+  case grok
+}
+
+/// Launch with: `-MarketingScreenshot today|radar|grok` (used by Scripts/capture_aso_screenshots.sh).
+struct MarketingScreenshotLauncher: View {
+  private var mode: MarketingScreenshotMode {
+    let args = ProcessInfo.processInfo.arguments
+    guard let flagIndex = args.firstIndex(of: "-MarketingScreenshot"),
+      flagIndex + 1 < args.count,
+      let parsed = MarketingScreenshotMode(rawValue: args[flagIndex + 1])
+    else { return .today }
+    return parsed
+  }
+
+  var body: some View {
+    Group {
+      switch mode {
+      case .today: AppStoreScreenshotToday()
+      case .radar: AppStoreScreenshotRadar()
+      case .grok: AppStoreScreenshotGrok()
+      }
+    }
+    .preferredColorScheme(.dark)
+  }
+}
+
 #Preview("ASO — Today") {
   AppStoreScreenshotToday()
 }

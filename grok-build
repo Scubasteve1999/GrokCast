@@ -625,6 +625,24 @@ case $COMMAND in
     echo "✅ WeatherKit integration support applied (code changes via follow-up edits if needed)."
     ;;
 
+  archive)
+    echo "📦 Creating Release archive for TestFlight..."
+    shift
+    INCREMENT_FLAG=""
+    if [[ "${1:-}" == "--increment" ]]; then
+      INCREMENT_FLAG="--increment"
+    fi
+    chmod +x ./Scripts/archive_for_testflight.sh
+    ./Scripts/archive_for_testflight.sh $INCREMENT_FLAG
+    ;;
+
+  capture-aso)
+    echo "📸 Capturing App Store screenshot compositions..."
+    shift
+    chmod +x ./Scripts/capture_aso_screenshots.sh
+    ./Scripts/capture_aso_screenshots.sh "$@"
+    ;;
+
   help|*)
     echo "GrokCast Build Helper"
     echo ""
@@ -638,6 +656,8 @@ case $COMMAND in
     echo "  radar [many v* flags] ... --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws   v14 faster perceived speed (600ms advance), stronger crossfade, boost pop, keep single NWS (all isolated to RadarView.swift)"
     echo "  integrate-nws-api --primary-source --update-weatherstore --add-alerts --grid-system --location-aware --create-nws-service --map-to-existing-models --tie-to-alerts-tab --preserve-radar --error-handling --skeletons   Make NWS primary for weather/alerts via grid (follow architecture, preserve radar/non-US)"
     echo "  integrate-weatherkit [--primary-source] [--hybrid-fallback-openmeteo] [--add-alerts-support] [--update-weatherstore] [--map-to-existing-models] [--preserve-grok-insights]   Integrate WeatherKit as primary (hybrid OpenMeteo fallback, alerts, map models, preserve Grok)"
+    echo "  archive [--increment]       Release archive → build/GrokCast.xcarchive (TestFlight prep)"
+    echo "  capture-aso                 Simulator screenshots → Marketing/AppStore/"
     echo "  help                        Show this help message"
     echo ""
     echo "Examples:"

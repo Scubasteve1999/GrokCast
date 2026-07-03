@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.scubasteve1999.GrokCast</string>
+	<key>WKApplication</key>
+	<true/>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<false/>
 </dict>

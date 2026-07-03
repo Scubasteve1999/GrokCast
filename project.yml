@@ -167,6 +167,7 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         WKCompanionAppBundleIdentifier: com.scubasteve1999.GrokCast
+        WKApplication: true
         WKRunsIndependentlyOfCompanionApp: false
     settings:
       base:

@@ -29,7 +29,9 @@ App Store blockers and baseline polish.
 - [x] Onboarding: location + data/Grok disclosure
 - [x] Updated `privacy.html` + `support.html`
 
-**Still before submit:** publish docs to GitHub Pages, App Review Notes, TestFlight device QA, `./grok-build increment-build` + archive.
+**Still before submit:** App Review Notes, TestFlight device QA, `./grok-build increment-build` + archive, **Submit for Review** (deferred).
+
+- [x] GitHub Pages workflow (`/.github/workflows/pages.yml` → `/docs`)
 
 ---
 
@@ -114,9 +116,10 @@ App Store blockers and baseline polish.
 - ASO screenshot templates in Xcode Previews ✅
 
 ### Remaining before App Store
-- [ ] Capture screenshots from `AppStoreScreenshotViews` previews
+- [ ] Capture screenshots (`./grok-build capture-aso` or Xcode Previews)
 - [ ] Final app icon polish (assets exist; optional refresh)
-- [ ] Publish GitHub Pages + TestFlight QA (Phase 0)
+- [ ] TestFlight QA on 2+ devices (Phase 0)
+- [ ] Submit for App Store review (when ready — not required tonight)
 
 ---
 

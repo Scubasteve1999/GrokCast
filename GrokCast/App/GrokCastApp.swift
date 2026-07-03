@@ -6,9 +6,19 @@ struct GrokCastApp: App {
 
   var body: some Scene {
     WindowGroup {
+      #if DEBUG
+      if ProcessInfo.processInfo.arguments.contains("-MarketingScreenshot") {
+        MarketingScreenshotLauncher()
+      } else {
+        MainTabView()
+          .environment(WeatherStore.shared)
+          .tint(.accentColor)
+      }
+      #else
       MainTabView()
         .environment(WeatherStore.shared)
         .tint(.accentColor)
+      #endif
     }
   }
 }
