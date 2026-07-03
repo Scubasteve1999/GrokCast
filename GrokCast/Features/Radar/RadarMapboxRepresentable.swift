@@ -121,6 +121,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       /// show storm motion clearly); non-zero for FUTURE (cross-fades the smooth
       /// forecast blobs so playback feels fluid rather than choppy).
       var fadeDuration: Double
+      /// CSS pixel size of each tile in the Mapbox raster source (256 or 512).
+      /// Must match the actual pixel dimensions of the tiles being served:
+      /// 256 for standard tiles, 512 for @2x retina tiles (Xweather fradar).
+      var tileSize: Double
 
       static let hidden = DesiredRasterState(
         tileURLs: [],
@@ -132,7 +136,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         showsFuture: false,
         isAnimating: false,
         visible: false,
-        fadeDuration: 0
+        fadeDuration: 0,
+        tileSize: 256
       )
 
       func updatingOpacity(_ opacity: Double) -> Self {
@@ -217,7 +222,11 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       // animation feel fluid. Live radar stays at 0 so storm motion reads crisply.
       // Xweather fradar also benefits from a small saturation lift; its palette
       // looks slightly flat at the default vibrant settings (saturation = 0).
+      // Xweather fradar frames use @2x (512px) retina tiles; tileSize must match
+      // so Mapbox fetches them at the correct zoom level rather than upscaling.
       let isFuture = radarState.showsFuture
+      let isXweatherForecast =
+        frame.provider == .xweather && frame.kind == .forecastPrecipitation
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
         tileKey: frame.tileKey,
@@ -228,7 +237,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         showsFuture: isFuture,
         isAnimating: radarState.isAnimating,
         visible: true,
-        fadeDuration: isFuture ? 300 : 0
+        fadeDuration: isFuture ? 300 : 0,
+        tileSize: isXweatherForecast ? 512 : 256
       )
     }
 
@@ -346,7 +356,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       do {
         var source = RasterSource(id: sourceId)
         source.tiles = desired.tileURLs
-        source.tileSize = 256
+        source.tileSize = desired.tileSize
         source.minzoom = 0
         source.maxzoom = desired.maxZoom
         source.prefetchZoomDelta = 0

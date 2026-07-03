@@ -82,8 +82,12 @@ final class XweatherRadarService {
     intervalMinutes: Int = RadarTimelineConfig.forecastIntervalMinutes
   ) -> [RadarFrame] {
     let xwFrames = loadForecastFrames(maxFrames: maxFrames, intervalMinutes: intervalMinutes)
+    // Request @2x (512px) retina tiles: sharper on iPhone's 3x display.
+    // Mapbox tileSize must be set to 512 for these frames (handled in RadarMapboxRepresentable).
     return xwFrames.compactMap { xf -> RadarFrame? in
-      guard let templates = tileURLs(layer: .fradar, offset: xf.offset), !templates.isEmpty else {
+      guard let templates = tileURLs(layer: .fradar, offset: xf.offset, retina: true),
+        !templates.isEmpty
+      else {
         return nil
       }
       return RadarFrame(
@@ -149,17 +153,20 @@ final class XweatherRadarService {
   }
 
   /// Builds a single authenticated Mapbox-compatible tile URL for a given layer + offset.
-  static func tileURL(layer: XweatherRadarLayer, offset: String) -> String? {
-    tileURLs(layer: layer, offset: offset)?.first
+  static func tileURL(layer: XweatherRadarLayer, offset: String, retina: Bool = false) -> String? {
+    tileURLs(layer: layer, offset: offset, retina: retina)?.first
   }
 
   /// Builds load-balanced tile URL templates across maps1–maps4 hosts.
-  static func tileURLs(layer: XweatherRadarLayer, offset: String) -> [String]? {
+  /// Pass `retina: true` for `@2x.png` 512×512 tiles (fradar forecast frames).
+  /// Callers using 512px tiles must also set `tileSize = 512` on the Mapbox source.
+  static func tileURLs(layer: XweatherRadarLayer, offset: String, retina: Bool = false) -> [String]? {
     guard let auth = DeveloperAPIKey.xweatherMapsAuth else {
       return nil
     }
+    let ext = retina ? "@2x.png" : ".png"
     return mapHosts.map { host in
-      "https://\(host).api.xweather.com/\(auth)/\(layer.rawValue)/{z}/{x}/{y}/\(offset).png"
+      "https://\(host).api.xweather.com/\(auth)/\(layer.rawValue)/{z}/{x}/{y}/\(offset)\(ext)"
     }
   }
 
