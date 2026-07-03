@@ -142,11 +142,9 @@ private struct ForecastAdaptiveBody: View {
   private var compactForecastSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("FORECAST")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "FORECAST")
 
-        figmaSectionHeader("Hourly")
+        FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: DesignTokens.Spacing.space8) {
             ForEach(0..<8, id: \.self) { index in
@@ -154,9 +152,9 @@ private struct ForecastAdaptiveBody: View {
             }
           }
         }
-        .frame(height: 90)
+        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
 
-        figmaSectionHeader("10-Day")
+        FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
           ForEach(0..<6, id: \.self) { _ in
             DailyRowSkeleton(layout: .figma)
@@ -256,11 +254,9 @@ private struct ForecastAdaptiveBody: View {
       }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("FORECAST")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "FORECAST")
 
-        figmaSectionHeader("Hourly")
+        FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: DesignTokens.Spacing.space8) {
             ForEach(Array(hourly24.enumerated()), id: \.element.time) {
@@ -269,9 +265,9 @@ private struct ForecastAdaptiveBody: View {
             }
           }
         }
-        .frame(height: 90)
+        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
 
-        figmaSectionHeader("10-Day")
+        FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
           ForEach(weather.daily) { day in
             DailyRow(forecast: day, layout: .figma)
@@ -299,9 +295,7 @@ private struct ForecastAdaptiveBody: View {
       }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
-        Text("FORECAST")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "FORECAST")
           .padding(.bottom, DesignTokens.Spacing.space8)
 
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
@@ -358,9 +352,7 @@ private struct ForecastAdaptiveBody: View {
   }
 
   private func figmaSectionHeader(_ title: String) -> some View {
-    Text(title)
-      .font(.system(size: 13, weight: .bold))
-      .foregroundStyle(DesignTokens.Palette.textTertiary)
+    FigmaSubsectionLabel(title: title)
   }
 
   private var openWeatherMapSectionTitle: String {

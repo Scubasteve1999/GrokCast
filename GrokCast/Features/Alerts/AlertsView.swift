@@ -52,11 +52,13 @@ struct AlertsView: View {
   private var alertsSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("Alerts")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "Alerts")
 
-        figmaSectionLabel("ACTIVE NOW", accent: DesignTokens.Palette.danger)
+        FigmaAccentSectionLabel(
+          title: "ACTIVE NOW",
+          icon: "bolt.fill",
+          color: DesignTokens.Palette.danger
+        )
 
         ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.medium)
         ShimmerBlock(width: nil, height: 88, cornerRadius: DesignTokens.Radius.medium)
@@ -72,12 +74,14 @@ struct AlertsView: View {
   private var alertsList: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("Alerts")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "Alerts")
 
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          figmaSectionLabel("ACTIVE NOW", accent: DesignTokens.Palette.danger)
+        VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+          FigmaAccentSectionLabel(
+            title: "ACTIVE NOW",
+            icon: "bolt.fill",
+            color: DesignTokens.Palette.danger
+          )
 
           if activeAlerts.isEmpty {
             Text("No active alerts right now")
@@ -97,9 +101,7 @@ struct AlertsView: View {
 
         if !historicalAlerts.isEmpty {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-            Text("RECENT")
-              .font(.system(size: 11, weight: .bold))
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
+            FigmaSectionLabel(title: "RECENT")
 
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(historicalAlerts) { alert in
@@ -122,16 +124,6 @@ struct AlertsView: View {
     }
     .scrollContentBackground(.hidden)
     .background(DesignTokens.Palette.bgPrimary)
-  }
-
-  private func figmaSectionLabel(_ title: String, accent: Color) -> some View {
-    HStack(spacing: 6) {
-      Image(systemName: "bolt.fill")
-        .font(.system(size: 12, weight: .bold))
-      Text(title)
-        .font(.system(size: 11, weight: .bold))
-    }
-    .foregroundStyle(accent)
   }
 
   private func alertRow(_ alert: NWSAlert, isActive: Bool, layout: AlertRowLayout) -> some View {
@@ -267,9 +259,7 @@ struct AlertsView: View {
   private var emptyState: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("Alerts")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "Alerts")
 
         ContentUnavailableView {
           Label("No Alerts", systemImage: "checkmark.shield")

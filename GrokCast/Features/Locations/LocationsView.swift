@@ -45,9 +45,7 @@ struct LocationsView: View {
   private var figmaLocationsScroll: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("Locations")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "Locations")
 
         figmaSearchField
 
@@ -85,14 +83,14 @@ struct LocationsView: View {
     .cardStyle(
       background: DesignTokens.Palette.cardElevated,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: 10
+      cornerRadius: DesignTokens.Figma.Metrics.searchRadius
     )
   }
 
   @ViewBuilder
   private var figmaSearchResults: some View {
     Text("SEARCH RESULTS")
-      .font(.system(size: 11, weight: .bold))
+      .font(DesignTokens.Figma.Typography.sectionLabel)
       .foregroundStyle(DesignTokens.Palette.textTertiary)
 
     SettingsGroupCard {
@@ -127,9 +125,7 @@ struct LocationsView: View {
 
   private var figmaCurrentSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text("CURRENT LOCATION")
-        .font(.system(size: 11, weight: .bold))
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+      FigmaSectionLabel(title: "CURRENT LOCATION")
 
       SettingsGroupCard {
         if let current = store.currentLocation {
@@ -162,9 +158,7 @@ struct LocationsView: View {
 
   private var figmaSavedSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text("SAVED LOCATIONS")
-        .font(.system(size: 11, weight: .bold))
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+      FigmaSectionLabel(title: "SAVED LOCATIONS")
 
       SettingsGroupCard {
         let saved = store.savedLocations.filter { !$0.isCurrent }

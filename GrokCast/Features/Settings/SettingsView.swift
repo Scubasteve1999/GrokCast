@@ -389,14 +389,12 @@ struct SettingsView: View {
   private var figmaSettingsScroll: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        Text("Settings")
-          .font(.system(size: 34, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        FigmaScreenTitle(title: "Settings")
 
-        figmaSectionLabel("GROKCAST PRO")
+        FigmaSectionLabel(title: "GROKCAST PRO")
         figmaProCard
 
-        figmaSectionLabel("NOTIFICATIONS")
+        FigmaSectionLabel(title: "NOTIFICATIONS")
         SettingsGroupCard {
           figmaToggleRow(
             title: "Morning Brief",
@@ -426,7 +424,7 @@ struct SettingsView: View {
           }
         }
 
-        figmaSectionLabel("DISPLAY")
+        FigmaSectionLabel(title: "DISPLAY")
         SettingsGroupCard {
           figmaPickerRow(title: "Temperature", value: store.temperatureUnit.displayName)
           SettingsDivider()
@@ -457,12 +455,12 @@ struct SettingsView: View {
           )
         }
 
-        figmaSectionLabel("DEVELOPER")
+        FigmaSectionLabel(title: "DEVELOPER")
         SettingsGroupCard {
           figmaDeveloperKeySection
         }
 
-        figmaSectionLabel("BACKGROUND")
+        FigmaSectionLabel(title: "BACKGROUND")
         SettingsGroupCard {
           figmaToggleRow(
             title: "Background Weather Updates",
@@ -475,7 +473,7 @@ struct SettingsView: View {
           )
         }
 
-        figmaSectionLabel("APP")
+        FigmaSectionLabel(title: "APP")
         SettingsGroupCard {
           figmaInfoRow(title: "Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
           SettingsDivider()
@@ -496,7 +494,7 @@ struct SettingsView: View {
           .buttonStyle(.plain)
         }
 
-        figmaSectionLabel("LEGAL & SUPPORT")
+        FigmaSectionLabel(title: "LEGAL & SUPPORT")
         SettingsGroupCard {
           SettingsLinkRow(title: "Privacy Policy", icon: "hand.raised", url: AppLinks.privacyPolicy)
           SettingsDivider()
@@ -511,12 +509,6 @@ struct SettingsView: View {
     }
     .scrollContentBackground(.hidden)
     .background(DesignTokens.Palette.bgPrimary)
-  }
-
-  private func figmaSectionLabel(_ title: String) -> some View {
-    Text(title)
-      .font(.system(size: 11, weight: .bold))
-      .foregroundStyle(DesignTokens.Palette.textTertiary)
   }
 
   private var figmaProCard: some View {

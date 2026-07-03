@@ -23,23 +23,16 @@ struct GrokBriefCard: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      HStack {
-        Label("GROK'S TAKE", systemImage: "sparkles")
-          .font(.caption.weight(.heavy))
-          .tracking(DesignTokens.Typography.cardLabelTracking)
-          .foregroundStyle(DesignTokens.Palette.accent)
-        Spacer()
-        if isLoading {
-          ProgressView()
-            .scaleEffect(0.75)
-            .tint(DesignTokens.Palette.accent)
-        }
+    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
+      if presentation == .figma {
+        figmaHeader
+      } else {
+        fullHeader
       }
 
       if let briefText {
         Text(briefText)
-          .font(.body.weight(.medium))
+          .font(presentation == .figma ? DesignTokens.Figma.Typography.body : .body.weight(.medium))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .lineLimit(isExpanded ? nil : (presentation == .figma ? 6 : 3))
           .fixedSize(horizontal: false, vertical: true)
@@ -88,7 +81,7 @@ struct GrokBriefCard: View {
         }
       }
     }
-    .padding(DesignTokens.Spacing.space16)
+    .padding(DesignTokens.Figma.Metrics.cardPadding)
     .modifier(GrokBriefCardChrome(presentation: presentation))
     .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
     .onTapGesture {
@@ -99,6 +92,38 @@ struct GrokBriefCard: View {
       loadCachedBrief()
       if briefText == nil, store.xaiService.hasValidKey, !isLoading {
         await fetchBrief(force: false)
+      }
+    }
+  }
+
+  private var figmaHeader: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "sparkles")
+        .font(.system(size: 14, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.accent)
+      Text("GROK'S TAKE")
+        .font(DesignTokens.Figma.Typography.sectionLabel)
+        .foregroundStyle(DesignTokens.Palette.accent)
+      Spacer()
+      if isLoading {
+        ProgressView()
+          .scaleEffect(0.75)
+          .tint(DesignTokens.Palette.accent)
+      }
+    }
+  }
+
+  private var fullHeader: some View {
+    HStack {
+      Label("GROK'S TAKE", systemImage: "sparkles")
+        .font(.caption.weight(.heavy))
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+        .foregroundStyle(DesignTokens.Palette.accent)
+      Spacer()
+      if isLoading {
+        ProgressView()
+          .scaleEffect(0.75)
+          .tint(DesignTokens.Palette.accent)
       }
     }
   }
@@ -197,7 +222,7 @@ private struct GrokBriefCardChrome: ViewModifier {
     case .full:
       content.glassCardStyle(strokeTint: DesignTokens.Palette.accent.opacity(0.35))
     case .figma:
-      content.cardStyle()
+      content.cardStyle(cornerRadius: DesignTokens.Figma.Metrics.cardRadius)
     }
   }
 }

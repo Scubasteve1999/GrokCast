@@ -41,7 +41,7 @@ struct DailyRow: View {
   private var figmaLayout: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       Text(forecast.date, format: .dateTime.weekday(.abbreviated))
-        .font(.system(size: 15, weight: .semibold))
+        .font(DesignTokens.Figma.Typography.rowTitle)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .lineLimit(1)
 
@@ -50,22 +50,22 @@ struct DailyRow: View {
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(forecast.high)))°")
-        .font(.system(size: 15, weight: .bold))
+        .font(DesignTokens.Figma.Typography.chipTemp)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
 
       Text("\(Int(round(forecast.low)))°")
-        .font(.system(size: 15))
+        .font(DesignTokens.Figma.Typography.body)
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .monospacedDigit()
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, DesignTokens.Spacing.space16)
+    .padding(.horizontal, DesignTokens.Figma.Metrics.cardPadding)
     .padding(.vertical, DesignTokens.Spacing.space12)
     .cardStyle(
       background: DesignTokens.Palette.cardBackground,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusCompact
+      cornerRadius: DesignTokens.Figma.Metrics.chipRadius
     )
   }
 

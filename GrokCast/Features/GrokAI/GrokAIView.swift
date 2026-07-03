@@ -127,9 +127,7 @@ private struct GrokAIViewContent: View {
                   .id("error")
                 }
               }
-              .padding(.horizontal, 20)
-              .padding(.top, 16)
-              .padding(.bottom, 12)
+              .figmaScreenPadding(top: DesignTokens.Figma.Metrics.topPadding)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.conversationHistory.count) {
@@ -158,7 +156,7 @@ private struct GrokAIViewContent: View {
       .navigationBarTitleDisplayMode(.inline)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         inputArea(viewModel: viewModel)
-          .padding(.horizontal, 20)
+          .padding(.horizontal, DesignTokens.Figma.Metrics.horizontalPadding)
           .padding(.top, 8)
           .padding(.bottom, 8)
           .background(
@@ -213,10 +211,7 @@ private struct GrokAIViewContent: View {
   private var headerSection: some View {
     Group {
       if prefersFigmaStudioLayout {
-        Text("Briefing Studio")
-          .font(.system(size: 28, weight: .bold))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .frame(maxWidth: .infinity, alignment: .leading)
+        FigmaScreenTitle(title: "Briefing Studio", style: .studio)
       } else {
         VStack(alignment: .leading, spacing: 6) {
           Text("WEATHER INTELLIGENCE")
@@ -242,14 +237,12 @@ private struct GrokAIViewContent: View {
   private func figmaStormSpotterCard(viewModel: GrokAIViewModel) -> some View {
     Group {
       if prefersFigmaStudioLayout {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-          HStack(spacing: 6) {
-            Image(systemName: "cloud.bolt.rain.fill")
-              .font(.system(size: 12, weight: .bold))
-            Text("STORM SPOTTER ANALYSIS")
-              .font(.system(size: 11, weight: .bold))
-          }
-          .foregroundStyle(DesignTokens.Palette.danger)
+        VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
+          FigmaAccentSectionLabel(
+            title: "STORM SPOTTER ANALYSIS",
+            icon: "cloud.bolt.rain.fill",
+            color: DesignTokens.Palette.danger
+          )
 
           if viewModel.stormAnalysisMode && viewModel.isStreaming && viewModel.responseText.isEmpty {
             HStack(spacing: 8) {

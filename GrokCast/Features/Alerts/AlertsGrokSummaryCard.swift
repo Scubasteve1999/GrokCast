@@ -38,22 +38,22 @@ struct AlertsGrokSummaryCard: View {
 
   @ViewBuilder
   private var figmaBody: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
       if isLoading {
         HStack(spacing: 8) {
           ProgressView().scaleEffect(0.75)
           Text("Grok is summarizing alerts…")
-            .font(.subheadline)
+            .font(DesignTokens.Figma.Typography.rowSubtitle)
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       } else if let summary {
         Text(summary)
-          .font(.system(size: 14))
+          .font(DesignTokens.Figma.Typography.body)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
       } else if let errorMessage {
         Text(errorMessage)
-          .font(.system(size: 14))
+          .font(DesignTokens.Figma.Typography.body)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         if store.xaiService.hasValidKey {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
@@ -61,23 +61,23 @@ struct AlertsGrokSummaryCard: View {
         }
       } else if !store.xaiService.hasValidKey {
         Text(figmaPlaceholder)
-          .font(.system(size: 14))
+          .font(DesignTokens.Figma.Typography.body)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {
         Text(figmaPlaceholder)
-          .font(.system(size: 14))
+          .font(DesignTokens.Figma.Typography.body)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .onTapGesture {
             Task { await fetchSummary(force: false) }
           }
       }
     }
-    .padding(DesignTokens.Spacing.space16)
+    .padding(DesignTokens.Figma.Metrics.cardPadding)
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle(
       background: DesignTokens.Palette.cardBackground,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+      cornerRadius: DesignTokens.Figma.Metrics.cardRadius
     )
   }
 

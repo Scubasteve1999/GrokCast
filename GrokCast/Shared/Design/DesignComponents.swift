@@ -1,5 +1,74 @@
 import SwiftUI
 
+// MARK: - Figma screen chrome (GrokCast Screens page)
+
+struct FigmaScreenTitle: View {
+  enum Style {
+    case screen
+    case studio
+  }
+
+  let title: String
+  var style: Style = .screen
+
+  var body: some View {
+    Text(title)
+      .font(style == .screen ? DesignTokens.Figma.Typography.screenTitle : DesignTokens.Figma.Typography.studioTitle)
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+      .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+struct FigmaSectionLabel: View {
+  let title: String
+
+  var body: some View {
+    Text(title)
+      .font(DesignTokens.Figma.Typography.sectionLabel)
+      .foregroundStyle(DesignTokens.Palette.textTertiary)
+      .textCase(.uppercase)
+      .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+struct FigmaSubsectionLabel: View {
+  let title: String
+
+  var body: some View {
+    Text(title)
+      .font(DesignTokens.Figma.Typography.subsectionLabel)
+      .foregroundStyle(DesignTokens.Palette.textTertiary)
+      .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+struct FigmaAccentSectionLabel: View {
+  let title: String
+  let icon: String
+  let color: Color
+
+  var body: some View {
+    HStack(spacing: 6) {
+      Image(systemName: icon)
+        .font(.system(size: 12, weight: .bold))
+      Text(title)
+        .font(DesignTokens.Figma.Typography.sectionLabel)
+    }
+    .foregroundStyle(color)
+    .textCase(.uppercase)
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+extension View {
+  /// Standard Figma screen content padding (20pt sides, tab-bar bottom clearance).
+  func figmaScreenPadding(top: CGFloat = DesignTokens.Figma.Metrics.topPadding) -> some View {
+    padding(.horizontal, DesignTokens.Figma.Metrics.horizontalPadding)
+      .padding(.top, top)
+      .padding(.bottom, DesignTokens.Figma.Metrics.bottomPadding)
+  }
+}
+
 // MARK: - Section chrome (Settings, More hub, long forms)
 
 struct SettingsSectionHeader: View {
@@ -8,11 +77,7 @@ struct SettingsSectionHeader: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text(title)
-        .font(.caption.weight(.heavy))
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .textCase(.uppercase)
+      FigmaSectionLabel(title: title)
 
       if let footer {
         Text(footer)
@@ -32,7 +97,11 @@ struct SettingsGroupCard<Content: View>: View {
     VStack(alignment: .leading, spacing: 0) {
       content()
     }
-    .glassCardStyle()
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Figma.Metrics.cardRadius
+    )
   }
 }
 
@@ -89,16 +158,16 @@ struct SettingsNavigationRow: View {
     Button(action: action) {
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: icon)
-          .font(.title3)
+          .font(.system(size: 16, weight: .semibold))
           .foregroundStyle(tint)
-          .frame(width: 28)
+          .frame(width: 24)
         VStack(alignment: .leading, spacing: 2) {
           Text(title)
-            .font(.body.weight(.semibold))
+            .font(DesignTokens.Figma.Typography.rowTitle)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           if let subtitle {
             Text(subtitle)
-              .font(.caption)
+              .font(DesignTokens.Figma.Typography.rowSubtitle)
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
         }
@@ -131,7 +200,7 @@ struct MoreHubSheet: View {
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
+        VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
           hubHeader
 
           SettingsGroupCard {
@@ -168,27 +237,26 @@ struct MoreHubSheet: View {
   }
 
   private var hubHeader: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
       if let name = store.currentLocation?.name {
         Text(name.uppercased())
-          .font(.caption.weight(.heavy))
-          .tracking(DesignTokens.Typography.headerTracking)
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .font(DesignTokens.Figma.Typography.locationLabel)
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       if let w = store.currentWeather {
-        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
+        HStack(alignment: .bottom, spacing: DesignTokens.Spacing.space8) {
           Text(store.formatTemperatureShort(w.currentTemp))
             .font(.system(size: 44, weight: .black, design: .rounded))
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(w.conditionText)
-            .font(.subheadline.weight(.medium))
+            .font(DesignTokens.Figma.Typography.body)
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(DesignTokens.Spacing.space20)
-    .glassCardStyle()
+    .padding(DesignTokens.Figma.Metrics.cardPadding)
+    .cardStyle(cornerRadius: DesignTokens.Figma.Metrics.cardRadius)
   }
 
   private func moreSubtitle(for tab: WeatherStore.Tab) -> String {

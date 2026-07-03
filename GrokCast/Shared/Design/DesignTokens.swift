@@ -120,6 +120,38 @@ enum DesignTokens {
     /// High/low labels.
     static let highLowLabel: Double = 0.6
   }
+
+  /// Pixel-matched metrics from the GrokCast Screens Figma page (393×852).
+  enum Figma {
+    enum Typography {
+      static let screenTitle = Font.system(size: 34, weight: .bold)
+      static let studioTitle = Font.system(size: 28, weight: .bold)
+      static let sectionLabel = Font.system(size: 11, weight: .bold)
+      static let subsectionLabel = Font.system(size: 13, weight: .bold)
+      static let cardHeadline = Font.system(size: 17, weight: .bold)
+      static let rowTitle = Font.system(size: 15, weight: .semibold)
+      static let rowSubtitle = Font.system(size: 13, weight: .regular)
+      static let body = Font.system(size: 15, weight: .regular)
+      static let chipTime = Font.system(size: 11, weight: .semibold)
+      static let chipTemp = Font.system(size: 15, weight: .bold)
+      static let locationLabel = Font.system(size: 11, weight: .bold)
+    }
+
+    enum Metrics {
+      static let horizontalPadding: CGFloat = Spacing.space20
+      static let topPadding: CGFloat = Spacing.space16
+      static let bottomPadding: CGFloat = Spacing.space32
+      static let sectionSpacing: CGFloat = Spacing.space16
+      static let cardPadding: CGFloat = Spacing.space16
+      static let cardInnerSpacing: CGFloat = Spacing.space8
+      static let cardRadius: CGFloat = Radius.medium
+      static let chipRadius: CGFloat = Radius.small
+      static let searchRadius: CGFloat = 10
+      static let heroIconSize: CGFloat = 48
+      static let hourlyRowHeight: CGFloat = 90
+      static let hourlyChipWidth: CGFloat = 100
+    }
+  }
 }
 
 // MARK: - Reusable Card Styling Modifier
