@@ -197,7 +197,8 @@ private struct GrokBriefCardChrome: ViewModifier {
     case .full:
       content.glassCardStyle(strokeTint: DesignTokens.Palette.accent.opacity(0.35))
     case .figma:
-      content.cardStyle()
+      // Today tab is the bright Apple-Weather theme — use the frosted panel (see TodayBrightTheme).
+      content.todayGlassCard()
     }
   }
 }

@@ -27,6 +27,6 @@ xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
 
 - **Never put real API keys in tracked source.** Keys live in the iOS Keychain (`KeychainService`) and gitignored `GrokCast/Config/DeveloperAPIKey.swift` (embedded for TestFlight). `GrokAPIConfiguration.swift` stays secrets-free.
 - `Identifiable` in Codable forecast models must use stable Date-based IDs (`var id: Date { time }`), never `UUID()`.
-- Dark-first UI; reuse DesignTokens / TacticalCard / Haptic / ultraThinMaterial patterns; keep diffs small and focused.
+- Dark-first UI; reuse DesignTokens / TacticalCard / Haptic / ultraThinMaterial patterns; keep diffs small and focused. **Exception:** the **Today** tab uses a bright, Apple-Weather-style condition sky with translucent frosted cards (`Features/Today/TodayBrightTheme.swift` — `TodaySkyBackground`, `.todayGlassCard`, `TodayBright.*`) instead of the dark palette. It's scoped to Today; all other tabs stay dark-first.
 - NWS is strictly additive: non-US locations or NWS failures must stay silent (no errors surfaced, Open-Meteo remains source of truth).
 - Prefer plain URLSession + async/await; no networking libraries.

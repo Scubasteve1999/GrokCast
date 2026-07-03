@@ -253,24 +253,14 @@ struct TodayView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
-  /// Animated condition-aware backdrop (gradients + particles) over the base palette.
+  /// Bright, Apple-Weather-style condition sky backdrop for the Today tab (see TodayBrightTheme).
   private var todayWeatherBackground: some View {
-    ZStack {
-      DesignTokens.Palette.bgPrimary
-        .ignoresSafeArea()
-
-      WeatherBackgroundView(
-        conditionCode: store.currentWeather?.conditionCode,
-        isDay: store.currentWeather.map {
-          WeatherBackgroundView.isDay(from: $0.symbolName)
-        } ?? WeatherBackgroundView.inferredIsDay,
-        intensity: .full
-      )
-      .ignoresSafeArea()
-      .opacity(0.88)
-      .animation(.easeInOut(duration: 1.0), value: store.currentWeather?.conditionCode)
-    }
-    .allowsHitTesting(false)
+    TodaySkyBackground(
+      conditionCode: store.currentWeather?.conditionCode ?? 0,
+      isDay: store.currentWeather.map {
+        WeatherBackgroundView.isDay(from: $0.symbolName)
+      } ?? WeatherBackgroundView.inferredIsDay
+    )
   }
 }
 
@@ -289,7 +279,7 @@ private struct TodayWeatherPanel: View {
   }
 
   private var currentMinutecast: MinutecastSummary {
-    MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
+    MinutecastEngine.summary(from: weather.minutely15)
   }
 
   private var awaitsWidthMeasurement: Bool {
@@ -314,10 +304,23 @@ private struct TodayWeatherPanel: View {
     }
   }
 
-  /// Figma Today screen — location, hero temp, score, minutecast, Grok brief.
+  /// Bright Apple-Weather-style Today: hero on the sky, alert, summary + hourly,
+  /// 10-day list, then GrokCast's own extras (Grok brief, score, minutecast, details).
   private var compactFigmaTodayLayout: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-      figmaHeroSection
+      brightHeroSection
+
+      ForEach(store.displayableActiveAlerts.prefix(2)) { alert in
+        TodayAlertCard(alert: alert)
+      }
+
+      TodaySummaryHourlyCard(weather: weather)
+
+      TodayTenDayCard(daily: weather.daily, currentTemp: weather.currentTemp)
+
+      MinutecastStrip(summary: currentMinutecast)
+
+      GrokBriefCard(presentation: .figma)
 
       GrokCastScoreCard(
         score: currentScore,
@@ -325,45 +328,86 @@ private struct TodayWeatherPanel: View {
         layout: .figma
       )
 
-      MinutecastStrip(summary: currentMinutecast)
+      brightDetailsGrid
 
-      GrokBriefCard(presentation: .figma)
+      GrokImagineButton(
+        weather: weather,
+        isGenerating: isGeneratingImage,
+        action: generateImageAction
+      )
 
-      if !store.displayableActiveAlerts.isEmpty {
-        alertsSection
+      errorBanner
+      refreshButton
+    }
+  }
+
+  /// Frosted metric tiles matching the bright Today theme.
+  private var brightDetailsGrid: some View {
+    let precipValue: String = {
+      let c = weather.precipitationChance
+      if let d0 = weather.daily.first {
+        let liq = (d0.rainSum ?? 0) + (d0.showersSum ?? 0)
+        let sn = d0.snowfallSum ?? 0
+        if let amtLabel = precipAmountLabel(liquid: liq, snow: sn) {
+          return "\(c)% · \(amtLabel)"
+        }
       }
+      return "\(c)%"
+    }()
 
-      extendedTodayDetails
+    return LazyVGrid(
+      columns: [GridItem(.flexible()), GridItem(.flexible())],
+      spacing: DesignTokens.Spacing.space12
+    ) {
+      TodayDetailChip(
+        label: "HUMIDITY", value: "\(weather.humidity)%", icon: "humidity",
+        tint: DesignTokens.Palette.accentCool)
+      TodayDetailChip(
+        label: "WIND", value: "\(Int(weather.windSpeed)) MPH", icon: "wind",
+        tint: DesignTokens.Palette.accent)
+      TodayDetailChip(
+        label: "UV INDEX", value: "\(Int(weather.uvIndex))", icon: "sun.max",
+        tint: DesignTokens.Palette.warning)
+      TodayDetailChip(
+        label: "PRECIP", value: precipValue, icon: weather.symbolName,
+        tint: DesignTokens.Palette.accentCool)
+      if let aqi = weather.airQualityIndex {
+        TodayDetailChip(
+          label: "AQI", value: "\(aqi)", icon: "aqi.medium",
+          tint: DesignTokens.Palette.success)
+      }
+      if let pollen = weather.pollenLevel {
+        TodayDetailChip(
+          label: "POLLEN", value: pollen, icon: "leaf",
+          tint: DesignTokens.Palette.success)
+      }
     }
   }
 
   private var wideTodayLayout: some View {
-    VStack(spacing: DesignTokens.Spacing.space48) {
-      header
+    VStack(spacing: DesignTokens.Spacing.space24) {
+      brightHeroSection
 
-      GrokCastScoreCard(
-        score: currentScore,
-        locationName: store.currentLocation?.name ?? weather.location.name,
-        layout: .ring
-      )
-
-      MinutecastStrip(summary: currentMinutecast)
-
-      GrokBriefCard()
-
-      if !store.displayableActiveAlerts.isEmpty {
-        alertsSection
+      ForEach(store.displayableActiveAlerts.prefix(2)) { alert in
+        TodayAlertCard(alert: alert)
       }
 
       HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
         VStack(spacing: DesignTokens.Spacing.space16) {
-          heroCard
-          tonightSection
+          TodaySummaryHourlyCard(weather: weather)
+          TodayTenDayCard(daily: weather.daily, currentTemp: weather.currentTemp)
+          MinutecastStrip(summary: currentMinutecast)
         }
         .frame(maxWidth: .infinity)
 
-        VStack(spacing: DesignTokens.Spacing.space24) {
-          tacticalDetailsGrid
+        VStack(spacing: DesignTokens.Spacing.space16) {
+          GrokBriefCard(presentation: .figma)
+          GrokCastScoreCard(
+            score: currentScore,
+            locationName: store.currentLocation?.name ?? weather.location.name,
+            layout: .figma
+          )
+          brightDetailsGrid
           GrokImagineButton(
             weather: weather,
             isGenerating: isGeneratingImage,
@@ -379,53 +423,64 @@ private struct TodayWeatherPanel: View {
     }
   }
 
-  private var figmaHeroSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-      Text((store.currentLocation?.name ?? weather.location.name).uppercased())
-        .font(.caption.weight(.bold))
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-
-      HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: weather.symbolName)
-          .font(.system(size: 48))
-          .symbolRenderingMode(.multicolor)
-
-        Text(store.formatTemperatureShort(weather.currentTemp))
-          .font(DesignTokens.Typography.heroTemperature())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .monospacedDigit()
-          .lineLimit(1)
-          .allowsTightening(true)
-          .minimumScaleFactor(0.5)
+  /// Apple-Weather-style hero floating directly on the sky: HOME pin + location,
+  /// dominant temperature, then a "Feels Like" + H/L line. White text with soft shadows.
+  private var brightHeroSection: some View {
+    VStack(spacing: DesignTokens.Spacing.space2) {
+      Label {
+        Text("HOME")
+          .font(.caption.weight(.semibold))
+          .tracking(1.0)
+      } icon: {
+        Image(systemName: "location.fill")
+          .font(.caption2)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .foregroundStyle(TodayBright.textSecondary)
 
-      Text("\(feelsLikeSubtitle) · \(weather.conditionText)")
-        .font(.subheadline)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .fixedSize(horizontal: false, vertical: true)
+      Text(store.currentLocation?.name ?? weather.location.name)
+        .font(.system(size: 34, weight: .regular))
+        .foregroundStyle(TodayBright.textPrimary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+
+      Text(store.formatTemperatureShort(weather.currentTemp))
+        .font(.system(size: 96, weight: .thin))
+        .foregroundStyle(TodayBright.textPrimary)
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .shadow(color: heroGlowColor.opacity(0.30), radius: 24)
+
+      Text("Feels Like: \(store.formatTemperatureShort(weather.feelsLike))")
+        .font(.title3)
+        .foregroundStyle(TodayBright.textPrimary)
+
+      HStack(spacing: DesignTokens.Spacing.space12) {
+        Text("H:\(store.formatTemperatureShort(weather.high))")
+        Text("L:\(store.formatTemperatureShort(weather.low))")
+      }
+      .font(.title3.weight(.medium))
+      .foregroundStyle(TodayBright.textPrimary)
+      .monospacedDigit()
     }
-  }
-
-  private var feelsLikeSubtitle: String {
-    "Feels like \(store.formatTemperatureShort(weather.feelsLike))"
-  }
-
-  @ViewBuilder
-  private var extendedTodayDetails: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
-      tonightSection
-      tacticalDetailsGrid
-      GrokImagineButton(
-        weather: weather,
-        isGenerating: isGeneratingImage,
-        action: generateImageAction
-      )
-      errorBanner
-      refreshButton
-    }
+    .frame(maxWidth: .infinity)
+    .multilineTextAlignment(.center)
+    .skyTextShadow()
     .padding(.top, DesignTokens.Spacing.space8)
+    .padding(.bottom, DesignTokens.Spacing.space16)
+  }
+
+  /// Condition-driven accent used for the hero temperature glow.
+  private var heroGlowColor: Color {
+    let c = weather.conditionText.lowercased()
+    if c.contains("rain") || c.contains("storm") || c.contains("drizzle") || c.contains("shower") {
+      return DesignTokens.Palette.accentCool
+    }
+    if c.contains("snow") { return DesignTokens.Palette.accentCool }
+    if c.contains("cloud") || c.contains("fog") || c.contains("overcast") {
+      return DesignTokens.Palette.accent
+    }
+    return DesignTokens.Palette.accentWarm
   }
 
   private var refreshButton: some View {
@@ -440,246 +495,6 @@ private struct TodayWeatherPanel: View {
     .buttonStyle(.bordered)
     .tint(DesignTokens.Palette.textSecondary)
     .padding(.top, DesignTokens.Spacing.space8)
-  }
-
-  // DesignSystem v1 header (location + date, uppercase labels per scale).
-  private var header: some View {
-    HStack {
-      Text("GrokCast")
-        .font(.largeTitle.bold())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-      Spacer()
-      VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
-        Text((store.currentLocation?.name ?? "—").uppercased())
-          .font(.system(size: DesignTokens.Spacing.space16, weight: .heavy, design: .rounded))
-          .tracking(DesignTokens.Typography.headerTracking)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-        Text(Date.now, format: .dateTime.weekday(.wide).month(.abbreviated).day())
-          .font(.caption.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-      Spacer()
-      Text("\(weather.fetchedAt, format: .dateTime.hour().minute())")
-        .font(.caption2.monospaced())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-    }
-  }
-
-  private var heroCard: some View {
-    // DesignSystem v1: Hero card. DesignTokens.Card.cornerRadiusLarge for prominence, space20 internal padding.
-    // Dominant temperature + icon grouped with layoutPriority + aggressive scale factor to prevent
-    // truncation (e.g. "7..."). Icon left of temp, RealFeel right (or wraps gracefully). Tokens everywhere.
-    // Matches recent Radar control panel token discipline + TacticalCard patterns.
-    VStack(spacing: DesignTokens.Spacing.space4) {
-      HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
-        // Icon + dominant temp: temp gets priority and can scale down before other elements clip it.
-        HStack(alignment: .center, spacing: DesignTokens.Spacing.space8) {
-          Image(systemName: weather.symbolName)
-            .font(.system(size: 42))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .symbolRenderingMode(.hierarchical)
-
-          Text(store.formatTemperatureShort(weather.currentTemp))
-            .font(DesignTokens.Typography.heroTemperature())
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .monospacedDigit()
-            .lineLimit(1)
-            .allowsTightening(true)
-            .minimumScaleFactor(0.5)
-        }
-        .layoutPriority(1)
-        .minimumScaleFactor(0.5)
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-
-        Spacer(minLength: DesignTokens.Spacing.space8)
-
-        VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
-          Text("RealFeel")
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-          Text(store.formatTemperatureShort(weather.feelsLike))
-            .font(.system(size: DesignTokens.Spacing.space20, weight: .bold))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-        }
-      }
-
-      Text(weather.conditionText.uppercased())
-        .font(.system(size: DesignTokens.Spacing.space20, weight: .semibold))
-        .tracking(DesignTokens.Typography.headerTracking)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .padding(.top, DesignTokens.Spacing.space4)
-        .lineLimit(1)
-    }
-    .padding(.vertical, DesignTokens.Spacing.space20)
-    .padding(.horizontal, DesignTokens.Spacing.space20)
-    .frame(maxWidth: .infinity)
-    .glassCardStyle(cornerRadius: DesignTokens.Card.cornerRadiusLarge)
-  }
-
-  private var tonightSection: some View {
-    // DesignSystem v1: Dedicated TONIGHT'S WEATHER block. DesignTokens.Card.cornerRadius, space20 padding,
-    // premium shadow. Low/High with accent icons. Dynamic short desc.
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("TONIGHT'S WEATHER")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-
-      HStack(spacing: DesignTokens.Spacing.space20) {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: "moon.stars.fill")
-              .font(.title3)
-              .foregroundStyle(DesignTokens.Palette.accentCool)
-            Text("Low \(Int(round(weather.low)))°")
-              .font(.title2.weight(.bold))
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-          }
-          Text(tonightDescription)
-            .font(.caption)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-        }
-
-        Spacer()
-
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: "sun.max.fill")
-              .font(.title3)
-              .foregroundStyle(DesignTokens.Palette.accentWarm)
-            Text("High \(Int(round(weather.high)))°")
-              .font(.title2.weight(.bold))
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-          }
-          Text("Tomorrow")
-            .font(.caption)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-        }
-      }
-    }
-    .padding(.vertical, DesignTokens.Spacing.space20)
-    .padding(.horizontal, DesignTokens.Spacing.space20)
-    .frame(maxWidth: .infinity)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadius
-    )
-  }
-
-  private var tonightDescription: String {
-    let p = weather.precipitationChance
-    if p >= 50 { return "Rain or showers likely" }
-    if p >= 20 { return "Slight chance of precip" }
-    let c = weather.conditionText.lowercased()
-    if c.contains("clear") || c.contains("sun") { return "Clear skies" }
-    if c.contains("cloud") { return "Mostly cloudy" }
-    if c.contains("rain") || c.contains("storm") || c.contains("drizzle") {
-      return "Wet conditions"
-    }
-    return "Clearing overnight"
-  }
-
-  private var tacticalDetailsGrid: some View {
-    // DesignSystem v1: Clean 2-col condition grid. DesignTokens.Spacing.space20. No duplicate FEELS LIKE (shown in hero).
-    // Cards use .tacticalCard() + elevated shadow per spec.
-    let precipValue: String = {
-      let c = weather.precipitationChance
-      if let d0 = weather.daily.first {
-        let liq = (d0.rainSum ?? 0) + (d0.showersSum ?? 0)
-        let sn = d0.snowfallSum ?? 0
-        if let amtLabel = precipAmountLabel(liquid: liq, snow: sn) {
-          return "\(c)% \(amtLabel)"
-        }
-      }
-      return "\(c)%"
-    }()
-
-    return LazyVGrid(
-      columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DesignTokens.Spacing.space20
-    ) {
-      TacticalCard(label: "HUMIDITY", value: "\(weather.humidity)%", icon: "humidity")
-        .elevatedShadow()
-      TacticalCard(label: "WIND", value: "\(Int(weather.windSpeed)) MPH", icon: "wind")
-        .elevatedShadow()
-      TacticalCard(label: "UV INDEX", value: "\(Int(weather.uvIndex))", icon: "sun.max")
-        .elevatedShadow()
-      TacticalCard(label: "PRECIP", value: precipValue, icon: weather.symbolName)
-        .elevatedShadow()
-      if let aqi = weather.airQualityIndex {
-        TacticalCard(label: "AQI", value: "\(aqi)", icon: "aqi.medium")
-          .elevatedShadow()
-      }
-      if let pollen = weather.pollenLevel {
-        TacticalCard(label: "POLLEN", value: pollen, icon: "leaf")
-          .elevatedShadow()
-      }
-      if let obs = store.currentNWSObservation {
-        let tempStr = obs.temperatureF.map { "\(Int(round($0)))°" } ?? "—"
-        TacticalCard(
-          label: "NWS", value: "\(obs.stationId) \(tempStr)",
-          icon: "antenna.radiowaves.left.and.right"
-        )
-        .elevatedShadow()
-      }
-      if let owm = store.currentOpenWeatherMapWeather {
-        TacticalCard(
-          label: "OWM",
-          value: "\(Int(round(owm.temperatureF)))°",
-          icon: "cloud.sun.fill"
-        )
-        .elevatedShadow()
-      }
-    }
-  }
-
-  private var alertsSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      ForEach(store.displayableActiveAlerts.prefix(3)) { alert in
-        HStack(spacing: DesignTokens.Spacing.space8) {
-          Image(systemName: NWSAlertStyle.iconName(for: alert))
-            .font(.title3)
-            .foregroundStyle(NWSAlertStyle.tint(for: alert))
-
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-            Text(alert.event.uppercased())
-              .font(.caption.weight(.bold))
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-
-            if let headline = alert.headline, !headline.isEmpty {
-              Text(headline)
-                .font(.caption2)
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-                .lineLimit(2)
-            }
-
-            if let area = alert.areaDesc, !area.isEmpty {
-              Text(area)
-                .font(.caption2)
-                .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .lineLimit(1)
-            }
-
-            if let instr = alert.instruction, !instr.isEmpty {
-              Text(instr)
-                .font(.caption2)
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-                .lineLimit(2)
-                .padding(.top, DesignTokens.Spacing.space2)
-            }
-          }
-
-          Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(DesignTokens.Spacing.space16)
-        .elevatedCardStyle(
-          background: DesignTokens.Palette.cardBackground,
-          stroke: DesignTokens.Palette.cardStroke,
-          cornerRadius: DesignTokens.Card.cornerRadiusMedium
-        )
-      }
-    }
   }
 
   @ViewBuilder

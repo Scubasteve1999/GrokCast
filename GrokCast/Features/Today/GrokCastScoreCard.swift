@@ -34,7 +34,7 @@ struct GrokCastScoreCard: View {
       Text("GROKCAST SCORE")
         .font(.caption.weight(.bold))
         .tracking(DesignTokens.Typography.cardLabelTracking)
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .foregroundStyle(TodayBright.textTertiary)
 
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: score.icon)
@@ -57,7 +57,7 @@ struct GrokCastScoreCard: View {
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle()
+    .todayGlassCard()  // bright Today theme frosted panel (see TodayBrightTheme)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("GrokCast score \(score.value). \(score.label). \(score.subtitle)")
   }
