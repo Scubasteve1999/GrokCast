@@ -9,9 +9,14 @@ struct RadarControlPanel: View {
   @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
 
   @State private var autoResumeAfterScrub = true
+  /// Collapsed shows only the grabber + header + playback/scrubber, freeing the
+  /// lower half of the map. Expanded shows the full control set.
+  @State private var isCollapsed = false
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
+      collapseHandle
+
       // Header matching previous panel style: title + badge + updated time
       HStack {
         Image(systemName: "cloud.rain.fill")
@@ -46,6 +51,7 @@ struct RadarControlPanel: View {
 
       RadarTimelineScrubber(radarState: radarState)
 
+      if !isCollapsed {
       // Auto-resume toggle (restored from previous style)
       Toggle("Auto-resume after scrub", isOn: $radarState.autoResumeAfterScrub)
         .font(.caption2)
@@ -93,12 +99,39 @@ struct RadarControlPanel: View {
 
       opacityRow
       statusFooter
+      }
     }
     .padding(DesignTokens.Spacing.space12)
     .background(.ultraThinMaterial)
     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
+  }
+
+  /// Grabber + chevron that collapses the panel down to just the playback
+  /// controls + scrubber, freeing the lower half of the map. Full-width tap
+  /// target so it's easy to hit.
+  private var collapseHandle: some View {
+    Button {
+      Haptic.impact(.light)
+      withAnimation(.easeInOut(duration: 0.25)) { isCollapsed.toggle() }
+    } label: {
+      ZStack {
+        Capsule()
+          .fill(DesignTokens.Palette.radarTextSecondary.opacity(0.4))
+          .frame(width: 36, height: 5)
+        HStack {
+          Spacer()
+          Image(systemName: isCollapsed ? "chevron.up" : "chevron.down")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        }
+      }
+      .frame(maxWidth: .infinity, minHeight: 16)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(isCollapsed ? "Expand radar controls" : "Collapse radar controls")
   }
 
   private var productChips: some View {

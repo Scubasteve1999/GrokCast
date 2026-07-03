@@ -233,6 +233,12 @@ final class RadarState {
       playback.playbackSpeed = 1.0
     }
     activateCurrentForCommittedMode()
+    // Auto-play the newly committed mode so switching into FUTURE animates the
+    // forecast immediately instead of sitting paused on frame 1 (beginTransition
+    // stopped playback; NOW gets its start() from RadarView on tab entry).
+    if activeFrameCount > 0 {
+      playback.start()
+    }
   }
 
   func refreshForecastTileAvailability() async -> Bool {

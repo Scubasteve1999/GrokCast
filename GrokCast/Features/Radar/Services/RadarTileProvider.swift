@@ -48,7 +48,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   var maxZoom: Double {
     switch self {
     case .rainViewer: 10
-    case .xweather: 8
+    case .xweather: 10  // Aeris serves fradar past z8; the 8 cap forced overzoom blur.
     case .openWeatherMap: 7
     case .iem: 10
     }
