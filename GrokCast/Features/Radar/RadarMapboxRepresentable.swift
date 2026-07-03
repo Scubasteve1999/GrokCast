@@ -91,22 +91,38 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
   @MainActor
   final class Coordinator {
-    private static let tileThrottleInterval: TimeInterval = 0.6
-    private static let tileNetworkRequestsDelay: TimeInterval = 0.1
+    private enum BufferSlot: String {
+      case a
+      case b
 
-    private let sourceId = "radar"
-    private let layerId = "radar-layer"
+      var sourceId: String { "radar-\(rawValue)" }
+      var layerId: String { "radar-layer-\(rawValue)" }
+
+      var opposite: BufferSlot {
+        switch self {
+        case .a: .b
+        case .b: .a
+        }
+      }
+    }
 
     private var cancelables = Set<AnyCancelable>()
     private var hasAppliedInitialCenter = false
     private var lastRecenterDefaultTrigger: UUID?
     private var lastRecenterUserCoordinate: CLLocationCoordinate2D?
 
-    private var appliedRasterState: DesiredRasterState?
-    private var pendingDesiredState: DesiredRasterState?
+    private var layersInstalled = false
+    private var frontSlot: BufferSlot = .a
+    private var appliedFrontKey: String?
+    private var appliedModeIsFuture: Bool?
     private var appliedBaseMapStyle: RadarBaseMapStyle?
-    private var lastTileUpdateDate = Date.distantPast
-    private var throttleFlushTask: Task<Void, Never>?
+    private var appliedOpacity: Double?
+    private var appliedSaturation: Double?
+    private var appliedContrast: Double?
+
+    private var pendingDesiredState: DesiredRasterState?
+    private var crossfadeTask: Task<Void, Never>?
+    private var queuedDesiredState: DesiredRasterState?
 
     private struct DesiredRasterState: Equatable {
       var tileURLs: [String]
@@ -118,13 +134,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       var showsFuture: Bool
       var isAnimating: Bool
       var visible: Bool
-      /// Mapbox rasterFadeDuration in milliseconds. 0 for live (crisp frame cuts
-      /// show storm motion clearly); non-zero for FUTURE (cross-fades the smooth
-      /// forecast blobs so playback feels fluid rather than choppy).
       var fadeDuration: Double
-      /// CSS pixel size of each tile in the Mapbox raster source (256 or 512).
-      /// Must match the actual pixel dimensions of the tiles being served:
-      /// 256 for standard tiles, 512 for @2x retina tiles (Xweather fradar).
       var tileSize: Double
 
       static let hidden = DesiredRasterState(
@@ -140,12 +150,6 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         fadeDuration: 0,
         tileSize: 256
       )
-
-      func updatingOpacity(_ opacity: Double) -> Self {
-        var copy = self
-        copy.opacity = opacity
-        return copy
-      }
     }
 
     func setupMap(_ mapView: MapView) {
@@ -210,7 +214,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
 
       MapViewHostingSanitizer.sanitize(mapView)
-      reconcile(mapView: mapView, desired: desired, forceImmediate: false)
+      reconcile(mapView: mapView, desired: desired)
     }
 
     private func resolveDesiredState(from radarState: RadarState, opacity: Double) -> DesiredRasterState {
@@ -222,15 +226,18 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         return .hidden
       }
 
-      // FUTURE fradar tiles are smooth forecast blobs — a cross-fade makes the
-      // animation feel fluid. Live radar stays at 0 so storm motion reads crisply.
-      // Xweather fradar also benefits from a small saturation lift; its palette
-      // looks slightly flat at the default vibrant settings (saturation = 0).
-      // Xweather fradar frames use @2x (512px) retina tiles; tileSize must match
-      // so Mapbox fetches them at the correct zoom level rather than upscaling.
       let isFuture = radarState.showsFuture
       let isXweatherForecast =
         frame.provider == .xweather && frame.kind == .forecastPrecipitation
+      let fadeDuration: Double
+      if radarState.isAnimating {
+        fadeDuration = isFuture ? 450 : 400
+      } else if isFuture {
+        fadeDuration = 250
+      } else {
+        fadeDuration = 180
+      }
+
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
         tileKey: frame.tileKey,
@@ -241,7 +248,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         showsFuture: isFuture,
         isAnimating: radarState.isAnimating,
         visible: true,
-        fadeDuration: isFuture ? 300 : 0,
+        fadeDuration: fadeDuration,
         tileSize: isXweatherForecast ? 512 : 256
       )
     }
@@ -264,102 +271,186 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private func flushPendingDesiredState(on mapView: MapView) {
       guard mapView.mapboxMap.isStyleLoaded, let desired = pendingDesiredState else { return }
       MapViewHostingSanitizer.sanitize(mapView)
-      reconcile(mapView: mapView, desired: desired, forceImmediate: true)
+      reconcile(mapView: mapView, desired: desired)
     }
 
-    private func reconcile(
-      mapView: MapView,
-      desired: DesiredRasterState,
-      forceImmediate: Bool
-    ) {
+    private func reconcile(mapView: MapView, desired: DesiredRasterState) {
       MapViewHostingSanitizer.sanitize(mapView)
 
       guard desired.visible else {
-        removeLayer(mapView)
+        removeLayers(mapView)
         return
       }
 
-      if appliedRasterState == nil {
-        setupLayer(mapView: mapView, desired: desired)
-        appliedRasterState = desired
-        lastTileUpdateDate = Date()
-        #if DEBUG
-          print("[Mapbox] Radar layer created | key: \(desired.tileKey)")
-        #endif
+      if !layersInstalled {
+        installDualLayers(mapView: mapView, desired: desired)
         return
       }
 
-      guard let applied = appliedRasterState else { return }
-
-      let modeChanged = desired.showsFuture != applied.showsFuture
-      if modeChanged {
-        throttleFlushTask?.cancel()
-        // On mode switch (NOW <-> FUTURE), remove and re-add the source/layer to avoid
-        // "Updated style is ignored due to runtime changes" warnings and ensure clean update.
-        removeLayer(mapView)
-        setupLayer(mapView: mapView, desired: desired)
-        appliedRasterState = desired
-        lastTileUpdateDate = Date()
-        #if DEBUG
-          print("[Mapbox] Radar layer recreated for mode change | key: \(desired.tileKey)")
-        #endif
+      if appliedModeIsFuture != desired.showsFuture {
+        crossfadeTask?.cancel()
+        crossfadeTask = nil
+        queuedDesiredState = nil
+        removeLayers(mapView)
+        installDualLayers(mapView: mapView, desired: desired)
         return
       }
 
-      let tilesChanged = desired.tileKey != applied.tileKey
-      if tilesChanged {
-        let shouldCommitImmediately = forceImmediate || !desired.isAnimating
-        if shouldCommitImmediately || tileUpdateIntervalElapsed() {
-          commitTiles(mapView: mapView, desired: desired)
-        } else {
-          scheduleThrottledReconcile(mapView: mapView, desired: desired)
+      updatePaintIfNeeded(mapView: mapView, desired: desired)
+
+      guard desired.tileKey != appliedFrontKey else { return }
+
+      if crossfadeTask != nil {
+        queuedDesiredState = desired
+        return
+      }
+
+      crossfadeToFrame(mapView: mapView, desired: desired)
+    }
+
+    private func installDualLayers(mapView: MapView, desired: DesiredRasterState) {
+      MapViewHostingSanitizer.sanitize(mapView)
+      do {
+        for slot in [BufferSlot.a, BufferSlot.b] {
+          var source = RasterSource(id: slot.sourceId)
+          source.tiles = desired.tileURLs
+          source.tileSize = desired.tileSize
+          source.minzoom = 0
+          source.maxzoom = desired.maxZoom
+          source.prefetchZoomDelta = desired.isAnimating ? 2 : 1
+          source.minimumTileUpdateInterval = 0
+          source.tileNetworkRequestsDelay = 0
+          try mapView.mapboxMap.addSource(source)
+
+          var layer = RasterLayer(id: slot.layerId, source: slot.sourceId)
+          layer.rasterFadeDuration = .constant(desired.fadeDuration)
+          layer.rasterEmissiveStrength = .constant(1)
+          layer.rasterOpacity = .constant(slot == frontSlot ? desired.opacity : 0)
+          layer.rasterSaturation = .constant(desired.saturation)
+          layer.rasterContrast = .constant(desired.contrast)
+          layer.rasterResampling = .constant(.linear)
+          try mapView.mapboxMap.addLayer(layer)
         }
-      }
 
-      if desired.opacity != applied.opacity {
-        updateOpacity(mapView: mapView, opacity: desired.opacity)
-        appliedRasterState = appliedRasterState?.updatingOpacity(desired.opacity)
-      }
-
-      if desired.saturation != applied.saturation || desired.contrast != applied.contrast {
-        updateColorTreatment(
-          mapView: mapView, saturation: desired.saturation, contrast: desired.contrast)
-        appliedRasterState?.saturation = desired.saturation
-        appliedRasterState?.contrast = desired.contrast
+        layersInstalled = true
+        appliedFrontKey = desired.tileKey
+        appliedModeIsFuture = desired.showsFuture
+        appliedOpacity = desired.opacity
+        appliedSaturation = desired.saturation
+        appliedContrast = desired.contrast
+      } catch {
+        print("[Mapbox] Dual layer setup failed: \(error)")
+        resetRasterTracking()
       }
     }
 
-    private func commitTiles(mapView: MapView, desired: DesiredRasterState) {
-      throttleFlushTask?.cancel()
-      updateTileURL(
+    private func crossfadeToFrame(mapView: MapView, desired: DesiredRasterState) {
+      let backSlot = frontSlot.opposite
+      updateSource(
         mapView: mapView,
-        tileURLs: desired.tileURLs,
-        maxZoom: desired.maxZoom
+        slot: backSlot,
+        desired: desired
       )
-      appliedRasterState = desired
-      lastTileUpdateDate = Date()
-    }
+      setLayerFade(mapView: mapView, slot: backSlot, duration: desired.fadeDuration)
+      setLayerFade(mapView: mapView, slot: frontSlot, duration: desired.fadeDuration)
+      setLayerOpacity(mapView: mapView, slot: backSlot, opacity: desired.opacity)
+      setLayerOpacity(mapView: mapView, slot: frontSlot, opacity: 0)
 
-    private func scheduleThrottledReconcile(mapView: MapView, desired: DesiredRasterState) {
-      throttleFlushTask?.cancel()
-      let scheduledTileKey = desired.tileKey
-      let elapsed = Date().timeIntervalSince(lastTileUpdateDate)
-      let delay = max(0, Self.tileThrottleInterval - elapsed)
+      appliedFrontKey = desired.tileKey
+      appliedOpacity = desired.opacity
+      appliedSaturation = desired.saturation
+      appliedContrast = desired.contrast
 
-      throttleFlushTask = Task { @MainActor [weak self, weak mapView] in
-        if delay > 0 {
-          try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+      let fadeSeconds = desired.fadeDuration / 1000
+      crossfadeTask = Task { @MainActor [weak self, weak mapView] in
+        if fadeSeconds > 0 {
+          try? await Task.sleep(nanoseconds: UInt64(fadeSeconds * 1_000_000_000))
         }
         guard let self, let mapView, !Task.isCancelled else { return }
-        guard let pending = self.pendingDesiredState,
-          pending.tileKey == scheduledTileKey
-        else { return }
-        self.reconcile(mapView: mapView, desired: pending, forceImmediate: true)
+        self.frontSlot = backSlot
+        self.crossfadeTask = nil
+        if let queued = self.queuedDesiredState {
+          self.queuedDesiredState = nil
+          if queued.tileKey != self.appliedFrontKey {
+            self.crossfadeToFrame(mapView: mapView, desired: queued)
+          }
+        }
       }
     }
 
-    private func tileUpdateIntervalElapsed() -> Bool {
-      Date().timeIntervalSince(lastTileUpdateDate) >= Self.tileThrottleInterval
+    private func updatePaintIfNeeded(mapView: MapView, desired: DesiredRasterState) {
+      if appliedOpacity != desired.opacity {
+        let opacitySlot = crossfadeTask != nil ? frontSlot.opposite : frontSlot
+        setLayerOpacity(mapView: mapView, slot: opacitySlot, opacity: desired.opacity)
+        appliedOpacity = desired.opacity
+      }
+      if appliedSaturation != desired.saturation || appliedContrast != desired.contrast {
+        for slot in [BufferSlot.a, BufferSlot.b] {
+          guard mapView.mapboxMap.layerExists(withId: slot.layerId) else { continue }
+          try? mapView.mapboxMap.setLayerProperty(
+            for: slot.layerId,
+            property: "raster-saturation",
+            value: desired.saturation
+          )
+          try? mapView.mapboxMap.setLayerProperty(
+            for: slot.layerId,
+            property: "raster-contrast",
+            value: desired.contrast
+          )
+        }
+        appliedSaturation = desired.saturation
+        appliedContrast = desired.contrast
+      }
+    }
+
+    private func updateSource(mapView: MapView, slot: BufferSlot, desired: DesiredRasterState) {
+      do {
+        try mapView.mapboxMap.setSourceProperty(
+          for: slot.sourceId,
+          property: "tiles",
+          value: desired.tileURLs
+        )
+        try mapView.mapboxMap.setSourceProperty(
+          for: slot.sourceId,
+          property: "maxzoom",
+          value: desired.maxZoom
+        )
+        try mapView.mapboxMap.setSourceProperty(
+          for: slot.sourceId,
+          property: "tile-size",
+          value: desired.tileSize
+        )
+        try mapView.mapboxMap.setSourceProperty(
+          for: slot.sourceId,
+          property: "prefetch-zoom-delta",
+          value: desired.isAnimating ? 2 : 1
+        )
+        try mapView.mapboxMap.setSourceProperty(
+          for: slot.sourceId,
+          property: "minimum-tile-update-interval",
+          value: 0
+        )
+      } catch {
+        print("[Mapbox] Failed to update \(slot.sourceId): \(error)")
+      }
+    }
+
+    private func setLayerOpacity(mapView: MapView, slot: BufferSlot, opacity: Double) {
+      guard mapView.mapboxMap.layerExists(withId: slot.layerId) else { return }
+      try? mapView.mapboxMap.setLayerProperty(
+        for: slot.layerId,
+        property: "raster-opacity",
+        value: opacity
+      )
+    }
+
+    private func setLayerFade(mapView: MapView, slot: BufferSlot, duration: Double) {
+      guard mapView.mapboxMap.layerExists(withId: slot.layerId) else { return }
+      try? mapView.mapboxMap.setLayerProperty(
+        for: slot.layerId,
+        property: "raster-fade-duration",
+        value: duration
+      )
     }
 
     private func applyCamera(
@@ -370,108 +461,39 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       mapView.mapboxMap.setCamera(to: CameraOptions(center: center, zoom: zoom))
     }
 
-    private func setupLayer(mapView: MapView, desired: DesiredRasterState) {
-      MapViewHostingSanitizer.sanitize(mapView)
-      do {
-        var source = RasterSource(id: sourceId)
-        source.tiles = desired.tileURLs
-        source.tileSize = desired.tileSize
-        source.minzoom = 0
-        source.maxzoom = desired.maxZoom
-        source.prefetchZoomDelta = 0
-        source.minimumTileUpdateInterval = Self.tileThrottleInterval
-        source.tileNetworkRequestsDelay = Self.tileNetworkRequestsDelay
-        try mapView.mapboxMap.addSource(source)
-
-        var layer = RasterLayer(id: layerId, source: sourceId)
-        layer.rasterFadeDuration = .constant(desired.fadeDuration)
-        layer.rasterEmissiveStrength = .constant(1)
-        layer.rasterOpacity = .constant(desired.opacity)
-        layer.rasterSaturation = .constant(desired.saturation)
-        layer.rasterContrast = .constant(desired.contrast)
-        layer.rasterResampling = .constant(.linear)
-        try mapView.mapboxMap.addLayer(layer)
-      } catch {
-        print("[Mapbox] Layer setup failed: \(error)")
-        appliedRasterState = nil
-      }
-    }
-
-    private func updateTileURL(
-      mapView: MapView,
-      tileURLs: [String],
-      maxZoom: Double
-    ) {
-      do {
-        try mapView.mapboxMap.setSourceProperty(
-          for: sourceId,
-          property: "tiles",
-          value: tileURLs
-        )
-        try mapView.mapboxMap.setSourceProperty(
-          for: sourceId,
-          property: "maxzoom",
-          value: maxZoom
-        )
-        try mapView.mapboxMap.setSourceProperty(
-          for: sourceId,
-          property: "minimum-tile-update-interval",
-          value: Self.tileThrottleInterval
-        )
-        try mapView.mapboxMap.setSourceProperty(
-          for: sourceId,
-          property: "tile-network-requests-delay",
-          value: Self.tileNetworkRequestsDelay
-        )
-      } catch {
-        print("[Mapbox] Failed to update tiles: \(error)")
-      }
-    }
-
-    private func updateOpacity(mapView: MapView, opacity: Double) {
-      guard appliedRasterState != nil, mapView.mapboxMap.layerExists(withId: layerId) else { return }
-      try? mapView.mapboxMap.setLayerProperty(
-        for: layerId,
-        property: "raster-opacity",
-        value: opacity
-      )
-    }
-
-    private func updateColorTreatment(mapView: MapView, saturation: Double, contrast: Double) {
-      guard appliedRasterState != nil, mapView.mapboxMap.layerExists(withId: layerId) else { return }
-      try? mapView.mapboxMap.setLayerProperty(
-        for: layerId,
-        property: "raster-saturation",
-        value: saturation
-      )
-      try? mapView.mapboxMap.setLayerProperty(
-        for: layerId,
-        property: "raster-contrast",
-        value: contrast
-      )
-    }
-
-    private func removeLayer(_ mapView: MapView) {
+    private func removeLayers(_ mapView: MapView) {
       guard mapView.mapboxMap.isStyleLoaded else {
         resetRasterTracking()
         return
       }
 
-      if mapView.mapboxMap.layerExists(withId: layerId) {
-        try? mapView.mapboxMap.removeLayer(withId: layerId)
-      }
-      if mapView.mapboxMap.sourceExists(withId: sourceId) {
-        try? mapView.mapboxMap.removeSource(withId: sourceId)
+      crossfadeTask?.cancel()
+      crossfadeTask = nil
+      queuedDesiredState = nil
+
+      for slot in [BufferSlot.a, BufferSlot.b] {
+        if mapView.mapboxMap.layerExists(withId: slot.layerId) {
+          try? mapView.mapboxMap.removeLayer(withId: slot.layerId)
+        }
+        if mapView.mapboxMap.sourceExists(withId: slot.sourceId) {
+          try? mapView.mapboxMap.removeSource(withId: slot.sourceId)
+        }
       }
 
       resetRasterTracking()
     }
 
     private func resetRasterTracking() {
-      throttleFlushTask?.cancel()
-      throttleFlushTask = nil
-      appliedRasterState = nil
-      lastTileUpdateDate = .distantPast
+      crossfadeTask?.cancel()
+      crossfadeTask = nil
+      queuedDesiredState = nil
+      layersInstalled = false
+      frontSlot = .a
+      appliedFrontKey = nil
+      appliedModeIsFuture = nil
+      appliedOpacity = nil
+      appliedSaturation = nil
+      appliedContrast = nil
     }
   }
 }

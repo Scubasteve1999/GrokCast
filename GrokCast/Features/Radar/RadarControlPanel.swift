@@ -9,24 +9,24 @@ struct RadarControlPanel: View {
   @Binding var recenterDefaultTrigger: UUID?
   @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
 
-  @State private var autoResumeAfterScrub = true
   @State private var showExplainRadar = false
-  /// Collapsed shows only the grabber + header + playback/scrubber, freeing the
-  /// lower half of the map. Expanded shows the full control set.
-  @State private var isCollapsed = false
+  @State private var showDisplayOptions = false
+  /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
+  @State private var isCollapsed = true
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       collapseHandle
 
-      // Header matching previous panel style: title + badge + updated time
-      HStack {
+      // Header: title + source + actions
+      HStack(spacing: DesignTokens.Spacing.space8) {
         Image(systemName: "cloud.rain.fill")
           .font(.caption)
           .foregroundStyle(DesignTokens.Palette.radarAccent)
         Text("Radar · \(radarState.selectedProduct.displayName)")
           .font(.caption.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+          .lineLimit(1)
 
         Text(sourceBadgeText)
           .font(.caption2)
@@ -35,8 +35,19 @@ struct RadarControlPanel: View {
           .background(DesignTokens.Palette.radarTrack)
           .clipShape(Capsule())
           .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+          .lineLimit(1)
 
-        Spacer()
+        Spacer(minLength: 0)
+
+        Button {
+          Haptic.impact(.light)
+          showDisplayOptions = true
+        } label: {
+          Image(systemName: "slider.horizontal.3")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        }
+        .accessibilityLabel("Radar display options")
 
         Button {
           Haptic.impact(.light)
@@ -47,11 +58,14 @@ struct RadarControlPanel: View {
             .foregroundStyle(DesignTokens.Palette.radarAccent)
         }
         .accessibilityLabel("Explain radar with Grok")
+      }
 
-        if let updatedText {
+      if let updatedText {
+        HStack {
           Text(updatedText)
             .font(.caption2)
             .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+          Spacer()
         }
       }
 
@@ -64,55 +78,9 @@ struct RadarControlPanel: View {
       RadarTimelineScrubber(radarState: radarState)
 
       if !isCollapsed {
-      // Auto-resume toggle (restored from previous style)
-      Toggle("Auto-resume after scrub", isOn: $radarState.autoResumeAfterScrub)
-        .font(.caption2)
-        .tint(DesignTokens.Palette.radarAccent)
-        .padding(.horizontal, 4)
-
-      // Mode selector for Live (NOW) vs Forecast (FUTURE / fradar) - this is the "future tab"
-      HStack(spacing: 0) {
-        Text("Live")
-          .font(.caption2.weight(!radarState.showsFuture ? .semibold : .regular))
-          .padding(.horizontal, 10)
-          .padding(.vertical, 3)
-          .background(!radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-          .clipShape(Capsule())
-          .foregroundStyle(!radarState.showsFuture ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-          .onTapGesture { if radarState.hasFutureFrames { radarState.setFutureMode(false) } }
-
-        Text("Forecast")
-          .font(.caption2.weight(radarState.showsFuture ? .semibold : .regular))
-          .padding(.horizontal, 10)
-          .padding(.vertical, 3)
-          .background(radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-          .clipShape(Capsule())
-          .foregroundStyle(radarState.showsFuture ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-          .onTapGesture { if radarState.hasFutureFrames { radarState.setFutureMode(true) } }
-      }
-      .background(DesignTokens.Palette.radarTrack)
-      .clipShape(Capsule())
-      .disabled(!radarState.hasFutureFrames)
-
-      Group {
-        if showsVelocityLegend {
-          velocityLegendPill
-        } else {
-          legendPill
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-
-      // Product chips row (restored style: NQA, Reflectivity, Velocity, SRV)
-      productChips
-
-      // Color scheme toggle (Vibrant / Balanced) from previous panel
-      colorSchemePicker
-
-      mapOverlayControls
-
-      opacityRow
-      statusFooter
+        liveForecastPicker
+        productChips
+        compactStatusFooter
       }
     }
     .padding(DesignTokens.Spacing.space12)
@@ -120,6 +88,12 @@ struct RadarControlPanel: View {
     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
+    .sheet(isPresented: $showDisplayOptions) {
+      RadarDisplayOptionsSheet(
+        radarState: radarState,
+        opacity: $opacity
+      )
+    }
     .sheet(isPresented: $showExplainRadar) {
       ExplainRadarSheet(
         context: RadarExplainContext(
@@ -163,6 +137,56 @@ struct RadarControlPanel: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel(isCollapsed ? "Expand radar controls" : "Collapse radar controls")
+  }
+
+  private var liveForecastPicker: some View {
+    HStack(spacing: 0) {
+      Text("Live")
+        .font(.caption2.weight(!radarState.showsFuture ? .semibold : .regular))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 3)
+        .background(!radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
+        .clipShape(Capsule())
+        .foregroundStyle(!radarState.showsFuture ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
+        .onTapGesture { if radarState.hasFutureFrames { radarState.setFutureMode(false) } }
+
+      Text("Forecast")
+        .font(.caption2.weight(radarState.showsFuture ? .semibold : .regular))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 3)
+        .background(radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
+        .clipShape(Capsule())
+        .foregroundStyle(radarState.showsFuture ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
+        .onTapGesture { if radarState.hasFutureFrames { radarState.setFutureMode(true) } }
+    }
+    .background(DesignTokens.Palette.radarTrack)
+    .clipShape(Capsule())
+    .disabled(!radarState.hasFutureFrames)
+  }
+
+  @ViewBuilder
+  private var compactStatusFooter: some View {
+    let footer = radarState.statusFooterContent
+    switch footer.style {
+    case .loading:
+      HStack(spacing: DesignTokens.Spacing.space8) {
+        ProgressView()
+          .controlSize(.small)
+        Text(footer.text)
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+    case .warning:
+      Text(footer.text)
+        .font(.caption2)
+        .foregroundStyle(.orange)
+    case .error:
+      Text(footer.text)
+        .font(.caption2)
+        .foregroundStyle(.red)
+    case .secondary:
+      EmptyView()
+    }
   }
 
   private var productChips: some View {
@@ -221,157 +245,6 @@ struct RadarControlPanel: View {
     .onTapGesture(perform: action)
   }
 
-  private var colorSchemePicker: some View {
-    HStack(spacing: 0) {
-      ForEach(RadarColorScheme.allCases, id: \.self) { scheme in
-        let isSelected = radarState.colorScheme == scheme
-        Text(scheme.displayName)
-          .font(.caption2.weight(isSelected ? .semibold : .regular))
-          .padding(.horizontal, 12)
-          .padding(.vertical, 4)
-          .background(isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-          .clipShape(Capsule())
-          .foregroundStyle(
-            isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
-          )
-          .onTapGesture {
-            Haptic.impact(.light)
-            radarState.colorScheme = scheme
-          }
-      }
-    }
-    .background(DesignTokens.Palette.radarTrack)
-    .clipShape(Capsule())
-  }
-
-  /// Base map style + radar precipitation overlay visibility.
-  private var mapOverlayControls: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: "square.3.layers.3d")
-          .font(.caption2)
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        Text("Map")
-          .font(.caption2.weight(.semibold))
-          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-        Spacer()
-        Toggle("Radar", isOn: $radarState.showRadarOverlay)
-          .font(.caption2)
-          .tint(DesignTokens.Palette.radarAccent)
-          .labelsHidden()
-          .accessibilityLabel("Show radar overlay")
-      }
-
-      HStack(spacing: 0) {
-        ForEach(RadarBaseMapStyle.allCases) { style in
-          let isSelected = radarState.baseMapStyle == style
-          HStack(spacing: 4) {
-            Image(systemName: style.systemImage)
-              .font(.caption2)
-            Text(style.displayName)
-              .font(.caption2.weight(isSelected ? .semibold : .regular))
-          }
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-          .clipShape(Capsule())
-          .foregroundStyle(
-            isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
-          )
-          .onTapGesture {
-            Haptic.impact(.light)
-            radarState.baseMapStyle = style
-          }
-        }
-      }
-      .background(DesignTokens.Palette.radarTrack)
-      .clipShape(Capsule())
-    }
-  }
-
-  private var headerRow: some View {
-    HStack {
-      Spacer()
-      Text(radarState.currentFrameDisplayTime)
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-    }
-  }
-
-  /// Velocity products get a toward/away legend instead of the dBZ scale.
-  private var showsVelocityLegend: Bool {
-    radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
-  }
-
-  private var velocityLegendPill: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      LinearGradient(
-        colors: [
-          DesignTokens.Palette.success, DesignTokens.Palette.radarTrack,
-          DesignTokens.Palette.danger,
-        ],
-        startPoint: .leading, endPoint: .trailing
-      )
-      .frame(height: 8)
-      .clipShape(RoundedRectangle(cornerRadius: 2))
-
-      HStack {
-        Text("Toward radar").font(.caption2)
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        Spacer()
-        Text("Away from radar").font(.caption2)
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-      }
-    }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("Radial velocity legend: green toward the radar, red away")
-  }
-
-  private var legendPill: some View {
-    // Rich legend bar to match previous panel style
-    VStack(alignment: .leading, spacing: 4) {
-      // Gradient bar for reflectivity-like scale
-      GeometryReader { geo in
-        HStack(spacing: 0) {
-          Rectangle().fill(DesignTokens.Palette.accentCool)     // Light
-            .frame(width: geo.size.width * 0.25)
-          Rectangle().fill(DesignTokens.Palette.warning)        // Moderate
-            .frame(width: geo.size.width * 0.25)
-          Rectangle().fill(DesignTokens.Palette.accentWarm)     // Heavy
-            .frame(width: geo.size.width * 0.25)
-          Rectangle().fill(DesignTokens.Palette.danger)         // Extreme
-            .frame(width: geo.size.width * 0.25)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 2))
-        .overlay(
-          HStack {
-            ForEach([10, 20, 30, 40, 50, 60, 70], id: \.self) { val in
-              Spacer()
-              Text("\(val)")
-                .font(.system(size: 8, design: .monospaced))
-                .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-            }
-            Spacer()
-          }
-          .padding(.horizontal, 2)
-        )
-      }
-      .frame(height: 8)
-
-      HStack {
-        Text("Light").font(.caption2).foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        Spacer()
-        Text("Moderate").font(.caption2).foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        Spacer()
-        Text("Heavy").font(.caption2).foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        Spacer()
-        Text("Extreme").font(.caption2).foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-      }
-    }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("Precipitation intensity legend with dBZ scale")
-  }
-
   /// Real active tile source for the current mode (replaces the old hardcoded badge).
   private var sourceBadgeText: String {
     if !radarState.showsFuture, radarState.selectedProduct.isSiteProduct,
@@ -394,79 +267,119 @@ struct RadarControlPanel: View {
     if minutes < 60 { return "Updated \(minutes) min. ago" }
     return "Updated \(minutes / 60)h ago"
   }
+}
 
-  private var showsFutureUnavailableHint: Bool {
-    radarState.hasFutureFrames
-      && radarState.futureUnavailableMessage != nil
-      && !radarState.isFutureMode
-      && !radarState.isSwitchingMode
+// MARK: - Display options sheet (legend, map, opacity — kept off the main panel)
+
+private struct RadarDisplayOptionsSheet: View {
+  @Environment(\.dismiss) private var dismiss
+  @Bindable var radarState: RadarState
+  @Binding var opacity: Double
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section {
+          Toggle("Auto-resume after scrub", isOn: $radarState.autoResumeAfterScrub)
+        }
+
+        Section("Colors") {
+          Picker("Palette", selection: $radarState.colorScheme) {
+            ForEach(RadarColorScheme.allCases, id: \.self) { scheme in
+              Text(scheme.displayName).tag(scheme)
+            }
+          }
+          .pickerStyle(.segmented)
+        }
+
+        Section("Legend") {
+          if showsVelocityLegend {
+            velocityLegend
+          } else {
+            reflectivityLegend
+          }
+        }
+
+        Section("Map") {
+          Toggle("Radar overlay", isOn: $radarState.showRadarOverlay)
+          Picker("Base map", selection: $radarState.baseMapStyle) {
+            ForEach(RadarBaseMapStyle.allCases) { style in
+              Label(style.displayName, systemImage: style.systemImage).tag(style)
+            }
+          }
+        }
+
+        Section("Opacity") {
+          HStack {
+            Slider(value: $opacity, in: 0.3...1.0, step: 0.1)
+            Text(String(format: "%.0f%%", opacity * 100))
+              .font(.caption.monospacedDigit())
+              .foregroundStyle(.secondary)
+              .frame(width: 40)
+          }
+        }
+      }
+      .navigationTitle("Display")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Done") { dismiss() }
+        }
+      }
+    }
+    .presentationDetents([.medium, .large])
   }
 
-  private var modePicker: some View {
-    VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space4) {
-      Picker(
-        "Mode",
-        selection: Binding(
-          get: { radarState.pickerShowsFuture },
-          set: { radarState.setFutureMode($0) }
-        )
-      ) {
-        Text("NOW").tag(false)
-        Text("FUTURE").tag(true)
-          .disabled(!radarState.hasFutureFrames)
-      }
-      .pickerStyle(.segmented)
-      .frame(width: 140)
-      .disabled(!radarState.hasFutureFrames || radarState.isSwitchingMode)
+  private var showsVelocityLegend: Bool {
+    radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
+  }
 
-      if showsFutureUnavailableHint, let message = radarState.futureUnavailableMessage {
-        Text(message)
-          .font(.caption2)
-          .foregroundStyle(.orange)
-          .multilineTextAlignment(.trailing)
-          .frame(maxWidth: 140, alignment: .trailing)
+  private var velocityLegend: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      LinearGradient(
+        colors: [
+          DesignTokens.Palette.success, DesignTokens.Palette.radarTrack,
+          DesignTokens.Palette.danger,
+        ],
+        startPoint: .leading, endPoint: .trailing
+      )
+      .frame(height: 8)
+      .clipShape(RoundedRectangle(cornerRadius: 2))
+
+      HStack {
+        Text("Toward radar").font(.caption2).foregroundStyle(.secondary)
+        Spacer()
+        Text("Away from radar").font(.caption2).foregroundStyle(.secondary)
       }
     }
   }
 
-  private var opacityRow: some View {
-    HStack {
-      Image(systemName: "eye")
-      Slider(value: $opacity, in: 0.3...1.0, step: 0.1)
-      Text(String(format: "%.0f%%", opacity * 100))
-        .font(.caption2.monospacedDigit())
-        .frame(width: 40)
-    }
-  }
-
-  @ViewBuilder
-  private var statusFooter: some View {
-    let footer = radarState.statusFooterContent
-    switch footer.style {
-    case .loading:
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        ProgressView()
-          .controlSize(.small)
-        Text(footer.text)
-          .font(.caption2)
-          .foregroundStyle(.secondary)
+  private var reflectivityLegend: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      GeometryReader { geo in
+        HStack(spacing: 0) {
+          Rectangle().fill(DesignTokens.Palette.accentCool)
+            .frame(width: geo.size.width * 0.25)
+          Rectangle().fill(DesignTokens.Palette.warning)
+            .frame(width: geo.size.width * 0.25)
+          Rectangle().fill(DesignTokens.Palette.accentWarm)
+            .frame(width: geo.size.width * 0.25)
+          Rectangle().fill(DesignTokens.Palette.danger)
+            .frame(width: geo.size.width * 0.25)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 2))
       }
-    case .secondary:
-      Text(footer.text)
-        .font(.caption2)
-        .foregroundStyle(.secondary)
-    case .warning:
-      Text(footer.text)
-        .font(.caption2)
-        .foregroundStyle(.orange)
-    case .error:
-      Text(footer.text)
-        .font(.caption2)
-        .foregroundStyle(.red)
-    }
+      .frame(height: 8)
 
-    Text("Tap map to explore • Pinch to zoom")
-      .font(.caption2)
-      .foregroundStyle(.secondary)
+      HStack {
+        Text("Light").font(.caption2).foregroundStyle(.secondary)
+        Spacer()
+        Text("Moderate").font(.caption2).foregroundStyle(.secondary)
+        Spacer()
+        Text("Heavy").font(.caption2).foregroundStyle(.secondary)
+        Spacer()
+        Text("Extreme").font(.caption2).foregroundStyle(.secondary)
+      }
+    }
   }
 }

@@ -1,8 +1,9 @@
 import Foundation
 
 /// Selects which backend serves precipitation map tiles.
-/// RainViewer is the default for live radar (free tier).
-/// Xweather (fradar) is preferred for FUTURE forecast precipitation when configured.
+/// RainViewer is the composite fallback for live radar.
+/// IEM NEXRAD (N0B) is preferred near US sites; OpenWeatherMap is the secondary fallback.
+/// OpenWeatherMap PR0 is preferred for FUTURE when configured; Xweather fradar is last resort.
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
   case xweather
@@ -10,11 +11,11 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   /// NWS NEXRAD single-site products (Velocity/SRV) via IEM RIDGE cache. Live-only.
   case iem
 
-  /// Default live (NOW) radar — works without a paid Maps plan.
-  static let preferredLive: RadarTileProvider = .rainViewer
+  /// Default live (NOW) radar — IEM when near a NEXRAD site, else OpenWeatherMap, else RainViewer.
+  static let preferredLive: RadarTileProvider = .iem
 
-  /// Forecast (FUTURE) radar — prefer Xweather fradar (keys embedded), fallback RainViewer/OWM.
-  static let preferredForecast: RadarTileProvider = .xweather
+  /// Forecast (FUTURE) radar — OpenWeatherMap when configured, else RainViewer, else Xweather.
+  static let preferredForecast: RadarTileProvider = .openWeatherMap
 
   var displayName: String {
     switch self {

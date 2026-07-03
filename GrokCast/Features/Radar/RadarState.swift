@@ -399,15 +399,16 @@ extension RadarState {
   }
 
   func loadDefaultRadar(for coordinate: CLLocationCoordinate2D) async {
-    _ = coordinate  // Site resolution tracks the selected location (updateNearestSite).
     guard !isLoading else { return }
     isLoading = true
+
+    await updateNearestSite(for: coordinate)
 
     print(
       "[RadarState] Loading radar → \(RadarTileProvider.preferredLive.displayName) (NOW)"
         + " + \(RadarTileProvider.preferredForecast.displayName) (FUTURE)"
     )
-    let result = await loader.loadAll()
+    let result = await loader.loadAll(site: nearestSite)
 
     // Always cache the composite result so a site product can restore it later —
     // even if the user selected one while this initial load was in flight.
