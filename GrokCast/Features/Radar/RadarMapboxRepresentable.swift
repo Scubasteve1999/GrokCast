@@ -18,7 +18,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     let scale = MapViewHostingSanitizer.screenScale
     let options = MapInitOptions(
       mapOptions: MapOptions(pixelRatio: CGFloat(scale)),
-      styleURI: .satelliteStreets
+      styleURI: radarState.baseMapStyle.styleURI
     )
     let mapView = MapView(
       frame: MapViewHostingSanitizer.initialFrame,
@@ -104,6 +104,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
     private var appliedRasterState: DesiredRasterState?
     private var pendingDesiredState: DesiredRasterState?
+    private var appliedBaseMapStyle: RadarBaseMapStyle?
     private var lastTileUpdateDate = Date.distantPast
     private var throttleFlushTask: Task<Void, Never>?
 
@@ -196,6 +197,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         }
       }
 
+      reconcileBaseMapStyle(mapView: mapView, style: radarState.baseMapStyle)
+
       let desired = resolveDesiredState(from: radarState, opacity: opacity)
       pendingDesiredState = desired.visible ? desired : nil
 
@@ -211,7 +214,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     }
 
     private func resolveDesiredState(from radarState: RadarState, opacity: Double) -> DesiredRasterState {
-      guard radarState.activeShowsTiles,
+      guard radarState.showRadarOverlay,
+        radarState.activeShowsTiles,
         let frame = radarState.currentFrame,
         !frame.tileURLTemplates.isEmpty
       else {
@@ -240,6 +244,21 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         fadeDuration: isFuture ? 300 : 0,
         tileSize: isXweatherForecast ? 512 : 256
       )
+    }
+
+    private func reconcileBaseMapStyle(mapView: MapView, style: RadarBaseMapStyle) {
+      if appliedBaseMapStyle == nil {
+        appliedBaseMapStyle = style
+        return
+      }
+      guard appliedBaseMapStyle != style else { return }
+      appliedBaseMapStyle = style
+      resetRasterTracking()
+      mapView.mapboxMap.loadStyle(style.styleURI) { error in
+        if let error {
+          print("[Mapbox] Style load failed: \(error)")
+        }
+      }
     }
 
     private func flushPendingDesiredState(on mapView: MapView) {

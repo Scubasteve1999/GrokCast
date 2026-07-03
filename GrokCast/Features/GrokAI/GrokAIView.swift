@@ -37,8 +37,7 @@ private struct GrokAIViewContent: View {
         )
         .ignoresSafeArea()
 
-        VStack(spacing: 0) {
-          ScrollViewReader { proxy in
+        ScrollViewReader { proxy in
             ScrollView {
               VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
                 headerSection
@@ -124,6 +123,7 @@ private struct GrokAIViewContent: View {
               .padding(.bottom, 12)
               .adaptiveContainerWidth(AdaptiveLayout.contentCap)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.conversationHistory.count) {
               scrollToBottom(proxy: proxy, viewModel: viewModel)
             }
@@ -145,16 +145,19 @@ private struct GrokAIViewContent: View {
               }
             }
           }
-
-          inputArea(viewModel: viewModel)
-            .adaptiveContainerWidth(AdaptiveLayout.contentCap)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
-        }
       }
       .navigationTitle("GROK AI")
       .navigationBarTitleDisplayMode(.large)
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        inputArea(viewModel: viewModel)
+          .adaptiveContainerWidth(AdaptiveLayout.contentCap)
+          .padding(.horizontal, 20)
+          .padding(.top, 8)
+          .padding(.bottom, 8)
+          .background(.ultraThinMaterial.opacity(isInputFocused ? 1 : 0.85))
+      }
     }
+    .preference(key: TabBarSuppressionPreferenceKey.self, value: isInputFocused)
     .preferredColorScheme(.dark)
     .onAppear {
       viewModel.recoverFromStaleActionStateIfNeeded()

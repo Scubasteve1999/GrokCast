@@ -25,6 +25,7 @@ struct RadarPlaybackControls: View {
       Spacer(minLength: 0)
 
       playbackSpeedPicker
+      mapLayersMenu
       recenterButtons
     }
     .padding(.horizontal, DesignTokens.Spacing.space12)
@@ -70,6 +71,41 @@ struct RadarPlaybackControls: View {
     }
     .background(DesignTokens.Palette.radarTrack)
     .clipShape(Capsule())
+  }
+
+  /// Quick-access layers menu: cycle base map or toggle radar overlay.
+  private var mapLayersMenu: some View {
+    Menu {
+      Section("Base Map") {
+        ForEach(RadarBaseMapStyle.allCases) { style in
+          Button {
+            Haptic.impact(.light)
+            radarState.baseMapStyle = style
+          } label: {
+            Label {
+              Text(style.displayName)
+            } icon: {
+              Image(systemName: style.systemImage)
+            }
+            if radarState.baseMapStyle == style {
+              Image(systemName: "checkmark")
+            }
+          }
+        }
+      }
+
+      Section {
+        Toggle("Radar Overlay", isOn: $radarState.showRadarOverlay)
+      }
+    } label: {
+      Image(systemName: radarState.showRadarOverlay ? "square.3.layers.3d.fill" : "map")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(DesignTokens.Palette.radarAccent)
+        .frame(width: 32, height: 32)
+        .background(DesignTokens.Palette.radarTrack)
+        .clipShape(Capsule())
+    }
+    .accessibilityLabel("Map layers")
   }
 
   @ViewBuilder
