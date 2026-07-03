@@ -1,0 +1,36 @@
+---
+description: Keep finished work on main — merge feature branches before handoff
+alwaysApply: true
+---
+
+# Git workflow — land on main
+
+Stephen ships from **`main`**. Feature branches are for in-progress or PR review only, not the default end state.
+
+## When finishing a task
+
+1. **Default:** commit on `main` (or merge the feature branch into `main` immediately after committing).
+2. **Before telling the user work is done**, verify:
+   - `git branch --show-current` is `main`, **or**
+   - the feature branch is merged into `main` locally (`git log main..HEAD` is empty from main’s perspective).
+3. **Say explicitly** where the commit lives: branch name + whether `main` includes it.
+4. **Push `main`** when the user expects remote/TestFlight/Xcode to see the changes — unless they said not to push.
+
+## When the user uses create-branch-and-commit
+
+That UI creates a `cursor/*` branch. Treat it as temporary:
+
+- After the commit, **merge into `main`** (`git checkout main && git merge cursor/... --no-edit`).
+- Optionally delete the local feature branch after merge.
+- Do **not** leave completed work only on `cursor/*` without telling the user they must merge.
+
+## When to keep a feature branch
+
+Only when the user explicitly asks for a PR, review, or “don’t merge yet.” In that case, state clearly: “Changes are on `cursor/…`, not on `main` yet.”
+
+## Quick check command
+
+```bash
+git log main..HEAD --oneline   # commits on current branch not in main
+git log HEAD..main --oneline   # commits on main not in current branch
+```
