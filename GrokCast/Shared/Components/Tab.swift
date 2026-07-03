@@ -53,6 +53,15 @@ extension WeatherStore.Tab {
   static let moreHub: [WeatherStore.Tab] = [.grok, .locations, .settings]
 }
 
+/// Child views (e.g. Grok AI chat) set this when the keyboard should replace the tab bar.
+struct TabBarSuppressionPreferenceKey: PreferenceKey {
+  static let defaultValue = false
+
+  static func reduce(value: inout Bool, nextValue: () -> Bool) {
+    value = value || nextValue()
+  }
+}
+
 struct CompactTabBar: View {
   @Binding var selection: WeatherStore.Tab
   private let tabs = CompactTab.allCases

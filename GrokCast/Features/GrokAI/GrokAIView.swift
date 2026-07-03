@@ -3,16 +3,13 @@ import SwiftUI
 import UIKit
 
 struct GrokAIView: View {
-  @Environment(WeatherStore.self) private var weatherStore
-
   var body: some View {
-    GrokAIViewContent(weatherStore: weatherStore)
+    GrokAIViewContent()
   }
 }
 
 private struct GrokAIViewContent: View {
   @Environment(WeatherStore.self) private var weatherStore
-  @State private var viewModel: GrokAIViewModel
 
   @State private var question: String = ""
   @State private var showPhotoPicker = false
@@ -24,12 +21,11 @@ private struct GrokAIViewContent: View {
   @State private var previewImageURL: URL?
   @State private var previewCaption: String?
   @State private var showImagePreview = false
-
-  init(weatherStore: WeatherStore) {
-    _viewModel = State(wrappedValue: GrokAIViewModel(weatherStore: weatherStore))
-  }
+  @FocusState private var isInputFocused: Bool
 
   var body: some View {
+    @Bindable var viewModel = weatherStore.grokAIViewModel
+
     NavigationStack {
       ZStack {
         WeatherBackgroundView(
@@ -46,7 +42,7 @@ private struct GrokAIViewContent: View {
             ScrollView {
               VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
                 headerSection
-                quickPromptsSection
+                quickPromptsSection(viewModel: viewModel)
 
                 ForEach(viewModel.conversationHistory) { message in
                   messageBubble(for: message)
@@ -129,28 +125,28 @@ private struct GrokAIViewContent: View {
               .adaptiveContainerWidth(AdaptiveLayout.contentCap)
             }
             .onChange(of: viewModel.conversationHistory.count) {
-              scrollToBottom(proxy: proxy)
+              scrollToBottom(proxy: proxy, viewModel: viewModel)
             }
             .onChange(of: viewModel.responseText) {
               if viewModel.isStreaming && !viewModel.stormAnalysisMode {
-                scrollToBottom(proxy: proxy)
+                scrollToBottom(proxy: proxy, viewModel: viewModel)
               }
             }
             .onChange(of: viewModel.isStreaming) {
               if viewModel.isStreaming && !viewModel.stormAnalysisMode
                 && viewModel.responseText.isEmpty
               {
-                scrollToBottom(proxy: proxy)
+                scrollToBottom(proxy: proxy, viewModel: viewModel)
               }
             }
             .onChange(of: viewModel.isGeneratingImage) {
               if viewModel.isGeneratingImage {
-                scrollToBottom(proxy: proxy)
+                scrollToBottom(proxy: proxy, viewModel: viewModel)
               }
             }
           }
 
-          inputArea
+          inputArea(viewModel: viewModel)
             .adaptiveContainerWidth(AdaptiveLayout.contentCap)
             .padding(.horizontal, 20)
             .padding(.bottom, 8)
@@ -160,6 +156,14 @@ private struct GrokAIViewContent: View {
       .navigationBarTitleDisplayMode(.large)
     }
     .preferredColorScheme(.dark)
+    .onAppear {
+      viewModel.recoverFromStaleActionStateIfNeeded()
+      Task {
+        if weatherStore.currentWeather == nil {
+          await weatherStore.performInitialLoadIfNeeded()
+        }
+      }
+    }
     .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
     .onChange(of: selectedPhotoItem) { _, newItem in
       guard let newItem else { return }
@@ -179,11 +183,11 @@ private struct GrokAIViewContent: View {
       }
     }
     .sheet(isPresented: $showNotesSheet) {
-      stormNotesSheet
+      stormNotesSheet(viewModel: viewModel)
     }
     .sheet(isPresented: $showImagePreview) {
       if let url = previewImageURL {
-        imagePreviewSheet(url: url, caption: previewCaption)
+        imagePreviewSheet(url: url, caption: previewCaption, viewModel: viewModel)
       }
     }
   }
@@ -208,7 +212,7 @@ private struct GrokAIViewContent: View {
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 
-  private var quickPromptsSection: some View {
+  private func quickPromptsSection(viewModel: GrokAIViewModel) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("QUICK PROMPTS")
         .font(.caption.weight(.heavy))
@@ -218,20 +222,37 @@ private struct GrokAIViewContent: View {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
           GrokQuickPromptButton(title: "What should I wear?") {
-            askQuickPrompt("What should I wear today based on the current weather?")
+            askQuickPrompt(
+              "What should I wear today based on the current weather?",
+              viewModel: viewModel
+            )
           }
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
           GrokQuickPromptButton(title: "Good for hiking?") {
-            askQuickPrompt("Is today a good day for hiking or outdoor activities?")
+            askQuickPrompt(
+              "Is today a good day for hiking or outdoor activities?",
+              viewModel: viewModel
+            )
           }
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
           GrokQuickPromptButton(title: "Summarize the week") {
-            askQuickPrompt("Give me a short summary of the weather for the next few days.")
+            askQuickPrompt(
+              "Give me a short summary of the weather for the next few days.",
+              viewModel: viewModel
+            )
           }
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
           GrokQuickPromptButton(title: "Any weather risks?") {
-            askQuickPrompt("Are there any weather risks or severe conditions I should know about?")
+            askQuickPrompt(
+              "Are there any weather risks or severe conditions I should know about?",
+              viewModel: viewModel
+            )
           }
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
           GrokQuickPromptButton(title: "Imagine the scene") {
             Task { await viewModel.generateWeatherImage() }
           }
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
           GrokStormSpotterButton {
             Task {
               guard weatherStore.xaiService.hasValidKey else {
@@ -254,15 +275,15 @@ private struct GrokAIViewContent: View {
               showPhotoPicker = true
             }
           }
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
         }
       }
-      .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
     }
   }
 
-  private var inputArea: some View {
+  private func inputArea(viewModel: GrokAIViewModel) -> some View {
     HStack(spacing: 12) {
-      GrokInputBar(text: $question) {
+      GrokInputBar(text: $question, isFocused: $isInputFocused) {
         Task {
           await viewModel.askGrok(question: question)
           question = ""
@@ -285,7 +306,7 @@ private struct GrokAIViewContent: View {
     .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
   }
 
-  private var stormNotesSheet: some View {
+  private func stormNotesSheet(viewModel: GrokAIViewModel) -> some View {
     NavigationStack {
       VStack(alignment: .leading, spacing: 16) {
         Text("Add optional notes about what you see (wall cloud, rotation, hail size, etc.)")
@@ -422,7 +443,7 @@ private struct GrokAIViewContent: View {
     }
   }
 
-  private func scrollToBottom(proxy: ScrollViewProxy) {
+  private func scrollToBottom(proxy: ScrollViewProxy, viewModel: GrokAIViewModel) {
     withAnimation {
       if viewModel.isStreaming && !viewModel.stormAnalysisMode && !viewModel.responseText.isEmpty {
         proxy.scrollTo("streaming", anchor: .bottom)
@@ -442,7 +463,11 @@ private struct GrokAIViewContent: View {
     return formatter.string(from: date)
   }
 
-  private func imagePreviewSheet(url: URL, caption: String? = nil) -> some View {
+  private func imagePreviewSheet(
+    url: URL,
+    caption: String? = nil,
+    viewModel: GrokAIViewModel
+  ) -> some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: DesignTokens.Spacing.space16) {
@@ -511,12 +536,11 @@ private struct GrokAIViewContent: View {
     .preferredColorScheme(.dark)
   }
 
-  private func askQuickPrompt(_ prompt: String) {
+  private func askQuickPrompt(_ prompt: String, viewModel: GrokAIViewModel) {
     Task {
       await viewModel.askGrok(question: prompt)
     }
   }
-
 }
 
 #Preview {

@@ -4,6 +4,7 @@ struct MainTabView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Namespace private var tabBarNamespace
+  @State private var suppressTabBar = false
 
   var body: some View {
     TabView(selection: Bindable(store).selectedTab) {
@@ -54,9 +55,10 @@ struct MainTabView: View {
     .tabViewStyle(.sidebarAdaptable)
     .toolbar(.hidden, for: .tabBar)
     .animation(nil, value: store.selectedTab)
+    .onPreferenceChange(TabBarSuppressionPreferenceKey.self) { suppressTabBar = $0 }
     .safeAreaInset(edge: .bottom, spacing: 0) {
       Group {
-        if horizontalSizeClass == .compact {
+        if horizontalSizeClass == .compact && !suppressTabBar {
           CompactTabBar(selection: Bindable(store).selectedTab, namespace: tabBarNamespace)
         } else {
           EmptyView().frame(height: 0)

@@ -23,12 +23,13 @@ final class GrokAIViewModel {
   // Conversation history for multi-turn context
   private(set) var conversationHistory: [ChatMessage] = []
   private let maxContextMessages = 16  // simple limit for context window (~8 turns)
+  @ObservationIgnored private var historyLoadTask: Task<Void, Never>?
 
   init(weatherStore: WeatherStore) {
     self.weatherStore = weatherStore
 
-    // Load persisted history asynchronously (non-blocking). Trim is applied on load.
-    Task {
+    // Load persisted history before accepting new messages (prevents async overwrite race).
+    historyLoadTask = Task { @MainActor in
       await loadPersistedHistory()
     }
   }
@@ -37,7 +38,20 @@ final class GrokAIViewModel {
     generationTask?.cancel()
   }
 
+  /// Clears action-blocking flags left over when a prior request was interrupted
+  /// (tab switch, timeout, or cancel) without finishing the generation task.
+  func recoverFromStaleActionStateIfNeeded() {
+    guard generationTask == nil else { return }
+    if isStreaming || isGeneratingImage {
+      isStreaming = false
+      isGeneratingImage = false
+      stormAnalysisMode = false
+    }
+  }
+
   func askGrok(question: String) async {
+    await historyLoadTask?.value
+
     guard !question.trimmingCharacters(in: .whitespaces).isEmpty else { return }
 
     // Prevent overlapping generations from rapid taps
@@ -56,12 +70,15 @@ final class GrokAIViewModel {
       return
     }
 
+    // Show thinking immediately so actions feel responsive during weather prefetch.
     generationTask?.cancel()
     generationWasCancelled = false
     stormAnalysisMode = false
     isStreaming = true
     responseText = ""
     errorMessage = nil
+
+    await ensureWeatherContext()
 
     // Append user to history immediately so it shows in transcript
     let userMsg = ChatMessage.user(question)
@@ -79,21 +96,17 @@ final class GrokAIViewModel {
       apiMessages.append(GrokBuildMessage(role: msg.role.rawValue, content: msg.content))
     }
 
-    // Starting askGrok (log removed)
-
     generationTask = Task { @MainActor [weak self] in
       guard let self else { return }
+      var tokenCount = 0
       do {
         // Use streaming for progressive token display
         for try await token in self.grokAIService.streamResponse(messages: apiMessages) {
           if Task.isCancelled || !self.isStreaming { break }
-          // Defensive: ensure mutation happens on main even if stream resumes off-actor
-          await MainActor.run {
-            self.responseText += token
-          }
+          tokenCount += 1
+          self.responseText += token
         }
       } catch {
-        // caught in askGrok (log removed)
         if !(error is CancellationError) {
           self.errorMessage = error.localizedDescription
         }
@@ -106,8 +119,8 @@ final class GrokAIViewModel {
         self.conversationHistory.append(assistantMsg)
         self.conversationHistory = self.trimHistory(self.conversationHistory)
         self.persistCurrentHistory()
-      } else {
-        // stream ended with empty responseText (log removed)
+      } else if !Task.isCancelled && self.generationWasCancelled == false {
+        self.errorMessage = "Grok returned an empty response. Check your connection and try again."
       }
       self.generationTask = nil
     }
@@ -255,6 +268,64 @@ final class GrokAIViewModel {
     }
   }
 
+  private enum WeatherPrefetchResult {
+    case loaded
+    case timedOut
+  }
+
+  private static let weatherPollIntervalNs: UInt64 = 100_000_000
+  private static let inFlightWeatherPollAttempts = 30  // 3s
+  private static let cappedFetchTimeoutNs: UInt64 = 3_000_000_000
+
+  private func ensureWeatherContext() async {
+    guard weatherStore.currentWeather == nil else { return }
+
+    // Wait briefly for an in-flight app-wide refresh instead of starting a duplicate fetch.
+    if weatherStore.isLoadingWeather || !weatherStore.hasCompletedInitialLoad {
+      for _ in 0..<Self.inFlightWeatherPollAttempts {
+        if weatherStore.currentWeather != nil { return }
+        if weatherStore.hasCompletedInitialLoad && !weatherStore.isLoadingWeather { break }
+        try? await Task.sleep(nanoseconds: Self.weatherPollIntervalNs)
+      }
+    }
+
+    guard weatherStore.currentWeather == nil else { return }
+
+    if !weatherStore.hasCompletedInitialLoad {
+      let result = await withTaskGroup(of: WeatherPrefetchResult.self) { group in
+        group.addTask { @MainActor in
+          await self.weatherStore.performInitialLoadIfNeeded()
+          return .loaded
+        }
+        group.addTask {
+          try? await Task.sleep(nanoseconds: Self.cappedFetchTimeoutNs)
+          return .timedOut
+        }
+        let first = await group.next() ?? .timedOut
+        group.cancelAll()
+        return first
+      }
+      if weatherStore.currentWeather != nil || result == .loaded { return }
+    }
+
+    guard weatherStore.currentWeather == nil, weatherStore.currentLocation != nil else { return }
+
+    let result = await withTaskGroup(of: WeatherPrefetchResult.self) { group in
+      group.addTask { @MainActor in
+        await self.weatherStore.refreshWeather()
+        return .loaded
+      }
+      group.addTask {
+        try? await Task.sleep(nanoseconds: Self.cappedFetchTimeoutNs)
+        return .timedOut
+      }
+      let first = await group.next() ?? .timedOut
+      group.cancelAll()
+      return first
+    }
+    _ = result
+  }
+
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
       return "You are a helpful weather assistant inside the GrokCast app."
@@ -317,6 +388,7 @@ final class GrokAIViewModel {
   }
 
   func generateWeatherImage(description: String? = nil) async {
+    await historyLoadTask?.value
     guard !isStreaming && !isGeneratingImage else { return }
 
     guard weatherStore.xaiService.hasValidKey else {
@@ -324,6 +396,8 @@ final class GrokAIViewModel {
         "No xAI API key found. Add your developer key in Settings → Developer Key to generate images."
       return
     }
+
+    await ensureWeatherContext()
 
     generationTask?.cancel()
     stormAnalysisMode = false
@@ -385,6 +459,7 @@ final class GrokAIViewModel {
       // Start with empty history on error (non-fatal for the feature).
       conversationHistory = []
     }
+    historyLoadTask = nil
   }
 
   private func persistCurrentHistory() {

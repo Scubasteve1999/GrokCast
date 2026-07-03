@@ -11,6 +11,7 @@ import SwiftUI
 
 struct GrokInputBar: View {
   @Binding var text: String
+  @FocusState.Binding var isFocused: Bool
   let onSend: () -> Void
 
   private var isSendDisabled: Bool {
@@ -22,6 +23,7 @@ struct GrokInputBar: View {
       TextField("Ask about the weather...", text: $text, axis: .vertical)
         .textFieldStyle(.plain)
         .font(.body)
+        .focused($isFocused)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(
@@ -44,8 +46,9 @@ struct GrokInputBar: View {
 
 #Preview {
   @Previewable @State var previewText = ""
+  @Previewable @FocusState var previewFocused: Bool
 
-  GrokInputBar(text: $previewText) {
+  GrokInputBar(text: $previewText, isFocused: $previewFocused) {
     previewText = ""
   }
   .padding()

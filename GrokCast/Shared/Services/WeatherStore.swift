@@ -171,6 +171,15 @@ final class WeatherStore {
   /// Coalesces concurrent cold-launch initial load callers (e.g. racing .task vs sig delivery).
   private var initialLoadTask: Task<Void, Never>?
 
+  /// Shared Grok AI view model — survives tab switches so in-flight streams and history persist.
+  private var _grokAIViewModel: GrokAIViewModel?
+  var grokAIViewModel: GrokAIViewModel {
+    if let _grokAIViewModel { return _grokAIViewModel }
+    let vm = GrokAIViewModel(weatherStore: self)
+    _grokAIViewModel = vm
+    return vm
+  }
+
   /// Performs the one-time cold-launch initial load (weather + NWS observation if missing).
   /// Safe to call from multiple concurrent contexts — only the first caller runs fetches.
   func performInitialLoadIfNeeded() async {
