@@ -762,7 +762,9 @@ final class WeatherStore {
           : OpenMeteoService.userFriendlyMessage(for: error)
       }
     }
-    isLoadingWeather = false
+    if showLoadingIndicator {
+      isLoadingWeather = false
+    }
   }
 
   /// Convenience to force refresh for a specific location (used by Storm Spotter for reliable "my location" data).

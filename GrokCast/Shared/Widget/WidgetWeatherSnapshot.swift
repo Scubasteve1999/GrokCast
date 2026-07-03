@@ -10,6 +10,8 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   let high: Double
   let low: Double
   let hourly: [HourlyForecast]
+  /// Daily rows for cold-launch Forecast hydration; omitted in older persisted snapshots.
+  let daily: [DailyForecast]
   let fetchedAt: Date
 
   /// Optional GrokCast Score (0–100) for widgets and Watch complications.
@@ -19,6 +21,22 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   /// First line of the daily Grok brief for medium widget / lock screen flair.
   let grokBriefOneLiner: String?
 
+  private enum CodingKeys: String, CodingKey {
+    case location
+    case currentTemp
+    case conditionText
+    case symbolName
+    case high
+    case low
+    case hourly
+    case daily
+    case fetchedAt
+    case grokCastScore
+    case grokCastScoreLabel
+    case minutecastMessage
+    case grokBriefOneLiner
+  }
+
   init(
     location: SavedLocation,
     currentTemp: Double,
@@ -27,6 +45,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     high: Double,
     low: Double,
     hourly: [HourlyForecast],
+    daily: [DailyForecast] = [],
     fetchedAt: Date,
     grokCastScore: Int? = nil,
     grokCastScoreLabel: String? = nil,
@@ -40,11 +59,48 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     self.high = high
     self.low = low
     self.hourly = hourly
+    self.daily = daily
     self.fetchedAt = fetchedAt
     self.grokCastScore = grokCastScore
     self.grokCastScoreLabel = grokCastScoreLabel
     self.minutecastMessage = minutecastMessage
     self.grokBriefOneLiner = grokBriefOneLiner
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    location = try container.decode(SavedLocation.self, forKey: .location)
+    currentTemp = try container.decode(Double.self, forKey: .currentTemp)
+    conditionText = try container.decode(String.self, forKey: .conditionText)
+    symbolName = try container.decode(String.self, forKey: .symbolName)
+    high = try container.decode(Double.self, forKey: .high)
+    low = try container.decode(Double.self, forKey: .low)
+    hourly = try container.decode([HourlyForecast].self, forKey: .hourly)
+    daily = try container.decodeIfPresent([DailyForecast].self, forKey: .daily) ?? []
+    fetchedAt = try container.decode(Date.self, forKey: .fetchedAt)
+    grokCastScore = try container.decodeIfPresent(Int.self, forKey: .grokCastScore)
+    grokCastScoreLabel = try container.decodeIfPresent(String.self, forKey: .grokCastScoreLabel)
+    minutecastMessage = try container.decodeIfPresent(String.self, forKey: .minutecastMessage)
+    grokBriefOneLiner = try container.decodeIfPresent(String.self, forKey: .grokBriefOneLiner)
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(location, forKey: .location)
+    try container.encode(currentTemp, forKey: .currentTemp)
+    try container.encode(conditionText, forKey: .conditionText)
+    try container.encode(symbolName, forKey: .symbolName)
+    try container.encode(high, forKey: .high)
+    try container.encode(low, forKey: .low)
+    try container.encode(hourly, forKey: .hourly)
+    if !daily.isEmpty {
+      try container.encode(daily, forKey: .daily)
+    }
+    try container.encode(fetchedAt, forKey: .fetchedAt)
+    try container.encodeIfPresent(grokCastScore, forKey: .grokCastScore)
+    try container.encodeIfPresent(grokCastScoreLabel, forKey: .grokCastScoreLabel)
+    try container.encodeIfPresent(minutecastMessage, forKey: .minutecastMessage)
+    try container.encodeIfPresent(grokBriefOneLiner, forKey: .grokBriefOneLiner)
   }
 
   /// Builds a widget snapshot from the full app weather model.
@@ -56,6 +112,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     high = weather.high
     low = weather.low
     hourly = Array(weather.hourly.prefix(4))
+    daily = Array(weather.daily.prefix(10))
     fetchedAt = weather.fetchedAt
     grokCastScore = nil
     grokCastScoreLabel = nil
@@ -78,6 +135,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     high = weather.high
     low = weather.low
     hourly = Array(weather.hourly.prefix(4))
+    daily = Array(weather.daily.prefix(10))
     fetchedAt = weather.fetchedAt
     self.grokCastScore = grokCastScore
     self.grokCastScoreLabel = grokCastScoreLabel
@@ -140,7 +198,7 @@ extension GrokCastWeather {
     pm25 = nil
     pollenLevel = nil
     hourly = snapshot.hourly
-    daily = []
+    daily = snapshot.daily
     minutely15 = []
   }
 }

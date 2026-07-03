@@ -169,11 +169,15 @@ final class IEMRadarService {
   }()
 
   /// e.g. "202607021436" (ridge layer path format)
-  private static func layerTimestamp(from date: Date) -> String {
+  private static let layerFormatter: DateFormatter = {
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX")
     f.timeZone = TimeZone(secondsFromGMT: 0)!
     f.dateFormat = "yyyyMMddHHmm"
-    return f.string(from: date)
+    return f
+  }()
+
+  private static func layerTimestamp(from date: Date) -> String {
+    layerFormatter.string(from: date)
   }
 }

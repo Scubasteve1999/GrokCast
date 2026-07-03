@@ -30,8 +30,6 @@ struct RadarView: View {
       .preferredColorScheme(.dark)
       .task {
         await store.refreshAlerts()
-        let center = store.currentLocation?.coordinate ?? defaultMapCenter
-        await radarState.reloadIfStale(for: center)
         if store.selectedTab == .radar, radarState.showContent {
           radarState.start()
         }

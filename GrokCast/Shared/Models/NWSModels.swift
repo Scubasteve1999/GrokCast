@@ -316,4 +316,11 @@ struct NWSForecastPeriod: Decodable {
   let icon: String?
   let shortForecast: String?
   let detailedForecast: String?
+  let probabilityOfPrecipitation: NWSValueUnit?
+
+  /// PoP as 0–100 for UI; NWS may omit or null the value on dry periods.
+  var precipChancePercent: Int {
+    guard let value = probabilityOfPrecipitation?.value else { return 0 }
+    return max(0, min(100, Int(value.rounded())))
+  }
 }

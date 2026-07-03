@@ -46,7 +46,7 @@ private struct ForecastAdaptiveBody: View {
 
   var body: some View {
     Group {
-      if store.isLoadingWeather {  // --skeletons: shimmer for NWS primary loading states (Today, Forecast, Alerts)
+      if store.currentWeather == nil && store.isLoadingWeather {
         if awaitsWidthMeasurement {
           neutralForecastSkeleton
         } else if prefersWideLayout {

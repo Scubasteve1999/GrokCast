@@ -195,7 +195,7 @@ struct RadarControlPanel: View {
           .frame(width: 36, height: 5)
         HStack {
           Spacer()
-          Image(systemName: isCollapsed ? "chevron.up" : "chevron.down")
+          Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
             .font(.caption2.weight(.semibold))
             .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         }

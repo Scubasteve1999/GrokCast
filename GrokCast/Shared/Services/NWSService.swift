@@ -335,9 +335,7 @@ final class NWSService {
       let tempD = Double(p.temperature ?? 0)
       let pwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
       let (sym, _) = mapWeatherCode(pwcode, isDay: p.isDaytime)
-      // Removed hardcoded 40% fake precip (was causing false "40% RAIN" even when clear).
-      // NWS path is now only fallback; real % comes from OpenMeteo primary.
-      let pChance = 0
+      let pChance = p.precipChancePercent
       hourlyForecasts.append(
         HourlyForecast(
           time: time,
@@ -368,8 +366,7 @@ final class NWSService {
         }
         let dwcode = wmoCode(fromNWSShortForecast: p.shortForecast ?? "")
         let (sym, _) = mapWeatherCode(dwcode, isDay: true)
-        // Removed hardcoded 40% fake precip (NWS fallback only).
-        let pChance = 0
+        let pChance = p.precipChancePercent
         dailyForecasts.append(
           DailyForecast(
             date: dDate,
