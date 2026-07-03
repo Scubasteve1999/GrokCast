@@ -20,15 +20,12 @@ struct HourlyRowSkeleton: View {
       ShimmerBlock(width: isNow ? 28 : 24, height: 11, cornerRadius: 3)
       ShimmerBlock(width: 22, height: 22, cornerRadius: 6)
       ShimmerBlock(width: 28, height: 15, cornerRadius: 4)
+      ShimmerBlock(width: 32, height: 10, cornerRadius: 3)
     }
-    .frame(width: 100)
+    .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
     .padding(.horizontal, 10)
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .cardStyle(
-      background: DesignTokens.Palette.cardElevated,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusCompact
-    )
+    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
   }
 
   private var standardSkeleton: some View {

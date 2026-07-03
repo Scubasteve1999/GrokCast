@@ -450,13 +450,18 @@ private struct WeatherBackgroundModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     ZStack {
+      DesignTokens.Palette.bgPrimary
+        .ignoresSafeArea()
+
       WeatherBackgroundView(
         conditionCode: conditionCode,
         isDay: isDay,
         intensity: intensity
       )
-      .opacity(extraOpacity)
       .ignoresSafeArea()
+      .opacity(extraOpacity)
+      .animation(.easeInOut(duration: 1.0), value: conditionCode)
+      .allowsHitTesting(false)
 
       content
     }

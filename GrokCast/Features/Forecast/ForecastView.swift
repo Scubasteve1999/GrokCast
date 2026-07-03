@@ -19,7 +19,7 @@ struct ForecastView: View {
       isDay: store.currentWeather.map {
         WeatherBackgroundView.isDay(from: $0.symbolName)
       } ?? WeatherBackgroundView.inferredIsDay,
-      intensity: .subtle
+      extraOpacity: 0.88
     )
     .preferredColorScheme(.dark)
   }
@@ -137,6 +137,7 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
+    .scrollContentBackground(.hidden)
   }
 
   private var compactForecastSkeleton: some View {
@@ -168,6 +169,7 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
+    .scrollContentBackground(.hidden)
   }
 
   private var wideForecastSkeleton: some View {
@@ -267,6 +269,8 @@ private struct ForecastAdaptiveBody: View {
         }
         .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
 
+        figmaOpenWeatherMapSection
+
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
           ForEach(weather.daily) { day in
@@ -284,6 +288,7 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
+    .scrollContentBackground(.hidden)
   }
 
   private func wideForecastContent(for weather: GrokCastWeather) -> some View {
@@ -353,6 +358,29 @@ private struct ForecastAdaptiveBody: View {
 
   private func figmaSectionHeader(_ title: String) -> some View {
     FigmaSubsectionLabel(title: title)
+  }
+
+  @ViewBuilder
+  private var figmaOpenWeatherMapSection: some View {
+    if let owm = store.openWeatherMapForecast, !owm.entries.isEmpty {
+      FigmaSubsectionLabel(title: openWeatherMapCompactTitle)
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: DesignTokens.Spacing.space8) {
+          ForEach(Array(owm.entries.prefix(8))) { entry in
+            OpenWeatherMapForecastChip(entry: entry, layout: .figma)
+          }
+        }
+      }
+    }
+  }
+
+  private var openWeatherMapCompactTitle: String {
+    switch store.openWeatherMapService.lastDataSource {
+    case .oneCall4:
+      return "OpenWeatherMap Hourly"
+    case .legacy25, .none:
+      return "OpenWeatherMap"
+    }
   }
 
   private var openWeatherMapSectionTitle: String {

@@ -44,29 +44,35 @@ struct DailyRow: View {
         .font(DesignTokens.Figma.Typography.rowTitle)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .lineLimit(1)
+        .frame(width: 36, alignment: .leading)
 
       Image(systemName: rowSymbol)
         .font(.system(size: 22))
         .symbolRenderingMode(.multicolor)
+        .frame(width: 28)
 
-      Text("\(Int(round(forecast.high)))°")
-        .font(DesignTokens.Figma.Typography.chipTemp)
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .monospacedDigit()
+      DailyTempRangeBar(low: forecast.low, high: forecast.high)
+        .frame(maxWidth: .infinity)
 
-      Text("\(Int(round(forecast.low)))°")
-        .font(DesignTokens.Figma.Typography.body)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .monospacedDigit()
+      VStack(alignment: .trailing, spacing: 2) {
+        Text("\(forecast.precipChance)% \(precipLabel)")
+          .font(.caption2.weight(.medium))
+          .foregroundStyle(DesignTokens.Palette.accent)
+          .lineLimit(1)
+        let liq = (forecast.rainSum ?? 0) + (forecast.showersSum ?? 0)
+        let sn = forecast.snowfallSum ?? 0
+        if let amt = precipAmountText(liquid: liq, snow: sn) {
+          Text(amt)
+            .font(.caption2)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .lineLimit(1)
+        }
+      }
+      .frame(minWidth: 52, alignment: .trailing)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, DesignTokens.Figma.Metrics.cardPadding)
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.chipRadius
-    )
+    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
   }
 
   private var standardLayout: some View {

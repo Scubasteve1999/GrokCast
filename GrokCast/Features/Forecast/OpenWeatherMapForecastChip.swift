@@ -1,9 +1,56 @@
 import SwiftUI
 
+enum OpenWeatherMapChipLayout {
+  case standard
+  case figma
+}
+
 struct OpenWeatherMapForecastChip: View {
   let entry: OpenWeatherMapForecastEntry
+  var layout: OpenWeatherMapChipLayout = .standard
 
   var body: some View {
+    Group {
+      switch layout {
+      case .standard:
+        standardLayout
+      case .figma:
+        figmaLayout
+      }
+    }
+  }
+
+  private var figmaLayout: some View {
+    VStack(spacing: 6) {
+      Text(formattedTime)
+        .font(DesignTokens.Figma.Typography.chipTime)
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .lineLimit(1)
+
+      Image(systemName: "cloud.sun.fill")
+        .font(.system(size: 22))
+        .foregroundStyle(DesignTokens.Palette.accentCool)
+
+      Text("\(Int(round(entry.temperatureF)))°")
+        .font(DesignTokens.Figma.Typography.chipTemp)
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .monospacedDigit()
+        .lineLimit(1)
+
+      if entry.precipitationChance > 0 {
+        Text("\(entry.precipitationChance)%")
+          .font(.caption2.weight(.medium))
+          .foregroundStyle(DesignTokens.Palette.accent)
+          .lineLimit(1)
+      }
+    }
+    .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
+    .padding(.horizontal, 10)
+    .padding(.vertical, DesignTokens.Spacing.space12)
+    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+  }
+
+  private var standardLayout: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       Text(formattedTime)
         .font(.system(size: 13, weight: .semibold))

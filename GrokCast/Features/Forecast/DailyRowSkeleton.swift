@@ -18,17 +18,13 @@ struct DailyRowSkeleton: View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       ShimmerBlock(width: 28, height: 15, cornerRadius: 4)
       ShimmerBlock(width: 22, height: 22, cornerRadius: 6)
-      ShimmerBlock(width: 28, height: 15, cornerRadius: 4)
-      ShimmerBlock(width: 28, height: 15, cornerRadius: 4)
+      ShimmerBlock(width: nil, height: 5, cornerRadius: 3)
+        .frame(maxWidth: .infinity)
+      ShimmerBlock(width: 44, height: 12, cornerRadius: 4)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.vertical, DesignTokens.Spacing.space12)
     .padding(.horizontal, DesignTokens.Spacing.space16)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusCompact
-    )
+    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
   }
 
   private var standardSkeleton: some View {

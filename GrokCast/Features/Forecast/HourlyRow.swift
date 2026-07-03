@@ -57,15 +57,18 @@ struct HourlyRow: View {
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
         .lineLimit(1)
+
+      if forecast.precipChance > 0 {
+        Text("\(forecast.precipChance)% \(precipLabel)")
+          .font(.caption2.weight(.medium))
+          .foregroundStyle(DesignTokens.Palette.accent)
+          .lineLimit(1)
+      }
     }
     .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
     .padding(.horizontal, 10)
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .cardStyle(
-      background: DesignTokens.Palette.cardElevated,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.chipRadius
-    )
+    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
   }
 
   private var standardLayout: some View {

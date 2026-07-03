@@ -29,9 +29,7 @@ struct TodayView: View {
 
   var body: some View {
     NavigationStack {
-      ZStack {
-        todayWeatherBackground
-
+      Group {
         let status = store.locationService.authorizationStatus
         if !store.hasRequestedLocationPermission {
           // First-launch onboarding welcome (Today tab). Shown *only* on true first launch
@@ -171,6 +169,13 @@ struct TodayView: View {
           .preferredColorScheme(.dark)
       }
     }
+    .weatherBackground(
+      conditionCode: store.currentWeather?.conditionCode,
+      isDay: store.currentWeather.map {
+        WeatherBackgroundView.isDay(from: $0.symbolName)
+      } ?? WeatherBackgroundView.inferredIsDay,
+      extraOpacity: 0.88
+    )
     .preferredColorScheme(.dark)
   }
 
@@ -253,25 +258,6 @@ struct TodayView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
-  /// Animated condition-aware backdrop (gradients + particles) over the base palette.
-  private var todayWeatherBackground: some View {
-    ZStack {
-      DesignTokens.Palette.bgPrimary
-        .ignoresSafeArea()
-
-      WeatherBackgroundView(
-        conditionCode: store.currentWeather?.conditionCode,
-        isDay: store.currentWeather.map {
-          WeatherBackgroundView.isDay(from: $0.symbolName)
-        } ?? WeatherBackgroundView.inferredIsDay,
-        intensity: .full
-      )
-      .ignoresSafeArea()
-      .opacity(0.88)
-      .animation(.easeInOut(duration: 1.0), value: store.currentWeather?.conditionCode)
-    }
-    .allowsHitTesting(false)
-  }
 }
 
 private struct TodayWeatherPanel: View {
