@@ -39,6 +39,8 @@ struct RadarControlPanel: View {
 
         Spacer(minLength: 0)
 
+        liveForecastPicker
+
         Button {
           Haptic.impact(.light)
           showDisplayOptions = true
@@ -78,7 +80,6 @@ struct RadarControlPanel: View {
       RadarTimelineScrubber(radarState: radarState)
 
       if !isCollapsed {
-        liveForecastPicker
         productChips
         compactStatusFooter
       }

@@ -321,6 +321,8 @@ extension RadarState {
     guard product != selectedProduct else { return }
 
     guard product.isSiteProduct else {
+      // Invalidate any in-flight Super-Res/SRV load so it cannot overwrite composite.
+      productLoadToken = UUID()
       selectedProduct = .reflectivity
       restoreCompositeLive()
       return

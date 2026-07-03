@@ -328,7 +328,9 @@ private struct TodayWeatherPanel: View {
         layout: .figma
       )
 
-      brightDetailsGrid
+      if !store.isShowingCachedWeather {
+        brightDetailsGrid
+      }
 
       GrokImagineButton(
         weather: weather,
@@ -407,7 +409,9 @@ private struct TodayWeatherPanel: View {
             locationName: store.currentLocation?.name ?? weather.location.name,
             layout: .figma
           )
-          brightDetailsGrid
+          if !store.isShowingCachedWeather {
+            brightDetailsGrid
+          }
           GrokImagineButton(
             weather: weather,
             isGenerating: isGeneratingImage,
@@ -427,15 +431,17 @@ private struct TodayWeatherPanel: View {
   /// dominant temperature, then a "Feels Like" + H/L line. White text with soft shadows.
   private var brightHeroSection: some View {
     VStack(spacing: DesignTokens.Spacing.space2) {
-      Label {
-        Text("HOME")
-          .font(.caption.weight(.semibold))
-          .tracking(1.0)
-      } icon: {
-        Image(systemName: "location.fill")
-          .font(.caption2)
+      if store.currentLocation?.isCurrent == true {
+        Label {
+          Text("HOME")
+            .font(.caption.weight(.semibold))
+            .tracking(1.0)
+        } icon: {
+          Image(systemName: "location.fill")
+            .font(.caption2)
+        }
+        .foregroundStyle(TodayBright.textSecondary)
       }
-      .foregroundStyle(TodayBright.textSecondary)
 
       Text(store.currentLocation?.name ?? weather.location.name)
         .font(.system(size: 34, weight: .regular))

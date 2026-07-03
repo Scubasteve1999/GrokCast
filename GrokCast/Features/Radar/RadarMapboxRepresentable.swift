@@ -10,30 +10,18 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
   var recenterDefaultTrigger: UUID?
   var recenterUserCoordinate: CLLocationCoordinate2D?
 
-  func makeUIView(context: Context) -> MapView {
-    if let token = DeveloperAPIKey.mapbox, !token.isEmpty {
-      MapboxOptions.accessToken = token
-    }
-
-    let scale = MapViewHostingSanitizer.screenScale
-    let options = MapInitOptions(
-      mapOptions: MapOptions(pixelRatio: CGFloat(scale)),
-      styleURI: radarState.baseMapStyle.styleURI
-    )
-    let mapView = MapView(
-      frame: MapViewHostingSanitizer.initialFrame,
-      mapInitOptions: options
-    )
-    MapViewHostingSanitizer.prepareNewMapView(mapView)
-    MapViewHostingSanitizer.scheduleDeferredSanitize(for: mapView)
-
-    context.coordinator.setupMap(mapView)
-    return mapView
+  func makeUIView(context: Context) -> RadarMapHostView {
+    let host = RadarMapHostView()
+    host.coordinator = context.coordinator
+    return host
   }
 
-  func updateUIView(_ uiView: MapView, context: Context) {
+  func updateUIView(_ host: RadarMapHostView, context: Context) {
+    host.baseMapStyle = radarState.baseMapStyle
+    host.ensureMapIfReady()
+    guard let mapView = host.mapView else { return }
     context.coordinator.update(
-      mapView: uiView,
+      mapView: mapView,
       radarState: radarState,
       opacity: opacity,
       defaultMapCenter: defaultMapCenter,
@@ -46,9 +34,50 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     Coordinator()
   }
 
+  /// Defers MapView creation until the host has real layout bounds, avoiding
+  /// Mapbox "Invalid size {64, 64}" and NaN MetalView contentScaleFactor logs.
+  final class RadarMapHostView: UIView {
+    weak var coordinator: Coordinator?
+    private(set) var mapView: MapView?
+    var baseMapStyle: RadarBaseMapStyle = .dark
+
+    override func layoutSubviews() {
+      super.layoutSubviews()
+      ensureMapIfReady()
+    }
+
+    func ensureMapIfReady() {
+      guard bounds.width >= 100, bounds.height >= 100 else { return }
+
+      if let mapView {
+        if mapView.frame.size != bounds.size {
+          mapView.frame = bounds
+          MapViewHostingSanitizer.sanitize(mapView)
+        }
+        return
+      }
+
+      if let token = DeveloperAPIKey.mapbox, !token.isEmpty {
+        MapboxOptions.accessToken = token
+      }
+
+      let scale = MapViewHostingSanitizer.screenScale
+      let options = MapInitOptions(
+        mapOptions: MapOptions(pixelRatio: CGFloat(scale)),
+        styleURI: baseMapStyle.styleURI
+      )
+      let mapView = MapView(frame: bounds, mapInitOptions: options)
+      MapViewHostingSanitizer.prepareNewMapView(mapView)
+      mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      addSubview(mapView)
+      self.mapView = mapView
+      coordinator?.setupMap(mapView)
+      MapViewHostingSanitizer.scheduleDeferredSanitize(for: mapView)
+    }
+  }
+
   private enum MapViewHostingSanitizer {
-    static let initialFrame = CGRect(x: 0, y: 0, width: 1200, height: 900)
-    static let minimumBoundsFallback = CGRect(x: 0, y: 0, width: 400, height: 400)
+    static let minimumBoundsSize = CGSize(width: 100, height: 100)
 
     static var screenScale: Double {
       max(1.0, Double(UIScreen.main.scale))
@@ -56,11 +85,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
     static func prepareNewMapView(_ mapView: MapView) {
       let scale = screenScale
-      if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
-        mapView.contentScaleFactor = scale
-      }
-      mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight] as UIView.AutoresizingMask
-      mapView.frame = initialFrame
+      applyContentScaleFactor(scale, to: mapView)
       mapView.setNeedsLayout()
       mapView.layoutIfNeeded()
     }
@@ -74,17 +99,22 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
     static func sanitize(_ mapView: MapView) {
       let scale = screenScale
+      applyContentScaleFactor(scale, to: mapView)
 
-      if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
-        mapView.contentScaleFactor = scale
-      }
-
-      if mapView.bounds.width < 10 || mapView.bounds.height < 10 {
-        if mapView.frame.width < 10 || mapView.frame.height < 10 {
-          mapView.frame = minimumBoundsFallback
-        }
+      if mapView.bounds.width < minimumBoundsSize.width
+        || mapView.bounds.height < minimumBoundsSize.height
+      {
         mapView.setNeedsLayout()
         mapView.layoutIfNeeded()
+      }
+    }
+
+    private static func applyContentScaleFactor(_ scale: Double, to view: UIView) {
+      if view.contentScaleFactor.isNaN || view.contentScaleFactor <= 0 {
+        view.contentScaleFactor = scale
+      }
+      for subview in view.subviews {
+        applyContentScaleFactor(scale, to: subview)
       }
     }
   }

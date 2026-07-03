@@ -88,7 +88,7 @@ struct RadarView: View {
       Group {
         if store.selectedTab == .radar {
           GeometryReader { geo in
-            if geo.size.width > 50 && geo.size.height > 50 {
+            if geo.size.width > 100 && geo.size.height > 100 {
               RadarMapboxRepresentable(
                 radarState: radarState,
                 opacity: radarOpacity,
@@ -97,7 +97,6 @@ struct RadarView: View {
                 recenterUserCoordinate: recenterUserCoordinate
               )
               .frame(width: geo.size.width, height: geo.size.height)
-              .frame(minWidth: 400, minHeight: 400)
               .ignoresSafeArea(edges: [.top, .bottom])
             } else {
               Color.clear
@@ -105,7 +104,6 @@ struct RadarView: View {
                 .ignoresSafeArea(edges: [.top, .bottom])
             }
           }
-          .frame(minWidth: 400, minHeight: 400)
         } else {
           Color.clear.ignoresSafeArea(edges: [.top, .bottom])
         }

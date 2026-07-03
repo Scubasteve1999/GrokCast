@@ -260,6 +260,7 @@ private struct ForecastAdaptiveBody: View {
       .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
+    .scrollContentBackground(.hidden)
     .safeAreaInset(edge: .top) {
       errorBanner
     }
