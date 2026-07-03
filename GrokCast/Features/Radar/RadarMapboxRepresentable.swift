@@ -117,6 +117,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       var showsFuture: Bool
       var isAnimating: Bool
       var visible: Bool
+      /// Mapbox rasterFadeDuration in milliseconds. 0 for live (crisp frame cuts
+      /// show storm motion clearly); non-zero for FUTURE (cross-fades the smooth
+      /// forecast blobs so playback feels fluid rather than choppy).
+      var fadeDuration: Double
 
       static let hidden = DesiredRasterState(
         tileURLs: [],
@@ -127,7 +131,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         contrast: 0,
         showsFuture: false,
         isAnimating: false,
-        visible: false
+        visible: false,
+        fadeDuration: 0
       )
 
       func updatingOpacity(_ opacity: Double) -> Self {
@@ -208,16 +213,22 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         return .hidden
       }
 
+      // FUTURE fradar tiles are smooth forecast blobs — a cross-fade makes the
+      // animation feel fluid. Live radar stays at 0 so storm motion reads crisply.
+      // Xweather fradar also benefits from a small saturation lift; its palette
+      // looks slightly flat at the default vibrant settings (saturation = 0).
+      let isFuture = radarState.showsFuture
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
         tileKey: frame.tileKey,
         maxZoom: frame.provider.maxZoom,
         opacity: opacity,
-        saturation: radarState.colorScheme.rasterSaturation,
-        contrast: radarState.colorScheme.rasterContrast,
-        showsFuture: radarState.showsFuture,
+        saturation: radarState.colorScheme.rasterSaturation + (isFuture ? 0.2 : 0.0),
+        contrast: radarState.colorScheme.rasterContrast + (isFuture ? 0.1 : 0.0),
+        showsFuture: isFuture,
         isAnimating: radarState.isAnimating,
-        visible: true
+        visible: true,
+        fadeDuration: isFuture ? 300 : 0
       )
     }
 
@@ -344,7 +355,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         try mapView.mapboxMap.addSource(source)
 
         var layer = RasterLayer(id: layerId, source: sourceId)
-        layer.rasterFadeDuration = .constant(0)
+        layer.rasterFadeDuration = .constant(desired.fadeDuration)
         layer.rasterEmissiveStrength = .constant(1)
         layer.rasterOpacity = .constant(desired.opacity)
         layer.rasterSaturation = .constant(desired.saturation)
