@@ -52,7 +52,7 @@ struct TodayView: View {
         } else if !(status == .authorizedWhenInUse || status == .authorizedAlways) {
           LocationPermissionView()
             .padding(.bottom, bottomTabClearance)
-        } else if store.isLoadingWeather || store.locationService.isLoading {
+        } else if weather == nil && (store.isLoadingWeather || store.locationService.isLoading) {
           TodaySkeleton()
         } else if let w = weather {
           ScrollView {

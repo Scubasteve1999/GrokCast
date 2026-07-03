@@ -74,3 +74,27 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     )
   }
 }
+
+extension GrokCastWeather {
+  /// Best-effort reconstruction from a persisted widget snapshot for instant cold-launch display.
+  init(snapshot: WidgetWeatherSnapshot) {
+    location = snapshot.location
+    currentTemp = snapshot.currentTemp
+    feelsLike = snapshot.currentTemp
+    conditionCode = snapshot.hourly.first?.weatherCode ?? 0
+    conditionText = snapshot.conditionText
+    humidity = 0
+    windSpeed = 0
+    uvIndex = 0
+    precipitationChance = snapshot.hourly.first?.precipChance ?? 0
+    high = snapshot.high
+    low = snapshot.low
+    symbolName = snapshot.symbolName
+    fetchedAt = snapshot.fetchedAt
+    airQualityIndex = nil
+    pm25 = nil
+    pollenLevel = nil
+    hourly = snapshot.hourly
+    daily = []
+  }
+}

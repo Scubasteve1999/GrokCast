@@ -49,6 +49,7 @@
 		3963EDC5DBBE950209087E3C /* XAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E6143E506112BE46F1DB64 /* XAIService.swift */; };
 		3A0715BE62F1933258C9890C /* GrokAIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E6DE813CB1F793D8E34D49 /* GrokAIView.swift */; };
 		3AE684E3D46F0F07C7C6452E /* IEMRadarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E9DABD1FCC06D0BC0995BA /* IEMRadarService.swift */; };
+		3F68EB5D8DD7D61C8E5672EF /* RadarMapStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BF5133FF4F68BDE40ADAAB /* RadarMapStyle.swift */; };
 		3FAB3CF0EBAB435A7BF9E732 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C25A7B566D08E27166A7B5E /* DesignTokens.swift */; };
 		4228D04C787FE9E6015A9CC1 /* LocationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0465651FD94EA7ADAB85021D /* LocationsView.swift */; };
 		444AA54356DCEF848015AF56 /* WidgetWeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCD12831CD2F178E92ECA3C /* WidgetWeatherSnapshot.swift */; };
@@ -205,6 +206,7 @@
 		506F52BA3C8123228C51BA28 /* GrokCast.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GrokCast.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		513424C6130A505D77EFE18A /* WidgetUpdatedFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetUpdatedFooter.swift; sourceTree = "<group>"; };
 		5323CA2EA7F8F936CFA9CDCA /* GrokAIViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAIViewModel.swift; sourceTree = "<group>"; };
+		54BF5133FF4F68BDE40ADAAB /* RadarMapStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapStyle.swift; sourceTree = "<group>"; };
 		54DAA10B5AF53B9B047056CB /* RadarDataset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarDataset.swift; sourceTree = "<group>"; };
 		5534FA4C34F2A61B9DE2905F /* GrokQuickPromptButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokQuickPromptButton.swift; sourceTree = "<group>"; };
 		56BC33FFC50164CC8A620840 /* NWSRadarProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSRadarProduct.swift; sourceTree = "<group>"; };
@@ -624,6 +626,7 @@
 				54DAA10B5AF53B9B047056CB /* RadarDataset.swift */,
 				AFA62C744129F745BB5F2BAE /* RadarLoader.swift */,
 				FC4187B014ED170D0415154D /* RadarMapboxRepresentable.swift */,
+				54BF5133FF4F68BDE40ADAAB /* RadarMapStyle.swift */,
 				5BD08C2100DC5E5B51E8A913 /* RadarModeTransition.swift */,
 				C52593AE31997E2EC1AFE060 /* RadarPlayback.swift */,
 				6D4FE376B54CDD5A972BE552 /* RadarPlaybackControls.swift */,
@@ -828,6 +831,7 @@
 				E570FDA8DA94BA45C4DF3E25 /* RadarDataset.swift in Sources */,
 				A5E5D5B58047740E76544016 /* RadarFrame.swift in Sources */,
 				7014B4A7E73730A518B9A9A7 /* RadarLoader.swift in Sources */,
+				3F68EB5D8DD7D61C8E5672EF /* RadarMapStyle.swift in Sources */,
 				A4B16C6E8A03BFC8BA547920 /* RadarMapboxRepresentable.swift in Sources */,
 				E1909FCA55B8553C314B2CC3 /* RadarModeTransition.swift in Sources */,
 				A7CD07919A151947EC496C47 /* RadarPlayback.swift in Sources */,
@@ -958,7 +962,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1088,7 +1092,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

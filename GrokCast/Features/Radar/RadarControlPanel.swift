@@ -97,6 +97,8 @@ struct RadarControlPanel: View {
       // Color scheme toggle (Vibrant / Balanced) from previous panel
       colorSchemePicker
 
+      mapOverlayControls
+
       opacityRow
       statusFooter
       }
@@ -211,6 +213,51 @@ struct RadarControlPanel: View {
     }
     .background(DesignTokens.Palette.radarTrack)
     .clipShape(Capsule())
+  }
+
+  /// Base map style + radar precipitation overlay visibility.
+  private var mapOverlayControls: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      HStack(spacing: DesignTokens.Spacing.space8) {
+        Image(systemName: "square.3.layers.3d")
+          .font(.caption2)
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        Text("Map")
+          .font(.caption2.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+        Spacer()
+        Toggle("Radar", isOn: $radarState.showRadarOverlay)
+          .font(.caption2)
+          .tint(DesignTokens.Palette.radarAccent)
+          .labelsHidden()
+          .accessibilityLabel("Show radar overlay")
+      }
+
+      HStack(spacing: 0) {
+        ForEach(RadarBaseMapStyle.allCases) { style in
+          let isSelected = radarState.baseMapStyle == style
+          HStack(spacing: 4) {
+            Image(systemName: style.systemImage)
+              .font(.caption2)
+            Text(style.displayName)
+              .font(.caption2.weight(isSelected ? .semibold : .regular))
+          }
+          .padding(.horizontal, 8)
+          .padding(.vertical, 4)
+          .background(isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
+          .clipShape(Capsule())
+          .foregroundStyle(
+            isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+          )
+          .onTapGesture {
+            Haptic.impact(.light)
+            radarState.baseMapStyle = style
+          }
+        }
+      }
+      .background(DesignTokens.Palette.radarTrack)
+      .clipShape(Capsule())
+    }
   }
 
   private var headerRow: some View {
