@@ -6,6 +6,7 @@ struct SettingsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
   @State private var apiKeyInput: String = ""
   @State private var isEditingKey = false
@@ -22,9 +23,40 @@ struct SettingsView: View {
     store.xaiService.maskedAPIKey
   }
 
+  private var prefersFigmaLayout: Bool {
+    horizontalSizeClass == .compact
+  }
+
   var body: some View {
     NavigationStack {
-      Form {
+      Group {
+        if prefersFigmaLayout {
+          figmaSettingsScroll
+        } else {
+          settingsForm
+        }
+      }
+      .readableContentWidth(ReadableContentWidth.wide)
+      .navigationTitle(prefersFigmaLayout ? "" : "Settings")
+      .navigationBarTitleDisplayMode(prefersFigmaLayout ? .inline : .large)
+      .alert("Key Saved", isPresented: $showSaveConfirmation) {
+        Button("OK") {}
+      } message: {
+        Text("xAI API key securely stored in the iOS Keychain.")
+      }
+      .task {
+        await store.refreshAlertNotificationAuthorizationStatus()
+      }
+      .onChange(of: scenePhase) { _, newPhase in
+        if newPhase == .active {
+          Task { await store.refreshAlertNotificationAuthorizationStatus() }
+        }
+      }
+    }
+  }
+
+  private var settingsForm: some View {
+    Form {
         // MARK: - GrokCast Pro
         Section {
           if subscription.isPro {
@@ -351,24 +383,364 @@ struct SettingsView: View {
         } header: {
           Text("DATA & CREDITS")
         }
+    }
+  }
+
+  private var figmaSettingsScroll: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        Text("Settings")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+        figmaSectionLabel("GROKCAST PRO")
+        figmaProCard
+
+        figmaSectionLabel("NOTIFICATIONS")
+        SettingsGroupCard {
+          figmaToggleRow(
+            title: "Morning Brief",
+            subtitle: store.morningBriefEnabled
+              ? "Daily at \(store.morningBriefHour):00 AM" : "Off",
+            icon: "bell.fill",
+            isOn: Binding(
+              get: { store.morningBriefEnabled },
+              set: { store.morningBriefEnabled = $0 }
+            )
+          )
+          SettingsDivider()
+          figmaToggleRow(
+            title: "Severe Weather Alerts",
+            subtitle: store.alertNotificationsEnabled ? "Push when active" : "Off",
+            icon: "exclamationmark.triangle.fill",
+            isOn: Binding(
+              get: { store.alertNotificationsEnabled },
+              set: { store.alertNotificationsEnabled = $0 }
+            )
+          )
+          if store.alertNotificationsEnabled {
+            SettingsDivider()
+            alertNotificationStatusRow
+              .padding(.horizontal, DesignTokens.Spacing.space16)
+              .padding(.vertical, DesignTokens.Spacing.space8)
+          }
+        }
+
+        figmaSectionLabel("DISPLAY")
+        SettingsGroupCard {
+          figmaPickerRow(title: "Temperature", value: store.temperatureUnit.displayName)
+          SettingsDivider()
+          figmaToggleRow(
+            title: "Live Activity",
+            subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires GrokCast Pro",
+            icon: "lock.rectangle.stack.fill",
+            isOn: Binding(
+              get: { store.liveActivityEnabled },
+              set: { newValue in
+                if newValue, !EntitlementChecker.canUseLiveActivity(subscription: subscription) {
+                  PaywallCoordinator.shared.present(.liveActivity)
+                  return
+                }
+                store.liveActivityEnabled = newValue
+              }
+            )
+          )
+          SettingsDivider()
+          figmaToggleRow(
+            title: "Notification Sounds",
+            subtitle: store.notificationSoundsEnabled ? "On" : "Off",
+            icon: "speaker.wave.2.fill",
+            isOn: Binding(
+              get: { store.notificationSoundsEnabled },
+              set: { store.notificationSoundsEnabled = $0 }
+            )
+          )
+        }
+
+        figmaSectionLabel("DEVELOPER")
+        SettingsGroupCard {
+          figmaDeveloperKeySection
+        }
+
+        figmaSectionLabel("BACKGROUND")
+        SettingsGroupCard {
+          figmaToggleRow(
+            title: "Background Weather Updates",
+            subtitle: store.significantLocationUpdatesEnabled ? "Significant location changes" : "Off",
+            icon: "location.circle.fill",
+            isOn: Binding(
+              get: { store.significantLocationUpdatesEnabled },
+              set: { store.significantLocationUpdatesEnabled = $0 }
+            )
+          )
+        }
+
+        figmaSectionLabel("APP")
+        SettingsGroupCard {
+          figmaInfoRow(title: "Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+          SettingsDivider()
+          figmaInfoRow(title: "Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+          SettingsDivider()
+          Button {
+            Haptic.impact(.light)
+            store.clearLocalWeatherCache()
+          } label: {
+            HStack {
+              Label("Clear Local Weather Cache", systemImage: "trash")
+                .foregroundStyle(DesignTokens.Palette.danger)
+              Spacer()
+            }
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.vertical, DesignTokens.Spacing.space12)
+          }
+          .buttonStyle(.plain)
+        }
+
+        figmaSectionLabel("LEGAL & SUPPORT")
+        SettingsGroupCard {
+          SettingsLinkRow(title: "Privacy Policy", icon: "hand.raised", url: AppLinks.privacyPolicy)
+          SettingsDivider()
+          SettingsLinkRow(title: "Support", icon: "questionmark.circle", url: AppLinks.support)
+          SettingsDivider()
+          SettingsLinkRow(title: "Contact", icon: "envelope", url: AppLinks.supportEmail)
+        }
       }
-      .readableContentWidth(ReadableContentWidth.wide)
-      .navigationTitle("Settings")
-      .navigationBarTitleDisplayMode(.large)
-      .alert("Key Saved", isPresented: $showSaveConfirmation) {
-        Button("OK") {}
-      } message: {
-        Text("xAI API key securely stored in the iOS Keychain.")
-      }
-      .task {
-        await store.refreshAlertNotificationAuthorizationStatus()
-      }
-      .onChange(of: scenePhase) { _, newPhase in
-        if newPhase == .active {
-          Task { await store.refreshAlertNotificationAuthorizationStatus() }
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.top, DesignTokens.Spacing.space16)
+      .padding(.bottom, DesignTokens.Spacing.space32)
+    }
+    .scrollContentBackground(.hidden)
+    .background(DesignTokens.Palette.bgPrimary)
+  }
+
+  private func figmaSectionLabel(_ title: String) -> some View {
+    Text(title)
+      .font(.system(size: 11, weight: .bold))
+      .foregroundStyle(DesignTokens.Palette.textTertiary)
+  }
+
+  private var figmaProCard: some View {
+    SettingsGroupCard {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+        if subscription.isPro {
+          Label("GrokCast Pro is active", systemImage: "checkmark.seal.fill")
+            .foregroundStyle(DesignTokens.Palette.success)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.top, DesignTokens.Spacing.space16)
+          Button("Manage Subscription") {
+            if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+              UIApplication.shared.open(url)
+            }
+          }
+          .padding(.horizontal, DesignTokens.Spacing.space16)
+        } else {
+          Text("Unlock Grok AI, forecast radar, Live Activity, and more.")
+            .font(.system(size: 14))
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.top, DesignTokens.Spacing.space16)
+
+          Button("View GrokCast Pro") {
+            PaywallCoordinator.shared.present(.grokAI)
+          }
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 10)
+          .background(DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: 10))
+          .padding(.horizontal, DesignTokens.Spacing.space16)
+        }
+
+        Button("Restore Purchases") {
+          Task { await subscription.restorePurchases() }
+        }
+        .font(.footnote)
+        .padding(.horizontal, DesignTokens.Spacing.space16)
+        .padding(.bottom, DesignTokens.Spacing.space16)
+        .disabled(subscription.purchaseInFlight)
+
+        if let error = subscription.lastErrorMessage {
+          Text(error)
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.danger)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.bottom, DesignTokens.Spacing.space8)
         }
       }
     }
+  }
+
+  @ViewBuilder
+  private var figmaDeveloperKeySection: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      Button {
+        if !isEditingKey {
+          apiKeyInput = ""
+          isEditingKey = true
+          connectionTestResult = nil
+        }
+      } label: {
+        HStack(spacing: DesignTokens.Spacing.space12) {
+          Image(systemName: "key.fill")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(DesignTokens.Palette.accent)
+            .frame(width: 24)
+          VStack(alignment: .leading, spacing: 2) {
+            Text("xAI Developer Key")
+              .font(.system(size: 15, weight: .semibold))
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+            Text(figmaDeveloperKeySubtitle)
+              .font(.system(size: 13))
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
+          }
+          Spacer()
+          Image(systemName: "chevron.right")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+        }
+        .padding(.horizontal, DesignTokens.Spacing.space16)
+        .padding(.vertical, DesignTokens.Spacing.space12)
+      }
+      .buttonStyle(.plain)
+
+      if isEditingKey {
+        SettingsDivider()
+        VStack(alignment: .leading, spacing: 8) {
+          SecureField("xai-XXXXXXXXXXXXXXXXXXXXXXXX", text: $apiKeyInput)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .font(.system(.body, design: .monospaced))
+            .padding(10)
+            .background(
+              DesignTokens.Palette.cardElevated,
+              in: RoundedRectangle(cornerRadius: 8)
+            )
+          HStack {
+            Button("Cancel") {
+              isEditingKey = false
+              apiKeyInput = ""
+            }
+            .buttonStyle(.bordered)
+            Spacer()
+            Button("Save Securely") {
+              saveDeveloperKey()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!isValidDeveloperKeyFormat(apiKeyInput))
+          }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.space16)
+        .padding(.bottom, DesignTokens.Spacing.space12)
+      } else if hasKey && !store.xaiService.isUsingEmbeddedDeveloperKey {
+        SettingsDivider()
+        Button {
+          testGrokConnection()
+        } label: {
+          HStack {
+            if isTestingConnection {
+              ProgressView().scaleEffect(0.8)
+              Text("Testing Grok API…")
+            } else {
+              Label("Test Grok Connection", systemImage: "network")
+            }
+            Spacer()
+          }
+          .padding(.horizontal, DesignTokens.Spacing.space16)
+          .padding(.vertical, DesignTokens.Spacing.space12)
+        }
+        .buttonStyle(.plain)
+        .disabled(isTestingConnection)
+
+        if let result = connectionTestResult {
+          Text(result)
+            .font(.caption)
+            .foregroundStyle(connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.bottom, DesignTokens.Spacing.space8)
+        }
+      }
+    }
+  }
+
+  private var figmaDeveloperKeySubtitle: String {
+    if store.xaiService.isUsingEmbeddedDeveloperKey {
+      return "Embedded · TestFlight"
+    }
+    if hasKey {
+      return "Configured · Secure"
+    }
+    return "Not configured"
+  }
+
+  private func figmaToggleRow(
+    title: String,
+    subtitle: String,
+    icon: String,
+    isOn: Binding<Bool>
+  ) -> some View {
+    HStack(spacing: DesignTokens.Spacing.space12) {
+      Image(systemName: icon)
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.accent)
+        .frame(width: 24)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(title)
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        Text(subtitle)
+          .font(.system(size: 13))
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+      }
+      Spacer()
+      Toggle("", isOn: isOn)
+        .labelsHidden()
+        .tint(DesignTokens.Palette.accent)
+    }
+    .padding(.horizontal, DesignTokens.Spacing.space16)
+    .padding(.vertical, DesignTokens.Spacing.space12)
+  }
+
+  private func figmaPickerRow(title: String, value: String) -> some View {
+    Menu {
+      ForEach(TemperatureUnit.allCases) { unit in
+        Button(unit.displayName) {
+          store.temperatureUnit = unit
+        }
+      }
+    } label: {
+      HStack(spacing: DesignTokens.Spacing.space12) {
+        Image(systemName: "thermometer.medium")
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(DesignTokens.Palette.accent)
+          .frame(width: 24)
+        Text(title)
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        Spacer()
+        Text(value)
+          .font(.system(size: 13))
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.bold))
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      }
+      .padding(.horizontal, DesignTokens.Spacing.space16)
+      .padding(.vertical, DesignTokens.Spacing.space12)
+    }
+  }
+
+  private func figmaInfoRow(title: String, value: String) -> some View {
+    HStack {
+      Text(title)
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+      Spacer()
+      Text(value)
+        .font(.system(size: 13))
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+    }
+    .padding(.horizontal, DesignTokens.Spacing.space16)
+    .padding(.vertical, DesignTokens.Spacing.space12)
   }
 
   @ViewBuilder
