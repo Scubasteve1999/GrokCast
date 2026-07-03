@@ -408,7 +408,7 @@ extension RadarState {
       "[RadarState] Loading radar → \(RadarTileProvider.preferredLive.displayName) (NOW)"
         + " + \(RadarTileProvider.preferredForecast.displayName) (FUTURE)"
     )
-    let result = await loader.loadAll(site: nearestSite)
+    let result = await loader.loadAll(site: nearestSite, coordinate: coordinate)
 
     // Always cache the composite result so a site product can restore it later —
     // even if the user selected one while this initial load was in flight.

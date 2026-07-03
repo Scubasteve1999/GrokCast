@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 
 enum RadarTileAvailability: Equatable {
@@ -55,7 +56,10 @@ struct RadarDatasetResult: Equatable {
 final class RadarLoader {
   private(set) var isLoading = false
 
-  func loadAll(site: IEMRadarService.Site?) async -> RadarDatasetResult {
+  func loadAll(
+    site: IEMRadarService.Site?,
+    coordinate: CLLocationCoordinate2D
+  ) async -> RadarDatasetResult {
     isLoading = true
     defer { isLoading = false }
 
@@ -66,7 +70,11 @@ final class RadarLoader {
     }()
 
     let rainViewerResult = await rainViewer
-    let liveOutcome = await resolveLive(site: site, rainViewerLive: rainViewerResult.live)
+    let liveOutcome = await resolveLive(
+      site: site,
+      coordinate: coordinate,
+      rainViewerLive: rainViewerResult.live
+    )
     let forecastOutcome = await resolveForecast(
       rainViewerForecast: rainViewerResult.forecast,
       owmProbeOK: await owmProbeOK
@@ -122,16 +130,31 @@ final class RadarLoader {
 
   private func resolveLive(
     site: IEMRadarService.Site?,
+    coordinate: CLLocationCoordinate2D,
     rainViewerLive: [RadarFrame]
   ) async -> LoadOutcome {
-    // Prefer real NWS NEXRAD super-res reflectivity when a site is nearby (US).
+    // Default Reflectivity uses the CONUS composite (N0Q). Single-site N0B/N0S load
+    // only when the user picks Super-Res or SRV (see RadarState.setProduct).
+    if IEMRadarService.isWithinCONUS(coordinate) {
+      let conusFrames = await IEMRadarService.loadCONUSReflectivityFrames()
+      if !conusFrames.isEmpty {
+        print("[IEM] Loaded \(conusFrames.count) live scans — NWS CONUS composite")
+        return LoadOutcome(
+          frames: conusFrames,
+          provider: .iem,
+          availability: .available
+        )
+      }
+    }
+
+    // Single-site super-res when CONUS fails but a nearby site exists.
     if let site {
       let iemFrames = await IEMRadarService.loadSiteFrames(
         site: site.id,
         product: .superResReflectivity
       )
       if !iemFrames.isEmpty {
-        print("[IEM] Loaded \(iemFrames.count) live scans — NWS \(site.id)")
+        print("[IEM] Loaded \(iemFrames.count) live scans — NWS \(site.id) (CONUS fallback)")
         return LoadOutcome(
           frames: iemFrames,
           provider: .iem,
@@ -145,7 +168,7 @@ final class RadarLoader {
     }
 
     if !rainViewerLive.isEmpty {
-      print("[RainViewer] Loaded \(rainViewerLive.count) live frames (fallback)")
+      print("[RainViewer] Loaded \(rainViewerLive.count) live frames (international fallback)")
       return LoadOutcome(
         frames: rainViewerLive,
         provider: .rainViewer,

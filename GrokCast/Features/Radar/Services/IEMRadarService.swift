@@ -17,6 +17,17 @@ final class IEMRadarService {
   /// Beyond this the site's low-level beam is too high to be useful (and we're likely non-US).
   private static let maxSiteDistanceMeters: CLLocationDistance = 400_000
 
+  /// IEM US composite mosaic (CONUS base reflectivity). Used when single-site tiles fail.
+  private static let conusCompositeRadar = "USCOMP"
+  private static let conusCompositeProduct = "N0Q"
+
+  /// Rough CONUS bounding box for IEM `USCOMP` mosaic (excludes AK/HI/territories).
+  static func isWithinCONUS(_ coordinate: CLLocationCoordinate2D) -> Bool {
+    let lat = coordinate.latitude
+    let lon = coordinate.longitude
+    return lat >= 24.0 && lat <= 50.0 && lon >= -125.0 && lon <= -66.0
+  }
+
   /// Main-actor isolated: the sole caller (RadarState) is @MainActor, and this
   /// avoids an unsynchronized static-var data race across concurrent resolutions.
   @MainActor private static var cachedSites: [Site]?
@@ -73,14 +84,34 @@ final class IEMRadarService {
     maxFrames: Int = 12
   ) async -> [RadarFrame] {
     guard let code = product.iemCode else { return [] }
+    return await loadRidgeFrames(
+      radar: site,
+      productCode: code,
+      maxFrames: maxFrames
+    )
+  }
 
+  /// CONUS-wide composite reflectivity (N0Q) — free NWS mosaic, no RainViewer needed.
+  static func loadCONUSReflectivityFrames(maxFrames: Int = 12) async -> [RadarFrame] {
+    await loadRidgeFrames(
+      radar: conusCompositeRadar,
+      productCode: conusCompositeProduct,
+      maxFrames: maxFrames
+    )
+  }
+
+  private static func loadRidgeFrames(
+    radar: String,
+    productCode: String,
+    maxFrames: Int
+  ) async -> [RadarFrame] {
     let end = Date()
     let start = end.addingTimeInterval(-3600)
     var components = URLComponents(string: scanListBase)!
     components.queryItems = [
       URLQueryItem(name: "operation", value: "list"),
-      URLQueryItem(name: "radar", value: site),
-      URLQueryItem(name: "product", value: code),
+      URLQueryItem(name: "radar", value: radar),
+      URLQueryItem(name: "product", value: productCode),
       URLQueryItem(name: "start", value: Self.scanFormatter.string(from: start)),
       URLQueryItem(name: "end", value: Self.scanFormatter.string(from: end)),
     ]
@@ -95,7 +126,7 @@ final class IEMRadarService {
     let dates = response.scans.compactMap { Self.scanFormatter.date(from: $0.ts) }
       .sorted()
     return dates.suffix(maxFrames).map { date in
-      let layer = "ridge::\(site)-\(code)-\(Self.layerTimestamp(from: date))"
+      let layer = "ridge::\(radar)-\(productCode)-\(Self.layerTimestamp(from: date))"
       return RadarFrame(
         provider: .iem,
         kind: .livePrecipitation,
