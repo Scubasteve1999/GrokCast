@@ -1,10 +1,17 @@
 import SwiftUI
 
+enum AlertsGrokSummaryPresentation {
+  case standard
+  /// Figma Alerts screen: single secondary line in a simple card.
+  case figma
+}
+
 /// Plain-English Grok summary when active NWS alerts are present.
 struct AlertsGrokSummaryCard: View {
   @Environment(WeatherStore.self) private var store
 
   let alerts: [NWSAlert]
+  var presentation: AlertsGrokSummaryPresentation = .standard
 
   @State private var summary: String?
   @State private var isLoading = false
@@ -16,6 +23,72 @@ struct AlertsGrokSummaryCard: View {
   }
 
   var body: some View {
+    Group {
+      switch presentation {
+      case .standard:
+        standardBody
+      case .figma:
+        figmaBody
+      }
+    }
+    .task(id: cacheKey) {
+      summary = UserDefaults.standard.string(forKey: cacheKey)
+    }
+  }
+
+  @ViewBuilder
+  private var figmaBody: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      if isLoading {
+        HStack(spacing: 8) {
+          ProgressView().scaleEffect(0.75)
+          Text("Grok is summarizing alerts…")
+            .font(.subheadline)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+        }
+      } else if let summary {
+        Text(summary)
+          .font(.system(size: 14))
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
+      } else if let errorMessage {
+        Text(errorMessage)
+          .font(.system(size: 14))
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+        if store.xaiService.hasValidKey {
+          Button("Try Again") { Task { await fetchSummary(force: true) } }
+            .font(.caption.weight(.semibold))
+        }
+      } else if !store.xaiService.hasValidKey {
+        Text(figmaPlaceholder)
+          .font(.system(size: 14))
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+      } else {
+        Text(figmaPlaceholder)
+          .font(.system(size: 14))
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .onTapGesture {
+            Task { await fetchSummary(force: false) }
+          }
+      }
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+    )
+  }
+
+  private var figmaPlaceholder: String {
+    let location = store.currentLocation?.name ?? "your area"
+    let count = alerts.count
+    let noun = count == 1 ? "alert" : "alerts"
+    return "Grok analyzed \(count) active \(noun) for \(location)."
+  }
+
+  private var standardBody: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       HStack {
         Label("IN PLAIN ENGLISH", systemImage: "text.bubble")
@@ -71,9 +144,6 @@ struct AlertsGrokSummaryCard: View {
     }
     .padding(DesignTokens.Spacing.space16)
     .glassCardStyle(strokeTint: DesignTokens.Palette.warning.opacity(0.4))
-    .task(id: cacheKey) {
-      summary = UserDefaults.standard.string(forKey: cacheKey)
-    }
   }
 
   @MainActor

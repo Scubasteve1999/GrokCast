@@ -1,8 +1,16 @@
 import SwiftUI
 
+enum HourlyRowLayout {
+  /// Full row with precip bar and OWM hybrid line.
+  case standard
+  /// Figma Forecast screen: compact elevated chip.
+  case figma
+}
+
 struct HourlyRow: View {
   let forecast: HourlyForecast
   var isNow: Bool = false
+  var layout: HourlyRowLayout = .standard
   var openWeatherMapTempF: Int? = nil
   var openWeatherMapPrecipChance: Int? = nil
   @State private var appeared = false
@@ -20,6 +28,47 @@ struct HourlyRow: View {
   }
 
   var body: some View {
+    Group {
+      switch layout {
+      case .standard:
+        standardLayout
+      case .figma:
+        figmaLayout
+      }
+    }
+    .opacity(appeared ? 1 : 0)
+    .animation(.easeInOut(duration: 0.25), value: appeared)
+    .onAppear { appeared = true }
+  }
+
+  private var figmaLayout: some View {
+    VStack(spacing: 6) {
+      Text(isNow ? "Now" : formattedTime)
+        .font(.system(size: 11, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .lineLimit(1)
+
+      Image(systemName: rowSymbol)
+        .font(.system(size: 22))
+        .symbolRenderingMode(.multicolor)
+
+      Text("\(Int(round(forecast.temp)))°")
+        .font(.system(size: 15, weight: .bold))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .monospacedDigit()
+        .lineLimit(1)
+    }
+    .frame(width: 100)
+    .padding(.horizontal, 10)
+    .padding(.vertical, DesignTokens.Spacing.space12)
+    .cardStyle(
+      background: DesignTokens.Palette.cardElevated,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusCompact
+    )
+  }
+
+  private var standardLayout: some View {
     VStack(spacing: 8) {
       Text(isNow ? "Now" : formattedTime)
         .font(.system(size: 13, weight: isNow ? .bold : .semibold))
@@ -97,9 +146,6 @@ struct HourlyRow: View {
       cornerRadius: DesignTokens.Card.cornerRadius
     )
     .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
-    .opacity(appeared ? 1 : 0)
-    .animation(.easeInOut(duration: 0.25), value: appeared)
-    .onAppear { appeared = true }
   }
 
   private var formattedTime: String {

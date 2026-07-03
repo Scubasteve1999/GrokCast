@@ -1,6 +1,13 @@
 import SwiftUI
 
 private let bottomTabClearance = DesignTokens.Spacing.space32
+private let alertsContentTopPadding = DesignTokens.Spacing.space16
+
+enum AlertRowLayout {
+  case standard
+  /// Figma Alerts screen: title, meta line, summary body in a card.
+  case figma
+}
 
 struct AlertsView: View {
   @Environment(WeatherStore.self) private var store
@@ -22,16 +29,7 @@ struct AlertsView: View {
     NavigationStack {
       Group {
         if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty {
-          // --skeletons: shimmer for NWS primary loading states (Today, Forecast, Alerts)
-          VStack(spacing: DesignTokens.Spacing.space8) {
-            ForEach(0..<3, id: \.self) { _ in
-              ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.small)
-                .padding(.horizontal, DesignTokens.Spacing.space4)
-            }
-          }
-          .padding(.horizontal, DesignTokens.Spacing.space20)
-          .padding(.top, DesignTokens.Spacing.space24)
-          .padding(.bottom, bottomTabClearance)
+          alertsSkeleton
         } else if activeAlerts.isEmpty && historicalAlerts.isEmpty {
           emptyState
         } else {
@@ -39,27 +37,47 @@ struct AlertsView: View {
         }
       }
       .readableContentWidth(ReadableContentWidth.wide)
-      .navigationTitle("Alerts")
-      .navigationBarTitleDisplayMode(.large)
+      .navigationTitle("")
+      .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(item: $selectedAlert) { alert in
         AlertDetailView(alert: alert)
       }
       .task {
-        // Initial load already triggers refreshAlerts via refreshWeather; skip duplicate launch fetch.
         guard store.hasCompletedInitialLoad else { return }
         await store.refreshAlerts()
       }
     }
   }
 
+  private var alertsSkeleton: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        Text("Alerts")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+        figmaSectionLabel("ACTIVE NOW", accent: DesignTokens.Palette.danger)
+
+        ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.medium)
+        ShimmerBlock(width: nil, height: 88, cornerRadius: DesignTokens.Radius.medium)
+      }
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.top, alertsContentTopPadding)
+      .padding(.bottom, bottomTabClearance)
+    }
+    .scrollContentBackground(.hidden)
+    .background(DesignTokens.Palette.bgPrimary)
+  }
+
   private var alertsList: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-          Label("ACTIVE NOW", systemImage: "bolt.fill")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.danger)
-            .tracking(DesignTokens.Typography.cardLabelTracking)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        Text("Alerts")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          figmaSectionLabel("ACTIVE NOW", accent: DesignTokens.Palette.danger)
 
           if activeAlerts.isEmpty {
             Text("No active alerts right now")
@@ -67,26 +85,25 @@ struct AlertsView: View {
               .foregroundStyle(DesignTokens.Palette.textSecondary)
               .frame(maxWidth: .infinity, alignment: .leading)
           } else {
-            AlertsGrokSummaryCard(alerts: activeAlerts)
+            AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
 
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(activeAlerts) { alert in
-                alertRow(alert, isActive: true)
+                alertRow(alert, isActive: true, layout: .figma)
               }
             }
           }
         }
 
         if !historicalAlerts.isEmpty {
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-            Text("RECENT HISTORY")
-              .font(.caption.weight(.semibold))
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+            Text("RECENT")
+              .font(.system(size: 11, weight: .bold))
               .foregroundStyle(DesignTokens.Palette.textTertiary)
-              .tracking(DesignTokens.Typography.cardLabelTracking)
 
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(historicalAlerts) { alert in
-                alertRow(alert, isActive: false)
+                alertRow(alert, isActive: false, layout: .figma)
               }
             }
 
@@ -97,7 +114,7 @@ struct AlertsView: View {
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, alertsContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .refreshable {
@@ -107,68 +124,137 @@ struct AlertsView: View {
     .background(DesignTokens.Palette.bgPrimary)
   }
 
-  private func alertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
+  private func figmaSectionLabel(_ title: String, accent: Color) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: "bolt.fill")
+        .font(.system(size: 12, weight: .bold))
+      Text(title)
+        .font(.system(size: 11, weight: .bold))
+    }
+    .foregroundStyle(accent)
+  }
+
+  private func alertRow(_ alert: NWSAlert, isActive: Bool, layout: AlertRowLayout) -> some View {
     Button {
       Haptic.impact(.light)
       selectedAlert = alert
     } label: {
-      HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
-        Image(systemName: NWSAlertStyle.iconName(for: alert))
-          .font(.title3)
-          .foregroundStyle(NWSAlertStyle.tint(for: alert))
-          .frame(width: 28)
-
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-          Text(alert.event)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .multilineTextAlignment(.leading)
-
-          if let headline = alert.headline, !headline.isEmpty {
-            Text(headline)
-              .font(.caption)
-              .foregroundStyle(DesignTokens.Palette.textPrimary.opacity(0.75))
-              .lineLimit(2)
-              .multilineTextAlignment(.leading)
-          }
-
-          if let area = alert.areaDesc, !area.isEmpty {
-            Text(area)
-              .font(.caption2)
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-              .lineLimit(1)
-          }
-
-          Text(rowTimestamp(for: alert, isActive: isActive))
-            .font(.caption2.monospaced())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-        }
-
-        Spacer(minLength: 0)
-
-        if isActive {
-          Text("LIVE")
-            .font(.caption2.weight(.heavy))
-            .tracking(1)
-            .padding(.horizontal, DesignTokens.Spacing.space8)
-            .padding(.vertical, DesignTokens.Spacing.space4)
-            .background(NWSAlertStyle.tint(for: alert).opacity(0.2), in: Capsule())
-            .foregroundStyle(NWSAlertStyle.tint(for: alert))
-        }
-
-        Image(systemName: "chevron.right")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      switch layout {
+      case .standard:
+        standardAlertRow(alert, isActive: isActive)
+      case .figma:
+        figmaAlertRow(alert, isActive: isActive)
       }
-      .padding(DesignTokens.Spacing.space16)
-      .cardStyle(
-        background: DesignTokens.Palette.cardBackground,
-        stroke: DesignTokens.Palette.cardStroke,
-        cornerRadius: DesignTokens.Card.cornerRadiusMedium
-      )
-      .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
     }
     .buttonStyle(.plain)
+  }
+
+  private func figmaAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text(alert.event)
+        .font(.system(size: isActive ? 17 : 15, weight: isActive ? .bold : .semibold))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .multilineTextAlignment(.leading)
+
+      Text(figmaMetaLine(for: alert, isActive: isActive))
+        .font(.system(size: 13))
+        .foregroundStyle(isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary)
+        .lineLimit(2)
+        .multilineTextAlignment(.leading)
+
+      if isActive, let headline = alert.headline, !headline.isEmpty {
+        Text(headline)
+          .font(.system(size: 14))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .lineLimit(3)
+          .multilineTextAlignment(.leading)
+      }
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+    )
+  }
+
+  private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {
+    if isActive {
+      let until = alert.expires.map {
+        $0.formatted(date: .omitted, time: .shortened)
+      } ?? "Active"
+      let area = alert.areaDesc?.components(separatedBy: ";").first?.trimmingCharacters(in: .whitespaces) ?? ""
+      if area.isEmpty { return "Until \(until)" }
+      return "Until \(until) · \(area)"
+    }
+    let detail = alert.headline ?? alert.event
+    return "Expired \(relativeExpiry(for: alert)) · \(detail)"
+  }
+
+  private func relativeExpiry(for alert: NWSAlert) -> String {
+    let interval = -alert.sortDate.timeIntervalSinceNow
+    if interval < 86_400 { return "today" }
+    if interval < 172_800 { return "yesterday" }
+    return alert.sortDate.formatted(date: .abbreviated, time: .omitted)
+  }
+
+  private func standardAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
+    HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
+      Image(systemName: NWSAlertStyle.iconName(for: alert))
+        .font(.title3)
+        .foregroundStyle(NWSAlertStyle.tint(for: alert))
+        .frame(width: 28)
+
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+        Text(alert.event)
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .multilineTextAlignment(.leading)
+
+        if let headline = alert.headline, !headline.isEmpty {
+          Text(headline)
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.textPrimary.opacity(0.75))
+            .lineLimit(2)
+            .multilineTextAlignment(.leading)
+        }
+
+        if let area = alert.areaDesc, !area.isEmpty {
+          Text(area)
+            .font(.caption2)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+            .lineLimit(1)
+        }
+
+        Text(rowTimestamp(for: alert, isActive: isActive))
+          .font(.caption2.monospaced())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      }
+
+      Spacer(minLength: 0)
+
+      if isActive {
+        Text("LIVE")
+          .font(.caption2.weight(.heavy))
+          .tracking(1)
+          .padding(.horizontal, DesignTokens.Spacing.space8)
+          .padding(.vertical, DesignTokens.Spacing.space4)
+          .background(NWSAlertStyle.tint(for: alert).opacity(0.2), in: Capsule())
+          .foregroundStyle(NWSAlertStyle.tint(for: alert))
+      }
+
+      Image(systemName: "chevron.right")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+    )
+    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
   }
 
   private func rowTimestamp(for alert: NWSAlert, isActive: Bool) -> String {
@@ -180,21 +266,27 @@ struct AlertsView: View {
 
   private var emptyState: some View {
     ScrollView {
-      ContentUnavailableView {
-        Label("No Alerts", systemImage: "checkmark.shield")
-      } description: {
-        Text(
-          "No active or recent NWS alerts for \(store.currentLocation?.name ?? "your location"). Severe weather Warnings and Watches will appear here."
-        )
-      } actions: {
-        Button("REFRESH") {
-          Haptic.impact(.medium)
-          Task { await store.refreshAlerts(force: true) }
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        Text("Alerts")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+        ContentUnavailableView {
+          Label("No Alerts", systemImage: "checkmark.shield")
+        } description: {
+          Text(
+            "No active or recent NWS alerts for \(store.currentLocation?.name ?? "your location"). Severe weather Warnings and Watches will appear here."
+          )
+        } actions: {
+          Button("Refresh") {
+            Haptic.impact(.medium)
+            Task { await store.refreshAlerts(force: true) }
+          }
+          .buttonStyle(.borderedProminent)
         }
-        .buttonStyle(.borderedProminent)
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, alertsContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .refreshable {

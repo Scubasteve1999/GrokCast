@@ -1,6 +1,8 @@
 import SwiftUI
 
 private let bottomTabClearance = DesignTokens.Spacing.space32
+/// Figma Forecast screen: content starts below status bar with modest top inset.
+private let forecastContentTopPadding = DesignTokens.Spacing.space16
 
 struct ForecastView: View {
   @Environment(WeatherStore.self) private var store
@@ -9,8 +11,8 @@ struct ForecastView: View {
     NavigationStack {
       ForecastAdaptiveBody()
         .adaptiveContainerWidth(AdaptiveLayout.contentCap)
-        .navigationTitle("FORECAST")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
     }
     .weatherBackground(
       conditionCode: store.currentWeather?.conditionCode,
@@ -139,26 +141,30 @@ private struct ForecastAdaptiveBody: View {
 
   private var compactForecastSkeleton: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space32) {
-        forecastSectionHeader("Hourly — Next 24H")
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        Text("FORECAST")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+        figmaSectionHeader("Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space24) {
+          HStack(spacing: DesignTokens.Spacing.space8) {
             ForEach(0..<8, id: \.self) { index in
-              HourlyRowSkeleton(isNow: index == 0)
+              HourlyRowSkeleton(isNow: index == 0, layout: .figma)
             }
           }
-          .padding(.vertical, DesignTokens.Spacing.space8)
         }
+        .frame(height: 90)
 
-        forecastSectionHeader("10-Day Outlook")
+        figmaSectionHeader("10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
           ForEach(0..<6, id: \.self) { _ in
-            DailyRowSkeleton()
+            DailyRowSkeleton(layout: .figma)
           }
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .refreshable {
@@ -249,29 +255,31 @@ private struct ForecastAdaptiveBody: View {
         Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
       }) ?? 0
 
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space32) {
-        forecastSectionHeader("Hourly — Next 24H")
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        Text("FORECAST")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+        figmaSectionHeader("Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space24) {
+          HStack(spacing: DesignTokens.Spacing.space8) {
             ForEach(Array(hourly24.enumerated()), id: \.element.time) {
               index, hour in
-              hourlyRow(forecast: hour, isNow: index == nowHourIndex)
+              hourlyRow(forecast: hour, isNow: index == nowHourIndex, layout: .figma)
             }
           }
-          .padding(.vertical, DesignTokens.Spacing.space8)
         }
+        .frame(height: 90)
 
-        openWeatherMapHybridSection
-
-        forecastSectionHeader("10-Day Outlook")
+        figmaSectionHeader("10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
           ForEach(weather.daily) { day in
-            DailyRow(forecast: day)
+            DailyRow(forecast: day, layout: .figma)
           }
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .safeAreaInset(edge: .top) {
@@ -290,33 +298,40 @@ private struct ForecastAdaptiveBody: View {
         Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
       }) ?? 0
 
-      HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          forecastSectionHeader("Hourly — Next 24H")
-          LazyVGrid(
-            columns: Array(
-              repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
-            spacing: DesignTokens.Spacing.space16
-          ) {
-            ForEach(Array(hourly24.enumerated()), id: \.element.time) {
-              index, hour in
-              hourlyRow(forecast: hour, isNow: index == nowHourIndex)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
+        Text("FORECAST")
+          .font(.system(size: 34, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .padding(.bottom, DesignTokens.Spacing.space8)
+
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+            forecastSectionHeader("Hourly — Next 24H")
+            LazyVGrid(
+              columns: Array(
+                repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
+              spacing: DesignTokens.Spacing.space16
+            ) {
+              ForEach(Array(hourly24.enumerated()), id: \.element.time) {
+                index, hour in
+                hourlyRow(forecast: hour, isNow: index == nowHourIndex)
+              }
             }
           }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+          .frame(maxWidth: .infinity, alignment: .leading)
 
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-          openWeatherMapHybridSection
-          forecastSectionHeader("10-Day Outlook")
-          ForEach(weather.daily) { day in
-            DailyRow(forecast: day)
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+            openWeatherMapHybridSection
+            forecastSectionHeader("10-Day Outlook")
+            ForEach(weather.daily) { day in
+              DailyRow(forecast: day)
+            }
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .safeAreaInset(edge: .top) {
@@ -327,14 +342,25 @@ private struct ForecastAdaptiveBody: View {
     }
   }
 
-  private func hourlyRow(forecast: HourlyForecast, isNow: Bool) -> some View {
+  private func hourlyRow(
+    forecast: HourlyForecast,
+    isNow: Bool,
+    layout: HourlyRowLayout = .standard
+  ) -> some View {
     let hybrid = store.openWeatherMapEntry(closestTo: forecast.time)
     return HourlyRow(
       forecast: forecast,
       isNow: isNow,
+      layout: layout,
       openWeatherMapTempF: hybrid.map { Int(round($0.temperatureF)) },
       openWeatherMapPrecipChance: hybrid?.precipitationChance
     )
+  }
+
+  private func figmaSectionHeader(_ title: String) -> some View {
+    Text(title)
+      .font(.system(size: 13, weight: .bold))
+      .foregroundStyle(DesignTokens.Palette.textTertiary)
   }
 
   private var openWeatherMapSectionTitle: String {

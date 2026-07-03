@@ -2,8 +2,36 @@ import SwiftUI
 
 struct HourlyRowSkeleton: View {
   var isNow: Bool = false
+  var layout: HourlyRowLayout = .standard
 
   var body: some View {
+    Group {
+      switch layout {
+      case .standard:
+        standardSkeleton
+      case .figma:
+        figmaSkeleton
+      }
+    }
+  }
+
+  private var figmaSkeleton: some View {
+    VStack(spacing: 6) {
+      ShimmerBlock(width: isNow ? 28 : 24, height: 11, cornerRadius: 3)
+      ShimmerBlock(width: 22, height: 22, cornerRadius: 6)
+      ShimmerBlock(width: 28, height: 15, cornerRadius: 4)
+    }
+    .frame(width: 100)
+    .padding(.horizontal, 10)
+    .padding(.vertical, DesignTokens.Spacing.space12)
+    .cardStyle(
+      background: DesignTokens.Palette.cardElevated,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusCompact
+    )
+  }
+
+  private var standardSkeleton: some View {
     VStack(spacing: 9) {
       // Time / Now placeholder
       ShimmerBlock(width: isNow ? 30 : 28, height: 14, cornerRadius: 3)

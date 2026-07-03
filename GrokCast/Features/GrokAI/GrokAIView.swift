@@ -10,6 +10,7 @@ struct GrokAIView: View {
 
 private struct GrokAIViewContent: View {
   @Environment(WeatherStore.self) private var weatherStore
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
   @State private var question: String = ""
   @State private var showPhotoPicker = false
@@ -39,9 +40,10 @@ private struct GrokAIViewContent: View {
 
         ScrollViewReader { proxy in
             ScrollView {
-              VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+              VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
                 headerSection
                 quickPromptsSection(viewModel: viewModel)
+                figmaStormSpotterCard(viewModel: viewModel)
 
                 ForEach(viewModel.conversationHistory) { message in
                   messageBubble(for: message)
@@ -128,7 +130,6 @@ private struct GrokAIViewContent: View {
               .padding(.horizontal, 20)
               .padding(.top, 16)
               .padding(.bottom, 12)
-              .adaptiveContainerWidth(AdaptiveLayout.contentCap)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.conversationHistory.count) {
@@ -153,15 +154,18 @@ private struct GrokAIViewContent: View {
             }
           }
       }
-      .navigationTitle("GROK AI")
-      .navigationBarTitleDisplayMode(.large)
+      .navigationTitle("")
+      .navigationBarTitleDisplayMode(.inline)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         inputArea(viewModel: viewModel)
-          .adaptiveContainerWidth(AdaptiveLayout.contentCap)
           .padding(.horizontal, 20)
           .padding(.top, 8)
           .padding(.bottom, 8)
-          .background(.ultraThinMaterial.opacity(isInputFocused ? 1 : 0.85))
+          .background(
+            horizontalSizeClass == .compact
+              ? AnyShapeStyle(DesignTokens.Palette.bgPrimary.opacity(0.95))
+              : AnyShapeStyle(.ultraThinMaterial.opacity(isInputFocused ? 1 : 0.85))
+          )
       }
     }
     .preference(key: TabBarSuppressionPreferenceKey.self, value: isInputFocused)
@@ -202,27 +206,168 @@ private struct GrokAIViewContent: View {
     }
   }
 
-  private var headerSection: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text("WEATHER INTELLIGENCE")
-        .font(.caption.weight(.heavy))
-        .tracking(2)
-        .foregroundStyle(.white.opacity(0.5))
+  private var prefersFigmaStudioLayout: Bool {
+    horizontalSizeClass == .compact
+  }
 
-      if let location = weatherStore.currentLocation?.name {
-        Text(location.uppercased())
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(.white.opacity(0.85))
+  private var headerSection: some View {
+    Group {
+      if prefersFigmaStudioLayout {
+        Text("Briefing Studio")
+          .font(.system(size: 28, weight: .bold))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .frame(maxWidth: .infinity, alignment: .leading)
       } else {
-        Text("SELECT A LOCATION FOR CONTEXT")
-          .font(.subheadline.weight(.medium))
-          .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+          Text("WEATHER INTELLIGENCE")
+            .font(.caption.weight(.heavy))
+            .tracking(2)
+            .foregroundStyle(.white.opacity(0.5))
+
+          if let location = weatherStore.currentLocation?.name {
+            Text(location.uppercased())
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(.white.opacity(0.85))
+          } else {
+            Text("SELECT A LOCATION FOR CONTEXT")
+              .font(.subheadline.weight(.medium))
+              .foregroundStyle(.secondary)
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func figmaStormSpotterCard(viewModel: GrokAIViewModel) -> some View {
+    Group {
+      if prefersFigmaStudioLayout {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+          HStack(spacing: 6) {
+            Image(systemName: "cloud.bolt.rain.fill")
+              .font(.system(size: 12, weight: .bold))
+            Text("STORM SPOTTER ANALYSIS")
+              .font(.system(size: 11, weight: .bold))
+          }
+          .foregroundStyle(DesignTokens.Palette.danger)
+
+          if viewModel.stormAnalysisMode && viewModel.isStreaming && viewModel.responseText.isEmpty {
+            HStack(spacing: 8) {
+              ProgressView().scaleEffect(0.85)
+              Text("Analyzing your photo…")
+                .font(.system(size: 15))
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
+            }
+          } else if !viewModel.responseText.isEmpty,
+            viewModel.stormAnalysisMode || viewModel.lastStormImageData != nil
+          {
+            Text(viewModel.responseText)
+              .font(.system(size: 15))
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+              .fixedSize(horizontal: false, vertical: true)
+          } else {
+            Text("Upload a storm photo for Grok to assess rotation, wall clouds, and hail risk.")
+              .font(.system(size: 15))
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+
+          Button {
+            Task {
+              guard weatherStore.xaiService.hasValidKey else {
+                PaywallCoordinator.shared.present(.grokAI)
+                return
+              }
+              showPhotoPicker = true
+            }
+          } label: {
+            Label("Analyze Storm Photo", systemImage: "camera.fill")
+              .font(.caption.weight(.semibold))
+          }
+          .buttonStyle(.bordered)
+          .tint(DesignTokens.Palette.danger)
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+        }
+        .padding(DesignTokens.Spacing.space16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle(
+          background: DesignTokens.Palette.cardBackground,
+          stroke: DesignTokens.Palette.cardStroke,
+          cornerRadius: DesignTokens.Card.cornerRadiusMedium
+        )
+      }
+    }
   }
 
   private func quickPromptsSection(viewModel: GrokAIViewModel) -> some View {
+    Group {
+      if prefersFigmaStudioLayout {
+        figmaPromptGrid(viewModel: viewModel)
+      } else {
+        standardQuickPromptsSection(viewModel: viewModel)
+      }
+    }
+  }
+
+  private func figmaPromptGrid(viewModel: GrokAIViewModel) -> some View {
+    let disabled = viewModel.isStreaming || viewModel.isGeneratingImage
+    let columns = [
+      GridItem(.flexible(), spacing: DesignTokens.Spacing.space12),
+      GridItem(.flexible(), spacing: DesignTokens.Spacing.space12),
+    ]
+
+    return LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.space12) {
+      GrokQuickPromptButton(
+        title: "Today's vibe",
+        icon: "sparkles",
+        layout: .figmaTile
+      ) {
+        askQuickPrompt(
+          "Give me a short read on today's weather vibe where I am.",
+          viewModel: viewModel
+        )
+      }
+      .disabled(disabled)
+
+      GrokQuickPromptButton(
+        title: "What to wear",
+        icon: "tshirt",
+        layout: .figmaTile
+      ) {
+        askQuickPrompt(
+          "What should I wear today based on the current weather?",
+          viewModel: viewModel
+        )
+      }
+      .disabled(disabled)
+
+      GrokQuickPromptButton(
+        title: "Walk check",
+        icon: "figure.walk",
+        layout: .figmaTile
+      ) {
+        askQuickPrompt(
+          "Is now a good time for a walk based on the weather?",
+          viewModel: viewModel
+        )
+      }
+      .disabled(disabled)
+
+      GrokQuickPromptButton(
+        title: "Week ahead",
+        icon: "calendar",
+        layout: .figmaTile
+      ) {
+        askQuickPrompt(
+          "Give me a short summary of the weather for the next few days.",
+          viewModel: viewModel
+        )
+      }
+      .disabled(disabled)
+    }
+  }
+
+  private func standardQuickPromptsSection(viewModel: GrokAIViewModel) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("QUICK PROMPTS")
         .font(.caption.weight(.heavy))
@@ -290,29 +435,44 @@ private struct GrokAIViewContent: View {
     }
   }
 
+  @ViewBuilder
   private func inputArea(viewModel: GrokAIViewModel) -> some View {
-    HStack(spacing: 12) {
-      GrokInputBar(text: $question, isFocused: $isInputFocused) {
+    if prefersFigmaStudioLayout {
+      GrokInputBar(
+        text: $question,
+        isFocused: $isInputFocused,
+        layout: .figma
+      ) {
         Task {
           await viewModel.askGrok(question: question)
           question = ""
         }
       }
-
-      Button {
-        Task {
-          await viewModel.generateWeatherImage(description: question.isEmpty ? nil : question)
-          question = ""
+      .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+    } else {
+      HStack(spacing: 12) {
+        GrokInputBar(text: $question, isFocused: $isInputFocused) {
+          Task {
+            await viewModel.askGrok(question: question)
+            question = ""
+          }
         }
-      } label: {
-        Image(systemName: "sparkles")
-          .font(.title3)
-          .foregroundStyle(.white.opacity(0.85))
+
+        Button {
+          Task {
+            await viewModel.generateWeatherImage(description: question.isEmpty ? nil : question)
+            question = ""
+          }
+        } label: {
+          Image(systemName: "sparkles")
+            .font(.title3)
+            .foregroundStyle(.white.opacity(0.85))
+        }
+        .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+        .help("Generate image from weather + prompt")
       }
       .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
-      .help("Generate image from weather + prompt")
     }
-    .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
   }
 
   private func stormNotesSheet(viewModel: GrokAIViewModel) -> some View {

@@ -1,7 +1,15 @@
 import SwiftUI
 
+enum DailyRowLayout {
+  /// Full row with temp range bar and precip details.
+  case standard
+  /// Figma Forecast screen: day, icon, high/low temps.
+  case figma
+}
+
 struct DailyRow: View {
   let forecast: DailyForecast
+  var layout: DailyRowLayout = .standard
   @State private var appeared = false
 
   private var condition: WeatherCondition {
@@ -17,6 +25,51 @@ struct DailyRow: View {
   }
 
   var body: some View {
+    Group {
+      switch layout {
+      case .standard:
+        standardLayout
+      case .figma:
+        figmaLayout
+      }
+    }
+    .opacity(appeared ? 1 : 0)
+    .animation(.easeInOut(duration: 0.25), value: appeared)
+    .onAppear { appeared = true }
+  }
+
+  private var figmaLayout: some View {
+    HStack(spacing: DesignTokens.Spacing.space12) {
+      Text(forecast.date, format: .dateTime.weekday(.abbreviated))
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .lineLimit(1)
+
+      Image(systemName: rowSymbol)
+        .font(.system(size: 22))
+        .symbolRenderingMode(.multicolor)
+
+      Text("\(Int(round(forecast.high)))°")
+        .font(.system(size: 15, weight: .bold))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .monospacedDigit()
+
+      Text("\(Int(round(forecast.low)))°")
+        .font(.system(size: 15))
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .monospacedDigit()
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.horizontal, DesignTokens.Spacing.space16)
+    .padding(.vertical, DesignTokens.Spacing.space12)
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadiusCompact
+    )
+  }
+
+  private var standardLayout: some View {
     HStack(alignment: .center, spacing: 18) {
       Text(forecast.date, format: .dateTime.weekday(.abbreviated))
         .font(.system(size: 17, weight: .medium))
@@ -57,8 +110,5 @@ struct DailyRow: View {
       cornerRadius: DesignTokens.Card.cornerRadius
     )
     .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
-    .opacity(appeared ? 1 : 0)
-    .animation(.easeInOut(duration: 0.25), value: appeared)
-    .onAppear { appeared = true }
   }
 }

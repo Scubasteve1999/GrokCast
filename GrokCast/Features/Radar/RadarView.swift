@@ -25,7 +25,7 @@ struct RadarView: View {
       ZStack {
         radarMapContent
       }
-      .navigationTitle("Radar")
+      .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
       .preferredColorScheme(.dark)
       .task {
@@ -121,6 +121,13 @@ struct RadarView: View {
         .allowsHitTesting(false)
       }
     }
+    .overlay(alignment: .topLeading) {
+      if store.selectedTab == .radar {
+        radarModeBadge
+          .padding(.top, 8)
+          .padding(.leading, DesignTokens.Spacing.space20)
+      }
+    }
     .overlay(alignment: .bottom) {
       RadarControlPanel(
         radarState: radarState,
@@ -141,6 +148,15 @@ struct RadarView: View {
         .allowsHitTesting(false)
       }
     }
+  }
+
+  private var radarModeBadge: some View {
+    Text(radarState.showsFuture ? "FUTURE" : "LIVE")
+      .font(.system(size: 11, weight: .bold))
+      .foregroundStyle(DesignTokens.Palette.accent)
+      .padding(.horizontal, DesignTokens.Spacing.space12)
+      .padding(.vertical, 6)
+      .background(DesignTokens.Palette.accent.opacity(0.25), in: Capsule())
   }
 
   private func runModeTransitionIfNeeded() async {

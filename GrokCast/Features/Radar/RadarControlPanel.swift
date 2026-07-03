@@ -4,6 +4,7 @@ import SwiftUI
 /// Composes playback controls, timeline scrubber, mode toggle, and opacity for the Mapbox radar tab.
 struct RadarControlPanel: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Bindable var radarState: RadarState
   @Binding var opacity: Double
   @Binding var recenterDefaultTrigger: UUID?
@@ -14,53 +15,19 @@ struct RadarControlPanel: View {
   /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
   @State private var isCollapsed = true
 
+  private var prefersFigmaHUD: Bool {
+    horizontalSizeClass == .compact
+  }
+
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
-      collapseHandle
-
-      // Header: title + source + actions
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: "cloud.rain.fill")
-          .font(.caption)
-          .foregroundStyle(DesignTokens.Palette.radarAccent)
-        Text("Radar · \(radarState.selectedProduct.displayName)")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-          .lineLimit(1)
-
-        Text(sourceBadgeText)
-          .font(.caption2)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
-          .background(DesignTokens.Palette.radarTrack)
-          .clipShape(Capsule())
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-          .lineLimit(1)
-
-        Spacer(minLength: 0)
-
-        Button {
-          Haptic.impact(.light)
-          showDisplayOptions = true
-        } label: {
-          Image(systemName: "slider.horizontal.3")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        }
-        .accessibilityLabel("Radar display options")
-
-        Button {
-          Haptic.impact(.light)
-          showExplainRadar = true
-        } label: {
-          Image(systemName: "sparkles")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.radarAccent)
-        }
-        .accessibilityLabel("Explain radar with Grok")
+      if !prefersFigmaHUD {
+        collapseHandle
       }
 
-      if let updatedText {
+      figmaHeaderRow
+
+      if !prefersFigmaHUD, let updatedText {
         HStack {
           Text(updatedText)
             .font(.caption2)
@@ -69,23 +36,40 @@ struct RadarControlPanel: View {
         }
       }
 
-      RadarPlaybackControls(
-        radarState: radarState,
-        recenterDefaultTrigger: $recenterDefaultTrigger,
-        recenterUserCoordinate: $recenterUserCoordinate
-      )
+      if prefersFigmaHUD {
+        RadarTimelineScrubber(radarState: radarState, layout: .figma)
+        compactPlaybackRow
+      } else {
+        RadarPlaybackControls(
+          radarState: radarState,
+          recenterDefaultTrigger: $recenterDefaultTrigger,
+          recenterUserCoordinate: $recenterUserCoordinate
+        )
 
-      RadarTimelineScrubber(radarState: radarState)
+        RadarTimelineScrubber(radarState: radarState)
 
-      if !isCollapsed {
-        liveForecastPicker
-        productChips
-        compactStatusFooter
+        if !isCollapsed {
+          liveForecastPicker
+          productChips
+          compactStatusFooter
+        }
       }
     }
-    .padding(DesignTokens.Spacing.space12)
-    .background(.ultraThinMaterial)
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
+    .padding(prefersFigmaHUD ? DesignTokens.Spacing.space16 : DesignTokens.Spacing.space12)
+    .background {
+      if prefersFigmaHUD {
+        RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
+          .fill(DesignTokens.Palette.cardBackground)
+          .overlay(
+            RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
+              .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
+          )
+      } else {
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
+          .fill(.ultraThinMaterial)
+      }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: prefersFigmaHUD ? DesignTokens.Card.cornerRadiusMedium : DesignTokens.Radius.medium))
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
     .sheet(isPresented: $showDisplayOptions) {
@@ -104,6 +88,89 @@ struct RadarControlPanel: View {
         )
       )
       .environment(store)
+    }
+  }
+
+  private var figmaHeaderRow: some View {
+    HStack(spacing: DesignTokens.Spacing.space8) {
+      Image(systemName: "cloud.rain.fill")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.radarAccent)
+      Text("Radar · \(radarState.selectedProduct.displayName)")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+        .lineLimit(1)
+
+      if !prefersFigmaHUD {
+        Text(sourceBadgeText)
+          .font(.caption2)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 2)
+          .background(DesignTokens.Palette.radarTrack)
+          .clipShape(Capsule())
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+          .lineLimit(1)
+      }
+
+      Spacer(minLength: 0)
+
+      if prefersFigmaHUD {
+        liveForecastPicker
+      }
+
+      Button {
+        Haptic.impact(.light)
+        showDisplayOptions = true
+      } label: {
+        Image(systemName: "slider.horizontal.3")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+      }
+      .accessibilityLabel("Radar display options")
+
+      Button {
+        Haptic.impact(.light)
+        showExplainRadar = true
+      } label: {
+        Image(systemName: "sparkles")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarAccent)
+      }
+      .accessibilityLabel("Explain radar with Grok")
+    }
+  }
+
+  private var compactPlaybackRow: some View {
+    HStack(spacing: DesignTokens.Spacing.space12) {
+      Button {
+        if radarState.isAnimating {
+          radarState.stop()
+        } else {
+          radarState.start()
+        }
+      } label: {
+        Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
+          .font(.body.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarAccent)
+      }
+      .buttonStyle(.plain)
+
+      Text("\(radarState.currentIndex + 1)/\(radarState.activeFrameCount)")
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+
+      Spacer(minLength: 0)
+
+      Button {
+        Haptic.impact(.light)
+        recenterDefaultTrigger = UUID()
+      } label: {
+        Image(systemName: "location")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Recenter map")
     }
   }
 
