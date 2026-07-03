@@ -20,10 +20,12 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.scubasteve1999.GrokCast</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>WKApplication</key>
 	<true/>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>com.scubasteve1999.GrokCast</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<false/>
 </dict>
