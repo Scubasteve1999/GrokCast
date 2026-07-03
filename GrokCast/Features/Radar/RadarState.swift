@@ -199,7 +199,7 @@ final class RadarState {
       return
     }
 
-    guard EntitlementChecker.canUseRadarFuture() else {
+    guard EntitlementChecker.canUseRadarFuture(subscription: SubscriptionManager.shared) else {
       PaywallCoordinator.shared.present(.radarFuture)
       return
     }

@@ -6,7 +6,7 @@ enum EntitlementChecker {
   static let freeSavedLocationLimit = 1
 
   static func access(
-    subscription: SubscriptionManager = .shared,
+    subscription: SubscriptionManager,
     hasDeveloperKey: Bool
   ) -> GrokAccessTier {
     if subscription.isPro { return .pro }
@@ -15,7 +15,7 @@ enum EntitlementChecker {
   }
 
   static func canUseGrokAI(
-    subscription: SubscriptionManager = .shared,
+    subscription: SubscriptionManager,
     hasDeveloperKey: Bool
   ) -> Bool {
     switch access(subscription: subscription, hasDeveloperKey: hasDeveloperKey) {
@@ -25,32 +25,32 @@ enum EntitlementChecker {
   }
 
   static func canUseRadarFuture(
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) -> Bool {
     subscription.isPro
   }
 
   static func canUseLiveActivity(
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) -> Bool {
     subscription.isPro
   }
 
   static func canUseWidgetGrokBrief(
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) -> Bool {
     subscription.isPro
   }
 
   static func maxSavedLocations(
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) -> Int? {
     subscription.isPro ? nil : freeSavedLocationLimit
   }
 
   static func canAddLocation(
     currentCount: Int,
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) -> Bool {
     guard let limit = maxSavedLocations(subscription: subscription) else { return true }
     return currentCount < limit

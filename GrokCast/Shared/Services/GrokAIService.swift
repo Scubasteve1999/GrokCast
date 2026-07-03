@@ -5,7 +5,7 @@ import Foundation
 @MainActor
 final class GrokAIService {
   var hasValidKey: Bool {
-    GrokAuthResolver.canAccessGrok()
+    GrokAuthResolver.canAccessGrok(subscription: SubscriptionManager.shared)
   }
 
   // MARK: - Regular chat (quick prompts + free text)
@@ -13,7 +13,7 @@ final class GrokAIService {
     AsyncThrowingStream { continuation in
       Task { @MainActor in
         do {
-          let auth = try GrokAuthResolver.resolve()
+          let auth = try GrokAuthResolver.resolve(subscription: SubscriptionManager.shared)
           let config = GrokBuildConfiguration(auth: auth)
           let stream = GrokBuildService(configuration: config).streamChat(
             messages: messages,

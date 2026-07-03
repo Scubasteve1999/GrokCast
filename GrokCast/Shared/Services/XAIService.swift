@@ -10,11 +10,11 @@ final class XAIService {
   }
 
   func hasAPIKey() -> Bool {
-    GrokAuthResolver.canAccessGrok(configuration: configuration)
+    GrokAuthResolver.canAccessGrok(configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
   var hasValidKey: Bool {
-    GrokAuthResolver.canAccessGrok(configuration: configuration)
+    GrokAuthResolver.canAccessGrok(configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
   var isUsingEmbeddedDeveloperKey: Bool {
@@ -48,7 +48,7 @@ final class XAIService {
   }
 
   func sendMessage(messages: [ChatMessage], context: String?) async throws -> String {
-    let auth = try GrokAuthResolver.resolve(configuration: configuration)
+    let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
 
     var apiMessages: [[String: String]] = []
     if let context {
@@ -71,7 +71,7 @@ final class XAIService {
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) async throws -> String {
-    let auth = try GrokAuthResolver.resolve(configuration: configuration)
+    let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
     let body = try buildStormAnalysisBody(
       imageData: imageData, weather: weather, alerts: alerts,
       nearestStationObservation: nearestStationObservation, userNotes: userNotes, stream: false)
@@ -86,7 +86,7 @@ final class XAIService {
     AsyncThrowingStream { continuation in
       Task { @MainActor in
         do {
-          let auth = try GrokAuthResolver.resolve(configuration: configuration)
+          let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
           let body = try buildStormAnalysisBody(
             imageData: imageData, weather: weather, alerts: alerts,
             nearestStationObservation: nearestStationObservation, userNotes: userNotes,
@@ -191,7 +191,7 @@ final class XAIService {
   }
 
   func generateDayImage(prompt: String) async throws -> URL {
-    let auth = try GrokAuthResolver.resolve(configuration: configuration)
+    let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
 
     let body: [String: Any] = [
       "model": configuration.imageModel,

@@ -228,7 +228,7 @@ struct SettingsView: View {
             isOn: Binding(
               get: { store.liveActivityEnabled },
               set: { newValue in
-                if newValue, !EntitlementChecker.canUseLiveActivity() {
+                if newValue, !EntitlementChecker.canUseLiveActivity(subscription: subscription) {
                   PaywallCoordinator.shared.present(.liveActivity)
                   return
                 }

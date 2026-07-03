@@ -458,7 +458,7 @@ final class WeatherStore {
       minutecast
       ?? MinutecastEngine.summary(from: weather.minutely15, units: temperatureUnit)
     let brief: String?
-    if EntitlementChecker.canUseWidgetGrokBrief() {
+    if EntitlementChecker.canUseWidgetGrokBrief(subscription: SubscriptionManager.shared) {
       brief =
         grokBriefOneLiner
         ?? WidgetDataStore.loadSnapshot(for: weather.location.id)?.grokBriefOneLiner
@@ -491,10 +491,10 @@ final class WeatherStore {
       grokBriefOneLiner: grokBriefOneLiner
     )
 
-    guard liveActivityEnabled, EntitlementChecker.canUseLiveActivity(),
+    guard liveActivityEnabled, EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared),
       let name = currentLocation?.name
     else {
-      if !liveActivityEnabled || !EntitlementChecker.canUseLiveActivity() {
+      if !liveActivityEnabled || !EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared) {
         WeatherLiveActivityManager.end()
       }
       return
@@ -1073,7 +1073,7 @@ final class WeatherStore {
   }
 
   func addLocation(_ location: SavedLocation) -> Bool {
-    guard EntitlementChecker.canAddLocation(currentCount: savedLocations.count) else {
+    guard EntitlementChecker.canAddLocation(currentCount: savedLocations.count, subscription: SubscriptionManager.shared) else {
       return false
     }
     guard

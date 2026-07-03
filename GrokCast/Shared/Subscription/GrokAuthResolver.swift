@@ -19,7 +19,7 @@ struct GrokAuthContext {
 enum GrokAuthResolver {
   static func canAccessGrok(
     configuration: GrokAPIConfiguration = GrokAPIConfiguration(),
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) -> Bool {
     EntitlementChecker.canUseGrokAI(
       subscription: subscription,
@@ -29,7 +29,7 @@ enum GrokAuthResolver {
 
   static func resolve(
     configuration: GrokAPIConfiguration = GrokAPIConfiguration(),
-    subscription: SubscriptionManager = .shared
+    subscription: SubscriptionManager
   ) throws -> GrokAuthContext {
     if subscription.isPro, let transactionID = subscription.proAuthToken,
       let proxyBase = GrokProxyConfiguration.baseURL
