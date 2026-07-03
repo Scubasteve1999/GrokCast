@@ -103,6 +103,7 @@ struct RadarControlPanel: View {
           locationName: store.currentLocation?.name ?? "Map"
         )
       )
+      .environment(store)
     }
   }
 

@@ -122,6 +122,7 @@ struct CompactTabBar: View {
     .ignoresSafeArea(.keyboard)
     .sheet(isPresented: $showMoreSheet) {
       MoreHubSheet()
+        .environment(WeatherStore.shared)
     }
   }
 

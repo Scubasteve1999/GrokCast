@@ -24,7 +24,7 @@ struct ExplainRadarSheet: View {
           contextCard
 
           if !store.xaiService.hasValidKey {
-            GrokAPIKeyEmptyStateView()
+            GrokAPIKeyEmptyStateView(store: store, subscription: SubscriptionManager.shared)
           } else if isLoading {
             HStack(spacing: 10) {
               ProgressView()

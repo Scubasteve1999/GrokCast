@@ -23,7 +23,10 @@ struct PaywallPresentationModifier: ViewModifier {
   func body(content: Content) -> some View {
     content
       .sheet(isPresented: $coordinator.isPresented) {
-        PaywallView(feature: coordinator.feature)
+        PaywallView(
+          feature: coordinator.feature,
+          subscription: SubscriptionManager.shared
+        )
       }
   }
 }

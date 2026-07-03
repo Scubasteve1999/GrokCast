@@ -4,11 +4,16 @@ import SwiftUI
 /// Primary upsell surface for GrokCast Pro.
 struct PaywallView: View {
   @Environment(\.dismiss) private var dismiss
-  @Environment(SubscriptionManager.self) private var subscription
+  @Bindable var subscription: SubscriptionManager
 
-  var feature: PaywallFeature = .grokAI
+  var feature: PaywallFeature
 
   @State private var selectedProductID: String = GrokCastProProducts.yearly
+
+  init(feature: PaywallFeature, subscription: SubscriptionManager) {
+    self.feature = feature
+    self.subscription = subscription
+  }
 
   var body: some View {
     NavigationStack {
@@ -240,6 +245,5 @@ enum PaywallFeature {
 }
 
 #Preview {
-  PaywallView()
-    .environment(SubscriptionManager.shared)
+  PaywallView(feature: .grokAI, subscription: SubscriptionManager.shared)
 }

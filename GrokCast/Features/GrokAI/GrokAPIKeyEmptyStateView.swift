@@ -2,8 +2,13 @@ import SwiftUI
 
 /// Shown when Grok AI requires GrokCast Pro or a developer key.
 struct GrokAPIKeyEmptyStateView: View {
-  @Environment(WeatherStore.self) private var store
-  @Environment(SubscriptionManager.self) private var subscription
+  @Bindable var store: WeatherStore
+  @Bindable var subscription: SubscriptionManager
+
+  init(store: WeatherStore, subscription: SubscriptionManager) {
+    self.store = store
+    self.subscription = subscription
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -49,9 +54,7 @@ struct GrokAPIKeyEmptyStateView: View {
 }
 
 #Preview {
-  GrokAPIKeyEmptyStateView()
-    .environment(WeatherStore())
-    .environment(SubscriptionManager.shared)
+  GrokAPIKeyEmptyStateView(store: WeatherStore(), subscription: SubscriptionManager.shared)
     .padding()
     .preferredColorScheme(.dark)
 }
