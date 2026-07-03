@@ -314,9 +314,9 @@ private struct TodayWeatherPanel: View {
     }
   }
 
-  /// Figma Today screen — location, hero temp, score, Grok brief.
+  /// Figma Today screen — location, hero temp, score, minutecast, Grok brief.
   private var compactFigmaTodayLayout: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
       figmaHeroSection
 
       GrokCastScoreCard(
@@ -325,7 +325,15 @@ private struct TodayWeatherPanel: View {
         layout: .figma
       )
 
+      MinutecastStrip(summary: currentMinutecast)
+
       GrokBriefCard(presentation: .figma)
+
+      if !store.displayableActiveAlerts.isEmpty {
+        alertsSection
+      }
+
+      extendedTodayDetails
     }
   }
 
@@ -372,14 +380,15 @@ private struct TodayWeatherPanel: View {
   }
 
   private var figmaHeroSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
       Text((store.currentLocation?.name ?? weather.location.name).uppercased())
-        .font(DesignTokens.Figma.Typography.locationLabel)
+        .font(.caption.weight(.bold))
+        .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textSecondary)
 
-      HStack(alignment: .bottom, spacing: DesignTokens.Spacing.space8) {
+      HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
         Image(systemName: weather.symbolName)
-          .font(.system(size: DesignTokens.Figma.Metrics.heroIconSize))
+          .font(.system(size: 48))
           .symbolRenderingMode(.multicolor)
 
         Text(store.formatTemperatureShort(weather.currentTemp))
@@ -390,10 +399,10 @@ private struct TodayWeatherPanel: View {
           .allowsTightening(true)
           .minimumScaleFactor(0.5)
       }
-      .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
 
       Text("\(feelsLikeSubtitle) · \(weather.conditionText)")
-        .font(DesignTokens.Figma.Typography.body)
+        .font(.subheadline)
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .fixedSize(horizontal: false, vertical: true)
     }

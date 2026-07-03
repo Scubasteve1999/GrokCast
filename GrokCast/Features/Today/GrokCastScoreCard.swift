@@ -30,34 +30,34 @@ struct GrokCastScoreCard: View {
   }
 
   private var figmaLayout: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Text("GROKCAST SCORE")
-        .font(DesignTokens.Figma.Typography.sectionLabel)
+        .font(.caption.weight(.bold))
+        .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
 
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: score.icon)
-          .font(.system(size: 24, weight: .semibold))
+          .font(.system(size: 28))
           .foregroundStyle(ringColor)
           .symbolRenderingMode(.hierarchical)
 
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
           Text("\(score.value) · \(score.label)")
-            .font(DesignTokens.Figma.Typography.cardHeadline)
+            .font(.body.weight(.bold))
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(score.subtitle)
-            .font(DesignTokens.Figma.Typography.rowSubtitle)
+            .font(.subheadline)
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
         }
 
         Spacer(minLength: 0)
       }
-      .frame(minHeight: 40, alignment: .center)
     }
-    .padding(DesignTokens.Figma.Metrics.cardPadding)
+    .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle(cornerRadius: DesignTokens.Figma.Metrics.cardRadius)
+    .cardStyle()
     .accessibilityElement(children: .combine)
     .accessibilityLabel("GrokCast score \(score.value). \(score.label). \(score.subtitle)")
   }
