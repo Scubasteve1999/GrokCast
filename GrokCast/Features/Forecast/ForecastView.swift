@@ -19,6 +19,7 @@ struct ForecastView: View {
       isDay: store.currentWeather.map {
         WeatherBackgroundView.isDay(from: $0.symbolName)
       } ?? WeatherBackgroundView.inferredIsDay,
+      intensity: .subtle,
       extraOpacity: 0.88
     )
     .preferredColorScheme(.dark)
@@ -137,7 +138,7 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
-    .scrollContentBackground(.hidden)
+
   }
 
   private var compactForecastSkeleton: some View {
@@ -169,7 +170,7 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
-    .scrollContentBackground(.hidden)
+
   }
 
   private var wideForecastSkeleton: some View {
@@ -226,7 +227,7 @@ private struct ForecastAdaptiveBody: View {
           .padding(.vertical, DesignTokens.Spacing.space8)
         }
 
-        openWeatherMapHybridSection
+        figmaOpenWeatherMapSection
 
         forecastSectionHeader("10-Day Outlook")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
@@ -288,7 +289,7 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
-    .scrollContentBackground(.hidden)
+
   }
 
   private func wideForecastContent(for weather: GrokCastWeather) -> some View {
@@ -320,7 +321,7 @@ private struct ForecastAdaptiveBody: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-            openWeatherMapHybridSection
+            figmaOpenWeatherMapSection
             forecastSectionHeader("10-Day Outlook")
             ForEach(weather.daily) { day in
               DailyRow(forecast: day)
@@ -380,30 +381,6 @@ private struct ForecastAdaptiveBody: View {
       return "OpenWeatherMap Hourly"
     case .legacy25, .none:
       return "OpenWeatherMap"
-    }
-  }
-
-  private var openWeatherMapSectionTitle: String {
-    switch store.openWeatherMapService.lastDataSource {
-    case .oneCall4:
-      return "OpenWeatherMap — Hourly Outlook"
-    case .legacy25, .none:
-      return "OpenWeatherMap — 3-Hour Outlook"
-    }
-  }
-
-  @ViewBuilder
-  private var openWeatherMapHybridSection: some View {
-    if let owm = store.openWeatherMapForecast, !owm.entries.isEmpty {
-      forecastSectionHeader(openWeatherMapSectionTitle)
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: DesignTokens.Spacing.space16) {
-          ForEach(Array(owm.entries.prefix(8))) { entry in
-            OpenWeatherMapForecastChip(entry: entry)
-          }
-        }
-        .padding(.vertical, DesignTokens.Spacing.space8)
-      }
     }
   }
 

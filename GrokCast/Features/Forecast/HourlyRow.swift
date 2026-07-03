@@ -58,12 +58,10 @@ struct HourlyRow: View {
         .monospacedDigit()
         .lineLimit(1)
 
-      if forecast.precipChance > 0 {
-        Text("\(forecast.precipChance)% \(precipLabel)")
-          .font(.caption2.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.accent)
-          .lineLimit(1)
-      }
+      Text(forecast.precipChance > 0 ? "\(forecast.precipChance)% \(precipLabel)" : " ")
+        .font(.caption2.weight(.medium))
+        .foregroundStyle(DesignTokens.Palette.accent)
+        .lineLimit(1)
     }
     .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
     .padding(.horizontal, 10)

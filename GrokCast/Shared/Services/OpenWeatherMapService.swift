@@ -163,6 +163,7 @@ final class OpenWeatherMapService {
         time: Date(timeIntervalSince1970: point.dt),
         temperatureF: point.temp,
         condition: point.weather.first?.description.capitalized ?? "Unknown",
+        iconCode: point.weather.first?.icon ?? "03d",
         precipitationChance: Int(((point.pop ?? 0) * 100).rounded()),
         windSpeedMph: point.windSpeed
       )
@@ -270,6 +271,7 @@ final class OpenWeatherMapService {
         time: Date(timeIntervalSince1970: item.dt),
         temperatureF: item.main.temp,
         condition: item.weather.first?.description.capitalized ?? "Unknown",
+        iconCode: item.weather.first?.icon ?? "03d",
         precipitationChance: Int(((item.pop ?? 0) * 100).rounded()),
         windSpeedMph: item.wind?.speed ?? 0
       )

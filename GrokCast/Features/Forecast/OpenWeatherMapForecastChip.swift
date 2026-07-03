@@ -27,9 +27,9 @@ struct OpenWeatherMapForecastChip: View {
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .lineLimit(1)
 
-      Image(systemName: "cloud.sun.fill")
+      Image(systemName: entry.symbolName)
         .font(.system(size: 22))
-        .foregroundStyle(DesignTokens.Palette.accentCool)
+        .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(entry.temperatureF)))°")
         .font(DesignTokens.Figma.Typography.chipTemp)
@@ -37,12 +37,10 @@ struct OpenWeatherMapForecastChip: View {
         .monospacedDigit()
         .lineLimit(1)
 
-      if entry.precipitationChance > 0 {
-        Text("\(entry.precipitationChance)%")
-          .font(.caption2.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.accent)
-          .lineLimit(1)
-      }
+      Text(entry.precipitationChance > 0 ? "\(entry.precipitationChance)%" : " ")
+        .font(.caption2.weight(.medium))
+        .foregroundStyle(DesignTokens.Palette.accent)
+        .lineLimit(1)
     }
     .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
     .padding(.horizontal, 10)
@@ -58,7 +56,7 @@ struct OpenWeatherMapForecastChip: View {
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .lineLimit(1)
 
-      Image(systemName: "cloud.sun.fill")
+      Image(systemName: entry.symbolName)
         .font(.system(size: 28))
         .foregroundStyle(DesignTokens.Palette.accentCool)
 
