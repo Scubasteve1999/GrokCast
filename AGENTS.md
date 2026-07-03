@@ -94,6 +94,19 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
 
 ---
 
-**Last updated**: May 2026 (scaffolded by Grok)
+## Cursor Cloud specific instructions
+
+**Platform requirement: this is a native iOS app that can only be built, run, or tested on macOS with Xcode.** The Cursor Cloud VM is Linux (Ubuntu x86_64), so it **cannot** build/run/test GrokCast:
+
+- Every source file (39+) imports Apple-only frameworks (`SwiftUI`, `CoreLocation`, `MapKit`, `WidgetKit`, `SwiftData`, etc.). These SDKs and the iOS Simulator ship only with Xcode on macOS.
+- The build toolchain (`xcodebuild`, `xcodegen`, iOS Simulator) is macOS-only and is not installable on Linux. Swift-for-Linux would not help — it lacks the iOS SDKs and Simulator.
+- The project's own CI (`.github/workflows/ci.yml`) runs on `macos-15`. Use a macOS runner / local Mac for any build, run, lint (`swift-format`), or Simulator work — see `README.md` and `CLAUDE.md` for the exact commands (`xcodegen generate`, then the `xcodebuild ... -destination 'platform=iOS Simulator,...'` build).
+- There is no cross-platform (Foundation-only) target, no `Package.swift`, and no automated test target, so nothing in this repo is runnable on the Linux cloud VM.
+
+Practical implication for future cloud agents: you can edit Swift source, docs, and `project.yml` here, but you **cannot** compile or launch the app. Do build/run/test verification on macOS.
+
+---
+
+**Last updated**: July 2026 (added Cursor Cloud platform note)
 
 Update this file when architecture, key integrations, or team practices evolve.
