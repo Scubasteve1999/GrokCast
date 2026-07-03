@@ -473,4 +473,106 @@ final class GrokAIViewModel {
       }
     }
   }
+
+  // MARK: - Structured Grok fetches (Today brief, radar explain, alert summary)
+
+  private enum StructuredFetchError: LocalizedError {
+    case busy
+    case missingWeather
+    case emptyResponse
+
+    var errorDescription: String? {
+      switch self {
+      case .busy: "Grok is busy with another request. Try again in a moment."
+      case .missingWeather: "Weather data isn't loaded yet. Pull to refresh and try again."
+      case .emptyResponse: "Grok returned an empty response. Check your connection and try again."
+      }
+    }
+  }
+
+  func fetchWeatherBrief() async throws -> String {
+    guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
+    await ensureWeatherContext()
+    guard let weather = weatherStore.currentWeather else { throw StructuredFetchError.missingWeather }
+
+    let location = weatherStore.currentLocation?.name ?? weather.location.name
+    let unit = weatherStore.temperatureUnit
+    let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event).joined(separator: ", ")
+
+    let system = """
+      You are Grok inside GrokCast. Write a practical 2–4 sentence weather brief for \(location).
+      Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
+      Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
+      Precip chance now: \(weather.precipitationChance)%.
+      Active alerts: \(alerts.isEmpty ? "none" : alerts).
+      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
+      """
+
+    return try await completeChat(
+      messages: [
+        GrokBuildMessage(role: "system", content: system),
+        GrokBuildMessage(role: "user", content: "Give me Grok's take on today's weather."),
+      ],
+      maxTokens: 280
+    )
+  }
+
+  func fetchRadarExplanation(context: RadarExplainContext) async throws -> String {
+    guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
+
+    let system = """
+      You are Grok explaining weather radar to a non-meteorologist inside GrokCast.
+      Location: \(context.locationName). Product: \(context.productName). Mode: \(context.modeLabel). Frame: \(context.frameLabel).
+      In 3–5 short sentences, describe what the radar likely shows, movement/trends if inferable, and practical impacts.
+      No markdown. If uncertain, say so plainly.
+      """
+
+    return try await completeChat(
+      messages: [
+        GrokBuildMessage(role: "system", content: system),
+        GrokBuildMessage(role: "user", content: "Explain this radar view in plain English."),
+      ],
+      maxTokens: 320
+    )
+  }
+
+  func fetchAlertsPlainEnglishSummary(alerts: [NWSAlert]) async throws -> String {
+    guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
+    guard !alerts.isEmpty else { return "No active alerts to summarize." }
+
+    let location = weatherStore.currentLocation?.name ?? "your area"
+    let bulletList = alerts.prefix(5).map { alert in
+      "- \(alert.event): \(alert.headline ?? alert.areaDesc ?? "See GrokCast for details")"
+    }.joined(separator: "\n")
+
+    let system = """
+      Summarize these NWS alerts for \(location) in plain English (3–5 sentences).
+      Say who is affected, timing if known, and 1–2 safety actions. No markdown.
+      Alerts:
+      \(bulletList)
+      """
+
+    return try await completeChat(
+      messages: [
+        GrokBuildMessage(role: "system", content: system),
+        GrokBuildMessage(role: "user", content: "Summarize these alerts for a regular person."),
+      ],
+      maxTokens: 360
+    )
+  }
+
+  private func completeChat(messages: [GrokBuildMessage], maxTokens: Int) async throws -> String {
+    guard grokAIService.hasValidKey else {
+      throw GrokBuildError.missingAPIKey
+    }
+
+    var result = ""
+    for try await token in grokAIService.streamResponse(messages: messages) {
+      result += token
+    }
+
+    let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { throw StructuredFetchError.emptyResponse }
+    return trimmed
+  }
 }

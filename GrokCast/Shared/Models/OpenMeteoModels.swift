@@ -8,6 +8,13 @@ struct OpenMeteoResponse: Decodable {
   let current: Current?
   let hourly: Hourly?
   let daily: Daily?
+  let minutely_15: Minutely15?
+}
+
+struct Minutely15: Decodable {
+  let time: [String]
+  let precipitation: [Double?]?
+  let precipitation_probability: [Int?]?
 }
 
 struct Current: Decodable {
@@ -92,6 +99,17 @@ struct GrokCastWeather: Equatable, Codable {
 
   // Daily (10 days)
   let daily: [DailyForecast]
+
+  /// Next ~2 hours in 15-minute steps (Open-Meteo minutely_15).
+  let minutely15: [MinutelyForecast]
+}
+
+struct MinutelyForecast: Equatable, Codable, Identifiable {
+  let time: Date
+  let precipitation: Double
+  let precipChance: Int
+
+  var id: Date { time }
 }
 
 struct HourlyForecast: Equatable, Codable, Identifiable {

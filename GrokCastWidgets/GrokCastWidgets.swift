@@ -7,5 +7,6 @@ struct GrokCastWidgets: WidgetBundle {
     GrokCastSmallWeatherWidget()
     GrokCastMediumWeatherWidget()
     GrokCastLockScreenWeatherWidget()
+    WeatherLiveActivityWidget()
   }
 }

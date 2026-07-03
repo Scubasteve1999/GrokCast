@@ -95,6 +95,13 @@ private struct GrokAIViewContent: View {
                   )
                 }
 
+                if let imageData = viewModel.lastStormImageData,
+                  !viewModel.stormAnalysisMode,
+                  !viewModel.responseText.isEmpty
+                {
+                  stormShareRow(viewModel: viewModel, imageData: imageData, analysis: viewModel.responseText)
+                }
+
                 if let error = viewModel.errorMessage {
                   GrokErrorView(
                     message: error,
@@ -444,6 +451,37 @@ private struct GrokAIViewContent: View {
         Spacer(minLength: 60)
       }
     }
+  }
+
+  private func stormShareRow(viewModel: GrokAIViewModel, imageData: Data, analysis: String) -> some View {
+    let location = weatherStore.currentLocation?.name ?? "My location"
+    let shareText = ShareableBriefText.stormSpotterReport(
+      locationName: location,
+      observerNotes: viewModel.lastStormNotes,
+      analysis: analysis
+    )
+
+    return HStack(spacing: 12) {
+      if let uiImage = UIImage(data: imageData) {
+        ShareLink(
+          item: StormSpotterPhotoShare(imageData: imageData),
+          preview: SharePreview("Storm Spotter Photo", image: Image(uiImage: uiImage))
+        ) {
+          Label("Share Photo", systemImage: "photo")
+        }
+        .buttonStyle(.bordered)
+        .tint(DesignTokens.Palette.accent)
+      }
+
+      ShareLink(item: shareText, subject: Text("GrokCast Storm Spotter")) {
+        Label("Share Report", systemImage: "square.and.arrow.up")
+      }
+      .buttonStyle(.bordered)
+      .tint(DesignTokens.Palette.accent)
+    }
+    .font(.caption.weight(.semibold))
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.vertical, 4)
   }
 
   private func scrollToBottom(proxy: ScrollViewProxy, viewModel: GrokAIViewModel) {

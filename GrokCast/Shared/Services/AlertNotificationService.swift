@@ -87,7 +87,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
     } else {
       content.body = "Tap to view alert details in GrokCast."
     }
-    content.sound = .default
+    GrokCastNotificationSounds.apply(to: content)
     content.categoryIdentifier = Self.categoryIdentifier
     content.userInfo = ["deepLink": Self.deepLinkURL.absoluteString]
 

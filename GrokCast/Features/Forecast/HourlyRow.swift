@@ -52,13 +52,28 @@ struct HourlyRow: View {
             .lineLimit(1)
         }
 
-        // Chance bar using accent per palette
+        // Gradient chance bar
         ZStack(alignment: .leading) {
           Capsule()
-            .fill(DesignTokens.Palette.accent.opacity(0.25))
+            .fill(
+              LinearGradient(
+                colors: [
+                  DesignTokens.Palette.accentCool.opacity(0.25),
+                  DesignTokens.Palette.accent.opacity(0.25),
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+              )
+            )
             .frame(width: 46, height: 5)
           Capsule()
-            .fill(DesignTokens.Palette.accent)
+            .fill(
+              LinearGradient(
+                colors: [DesignTokens.Palette.accentCool, DesignTokens.Palette.accent],
+                startPoint: .leading,
+                endPoint: .trailing
+              )
+            )
             .frame(width: 46 * CGFloat(forecast.precipChance) / 100.0, height: 5)
         }
       }

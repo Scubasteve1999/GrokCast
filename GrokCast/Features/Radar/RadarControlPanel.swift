@@ -3,12 +3,14 @@ import SwiftUI
 
 /// Composes playback controls, timeline scrubber, mode toggle, and opacity for the Mapbox radar tab.
 struct RadarControlPanel: View {
+  @Environment(WeatherStore.self) private var store
   @Bindable var radarState: RadarState
   @Binding var opacity: Double
   @Binding var recenterDefaultTrigger: UUID?
   @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
 
   @State private var autoResumeAfterScrub = true
+  @State private var showExplainRadar = false
   /// Collapsed shows only the grabber + header + playback/scrubber, freeing the
   /// lower half of the map. Expanded shows the full control set.
   @State private var isCollapsed = false
@@ -35,6 +37,16 @@ struct RadarControlPanel: View {
           .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
 
         Spacer()
+
+        Button {
+          Haptic.impact(.light)
+          showExplainRadar = true
+        } label: {
+          Image(systemName: "sparkles")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.radarAccent)
+        }
+        .accessibilityLabel("Explain radar with Grok")
 
         if let updatedText {
           Text(updatedText)
@@ -108,6 +120,23 @@ struct RadarControlPanel: View {
     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
+    .sheet(isPresented: $showExplainRadar) {
+      ExplainRadarSheet(
+        context: RadarExplainContext(
+          modeLabel: radarState.showsFuture ? "Forecast" : "Live",
+          frameLabel: currentFrameLabel,
+          productName: radarState.selectedProduct.displayName,
+          locationName: store.currentLocation?.name ?? "Map"
+        )
+      )
+    }
+  }
+
+  private var currentFrameLabel: String {
+    let labels = radarState.activeFrameLabels
+    let index = max(0, min(radarState.currentIndex, max(0, labels.count - 1)))
+    guard index < labels.count else { return "Now" }
+    return labels[index]
   }
 
   /// Grabber + chevron that collapses the panel down to just the playback

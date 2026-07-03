@@ -18,21 +18,9 @@ struct DailyRow: View {
 
       Spacer()
 
+      DailyTempRangeBar(low: forecast.low, high: forecast.high)
+
       HStack(spacing: 16) {
-        // High / low
-        HStack(spacing: 12) {
-          Text("\(Int(round(forecast.high)))°")
-            .font(.system(size: 20, weight: .bold, design: .rounded))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .lineLimit(1)
-
-          Text("\(Int(round(forecast.low)))°")
-            .font(.system(size: 18, weight: .regular, design: .rounded))
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-            .lineLimit(1)
-        }
-        .monospacedDigit()
-
         // Precip always shown (use textSecondary + accent for % per DS)
         let type = WeatherCondition(fromWMO: forecast.weatherCode).shortPrecipType
         VStack(alignment: .trailing, spacing: 2) {

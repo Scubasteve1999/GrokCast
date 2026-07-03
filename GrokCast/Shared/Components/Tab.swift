@@ -120,16 +120,8 @@ struct CompactTabBar: View {
     .background(backgroundMaterial)
     .background(Color.black.opacity(0.25))
     .ignoresSafeArea(.keyboard)
-    .confirmationDialog("More", isPresented: $showMoreSheet, titleVisibility: .visible) {
-      ForEach(WeatherStore.Tab.moreHub) { tab in
-        Button(tab.rawValue) {
-          Haptic.selection()
-          withAnimation(animation) {
-            selection = tab
-          }
-        }
-      }
-      Button("Cancel", role: .cancel) {}
+    .sheet(isPresented: $showMoreSheet) {
+      MoreHubSheet()
     }
   }
 

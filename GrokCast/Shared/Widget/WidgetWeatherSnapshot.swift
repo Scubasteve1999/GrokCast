@@ -12,6 +12,13 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   let hourly: [HourlyForecast]
   let fetchedAt: Date
 
+  /// Optional GrokCast Score (0–100) for widgets and Watch complications.
+  let grokCastScore: Int?
+  let grokCastScoreLabel: String?
+  let minutecastMessage: String?
+  /// First line of the daily Grok brief for medium widget / lock screen flair.
+  let grokBriefOneLiner: String?
+
   init(
     location: SavedLocation,
     currentTemp: Double,
@@ -20,7 +27,11 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     high: Double,
     low: Double,
     hourly: [HourlyForecast],
-    fetchedAt: Date
+    fetchedAt: Date,
+    grokCastScore: Int? = nil,
+    grokCastScoreLabel: String? = nil,
+    minutecastMessage: String? = nil,
+    grokBriefOneLiner: String? = nil
   ) {
     self.location = location
     self.currentTemp = currentTemp
@@ -30,6 +41,10 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     self.low = low
     self.hourly = hourly
     self.fetchedAt = fetchedAt
+    self.grokCastScore = grokCastScore
+    self.grokCastScoreLabel = grokCastScoreLabel
+    self.minutecastMessage = minutecastMessage
+    self.grokBriefOneLiner = grokBriefOneLiner
   }
 
   /// Builds a widget snapshot from the full app weather model.
@@ -42,6 +57,32 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     low = weather.low
     hourly = Array(weather.hourly.prefix(4))
     fetchedAt = weather.fetchedAt
+    grokCastScore = nil
+    grokCastScoreLabel = nil
+    minutecastMessage = nil
+    grokBriefOneLiner = nil
+  }
+
+  /// Builds a widget snapshot with score, minutecast, and optional Grok one-liner.
+  init(
+    weather: GrokCastWeather,
+    grokCastScore: Int,
+    grokCastScoreLabel: String,
+    minutecastMessage: String,
+    grokBriefOneLiner: String?
+  ) {
+    location = weather.location
+    currentTemp = weather.currentTemp
+    conditionText = weather.conditionText
+    symbolName = weather.symbolName
+    high = weather.high
+    low = weather.low
+    hourly = Array(weather.hourly.prefix(4))
+    fetchedAt = weather.fetchedAt
+    self.grokCastScore = grokCastScore
+    self.grokCastScoreLabel = grokCastScoreLabel
+    self.minutecastMessage = minutecastMessage
+    self.grokBriefOneLiner = grokBriefOneLiner
   }
 
   /// Sample data for widget placeholders and SwiftUI previews.
@@ -70,7 +111,11 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
       high: 78,
       low: 62,
       hourly: hourly,
-      fetchedAt: now
+      fetchedAt: now,
+      grokCastScore: 82,
+      grokCastScoreLabel: "Go Outside",
+      minutecastMessage: "No precipitation for at least 2 hours",
+      grokBriefOneLiner: "Light jacket this morning; great afternoon for a walk."
     )
   }
 }
@@ -96,5 +141,6 @@ extension GrokCastWeather {
     pollenLevel = nil
     hourly = snapshot.hourly
     daily = []
+    minutely15 = []
   }
 }

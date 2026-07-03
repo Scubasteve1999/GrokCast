@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       await AlertNotificationService.shared.refreshAuthorizationStatus()
     }
 
+    MorningBriefNotificationService.registerCategory()
+
     return true
   }
 

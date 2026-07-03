@@ -279,6 +279,15 @@ private struct TodayWeatherPanel: View {
   let isGeneratingImage: Bool
   let generateImageAction: () -> Void
 
+  private var currentScore: GrokCastScore {
+    GrokCastScoreCalculator.score(
+      for: weather, alerts: store.displayableActiveAlerts, units: store.temperatureUnit)
+  }
+
+  private var currentMinutecast: MinutecastSummary {
+    MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
+  }
+
   private var awaitsWidthMeasurement: Bool {
     AdaptiveLayout.awaitingWidthMeasurement(
       width: adaptiveContainerWidth,
@@ -297,16 +306,11 @@ private struct TodayWeatherPanel: View {
     VStack(spacing: DesignTokens.Spacing.space48) {
       header
 
-      // Minutecast-style banner outside hero for better AccuWeather-like IA/layering
-      if weather.precipitationChance < 20 {
-        Text("No precipitation for at least 60 min")
-          .font(.caption.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-          .padding(.vertical, DesignTokens.Spacing.space8)
-          .frame(maxWidth: .infinity)
-          .background(DesignTokens.Palette.cardElevated.opacity(0.6))
-          .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
-      }
+      GrokCastScoreCard(score: currentScore, locationName: store.currentLocation?.name ?? weather.location.name)
+
+      MinutecastStrip(summary: currentMinutecast)
+
+      GrokBriefCard()
 
       if !store.displayableActiveAlerts.isEmpty {
         alertsSection
@@ -397,8 +401,8 @@ private struct TodayWeatherPanel: View {
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .symbolRenderingMode(.hierarchical)
 
-          Text("\(Int(round(weather.currentTemp)))°")
-            .font(.system(size: 92, weight: .black, design: .rounded))
+          Text(store.formatTemperatureShort(weather.currentTemp))
+            .font(DesignTokens.Typography.heroTemperature())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .monospacedDigit()
             .lineLimit(1)
@@ -415,7 +419,7 @@ private struct TodayWeatherPanel: View {
           Text("RealFeel")
             .font(.caption2.weight(.medium))
             .foregroundStyle(DesignTokens.Palette.textTertiary)
-          Text("\(Int(round(weather.feelsLike)))°")
+          Text(store.formatTemperatureShort(weather.feelsLike))
             .font(.system(size: DesignTokens.Spacing.space20, weight: .bold))
             .foregroundStyle(DesignTokens.Palette.textPrimary)
         }
@@ -431,11 +435,7 @@ private struct TodayWeatherPanel: View {
     .padding(.vertical, DesignTokens.Spacing.space20)
     .padding(.horizontal, DesignTokens.Spacing.space20)
     .frame(maxWidth: .infinity)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusLarge
-    )
+    .glassCardStyle(cornerRadius: DesignTokens.Card.cornerRadiusLarge)
   }
 
   private var tonightSection: some View {

@@ -67,6 +67,8 @@ struct AlertsView: View {
               .foregroundStyle(DesignTokens.Palette.textSecondary)
               .frame(maxWidth: .infinity, alignment: .leading)
           } else {
+            AlertsGrokSummaryCard(alerts: activeAlerts)
+
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(activeAlerts) { alert in
                 alertRow(alert, isActive: true)

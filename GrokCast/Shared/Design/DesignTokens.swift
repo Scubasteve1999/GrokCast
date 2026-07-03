@@ -97,10 +97,10 @@ enum DesignTokens {
     /// Hero / section header tracking.
     static let headerTracking: CGFloat = 1.5
 
-    // Common sizes / weights (documented here for consistency)
-    // Labels: .system(size: 10, weight: .semibold)
-    // Values: .system(size: 26, weight: .bold, design: .rounded)
-    // Etc. — use directly or extend if more abstraction needed.
+    /// Large hero temperature on Today and marketing screenshots.
+    static func heroTemperature() -> Font {
+      .system(size: 92, weight: .black, design: .rounded)
+    }
   }
 
   // MARK: - Other Repeated Values (from dark theme work)
@@ -193,6 +193,26 @@ extension View {
       background: background, stroke: stroke, cornerRadius: cornerRadius, strokeWidth: strokeWidth
     )
     .elevatedShadow()
+  }
+
+  /// Frosted glass card used by score, minutecast, Grok brief, and settings groups.
+  func glassCardStyle(
+    cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
+    strokeTint: Color = DesignTokens.Palette.cardStroke
+  ) -> some View {
+    background(
+      RoundedRectangle(cornerRadius: cornerRadius)
+        .fill(.ultraThinMaterial)
+        .background(
+          RoundedRectangle(cornerRadius: cornerRadius)
+            .fill(DesignTokens.Palette.cardBackground.opacity(0.55))
+        )
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: cornerRadius)
+        .stroke(strokeTint, lineWidth: DesignTokens.Card.strokeWidth)
+    )
+    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
   }
 }
 

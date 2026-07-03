@@ -37,7 +37,9 @@ final class OpenMeteoService {
   }
 
   // Main forecast + current
-  func fetchForecast(for location: SavedLocation) async throws -> GrokCastWeather {
+  func fetchForecast(for location: SavedLocation, units: TemperatureUnit = .fahrenheit) async throws
+    -> GrokCastWeather
+  {
     isLoading = true
     error = nil
 
@@ -60,11 +62,14 @@ final class OpenMeteoService {
         value:
           "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,rain_sum,showers_sum,snowfall_sum"
       ),
+      URLQueryItem(
+        name: "minutely_15",
+        value: "precipitation,precipitation_probability"
+      ),
       URLQueryItem(name: "timezone", value: "auto"),
       URLQueryItem(name: "forecast_days", value: "10"),
-      // Request imperial units so temps are °F and wind in MPH (matches US-focused display and prompts)
-      URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
-      URLQueryItem(name: "windspeed_unit", value: "mph"),
+      URLQueryItem(name: "temperature_unit", value: units.openMeteoTemperatureUnit),
+      URLQueryItem(name: "windspeed_unit", value: units.openMeteoWindSpeedUnit),
       URLQueryItem(name: "precipitation_unit", value: "inch"),
     ]
 
@@ -251,6 +256,20 @@ final class OpenMeteoService {
       dailyForecasts.first?.uvMax
       ?? (hourly?.uv_index?.compactMap { $0 }.first ?? 3.0)
 
+    var minutelyForecasts: [MinutelyForecast] = []
+    if let m = response.minutely_15 {
+      let count = min(8, m.time.count)
+      for i in 0..<count {
+        let date = parseHourlyDate(m.time[i])
+        minutelyForecasts.append(
+          MinutelyForecast(
+            time: date,
+            precipitation: m.precipitation?[i] ?? 0,
+            precipChance: m.precipitation_probability?[i] ?? 0
+          ))
+      }
+    }
+
     return GrokCastWeather(
       location: location,
       currentTemp: currentTemp,
@@ -269,7 +288,8 @@ final class OpenMeteoService {
       pm25: pm25,
       pollenLevel: pollen,
       hourly: hourlyForecasts,
-      daily: dailyForecasts
+      daily: dailyForecasts,
+      minutely15: minutelyForecasts
     )
   }
 }

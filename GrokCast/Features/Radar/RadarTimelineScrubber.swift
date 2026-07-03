@@ -27,6 +27,11 @@ struct RadarTimelineScrubber: View {
       .padding(DesignTokens.Spacing.space8)
       .background(DesignTokens.Palette.radarTrack)
       .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
+      .onChange(of: radarState.currentIndex) { _, _ in
+        if isScrubbing {
+          Haptic.selection()
+        }
+      }
     }
   }
 

@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.scubasteve1999
   deploymentTarget:
     iOS: "18.0"
+    watchOS: "11.0"
   xcodeVersion: "16.0"
   createIntermediateGroups: true
   defaultConfig: Debug
@@ -47,13 +48,15 @@ targetTemplates:
     dependencies:
       - sdk: SwiftUI.framework
       - sdk: CoreLocation.framework
-      - sdk: MapKit.framework  # Used by Locations search (MKLocalSearch); Radar is Mapbox-only after cleanup.
+      - sdk: MapKit.framework
       - sdk: Foundation.framework
       - sdk: UserNotifications.framework
       - sdk: BackgroundTasks.framework
       - sdk: PhotosUI.framework
       - sdk: WidgetKit.framework
       - sdk: SwiftData.framework
+      - sdk: ActivityKit.framework
+      - sdk: AppIntents.framework
 
 targets:
   GrokCast:
@@ -71,7 +74,9 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconName: AppIcon
-        UILaunchScreen: {}
+        NSSupportsLiveActivities: true
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
@@ -81,7 +86,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates." # optional
+        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates."
         UIBackgroundModes:
           - location
           - fetch
@@ -94,6 +99,8 @@ targets:
     dependencies:
       - target: GrokCastWidgets
         embed: true
+      - target: GrokCastWatch
+        embed: true
       - package: MapboxMaps
 
   GrokCastWidgets:
@@ -104,6 +111,7 @@ targets:
         excludes:
           - "**/Info.plist"
       - path: GrokCast/Shared/Widget
+      - path: GrokCast/Shared/LiveActivity
       - path: GrokCast/Shared/Models/Location.swift
       - path: GrokCast/Shared/Models/OpenMeteoModels.swift
     entitlements:
@@ -121,7 +129,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        # Nested under host app bundle ID (required for embedded widget extensions).
         PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast.GrokCastWidgets
         INFOPLIST_FILE: GrokCastWidgets/Info.plist
         DEVELOPMENT_TEAM: "742YD3WJAR"
@@ -135,7 +142,79 @@ targets:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
       - sdk: AppIntents.framework
+      - sdk: ActivityKit.framework
       - sdk: CoreLocation.framework
+
+  GrokCastWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: GrokCastWatch
+        excludes:
+          - "**/Info.plist"
+      - path: GrokCast/Shared/Widget
+      - path: GrokCast/Shared/Models/Location.swift
+      - path: GrokCast/Shared/Models/OpenMeteoModels.swift
+    entitlements:
+      path: GrokCastWatch/GrokCastWatch.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.scubasteve1999.GrokCast
+    info:
+      path: GrokCastWatch/Info.plist
+      properties:
+        CFBundleDisplayName: GrokCast
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        WKCompanionAppBundleIdentifier: com.scubasteve1999.GrokCast
+        WKRunsIndependentlyOfCompanionApp: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast.watchkitapp
+        INFOPLIST_FILE: GrokCastWatch/Info.plist
+        DEVELOPMENT_TEAM: "742YD3WJAR"
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+    dependencies:
+      - target: GrokCastWatchWidgets
+        embed: true
+      - sdk: SwiftUI.framework
+      - sdk: WidgetKit.framework
+
+  GrokCastWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: GrokCastWatchWidgets
+        excludes:
+          - "**/Info.plist"
+      - path: GrokCast/Shared/Widget
+      - path: GrokCast/Shared/Models/Location.swift
+      - path: GrokCast/Shared/Models/OpenMeteoModels.swift
+    entitlements:
+      path: GrokCastWatchWidgets/GrokCastWatchWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.scubasteve1999.GrokCast
+    info:
+      path: GrokCastWatchWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: GrokCast Complications
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast.watchkitapp.widgets
+        INFOPLIST_FILE: GrokCastWatchWidgets/Info.plist
+        DEVELOPMENT_TEAM: "742YD3WJAR"
+        CODE_SIGN_STYLE: Automatic
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
 
 schemes:
   GrokCast:
@@ -143,6 +222,8 @@ schemes:
       targets:
         GrokCast: all
         GrokCastWidgets: all
+        GrokCastWatch: all
+        GrokCastWatchWidgets: all
     run:
       config: Debug
     test:
@@ -157,6 +238,16 @@ schemes:
     run:
       config: Debug
     test:
+      config: Debug
+    archive:
+      config: Release
+
+  GrokCastWatch:
+    build:
+      targets:
+        GrokCastWatch: all
+        GrokCastWatchWidgets: all
+    run:
       config: Debug
     archive:
       config: Release

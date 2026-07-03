@@ -55,6 +55,30 @@ struct MediumWeatherWidgetView: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(style.secondaryText)
           .labelStyle(.titleOnly)
+
+          if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
+            Text("Score \(score) · \(label)")
+              .font(.caption2.weight(.semibold))
+              .foregroundStyle(style.secondaryText)
+              .lineLimit(1)
+          }
+
+          if let brief = snapshot.grokBriefOneLiner, !brief.isEmpty {
+            HStack(alignment: .top, spacing: 4) {
+              Image(systemName: "sparkles")
+                .font(.caption2)
+                .foregroundStyle(style.secondaryText)
+              Text(brief)
+                .font(.caption2)
+                .foregroundStyle(style.primaryText)
+                .lineLimit(2)
+            }
+          } else if let minutecast = snapshot.minutecastMessage {
+            Text(minutecast)
+              .font(.caption2)
+              .foregroundStyle(style.secondaryText)
+              .lineLimit(1)
+          }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
 

@@ -68,6 +68,87 @@ final class WeatherStore {
     }
   }
 
+  private let temperatureUnitKey = "grokcast_temperature_unit"
+  private var _temperatureUnit: TemperatureUnit = .fahrenheit
+
+  /// Display and Open-Meteo fetch units (°F/mph vs °C/km/h).
+  var temperatureUnit: TemperatureUnit {
+    get { _temperatureUnit }
+    set {
+      guard newValue != _temperatureUnit else { return }
+      _temperatureUnit = newValue
+      UserDefaults.standard.set(newValue.rawValue, forKey: temperatureUnitKey)
+      Task { await refreshWeather() }
+    }
+  }
+
+  private let liveActivityEnabledKey = "grokcast_live_activity_enabled"
+  private var _liveActivityEnabled = false
+
+  /// Live Activity on Lock Screen / Dynamic Island (score + minutecast).
+  var liveActivityEnabled: Bool {
+    get { _liveActivityEnabled }
+    set {
+      guard newValue != _liveActivityEnabled else { return }
+      _liveActivityEnabled = newValue
+      UserDefaults.standard.set(newValue, forKey: liveActivityEnabledKey)
+      if newValue {
+        syncScoreSurfacesFromCurrentWeather()
+      } else {
+        WeatherLiveActivityManager.end()
+      }
+    }
+  }
+
+  private var _morningBriefEnabled = MorningBriefNotificationService.persistedEnabled
+  private var _morningBriefHour = MorningBriefNotificationService.persistedHour
+
+  var morningBriefEnabled: Bool {
+    get { _morningBriefEnabled }
+    set {
+      guard newValue != _morningBriefEnabled else { return }
+      _morningBriefEnabled = newValue
+      UserDefaults.standard.set(newValue, forKey: MorningBriefNotificationService.enabledKey)
+      Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
+    }
+  }
+
+  /// Local notification hour (7–11) for the cached Grok morning brief.
+  var morningBriefHour: Int {
+    get { _morningBriefHour }
+    set {
+      let clamped = min(11, max(7, newValue))
+      guard clamped != _morningBriefHour else { return }
+      _morningBriefHour = clamped
+      UserDefaults.standard.set(clamped, forKey: MorningBriefNotificationService.hourKey)
+      Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
+    }
+  }
+
+  private var _notificationSoundsEnabled = GrokCastNotificationSounds.isEnabled
+
+  var notificationSoundsEnabled: Bool {
+    get { _notificationSoundsEnabled }
+    set {
+      guard newValue != _notificationSoundsEnabled else { return }
+      _notificationSoundsEnabled = newValue
+      UserDefaults.standard.set(newValue, forKey: GrokCastNotificationSounds.enabledKey)
+      Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
+    }
+  }
+
+  func formatTemperature(_ value: Double) -> String {
+    temperatureUnit.format(value)
+  }
+
+  func formatTemperatureShort(_ value: Double) -> String {
+    temperatureUnit.formatShort(value)
+  }
+
+  func formatWindSpeed(_ value: Double) -> String {
+    temperatureUnit.formatWind(value)
+  }
+
   enum Tab: String, CaseIterable, Identifiable {
     case today = "Today"
     case forecast = "Forecast"
@@ -270,6 +351,20 @@ final class WeatherStore {
       await refreshAlertNotificationAuthorizationStatus()
     }
 
+    if let rawUnit = UserDefaults.standard.string(forKey: temperatureUnitKey),
+      let unit = TemperatureUnit(rawValue: rawUnit)
+    {
+      _temperatureUnit = unit
+    }
+
+    if UserDefaults.standard.object(forKey: liveActivityEnabledKey) != nil {
+      _liveActivityEnabled = UserDefaults.standard.bool(forKey: liveActivityEnabledKey)
+    }
+
+    _morningBriefEnabled = MorningBriefNotificationService.persistedEnabled
+    _morningBriefHour = MorningBriefNotificationService.persistedHour
+    _notificationSoundsEnabled = GrokCastNotificationSounds.isEnabled
+
     // Do NOT auto-request device location on every cold launch.
     // This avoids immediate location permission prompts and reduces work
     // that contributes to ExtendedLaunchMetrics noise.
@@ -349,9 +444,77 @@ final class WeatherStore {
   }
 
   /// Persists a widget-readable weather snapshot after a successful refresh.
-  private func persistWidgetSnapshot(from weather: GrokCastWeather) {
-    WidgetDataStore.saveSnapshot(WidgetWeatherSnapshot(weather: weather))
+  private func persistWidgetSnapshot(
+    from weather: GrokCastWeather,
+    score: GrokCastScore? = nil,
+    minutecast: MinutecastSummary? = nil,
+    grokBriefOneLiner: String? = nil
+  ) {
+    let computedScore =
+      score
+      ?? GrokCastScoreCalculator.score(
+        for: weather, alerts: activeAlerts, units: temperatureUnit)
+    let computedMinutecast =
+      minutecast
+      ?? MinutecastEngine.summary(from: weather.minutely15, units: temperatureUnit)
+    let brief =
+      grokBriefOneLiner
+      ?? WidgetDataStore.loadSnapshot(for: weather.location.id)?.grokBriefOneLiner
+
+    WidgetDataStore.saveSnapshot(
+      WidgetWeatherSnapshot(
+        weather: weather,
+        grokCastScore: computedScore.value,
+        grokCastScoreLabel: computedScore.label,
+        minutecastMessage: computedMinutecast.message,
+        grokBriefOneLiner: brief
+      ))
     WidgetTimelineReloader.requestReload()
+  }
+
+  /// Keeps widget score/minutecast, Live Activity, and optional Grok one-liner in sync.
+  func syncScoreSurfacesFromCurrentWeather(grokBriefOneLiner: String? = nil) {
+    guard let weather = currentWeather else { return }
+    let score = GrokCastScoreCalculator.score(
+      for: weather, alerts: activeAlerts, units: temperatureUnit)
+    let minutecast = MinutecastEngine.summary(
+      from: weather.minutely15, units: temperatureUnit)
+    persistWidgetSnapshot(
+      from: weather,
+      score: score,
+      minutecast: minutecast,
+      grokBriefOneLiner: grokBriefOneLiner
+    )
+
+    guard liveActivityEnabled, let name = currentLocation?.name else {
+      if !liveActivityEnabled { WeatherLiveActivityManager.end() }
+      return
+    }
+
+    WeatherLiveActivityManager.sync(
+      weather: weather,
+      score: score,
+      minutecast: minutecast,
+      locationName: name,
+      temperatureText: formatTemperatureShort(weather.currentTemp),
+      enabled: liveActivityEnabled
+    )
+  }
+
+  /// Updates the widget Grok one-liner after the Today brief is fetched.
+  func refreshWidgetSnapshotGrokBrief() {
+    syncScoreSurfacesFromCurrentWeather(grokBriefOneLiner: cachedGrokBriefOneLiner())
+  }
+
+  func syncMorningBriefNotification(briefBody: String?) async {
+    await MorningBriefNotificationService.scheduleIfEnabled(briefBody: briefBody)
+  }
+
+  private func cachedGrokBriefOneLiner() -> String? {
+    guard let loc = currentLocation else { return nil }
+    let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
+    let key = "grok_brief_\(loc.id.uuidString)_\(Int(day))"
+    return UserDefaults.standard.string(forKey: key).map { String($0.prefix(120)) }
   }
 
   /// Hydrates `currentWeather` from the App Group widget snapshot so cold launch can show
@@ -506,7 +669,8 @@ final class WeatherStore {
     await withTaskGroup(of: WeatherFetchResult.self) { group in
       group.addTask {
         do {
-          let data = try await self.openMeteo.fetchForecast(for: location)
+          let data = try await self.openMeteo.fetchForecast(
+            for: location, units: self.temperatureUnit)
           return .success(data)
         } catch {
           return .failure(error)
@@ -570,7 +734,7 @@ final class WeatherStore {
         }
       }
       currentWeather = data
-      persistWidgetSnapshot(from: data)
+      syncScoreSurfacesFromCurrentWeather()
       // TODO: Cache to SwiftData here
 
       // Fire-and-forget NWS + OpenWeatherMap hybrid refresh (additive, non-fatal).
@@ -728,6 +892,7 @@ final class WeatherStore {
       alertsForLocation = loc.id
       lastAlertsFetchSucceeded = true
       persistWidgetAlertSummary(for: loc, alerts: alerts)
+      syncScoreSurfacesFromCurrentWeather()
       await AlertNotificationService.shared.notifyIfNeeded(
         for: alerts,
         enabled: alertNotificationsEnabled
@@ -780,6 +945,9 @@ final class WeatherStore {
       alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
       AlertHistoryStore.saveHistory(alertHistory)
       persistWidgetAlertSummary(for: loc, alerts: alerts)
+      if loc.id == currentLocation?.id {
+        syncScoreSurfacesFromCurrentWeather()
+      }
 
       await AlertNotificationService.shared.notifyIfNeeded(
         for: alerts,
@@ -931,6 +1099,20 @@ final class WeatherStore {
     // Olive Branch preview
     let olive = SavedLocation(name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295)
     currentLocation = olive
+  }
+
+  /// Clears in-memory weather and App Group widget cache for the active location.
+  @MainActor
+  func clearLocalWeatherCache() {
+    weatherError = nil
+    if let loc = currentLocation {
+      WidgetDataStore.removeData(for: loc.id)
+    }
+    currentWeather = nil
+    lastAlertsFetch = nil
+    lastAlertsFetchSucceeded = false
+    WeatherLiveActivityManager.end()
+    WidgetTimelineReloader.requestReload()
   }
 
 }

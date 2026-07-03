@@ -170,6 +170,64 @@ struct SettingsView: View {
           )
         }
 
+        Section {
+          Picker(
+            "Temperature",
+            selection: Binding(
+              get: { store.temperatureUnit },
+              set: { store.temperatureUnit = $0 }
+            )
+          ) {
+            ForEach(TemperatureUnit.allCases) { unit in
+              Text(unit.displayName).tag(unit)
+            }
+          }
+
+          Toggle(
+            "Live Activity",
+            isOn: Binding(
+              get: { store.liveActivityEnabled },
+              set: { store.liveActivityEnabled = $0 }
+            )
+          )
+
+          Toggle(
+            "Morning Grok Brief",
+            isOn: Binding(
+              get: { store.morningBriefEnabled },
+              set: { store.morningBriefEnabled = $0 }
+            )
+          )
+
+          if store.morningBriefEnabled {
+            Picker(
+              "Brief time",
+              selection: Binding(
+                get: { store.morningBriefHour },
+                set: { store.morningBriefHour = $0 }
+              )
+            ) {
+              ForEach(7...11, id: \.self) { hour in
+                Text("\(hour):00 AM").tag(hour)
+              }
+            }
+          }
+
+          Toggle(
+            "Notification Sounds",
+            isOn: Binding(
+              get: { store.notificationSoundsEnabled },
+              set: { store.notificationSoundsEnabled = $0 }
+            )
+          )
+        } header: {
+          Text("DISPLAY & NOTIFICATIONS")
+        } footer: {
+          Text(
+            "Live Activity shows your GrokCast Score and Minutecast on the Lock Screen. Morning brief uses your cached Grok take when scheduled."
+          )
+        }
+
         // MARK: - Background Location (Significant Location Changes)
         Section {
           Toggle(
@@ -203,21 +261,35 @@ struct SettingsView: View {
           }
 
           Button {
-            // Future: clear local cache
             Haptic.impact(.light)
+            store.clearLocalWeatherCache()
           } label: {
             Label("Clear Local Weather Cache", systemImage: "trash")
           }
           .foregroundStyle(.red)
         }
 
+        Section {
+          Link(destination: AppLinks.privacyPolicy) {
+            Label("Privacy Policy", systemImage: "hand.raised")
+          }
+          Link(destination: AppLinks.support) {
+            Label("Support", systemImage: "questionmark.circle")
+          }
+          Link(destination: AppLinks.supportEmail) {
+            Label("Contact", systemImage: "envelope")
+          }
+        } header: {
+          Text("LEGAL & SUPPORT")
+        }
+
         // MARK: - About / Links
         Section {
-          Link(destination: URL(string: "https://console.x.ai/")!) {
+          Link(destination: AppLinks.xAIConsole) {
             Label("Get xAI API Key", systemImage: "link")
           }
 
-          Link(destination: URL(string: "https://open-meteo.com/")!) {
+          Link(destination: AppLinks.openMeteo) {
             Label("Weather Data: Open-Meteo", systemImage: "link")
           }
 

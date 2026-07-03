@@ -421,7 +421,8 @@ final class NWSService {
       pm25: nil,
       pollenLevel: nil,
       hourly: hourlyForecasts,
-      daily: dailyForecasts
+      daily: dailyForecasts,
+      minutely15: []
     )
   }
 
