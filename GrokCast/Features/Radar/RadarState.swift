@@ -233,10 +233,11 @@ final class RadarState {
       playback.playbackSpeed = 1.0
     }
     activateCurrentForCommittedMode()
-    // Auto-play the newly committed mode so switching into FUTURE animates the
-    // forecast immediately instead of sitting paused on frame 1 (beginTransition
-    // stopped playback; NOW gets its start() from RadarView on tab entry).
-    if activeFrameCount > 0 {
+    // Auto-play FUTURE so switching into it animates the forecast immediately
+    // instead of sitting paused on frame 1 (beginTransition stopped playback).
+    // NOW is intentionally left alone — it gets its start() from RadarView on
+    // tab entry and should rest on the latest live frame, not reset to frame 0.
+    if committedIsFuture, activeFrameCount > 0 {
       playback.start()
     }
   }
