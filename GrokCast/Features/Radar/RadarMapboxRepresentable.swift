@@ -113,7 +113,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
     private var layersInstalled = false
     private var frontSlot: BufferSlot = .a
-    private var appliedFrontKey: String?
+    /// Tile key currently visible on `frontSlot`.
+    private var displayedFrontKey: String?
+    /// Tile key being crossfaded in (back buffer); nil when idle.
+    private var inFlightKey: String?
     private var appliedModeIsFuture: Bool?
     private var appliedBaseMapStyle: RadarBaseMapStyle?
     private var appliedOpacity: Double?
@@ -298,10 +301,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
       updatePaintIfNeeded(mapView: mapView, desired: desired)
 
-      guard desired.tileKey != appliedFrontKey else { return }
+      guard desired.tileKey != displayedFrontKey else { return }
 
       if crossfadeTask != nil {
-        queuedDesiredState = desired
+        // Keep only the latest frame that isn't already visible or in-flight.
+        if desired.tileKey != inFlightKey {
+          queuedDesiredState = desired
+        }
         return
       }
 
@@ -333,7 +339,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         }
 
         layersInstalled = true
-        appliedFrontKey = desired.tileKey
+        displayedFrontKey = desired.tileKey
+        inFlightKey = nil
         appliedModeIsFuture = desired.showsFuture
         appliedOpacity = desired.opacity
         appliedSaturation = desired.saturation
@@ -356,7 +363,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       setLayerOpacity(mapView: mapView, slot: backSlot, opacity: desired.opacity)
       setLayerOpacity(mapView: mapView, slot: frontSlot, opacity: 0)
 
-      appliedFrontKey = desired.tileKey
+      inFlightKey = desired.tileKey
       appliedOpacity = desired.opacity
       appliedSaturation = desired.saturation
       appliedContrast = desired.contrast
@@ -368,14 +375,22 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         }
         guard let self, let mapView, !Task.isCancelled else { return }
         self.frontSlot = backSlot
+        self.displayedFrontKey = self.inFlightKey
+        self.inFlightKey = nil
         self.crossfadeTask = nil
-        if let queued = self.queuedDesiredState {
-          self.queuedDesiredState = nil
-          if queued.tileKey != self.appliedFrontKey {
-            self.crossfadeToFrame(mapView: mapView, desired: queued)
-          }
-        }
+        self.drainQueuedCrossfade(on: mapView)
       }
+    }
+
+    /// Apply the latest queued frame after a crossfade completes; repeats if more queued.
+    private func drainQueuedCrossfade(on mapView: MapView) {
+      guard let queued = queuedDesiredState else { return }
+      queuedDesiredState = nil
+      guard queued.tileKey != displayedFrontKey else {
+        drainQueuedCrossfade(on: mapView)
+        return
+      }
+      crossfadeToFrame(mapView: mapView, desired: queued)
     }
 
     private func updatePaintIfNeeded(mapView: MapView, desired: DesiredRasterState) {
@@ -489,7 +504,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       queuedDesiredState = nil
       layersInstalled = false
       frontSlot = .a
-      appliedFrontKey = nil
+      displayedFrontKey = nil
+      inFlightKey = nil
       appliedModeIsFuture = nil
       appliedOpacity = nil
       appliedSaturation = nil

@@ -122,7 +122,14 @@ final class RadarPlayback {
     let speed = max(playbackSpeed, 0.25)
     let scaled = realGap * (Self.baselineScreenInterval / Self.referenceDataGap) / speed
     let ceiling = Self.maxScreenInterval / speed
-    let floor = isAnimating ? Self.minAnimatingInterval / speed : 0.15
+    // Crossfade duration is wall-clock (Mapbox ms), so never advance faster than
+    // minAnimatingInterval even at 2×–4× — otherwise frames queue-skip and flicker.
+    let floor: TimeInterval
+    if isAnimating {
+      floor = max(Self.minAnimatingInterval / speed, Self.minAnimatingInterval)
+    } else {
+      floor = 0.15
+    }
     return min(ceiling, max(floor, scaled))
   }
 }

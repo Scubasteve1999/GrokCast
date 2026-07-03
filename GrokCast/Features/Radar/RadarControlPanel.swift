@@ -345,6 +345,7 @@ private struct RadarDisplayOptionsSheet: View {
       )
       .frame(height: 8)
       .clipShape(RoundedRectangle(cornerRadius: 2))
+      .accessibilityLabel("Velocity legend: green toward radar, red away from radar")
 
       HStack {
         Text("Toward radar").font(.caption2).foregroundStyle(.secondary)
@@ -370,6 +371,7 @@ private struct RadarDisplayOptionsSheet: View {
         .clipShape(RoundedRectangle(cornerRadius: 2))
       }
       .frame(height: 8)
+      .accessibilityLabel("Reflectivity legend: light to extreme precipitation intensity")
 
       HStack {
         Text("Light").font(.caption2).foregroundStyle(.secondary)
