@@ -130,6 +130,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private struct DesiredRasterState: Equatable {
       var tileURLs: [String]
       var tileKey: String
+      var provider: RadarTileProvider
       var maxZoom: Double
       var opacity: Double
       var saturation: Double
@@ -139,10 +140,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       var visible: Bool
       var fadeDuration: Double
       var tileSize: Double
+      var prefetchZoomDelta: Double
+      var minimumTileUpdateInterval: Double
 
       static let hidden = DesiredRasterState(
         tileURLs: [],
         tileKey: "",
+        provider: .rainViewer,
         maxZoom: 0,
         opacity: 0,
         saturation: 0,
@@ -151,7 +155,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         isAnimating: false,
         visible: false,
         fadeDuration: 0,
-        tileSize: 256
+        tileSize: 256,
+        prefetchZoomDelta: 0,
+        minimumTileUpdateInterval: 0
       )
     }
 
@@ -244,6 +250,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
         tileKey: frame.tileKey,
+        provider: frame.provider,
         maxZoom: frame.provider.maxZoom,
         opacity: opacity,
         saturation: radarState.colorScheme.rasterSaturation + (isFuture ? 0.2 : 0.0),
@@ -252,8 +259,28 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         isAnimating: radarState.isAnimating,
         visible: true,
         fadeDuration: fadeDuration,
-        tileSize: isXweatherForecast ? 512 : 256
+        tileSize: isXweatherForecast ? 512 : 256,
+        prefetchZoomDelta: Self.prefetchZoomDelta(for: frame.provider, isAnimating: radarState.isAnimating),
+        minimumTileUpdateInterval: Self.minimumTileUpdateInterval(for: frame.provider)
       )
+    }
+
+    /// IEM tiles are CDN-cached (max-age 300); lower prefetch to avoid melting mesonet servers.
+    private static func prefetchZoomDelta(for provider: RadarTileProvider, isAnimating: Bool) -> Double {
+      switch provider {
+      case .iem:
+        return isAnimating ? 1 : 0
+      case .rainViewer, .openWeatherMap, .xweather:
+        return isAnimating ? 2 : 1
+      }
+    }
+
+    /// Match provider cache headers where known (IEM `Cache-Control: max-age=300`).
+    private static func minimumTileUpdateInterval(for provider: RadarTileProvider) -> Double {
+      switch provider {
+      case .iem: 300
+      default: 0
+      }
     }
 
     private func reconcileBaseMapStyle(mapView: MapView, style: RadarBaseMapStyle) {
@@ -323,8 +350,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           source.tileSize = desired.tileSize
           source.minzoom = 0
           source.maxzoom = desired.maxZoom
-          source.prefetchZoomDelta = desired.isAnimating ? 2 : 1
-          source.minimumTileUpdateInterval = 0
+          source.prefetchZoomDelta = desired.prefetchZoomDelta
+          source.minimumTileUpdateInterval = desired.minimumTileUpdateInterval
           source.tileNetworkRequestsDelay = 0
           try mapView.mapboxMap.addSource(source)
 
@@ -367,6 +394,17 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       appliedOpacity = desired.opacity
       appliedSaturation = desired.saturation
       appliedContrast = desired.contrast
+
+      #if DEBUG
+      let zoom = Int(mapView.mapboxMap.cameraState.zoom.rounded())
+      RadarTileTrafficMonitor.recordFrameTransition(
+        tileKey: desired.tileKey,
+        provider: desired.provider,
+        zoom: zoom,
+        prefetchDelta: Int(desired.prefetchZoomDelta),
+        isAnimating: desired.isAnimating
+      )
+      #endif
 
       let fadeSeconds = desired.fadeDuration / 1000
       crossfadeTask = Task { @MainActor [weak self, weak mapView] in
@@ -430,20 +468,16 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           property: "maxzoom",
           value: desired.maxZoom
         )
-        try mapView.mapboxMap.setSourceProperty(
-          for: slot.sourceId,
-          property: "tile-size",
-          value: desired.tileSize
-        )
+        // tile-size is immutable after source creation — set only in installDualLayers.
         try mapView.mapboxMap.setSourceProperty(
           for: slot.sourceId,
           property: "prefetch-zoom-delta",
-          value: desired.isAnimating ? 2 : 1
+          value: desired.prefetchZoomDelta
         )
         try mapView.mapboxMap.setSourceProperty(
           for: slot.sourceId,
           property: "minimum-tile-update-interval",
-          value: 0
+          value: desired.minimumTileUpdateInterval
         )
       } catch {
         print("[Mapbox] Failed to update \(slot.sourceId): \(error)")
