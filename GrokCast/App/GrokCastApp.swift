@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct GrokCastApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+  @State private var subscriptionManager = SubscriptionManager.shared
 
   var body: some Scene {
     WindowGroup {
@@ -12,12 +13,18 @@ struct GrokCastApp: App {
       } else {
         MainTabView()
           .environment(WeatherStore.shared)
+          .environment(subscriptionManager)
+          .paywallSheet()
           .tint(.accentColor)
+          .task { await subscriptionManager.start() }
       }
       #else
       MainTabView()
         .environment(WeatherStore.shared)
+        .environment(subscriptionManager)
+        .paywallSheet()
         .tint(.accentColor)
+        .task { await subscriptionManager.start() }
       #endif
     }
   }

@@ -199,6 +199,11 @@ final class RadarState {
       return
     }
 
+    guard EntitlementChecker.canUseRadarFuture() else {
+      PaywallCoordinator.shared.present(.radarFuture)
+      return
+    }
+
     guard timeline.hasForecast, !showsFuture, transition == nil else { return }
 
     // Site products (Velocity/SRV) have no forecast — return to composite reflectivity.

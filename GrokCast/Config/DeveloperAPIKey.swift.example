@@ -28,6 +28,9 @@ enum DeveloperAPIKey {
     }
     return "\(id)_\(secret)"
   }
+
+  /// Optional override for the hosted Grok proxy (Pro subscribers).
+  static let grokProxyBaseURL: String? = nil
 }
 
 // OpenWeatherMap API key lives in OpenWeatherMapKeys.swift (committed).

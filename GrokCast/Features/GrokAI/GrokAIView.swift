@@ -266,8 +266,7 @@ private struct GrokAIViewContent: View {
           GrokStormSpotterButton {
             Task {
               guard weatherStore.xaiService.hasValidKey else {
-                viewModel.errorMessage =
-                  "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
+                PaywallCoordinator.shared.present(.grokAI)
                 return
               }
               let targetLocation =

@@ -457,9 +457,14 @@ final class WeatherStore {
     let computedMinutecast =
       minutecast
       ?? MinutecastEngine.summary(from: weather.minutely15, units: temperatureUnit)
-    let brief =
-      grokBriefOneLiner
-      ?? WidgetDataStore.loadSnapshot(for: weather.location.id)?.grokBriefOneLiner
+    let brief: String?
+    if EntitlementChecker.canUseWidgetGrokBrief() {
+      brief =
+        grokBriefOneLiner
+        ?? WidgetDataStore.loadSnapshot(for: weather.location.id)?.grokBriefOneLiner
+    } else {
+      brief = nil
+    }
 
     WidgetDataStore.saveSnapshot(
       WidgetWeatherSnapshot(
@@ -486,8 +491,12 @@ final class WeatherStore {
       grokBriefOneLiner: grokBriefOneLiner
     )
 
-    guard liveActivityEnabled, let name = currentLocation?.name else {
-      if !liveActivityEnabled { WeatherLiveActivityManager.end() }
+    guard liveActivityEnabled, EntitlementChecker.canUseLiveActivity(),
+      let name = currentLocation?.name
+    else {
+      if !liveActivityEnabled || !EntitlementChecker.canUseLiveActivity() {
+        WeatherLiveActivityManager.end()
+      }
       return
     }
 
@@ -1063,14 +1072,18 @@ final class WeatherStore {
     return best
   }
 
-  func addLocation(_ location: SavedLocation) {
+  func addLocation(_ location: SavedLocation) -> Bool {
+    guard EntitlementChecker.canAddLocation(currentCount: savedLocations.count) else {
+      return false
+    }
     guard
       !savedLocations.contains(where: {
         abs($0.latitude - location.latitude) < 0.01 && abs($0.longitude - location.longitude) < 0.01
       })
-    else { return }
+    else { return true }
     savedLocations.append(location)
     saveLocations()
+    return true
   }
 
   func removeLocation(_ location: SavedLocation) {

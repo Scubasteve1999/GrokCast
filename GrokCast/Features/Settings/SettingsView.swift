@@ -4,6 +4,7 @@ import UserNotifications
 
 struct SettingsView: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(SubscriptionManager.self) private var subscription
   @Environment(\.scenePhase) private var scenePhase
 
   @State private var apiKeyInput: String = ""
@@ -24,6 +25,45 @@ struct SettingsView: View {
   var body: some View {
     NavigationStack {
       Form {
+        // MARK: - GrokCast Pro
+        Section {
+          if subscription.isPro {
+            Label("GrokCast Pro is active", systemImage: "checkmark.seal.fill")
+              .foregroundStyle(.green)
+            Button("Manage Subscription") {
+              if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                UIApplication.shared.open(url)
+              }
+            }
+          } else {
+            VStack(alignment: .leading, spacing: 8) {
+              Text("Unlock Grok AI, forecast radar, Live Activity, and more.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+              Button("View GrokCast Pro") {
+                PaywallCoordinator.shared.present(.grokAI)
+              }
+              .buttonStyle(.borderedProminent)
+            }
+            .padding(.vertical, 4)
+          }
+
+          Button("Restore Purchases") {
+            Task { await subscription.restorePurchases() }
+          }
+          .disabled(subscription.purchaseInFlight)
+
+          if let error = subscription.lastErrorMessage {
+            Text(error)
+              .font(.caption)
+              .foregroundStyle(.red)
+          }
+        } header: {
+          Text("GROKCAST PRO")
+        } footer: {
+          Text("Pro includes hosted Grok AI — no xAI developer key required.")
+        }
+
         // MARK: - Grok API Configuration (Developer Key Mode)
         Section {
           VStack(alignment: .leading, spacing: 12) {
@@ -187,9 +227,21 @@ struct SettingsView: View {
             "Live Activity",
             isOn: Binding(
               get: { store.liveActivityEnabled },
-              set: { store.liveActivityEnabled = $0 }
+              set: { newValue in
+                if newValue, !EntitlementChecker.canUseLiveActivity() {
+                  PaywallCoordinator.shared.present(.liveActivity)
+                  return
+                }
+                store.liveActivityEnabled = newValue
+              }
             )
           )
+
+          if !subscription.isPro {
+            Text("Live Activity requires GrokCast Pro.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
 
           Toggle(
             "Morning Grok Brief",

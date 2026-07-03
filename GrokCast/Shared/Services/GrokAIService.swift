@@ -4,20 +4,29 @@ import Foundation
 /// Provides consistent streaming and error handling so the UI never gets stuck in "THINKING...".
 @MainActor
 final class GrokAIService {
-  private let grokBuildService: GrokBuildService
-
-  init(grokBuildService: GrokBuildService = GrokBuildService()) {
-    self.grokBuildService = grokBuildService
-  }
-
   var hasValidKey: Bool {
-    !GrokBuildConfiguration.make().apiKey.isEmpty
+    GrokAuthResolver.canAccessGrok()
   }
 
   // MARK: - Regular chat (quick prompts + free text)
   func streamResponse(messages: [GrokBuildMessage]) -> AsyncThrowingStream<String, Error> {
-    // Direct delegation to GrokBuildService (now configured for grok-3-mini + xAI key fallback).
-    // Timeouts and key checks handled inside.
-    return grokBuildService.streamChat(messages: messages)
+    AsyncThrowingStream { continuation in
+      Task { @MainActor in
+        do {
+          let auth = try GrokAuthResolver.resolve()
+          let config = GrokBuildConfiguration(auth: auth)
+          let stream = GrokBuildService(configuration: config).streamChat(
+            messages: messages,
+            auth: auth
+          )
+          for try await chunk in stream {
+            continuation.yield(chunk)
+          }
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
   }
 }

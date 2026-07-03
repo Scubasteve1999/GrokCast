@@ -59,8 +59,7 @@ final class GrokAIViewModel {
 
     // Early key guard (prevents append + silent fail; GrokBuild falls back to xai key)
     if !grokAIService.hasValidKey {
-      errorMessage =
-        "No xAI API key found. Add your developer key in Settings → Developer Key to use Grok AI."
+      PaywallCoordinator.shared.present(.grokAI)
       return
     }
 
@@ -147,8 +146,7 @@ final class GrokAIViewModel {
     }
 
     guard weatherStore.xaiService.hasValidKey else {
-      errorMessage =
-        "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
+      PaywallCoordinator.shared.present(.grokAI)
       isStreaming = false
       stormAnalysisMode = false
       return
@@ -226,7 +224,7 @@ final class GrokAIViewModel {
     if let apiError = error as? GrokAPIError {
       switch apiError {
       case .missingAPIKey:
-        return "No xAI API key found. Add your developer key in Settings → Developer Key to use Storm Spotter."
+        return "GrokCast Pro required. Subscribe in Settings or add a developer key."
       case .networkError(let underlying):
         if let urlError = underlying as? URLError, urlError.code == .timedOut {
           return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
@@ -392,8 +390,7 @@ final class GrokAIViewModel {
     guard !isStreaming && !isGeneratingImage else { return }
 
     guard weatherStore.xaiService.hasValidKey else {
-      errorMessage =
-        "No xAI API key found. Add your developer key in Settings → Developer Key to generate images."
+      PaywallCoordinator.shared.present(.grokAI)
       return
     }
 

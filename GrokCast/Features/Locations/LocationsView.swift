@@ -117,7 +117,10 @@ struct LocationsView: View {
     if let existing = store.savedLocations.first(where: { isNear($0, candidate) }) {
       store.selectLocation(existing)
     } else {
-      store.addLocation(candidate)
+      if !store.addLocation(candidate) {
+        PaywallCoordinator.shared.present(.locations)
+        return
+      }
       store.selectLocation(candidate)
     }
     searchText = ""

@@ -6,6 +6,19 @@ struct GrokBuildConfiguration {
   let baseURL: URL
   let model: String
 
+  init(apiKey: String, baseURL: URL, model: String) {
+    self.apiKey = apiKey
+    self.baseURL = baseURL
+    self.model = model
+  }
+
+  @MainActor
+  init(auth: GrokAuthContext) {
+    self.apiKey = ""
+    self.baseURL = auth.baseURL
+    self.model = "grok-3-mini"
+  }
+
   static func make() -> GrokBuildConfiguration {
     // Prefer dedicated grokBuild key if present; fall back to the main xAI key.
     // Regular Grok AI chat (quick prompts + free text) uses grok-3-mini for broad compatibility
@@ -55,6 +68,7 @@ final class GrokBuildService {
   // MARK: - Streaming
   func streamChat(
     messages: [GrokBuildMessage],
+    auth: GrokAuthContext? = nil,
     temperature: Double = 0.7,
     maxTokens: Int? = nil
   ) -> AsyncThrowingStream<String, Error> {
@@ -62,8 +76,7 @@ final class GrokBuildService {
     return AsyncThrowingStream { continuation in
       Task {
         do {
-          if configuration.apiKey.isEmpty {
-            // missing API key (log removed)
+          if auth == nil, configuration.apiKey.isEmpty {
             continuation.finish(throwing: GrokBuildError.missingAPIKey)
             return
           }
@@ -72,8 +85,12 @@ final class GrokBuildService {
 
           var request = URLRequest(url: url)
           request.httpMethod = "POST"
-          request.setValue("Bearer \(configuration.apiKey)", forHTTPHeaderField: "Authorization")
           request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+          if let auth {
+            auth.applying(to: &request)
+          } else {
+            request.setValue("Bearer \(configuration.apiKey)", forHTTPHeaderField: "Authorization")
+          }
 
           let body = GrokBuildRequest(
             model: configuration.model,
@@ -190,8 +207,7 @@ enum GrokBuildError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return
-        "No xAI API key found. The Grok AI tab uses your saved xAI key (or a separate key saved for .grokBuild). Add it in Settings → Developer Key."
+      return "GrokCast Pro required. Subscribe in Settings or add a developer key."
     case .invalidResponse(let code):
       if let c = code {
         return "Invalid response from Grok (HTTP \(c)). Check your API key and model access."

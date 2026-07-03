@@ -1,39 +1,39 @@
 import SwiftUI
 
-/// Shown when Grok AI features are unavailable because no xAI developer key is configured.
+/// Shown when Grok AI requires GrokCast Pro or a developer key.
 struct GrokAPIKeyEmptyStateView: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(SubscriptionManager.self) private var subscription
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label("Grok AI is optional", systemImage: "sparkles")
+      Label("GrokCast Pro", systemImage: "sparkles")
         .font(.headline)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(
-        "Weather, radar, and alerts work without an API key. To unlock chat, image generation, and Storm Spotter, add your xAI developer key in Settings."
+        "Weather, live radar, and alerts are free. Pro unlocks Grok chat, daily briefs, Storm Spotter, forecast radar, Live Activity, and unlimited locations — no developer key needed."
       )
       .font(.subheadline)
       .foregroundStyle(DesignTokens.Palette.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
 
-      Text(
-        "When you use Grok, your weather context and questions are sent to xAI to generate responses. See our Privacy Policy for details."
-      )
-      .font(.caption)
-      .foregroundStyle(DesignTokens.Palette.textTertiary)
-      .fixedSize(horizontal: false, vertical: true)
-
       HStack(spacing: 12) {
-        Button("Open Settings") {
+        Button(subscription.isPro ? "Pro Active" : "Upgrade to Pro") {
           Haptic.impact(.light)
-          store.selectedTab = .settings
+          if subscription.isPro {
+            store.selectedTab = .settings
+          } else {
+            PaywallCoordinator.shared.present(.grokAI)
+          }
         }
         .buttonStyle(.borderedProminent)
         .tint(DesignTokens.Palette.accent)
+        .disabled(subscription.isPro)
 
-        Link(destination: AppLinks.xAIConsole) {
-          Text("Get xAI Key")
+        Button("Settings") {
+          Haptic.impact(.light)
+          store.selectedTab = .settings
         }
         .buttonStyle(.bordered)
       }
@@ -51,6 +51,7 @@ struct GrokAPIKeyEmptyStateView: View {
 #Preview {
   GrokAPIKeyEmptyStateView()
     .environment(WeatherStore())
+    .environment(SubscriptionManager.shared)
     .padding()
     .preferredColorScheme(.dark)
 }

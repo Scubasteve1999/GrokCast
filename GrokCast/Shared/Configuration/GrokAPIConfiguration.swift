@@ -113,7 +113,7 @@ enum GrokAPIError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "No xAI developer API key found in Keychain. Add one in Settings."
+      return "GrokCast Pro required. Subscribe in Settings or add a developer key for advanced use."
     case .invalidKeyFormat:
       return "Invalid xAI API key format. Keys must start with 'xai-'."
     case .invalidMode(let message):

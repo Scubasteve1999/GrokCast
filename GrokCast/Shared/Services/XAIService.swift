@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 
+@MainActor
 final class XAIService {
   private let configuration: GrokAPIConfiguration
 
@@ -9,11 +10,11 @@ final class XAIService {
   }
 
   func hasAPIKey() -> Bool {
-    configuration.hasValidDeveloperKey
+    GrokAuthResolver.canAccessGrok(configuration: configuration)
   }
 
   var hasValidKey: Bool {
-    configuration.hasValidDeveloperKey
+    GrokAuthResolver.canAccessGrok(configuration: configuration)
   }
 
   var isUsingEmbeddedDeveloperKey: Bool {
@@ -47,7 +48,7 @@ final class XAIService {
   }
 
   func sendMessage(messages: [ChatMessage], context: String?) async throws -> String {
-    let authHeader = try configuration.authHeader()
+    let auth = try GrokAuthResolver.resolve(configuration: configuration)
 
     var apiMessages: [[String: String]] = []
     if let context {
@@ -63,18 +64,18 @@ final class XAIService {
       "max_tokens": 512,
     ]
 
-    return try await performChatRequest(body: body, authHeader: authHeader)
+    return try await performChatRequest(body: body, auth: auth)
   }
 
   func performAdvancedStormAnalysis(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) async throws -> String {
-    let authHeader = try configuration.authHeader()
+    let auth = try GrokAuthResolver.resolve(configuration: configuration)
     let body = try buildStormAnalysisBody(
       imageData: imageData, weather: weather, alerts: alerts,
       nearestStationObservation: nearestStationObservation, userNotes: userNotes, stream: false)
-    return try await performChatRequest(body: body, authHeader: authHeader)
+    return try await performChatRequest(body: body, auth: auth)
   }
 
   /// Streaming variant of storm photo analysis (grok-4.3 vision + SSE tokens).
@@ -83,18 +84,18 @@ final class XAIService {
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) -> AsyncThrowingStream<String, Error> {
     AsyncThrowingStream { continuation in
-      Task {
+      Task { @MainActor in
         do {
-          let authHeader = try configuration.authHeader()
+          let auth = try GrokAuthResolver.resolve(configuration: configuration)
           let body = try buildStormAnalysisBody(
             imageData: imageData, weather: weather, alerts: alerts,
             nearestStationObservation: nearestStationObservation, userNotes: userNotes,
             stream: true)
 
-          var request = URLRequest(url: configuration.chatURL)
+          var request = URLRequest(url: auth.baseURL.appendingPathComponent("chat/completions"))
           request.httpMethod = "POST"
           request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-          request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+          auth.applying(to: &request)
           request.httpBody = try JSONSerialization.data(withJSONObject: body)
           request.timeoutInterval = 120
 
@@ -190,7 +191,7 @@ final class XAIService {
   }
 
   func generateDayImage(prompt: String) async throws -> URL {
-    let authHeader = try configuration.authHeader()
+    let auth = try GrokAuthResolver.resolve(configuration: configuration)
 
     let body: [String: Any] = [
       "model": configuration.imageModel,
@@ -199,10 +200,10 @@ final class XAIService {
       "response_format": "url",
     ]
 
-    var request = URLRequest(url: configuration.imageGenerationURL)
+    var request = URLRequest(url: auth.baseURL.appendingPathComponent("images/generations"))
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+    auth.applying(to: &request)
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     request.timeoutInterval = 60
 
@@ -235,11 +236,11 @@ final class XAIService {
     return url
   }
 
-  private func performChatRequest(body: [String: Any], authHeader: String) async throws -> String {
-    var request = URLRequest(url: configuration.chatURL)
+  private func performChatRequest(body: [String: Any], auth: GrokAuthContext) async throws -> String {
+    var request = URLRequest(url: auth.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue(authHeader, forHTTPHeaderField: "Authorization")
+    auth.applying(to: &request)
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     request.timeoutInterval = GrokAPIConfiguration.requestTimeout
 

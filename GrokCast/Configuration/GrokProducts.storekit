@@ -1,0 +1,129 @@
+{
+  "identifier" : "GrokProducts",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0000000000",
+    "_developerTeamID" : "742YD3WJAR",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 773020800,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "GrokCastPro",
+      "localizations" : [
+
+      ],
+      "name" : "GrokCast Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "PRO_MONTHLY",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Grok AI, forecast radar, Live Activity, unlimited locations",
+              "displayName" : "GrokCast Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.scubasteve1999.GrokCast.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "GrokCast Pro Monthly",
+          "subscriptionGroupID" : "GrokCastPro",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "PRO_YEARLY",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Best value — all Pro features for one year",
+              "displayName" : "GrokCast Pro Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.scubasteve1999.GrokCast.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "GrokCast Pro Yearly",
+          "subscriptionGroupID" : "GrokCastPro",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -2,10 +2,15 @@ import Foundation
 
 /// App Group persistence for widget weather snapshots and saved locations.
 enum WidgetDataStore {
+  static let isProKey = "grokcast_is_pro"
   static let snapshotsKey = "grokcast_widget_weather_snapshots"
   static let legacySnapshotKey = "grokcast_widget_weather_snapshot"
   static let alertSummariesKey = "grokcast_widget_alert_summaries"
   static let savedLocationsKey = "grokcast_saved_locations"
+
+  static var isProSubscriber: Bool {
+    groupDefaults?.bool(forKey: isProKey) ?? false
+  }
 
   private static var groupDefaults: UserDefaults? {
     guard let defaults = WidgetAppGroup.userDefaults else {
