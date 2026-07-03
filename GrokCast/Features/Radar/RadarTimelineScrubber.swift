@@ -45,6 +45,8 @@ struct RadarTimelineScrubber: View {
           let label = i < labels.count ? labels[i] : "?"
           Text(label)
             .font(.caption2.weight(radarState.currentIndex == i ? .semibold : .regular))
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             .foregroundStyle(
               radarState.currentIndex == i
                 ? DesignTokens.Palette.radarTextPrimary : DesignTokens.Palette.radarTextSecondary

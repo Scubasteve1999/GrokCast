@@ -300,7 +300,8 @@ struct XweatherRadarFrame: Equatable {
 
   private static let scrubberTimeFormatter: DateFormatter = {
     let formatter = DateFormatter()
-    formatter.dateFormat = "HH:mm"
+    formatter.dateFormat = "h:mm a"
+    formatter.timeZone = .current
     return formatter
   }()
 }

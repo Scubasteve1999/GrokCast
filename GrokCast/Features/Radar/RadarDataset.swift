@@ -6,7 +6,8 @@ struct RadarDataset {
   /// Shared local-time formatter for NOW radar labels (timeline scrubber + state header).
   static func displayTimeString(from date: Date) -> String {
     let f = DateFormatter()
-    f.dateFormat = "HH:mm"
+    f.dateFormat = "h:mm a"
+    f.timeZone = .current
     return f.string(from: date)
   }
 }
