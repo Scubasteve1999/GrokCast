@@ -61,28 +61,14 @@ struct RadarFrame: Equatable {
     return "+\(hours)h \(rem)m"
   }
 
-  private static let displayTimeFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "h:mm a"
-    formatter.timeZone = .current
-    return formatter
-  }()
-
   var displayTime: String {
-    Self.displayTimeFormatter.string(from: timestamp)
+    RadarDataset.displayTimeString(from: timestamp)
   }
 
   func timelineLabel(showingFuture: Bool, forecastAnchor: Date?) -> String {
     if showingFuture {
       return forecastLabel(anchor: forecastAnchor)
     }
-    return Self.scrubberTimeFormatter.string(from: timestamp)
+    return RadarDataset.displayTimeString(from: timestamp)
   }
-
-  private static let scrubberTimeFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "h:mm a"
-    formatter.timeZone = .current
-    return formatter
-  }()
 }

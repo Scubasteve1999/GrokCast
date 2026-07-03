@@ -5,9 +5,13 @@ import Foundation
 struct RadarDataset {
   /// Shared local-time formatter for NOW radar labels (timeline scrubber + state header).
   static func displayTimeString(from date: Date) -> String {
-    let f = DateFormatter()
-    f.dateFormat = "h:mm a"
-    f.timeZone = .current
-    return f.string(from: date)
+    displayTimeFormatter.timeZone = .current
+    return displayTimeFormatter.string(from: date)
   }
+
+  private static let displayTimeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "h:mm a"
+    return formatter
+  }()
 }
