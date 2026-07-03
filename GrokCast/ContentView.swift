@@ -77,8 +77,7 @@ struct MainTabView: View {
     }
     .task {
       await store.performInitialLoadIfNeeded()
-      // Fallback schedule after initial load — didFinishLaunching often gets .unavailable while foregrounded.
-      await store.scheduleBackgroundAlertRefreshIfEnabled()
+      Task { await store.scheduleBackgroundAlertRefreshIfEnabled() }
     }
   }
 

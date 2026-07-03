@@ -193,15 +193,11 @@ final class WeatherStore {
     }
 
     let task = Task<Void, Never> { @MainActor in
-      let weatherWasNil = self.currentWeather == nil
-      if weatherWasNil {
-        // refreshWeather fire-and-forgets refreshAlerts + refreshNWSObservation.
+      if self.currentWeather == nil {
         await self.refreshWeather()
-      } else if self.currentNWSObservation == nil || self.currentOpenWeatherMapWeather == nil {
-        // Weather already present (e.g. preview/cache): only hybrid layers may be missing.
-        async let nws = self.refreshNWSObservation()
-        async let owm = self.refreshOpenWeatherMap()
-        _ = await (nws, owm)
+      } else {
+        // Stale-while-revalidate: cached snapshot already on screen; refresh quietly.
+        Task { await self.refreshWeather() }
       }
 
       // Intentional: mark complete even on fetch failure so sig-handler refreshes are not
@@ -227,6 +223,7 @@ final class WeatherStore {
       savedLocations = [SavedLocation.oliveBranch]
     }
     currentLocation = savedLocations.first
+    hydrateCachedWeatherIfNeeded()
 
     // Load + auto-complete first-launch flag for prior users (any non-.notDetermined status means
     // they have seen a permission prompt before). Only pure new installs (never prompted) see the
@@ -355,6 +352,14 @@ final class WeatherStore {
   private func persistWidgetSnapshot(from weather: GrokCastWeather) {
     WidgetDataStore.saveSnapshot(WidgetWeatherSnapshot(weather: weather))
     WidgetTimelineReloader.requestReload()
+  }
+
+  /// Hydrates `currentWeather` from the App Group widget snapshot so cold launch can show
+  /// last-known data immediately (stale-while-revalidate) instead of skeleton shimmer.
+  private func hydrateCachedWeatherIfNeeded() {
+    guard currentWeather == nil, let loc = currentLocation else { return }
+    guard let snapshot = WidgetDataStore.loadSnapshot(for: loc.id) else { return }
+    currentWeather = GrokCastWeather(snapshot: snapshot)
   }
 
   /// Persists a lightweight alert summary for widgets after a successful NWS fetch.
@@ -490,20 +495,79 @@ final class WeatherStore {
     }
   }
 
+  private enum WeatherFetchResult {
+    case success(GrokCastWeather)
+    case failure(Error)
+    case timedOut
+  }
+
+  /// Caps slow Open-Meteo responses so cold launch doesn't sit on skeleton shimmer indefinitely.
+  private func fetchPrimaryWeather(for location: SavedLocation) async -> WeatherFetchResult {
+    await withTaskGroup(of: WeatherFetchResult.self) { group in
+      group.addTask {
+        do {
+          let data = try await self.openMeteo.fetchForecast(for: location)
+          return .success(data)
+        } catch {
+          return .failure(error)
+        }
+      }
+      group.addTask {
+        try? await Task.sleep(nanoseconds: 8_000_000_000)
+        return .timedOut
+      }
+      let first = await group.next() ?? .timedOut
+      group.cancelAll()
+      return first
+    }
+  }
+
+  /// NWS fallback with the same 8s cap so a slow grid lookup can't block launch.
+  private func fetchNWSFallback(for location: SavedLocation) async -> WeatherFetchResult {
+    await withTaskGroup(of: WeatherFetchResult.self) { group in
+      group.addTask {
+        do {
+          let data = try await self.nwsService.fetchForecast(for: location)
+          return .success(data)
+        } catch {
+          return .failure(error)
+        }
+      }
+      group.addTask {
+        try? await Task.sleep(nanoseconds: 8_000_000_000)
+        return .timedOut
+      }
+      let first = await group.next() ?? .timedOut
+      group.cancelAll()
+      return first
+    }
+  }
+
   @MainActor
   func refreshWeather() async {
     guard let loc = currentLocation else { return }
-    isLoadingWeather = true
+    let showLoadingIndicator = currentWeather == nil
+    if showLoadingIndicator {
+      isLoadingWeather = true
+    }
     weatherError = nil
 
     do {
       // Primary: OpenMeteo for accurate numeric weather_code + real precipitation_probability (no fake 40% or text heuristics).
       // NWS fallback only (for non-US or rare OpenMeteo outage). NWS is still used for alerts + station observations.
       let data: GrokCastWeather
-      do {
-        data = try await openMeteo.fetchForecast(for: loc)
-      } catch {
-        data = try await nwsService.fetchForecast(for: loc)
+      switch await fetchPrimaryWeather(for: loc) {
+      case .success(let forecast):
+        data = forecast
+      case .timedOut, .failure:
+        switch await fetchNWSFallback(for: loc) {
+        case .success(let forecast):
+          data = forecast
+        case .timedOut:
+          throw URLError(.timedOut)
+        case .failure(let error):
+          throw error
+        }
       }
       currentWeather = data
       persistWidgetSnapshot(from: data)
@@ -517,10 +581,13 @@ final class WeatherStore {
         _ = await (alerts, nws, owm)
       }
     } catch {
-      weatherError =
-        isOffline
-        ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
-        : OpenMeteoService.userFriendlyMessage(for: error)
+      // Keep showing cached weather on refresh failure; only surface errors when nothing to display.
+      if currentWeather == nil {
+        weatherError =
+          isOffline
+          ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
+          : OpenMeteoService.userFriendlyMessage(for: error)
+      }
     }
     isLoadingWeather = false
   }

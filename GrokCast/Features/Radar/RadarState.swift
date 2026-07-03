@@ -57,6 +57,10 @@ final class RadarState {
   private(set) var selectedProduct: RadarProduct = .reflectivity
   /// Client-side raster color treatment (applied in the Mapbox layer).
   var colorScheme: RadarColorScheme = .vibrant
+  /// Underlying Mapbox base map style (session-only).
+  var baseMapStyle: RadarBaseMapStyle = .satelliteStreets
+  /// When false, hides the precipitation radar raster layer so only the base map shows.
+  var showRadarOverlay: Bool = true
   /// Nearest NEXRAD site (resolved from the load coordinate; nil outside the US).
   private(set) var nearestSite: IEMRadarService.Site?
 
