@@ -111,7 +111,8 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     symbolName = weather.symbolName
     high = weather.high
     low = weather.low
-    hourly = Array(weather.hourly.prefix(4))
+    let cutoff = Date().addingTimeInterval(-3600)
+    hourly = Array(weather.hourly.drop(while: { $0.time < cutoff }).prefix(4))
     daily = Array(weather.daily.prefix(10))
     fetchedAt = weather.fetchedAt
     grokCastScore = nil
@@ -134,7 +135,8 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     symbolName = weather.symbolName
     high = weather.high
     low = weather.low
-    hourly = Array(weather.hourly.prefix(4))
+    let cutoff = Date().addingTimeInterval(-3600)
+    hourly = Array(weather.hourly.drop(while: { $0.time < cutoff }).prefix(4))
     daily = Array(weather.daily.prefix(10))
     fetchedAt = weather.fetchedAt
     self.grokCastScore = grokCastScore

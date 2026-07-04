@@ -101,9 +101,20 @@ struct PaywallView: View {
       ProgressView("Loading plans…")
         .frame(maxWidth: .infinity)
     } else if subscription.products.isEmpty {
-      Text("Subscriptions unavailable. Check your connection or try again in Settings.")
-        .font(.caption)
-        .foregroundStyle(DesignTokens.Palette.warning)
+      VStack(spacing: DesignTokens.Spacing.space12) {
+        Text("Subscriptions unavailable. Check your connection or try again.")
+          .font(.caption)
+          .foregroundStyle(DesignTokens.Palette.warning)
+          .multilineTextAlignment(.center)
+        Button {
+          Task { await subscription.loadProducts() }
+        } label: {
+          Label("Retry", systemImage: "arrow.clockwise")
+            .font(.subheadline.weight(.semibold))
+        }
+        .buttonStyle(.bordered)
+        .tint(DesignTokens.Palette.accent)
+      }
     } else {
       VStack(spacing: DesignTokens.Spacing.space12) {
         ForEach(subscription.products, id: \.id) { product in

@@ -65,50 +65,50 @@ struct LargeWeatherWidgetView: View {
   }
 
   private func headerSection(snapshot: WidgetWeatherSnapshot) -> some View {
-    HStack(alignment: .top) {
-      VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 4) {
-          Image(systemName: "mappin.and.ellipse")
-            .font(.caption2)
-            .foregroundStyle(style.secondaryText)
-          Text(snapshot.location.name)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(style.secondaryText)
-            .lineLimit(1)
-        }
-
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-          Text("\(Int(snapshot.currentTemp.rounded()))°")
-            .font(.system(size: 38, weight: .bold, design: .rounded))
-            .foregroundStyle(style.primaryText)
-          Image(systemName: snapshot.symbolName)
-            .font(.title2)
-            .symbolRenderingMode(.multicolor)
-        }
-
-        Text(snapshot.conditionText)
-          .font(.subheadline.weight(.medium))
+    VStack(alignment: .leading, spacing: 4) {
+      HStack(spacing: 4) {
+        Image(systemName: "mappin.and.ellipse")
+          .font(.caption2)
+          .foregroundStyle(style.secondaryText)
+        Text(snapshot.location.name)
+          .font(.caption.weight(.semibold))
           .foregroundStyle(style.secondaryText)
           .lineLimit(1)
+
+        Spacer(minLength: 0)
+
+        Text("H:\(Int(snapshot.high.rounded()))° L:\(Int(snapshot.low.rounded()))°")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(style.secondaryText)
       }
 
-      Spacer(minLength: 0)
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text("\(Int(snapshot.currentTemp.rounded()))°")
+          .font(.system(size: 38, weight: .bold, design: .rounded))
+          .foregroundStyle(style.primaryText)
+        Image(systemName: snapshot.symbolName)
+          .font(.title2)
+          .symbolRenderingMode(.multicolor)
 
-      VStack(alignment: .trailing, spacing: 4) {
-        HStack(spacing: 10) {
-          Label("H \(Int(snapshot.high.rounded()))°", systemImage: "arrow.up")
-          Label("L \(Int(snapshot.low.rounded()))°", systemImage: "arrow.down")
-        }
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(style.secondaryText)
-        .labelStyle(.titleOnly)
+        Spacer(minLength: 0)
 
         if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
-          Text("Score \(score) · \(label)")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(style.secondaryText)
+          VStack(alignment: .trailing, spacing: 1) {
+            Text("\(score)")
+              .font(.system(size: 22, weight: .bold, design: .rounded))
+              .foregroundStyle(style.primaryText)
+            Text(label)
+              .font(.caption2.weight(.medium))
+              .foregroundStyle(style.secondaryText)
+              .lineLimit(1)
+          }
         }
       }
+
+      Text(snapshot.conditionText)
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(style.secondaryText)
+        .lineLimit(1)
     }
   }
 
@@ -203,7 +203,8 @@ struct LargeWeatherWidgetView: View {
       Text(brief)
         .font(.caption2)
         .foregroundStyle(style.primaryText)
-        .lineLimit(2)
+        .lineLimit(3)
+        .minimumScaleFactor(0.9)
     }
   }
 
