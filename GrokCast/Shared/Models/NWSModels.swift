@@ -87,6 +87,28 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     return expires < Date()
   }
 
+  var isLifeThreatening: Bool {
+    let lower = event.lowercased()
+    return lower.contains("tornado warning")
+      || lower.contains("hurricane warning")
+      || lower.contains("extreme wind warning")
+      || lower.contains("storm surge warning")
+      || lower.contains("tsunami warning")
+      || lower.contains("flash flood emergency")
+      || (severity ?? "").lowercased() == "extreme"
+  }
+
+  var expiresRelativeText: String? {
+    guard let expires, expires > Date() else { return nil }
+    let interval = expires.timeIntervalSinceNow
+    let hours = Int(interval) / 3600
+    let minutes = (Int(interval) % 3600) / 60
+    if hours > 0 {
+      return "Expires in \(hours)h \(minutes)m"
+    }
+    return "Expires in \(minutes)m"
+  }
+
   /// Best date for sorting history (sent preferred, then firstSeen).
   var sortDate: Date {
     sent ?? firstSeen

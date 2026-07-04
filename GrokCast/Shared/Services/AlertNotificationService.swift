@@ -1,13 +1,13 @@
 import Foundation
 import UserNotifications
 
-/// Local notifications for new severe NWS alerts (Warnings + Watches).
 @MainActor
 final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate {
   static let shared = AlertNotificationService()
 
   static let deepLinkURL = GrokCastDeepLinks.alertsURL
   static let categoryIdentifier = "GROKCAST_SEVERE_ALERT"
+  static let criticalCategoryIdentifier = "GROKCAST_CRITICAL_ALERT"
 
   private let center = UNUserNotificationCenter.current()
 
@@ -23,21 +23,18 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
     authorizationStatus = settings.authorizationStatus
   }
 
-  /// Requests notification permission with a clear explanation for severe weather alerts.
   func requestAuthorization() async -> Bool {
     do {
-      let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+      let granted = try await center.requestAuthorization(
+        options: [.alert, .sound, .badge, .criticalAlert])
       await refreshAuthorizationStatus()
       return granted
     } catch {
-      // notification permission failed (log removed for release)
       await refreshAuthorizationStatus()
       return false
     }
   }
 
-  /// Sends local notifications for new severe alerts not yet notified.
-  /// - Parameter taskStart: When set (background BG task), successful posts emit `[DIAG]` logs.
   func notifyIfNeeded(for alerts: [NWSAlert], enabled: Bool, taskStart: CFAbsoluteTime? = nil) async
   {
     guard enabled else { return }
@@ -46,8 +43,6 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
       return
     }
 
-    // First authorized pass: always mark initial sync complete (even when severe is empty).
-    // Prevents a later first-severe alert from being silently suppressed as "already notified."
     if !AlertHistoryStore.hasCompletedInitialAlertSync() {
       let severe = alerts.filter(\.isSevereEvent)
       AlertHistoryStore.markNotified(ids: severe.map(\.id))
@@ -75,20 +70,35 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
   private func postNotification(for alert: NWSAlert, taskStart: CFAbsoluteTime? = nil) async -> Bool
   {
     let content = UNMutableNotificationContent()
-    content.title = alert.event
-    if let headline = alert.headline, !headline.isEmpty {
-      content.subtitle = headline
-    }
-    if let area = alert.areaDesc, !area.isEmpty {
-      content.body = area
-    } else if let headline = alert.headline, !headline.isEmpty {
-      content.body = headline
+
+    if alert.isLifeThreatening {
+      content.title = "\u{26A0}\u{FE0F} \(alert.event)"
+      content.interruptionLevel = .critical
+      content.sound = UNNotificationSound.defaultCritical
+      content.categoryIdentifier = Self.criticalCategoryIdentifier
+    } else if alert.isWarning {
+      content.title = alert.event
+      content.interruptionLevel = .timeSensitive
+      GrokCastNotificationSounds.apply(to: content)
+      content.categoryIdentifier = Self.categoryIdentifier
     } else {
-      content.body = "Tap to view alert details in GrokCast."
+      content.title = alert.event
+      content.interruptionLevel = .timeSensitive
+      GrokCastNotificationSounds.apply(to: content)
+      content.categoryIdentifier = Self.categoryIdentifier
     }
-    GrokCastNotificationSounds.apply(to: content)
-    content.categoryIdentifier = Self.categoryIdentifier
-    content.userInfo = ["deepLink": Self.deepLinkURL.absoluteString]
+
+    content.subtitle = buildSubtitle(for: alert)
+    content.body = buildBody(for: alert)
+    content.threadIdentifier = "grokcast-severe-alerts"
+    content.userInfo = [
+      "deepLink": Self.deepLinkURL.absoluteString,
+      "alertId": alert.id,
+    ]
+
+    if let severity = alert.severity {
+      content.userInfo["severity"] = severity
+    }
 
     let request = UNNotificationRequest(
       identifier: "nws-\(alert.id)",
@@ -100,9 +110,36 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
       try await center.add(request)
       return true
     } catch {
-      // failed to schedule notification (log removed)
       return false
     }
+  }
+
+  private func buildSubtitle(for alert: NWSAlert) -> String {
+    var parts: [String] = []
+
+    if let area = alert.areaDesc, !area.isEmpty {
+      let trimmed = String(area.prefix(80))
+      parts.append(trimmed)
+    }
+
+    if let expiry = alert.expiresRelativeText {
+      parts.append(expiry)
+    }
+
+    return parts.joined(separator: " · ")
+  }
+
+  private func buildBody(for alert: NWSAlert) -> String {
+    if let instruction = alert.instruction, !instruction.isEmpty {
+      return String(instruction.prefix(300))
+    }
+    if let headline = alert.headline, !headline.isEmpty {
+      return String(headline.prefix(300))
+    }
+    if let desc = alert.description, !desc.isEmpty {
+      return String(desc.prefix(300))
+    }
+    return "Tap to view alert details in GrokCast."
   }
 
   // MARK: - UNUserNotificationCenterDelegate
@@ -126,6 +163,8 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
       url = GrokCastDeepLinks.grokURL
     case "OPEN_ALERTS":
       url = GrokCastDeepLinks.alertsURL
+    case "VIEW_RADAR":
+      url = GrokCastDeepLinks.radarURL
     default:
       let userInfo = response.notification.request.content.userInfo
       if let link = userInfo["deepLink"] as? String, let parsed = URL(string: link) {

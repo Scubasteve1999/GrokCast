@@ -88,6 +88,8 @@ struct MainTabView: View {
       store.selectedTab = .alerts
     case GrokCastDeepLinks.forecastHost:
       store.selectedTab = .forecast
+    case GrokCastDeepLinks.radarHost:
+      store.selectedTab = .radar
     case GrokCastDeepLinks.grokHost:
       store.selectedTab = .grok
     default:

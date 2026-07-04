@@ -6,11 +6,13 @@ enum GrokCastDeepLinks {
   static let todayHost = "today"
   static let alertsHost = "alerts"
   static let forecastHost = "forecast"
+  static let radarHost = "radar"
   static let grokHost = "grok"
 
   static let todayURL = makeURL(todayHost)
   static let alertsURL = makeURL(alertsHost)
   static let forecastURL = makeURL(forecastHost)
+  static let radarURL = makeURL(radarHost)
   static let grokURL = makeURL(grokHost)
 
   private static func makeURL(_ host: String) -> URL {

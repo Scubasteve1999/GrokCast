@@ -60,12 +60,24 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
   private func registerAllNotificationCategories() {
     let viewAlerts = UNNotificationAction(
       identifier: "OPEN_ALERTS",
-      title: "View Alerts",
+      title: "View Details",
       options: [.foreground]
     )
+    let viewRadar = UNNotificationAction(
+      identifier: "VIEW_RADAR",
+      title: "View Radar",
+      options: [.foreground]
+    )
+
     let severeAlert = UNNotificationCategory(
       identifier: AlertNotificationService.categoryIdentifier,
-      actions: [viewAlerts],
+      actions: [viewAlerts, viewRadar],
+      intentIdentifiers: [],
+      options: []
+    )
+    let criticalAlert = UNNotificationCategory(
+      identifier: AlertNotificationService.criticalCategoryIdentifier,
+      actions: [viewAlerts, viewRadar],
       intentIdentifiers: [],
       options: []
     )
@@ -87,7 +99,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       options: []
     )
 
-    UNUserNotificationCenter.current().setNotificationCategories([severeAlert, morningBrief])
+    UNUserNotificationCenter.current().setNotificationCategories([
+      severeAlert, criticalAlert, morningBrief,
+    ])
   }
 }
 
