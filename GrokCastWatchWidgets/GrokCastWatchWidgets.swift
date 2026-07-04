@@ -33,13 +33,14 @@ struct WatchCircularComplicationView: View {
 
   var body: some View {
     if let snapshot = entry.snapshot {
-      VStack(spacing: 0) {
+      Gauge(value: snapshot.currentTemp, in: snapshot.low...snapshot.high) {
         Image(systemName: snapshot.symbolName)
-          .font(.caption)
+          .symbolRenderingMode(.multicolor)
+      } currentValueLabel: {
         Text("\(Int(snapshot.currentTemp.rounded()))°")
           .font(.system(.body, design: .rounded).weight(.bold))
-          .minimumScaleFactor(0.7)
       }
+      .gaugeStyle(.accessoryCircular)
     } else {
       Image(systemName: "cloud")
     }
@@ -51,24 +52,43 @@ struct WatchRectangularComplicationView: View {
 
   var body: some View {
     if let snapshot = entry.snapshot {
-      HStack {
-        VStack(alignment: .leading, spacing: 0) {
-          Text("\(Int(snapshot.currentTemp.rounded()))°")
-            .font(.headline.bold())
-          Text(snapshot.conditionText)
-            .font(.caption2)
+      VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 4) {
+          Image(systemName: snapshot.symbolName)
+            .symbolRenderingMode(.multicolor)
+          Text("\(Int(snapshot.currentTemp.rounded()))° \(snapshot.conditionText)")
+            .font(.headline)
             .lineLimit(1)
         }
-        Spacer(minLength: 0)
-        if let score = snapshot.grokCastScore {
-          Text("\(score)")
-            .font(.caption.bold())
-            .foregroundStyle(.blue)
+        HStack(spacing: 8) {
+          Text("H:\(Int(snapshot.high.rounded()))° L:\(Int(snapshot.low.rounded()))°")
+            .font(.caption2.weight(.semibold))
+          if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
+            Text("Score \(score) · \(label)")
+              .font(.caption2)
+              .foregroundStyle(.blue)
+          }
+        }
+        if let brief = snapshot.grokBriefOneLiner, !brief.isEmpty {
+          Text(brief)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        } else if let hourly = snapshot.hourly.first, hourly.precipChance > 20 {
+          Text("\(hourly.precipChance)% chance of rain")
+            .font(.caption2)
+            .foregroundStyle(.cyan)
         }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
     } else {
-      Text("GrokCast")
-        .font(.caption)
+      VStack(alignment: .leading) {
+        Text("GrokCast")
+          .font(.headline)
+        Text("Open app to refresh")
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
     }
   }
 }
@@ -78,7 +98,11 @@ struct WatchInlineComplicationView: View {
 
   var body: some View {
     if let snapshot = entry.snapshot {
-      Text("\(Int(snapshot.currentTemp.rounded()))° · \(snapshot.conditionText)")
+      if let score = snapshot.grokCastScore {
+        Text("\(Int(snapshot.currentTemp.rounded()))° \(snapshot.conditionText) · \(score)")
+      } else {
+        Text("\(Int(snapshot.currentTemp.rounded()))° · \(snapshot.conditionText)")
+      }
     } else {
       Text("GrokCast")
     }
@@ -103,6 +127,22 @@ struct GrokCastWatchComplicationWidget: Widget {
   }
 }
 
+struct WatchCornerComplicationView: View {
+  let entry: WatchWeatherComplicationEntry
+
+  var body: some View {
+    if let snapshot = entry.snapshot {
+      Text("\(Int(snapshot.currentTemp.rounded()))°")
+        .font(.system(.title3, design: .rounded).weight(.bold))
+        .widgetLabel {
+          Text(snapshot.conditionText)
+        }
+    } else {
+      Image(systemName: "cloud")
+    }
+  }
+}
+
 struct WatchComplicationEntryView: View {
   let entry: WatchWeatherComplicationEntry
   @Environment(\.widgetFamily) private var family
@@ -113,6 +153,8 @@ struct WatchComplicationEntryView: View {
       WatchRectangularComplicationView(entry: entry)
     case .accessoryInline:
       WatchInlineComplicationView(entry: entry)
+    case .accessoryCorner:
+      WatchCornerComplicationView(entry: entry)
     default:
       WatchCircularComplicationView(entry: entry)
     }
