@@ -70,6 +70,7 @@
 		444AA54356DCEF848015AF56 /* WidgetWeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCD12831CD2F178E92ECA3C /* WidgetWeatherSnapshot.swift */; };
 		4452805188B017F77E7B7781 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F52F9E545B0F18FF67A3E2 /* PushNotificationService.swift */; };
 		45C22EB7D9110676FFC2FDC8 /* WeatherTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76AA36D1169D9E4FE83E235 /* WeatherTimelineProvider.swift */; };
+		479D5DEB8A7938D048F63616 /* LargeWeatherWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC21CCCF030BDD862409B91 /* LargeWeatherWidgetView.swift */; };
 		47CC29EF5BB2F59BCC0D231D /* DeveloperAPIKey.swift.example in Resources */ = {isa = PBXBuildFile; fileRef = E74FF11D8FF30DE0D70917DE /* DeveloperAPIKey.swift.example */; };
 		485D08491A51DC51353B0E32 /* GrokBriefSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2913B75C9C13380D57C1E4B8 /* GrokBriefSnapshot.swift */; };
 		48FAC7828515F94CF8E1C670 /* OpenMeteoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AC6F1C9E439A9230B5C8F1 /* OpenMeteoModels.swift */; };
@@ -436,6 +437,7 @@
 		FC4187B014ED170D0415154D /* RadarMapboxRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapboxRepresentable.swift; sourceTree = "<group>"; };
 		FDE9772F416DFEF9A57448E5 /* DebugFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugFlags.swift; sourceTree = "<group>"; };
 		FE3FE3FE7366628D4E9509D4 /* AlertsGrokSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsGrokSummaryCard.swift; sourceTree = "<group>"; };
+		FEC21CCCF030BDD862409B91 /* LargeWeatherWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeWeatherWidgetView.swift; sourceTree = "<group>"; };
 		FEEC24047653D9A5E2BF4C4E /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		FF0DD706AD869AEA78761394 /* WeatherLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLiveActivityAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -646,6 +648,7 @@
 		5E9CD482C6DF0F4896859B1B /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				FEC21CCCF030BDD862409B91 /* LargeWeatherWidgetView.swift */,
 				23B9D74D0898A2377BE63F0D /* LockScreenWeatherWidgetView.swift */,
 				308C5545AD62E554AD7382C8 /* MediumWeatherWidgetView.swift */,
 				69FA276732808D8CA5209734 /* SmallWeatherWidgetView.swift */,
@@ -1291,6 +1294,7 @@
 				6E039974EFC9B0732CAEDDDE /* GrokBriefSnapshot.swift in Sources */,
 				D67543EDA18A7636D750473C /* GrokCastDeepLinks.swift in Sources */,
 				795C30E1D4C75C2C9CC764D9 /* GrokCastWidgets.swift in Sources */,
+				479D5DEB8A7938D048F63616 /* LargeWeatherWidgetView.swift in Sources */,
 				EC01DB10ADD743F7486AB9C5 /* Location.swift in Sources */,
 				A702E4C94BC5AFF637EC25BD /* LockScreenWeatherWidgetView.swift in Sources */,
 				9FA3D4D8CC1752459D3866ED /* MediumWeatherWidgetView.swift in Sources */,

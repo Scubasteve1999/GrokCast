@@ -101,21 +101,21 @@ struct WeatherBackgroundView: View {
   private var blackBaseOpacity: Double {
     switch intensity {
     case .full: return 1.0
-    case .subtle: return 0.55
+    case .subtle: return 0.6
     }
   }
 
   private var gradientOpacity: Double {
     let base: Double =
       switch intensity {
-      case .full: colorScheme == .dark ? 0.92 : 0.85
-      case .subtle: colorScheme == .dark ? 0.42 : 0.38
+      case .full: 1.0
+      case .subtle: colorScheme == .dark ? 0.55 : 0.48
       }
     return base
   }
 
   private var particleOpacity: Double {
-    intensity == .full ? 0.75 : 0.35
+    intensity == .full ? 0.8 : 0.4
   }
 
   // MARK: - Gradients
@@ -146,27 +146,33 @@ struct WeatherBackgroundView: View {
     LinearGradient(
       colors: isDay
         ? [
-          Color(red: 0.45, green: 0.28, blue: 0.08),
-          Color(red: 0.72, green: 0.42, blue: 0.12),
-          Color(red: 0.18, green: 0.10, blue: 0.06),
+          Color(red: 0.28, green: 0.52, blue: 0.85),
+          Color(red: 0.18, green: 0.38, blue: 0.72),
+          Color(red: 0.08, green: 0.18, blue: 0.42),
         ]
         : [
-          Color(red: 0.06, green: 0.08, blue: 0.22),
-          Color(red: 0.12, green: 0.14, blue: 0.32),
-          Color.black,
+          Color(red: 0.04, green: 0.06, blue: 0.18),
+          Color(red: 0.08, green: 0.10, blue: 0.28),
+          Color(red: 0.02, green: 0.03, blue: 0.10),
         ],
-      startPoint: .topLeading,
-      endPoint: .bottomTrailing
+      startPoint: .top,
+      endPoint: .bottom
     )
   }
 
   private var partlyCloudyGradient: some View {
     LinearGradient(
-      colors: [
-        Color(red: 0.22, green: 0.28, blue: 0.38),
-        Color(red: 0.14, green: 0.18, blue: 0.26),
-        Color(red: 0.06, green: 0.08, blue: 0.12),
-      ],
+      colors: isDay
+        ? [
+          Color(red: 0.32, green: 0.48, blue: 0.68),
+          Color(red: 0.20, green: 0.32, blue: 0.52),
+          Color(red: 0.08, green: 0.14, blue: 0.28),
+        ]
+        : [
+          Color(red: 0.10, green: 0.14, blue: 0.28),
+          Color(red: 0.06, green: 0.10, blue: 0.20),
+          Color(red: 0.03, green: 0.04, blue: 0.10),
+        ],
       startPoint: .top,
       endPoint: .bottom
     )
@@ -175,21 +181,21 @@ struct WeatherBackgroundView: View {
   private var overcastGradient: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.18, green: 0.22, blue: 0.30),
-        Color(red: 0.10, green: 0.13, blue: 0.20),
-        Color(red: 0.04, green: 0.05, blue: 0.08),
+        Color(red: 0.22, green: 0.26, blue: 0.35),
+        Color(red: 0.14, green: 0.17, blue: 0.25),
+        Color(red: 0.06, green: 0.07, blue: 0.12),
       ],
-      startPoint: .topLeading,
-      endPoint: .bottomTrailing
+      startPoint: .top,
+      endPoint: .bottom
     )
   }
 
   private var fogGradient: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.20, green: 0.22, blue: 0.24),
-        Color(red: 0.12, green: 0.13, blue: 0.15),
-        Color.black,
+        Color(red: 0.28, green: 0.30, blue: 0.34),
+        Color(red: 0.16, green: 0.18, blue: 0.22),
+        Color(red: 0.06, green: 0.07, blue: 0.10),
       ],
       startPoint: .top,
       endPoint: .bottom
@@ -199,9 +205,9 @@ struct WeatherBackgroundView: View {
   private var rainGradient: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.08, green: 0.14, blue: 0.28),
-        Color(red: 0.05, green: 0.10, blue: 0.22),
-        Color(red: 0.02, green: 0.04, blue: 0.10),
+        Color(red: 0.12, green: 0.18, blue: 0.35),
+        Color(red: 0.06, green: 0.12, blue: 0.28),
+        Color(red: 0.02, green: 0.05, blue: 0.14),
       ],
       startPoint: .top,
       endPoint: .bottom
@@ -211,21 +217,21 @@ struct WeatherBackgroundView: View {
   private var snowGradient: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.55, green: 0.65, blue: 0.78),
-        Color(red: 0.22, green: 0.30, blue: 0.42),
-        Color(red: 0.06, green: 0.10, blue: 0.18),
+        Color(red: 0.48, green: 0.58, blue: 0.72),
+        Color(red: 0.28, green: 0.36, blue: 0.50),
+        Color(red: 0.10, green: 0.14, blue: 0.24),
       ],
-      startPoint: .topLeading,
-      endPoint: .bottomTrailing
+      startPoint: .top,
+      endPoint: .bottom
     )
   }
 
   private var thunderstormGradient: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.22, green: 0.12, blue: 0.32),
-        Color(red: 0.10, green: 0.08, blue: 0.18),
-        Color.black,
+        Color(red: 0.18, green: 0.08, blue: 0.32),
+        Color(red: 0.12, green: 0.06, blue: 0.24),
+        Color(red: 0.04, green: 0.02, blue: 0.10),
       ],
       startPoint: .top,
       endPoint: .bottom
@@ -234,7 +240,10 @@ struct WeatherBackgroundView: View {
 
   private var neutralTacticalGradient: some View {
     LinearGradient(
-      colors: [Color(red: 0.05, green: 0.05, blue: 0.12), .black],
+      colors: [
+        Color(red: 0.08, green: 0.10, blue: 0.18),
+        Color(red: 0.04, green: 0.05, blue: 0.12),
+      ],
       startPoint: .top,
       endPoint: .bottom
     )
@@ -437,52 +446,6 @@ private struct LightningOverlay: View {
           )
         )
     }
-  }
-}
-
-// MARK: - View Modifier
-
-private struct WeatherBackgroundModifier: ViewModifier {
-  let conditionCode: Int?
-  var isDay: Bool
-  var intensity: BackgroundIntensity
-  var extraOpacity: Double
-
-  func body(content: Content) -> some View {
-    ZStack {
-      DesignTokens.Palette.bgPrimary
-        .ignoresSafeArea()
-
-      WeatherBackgroundView(
-        conditionCode: conditionCode,
-        isDay: isDay,
-        intensity: intensity
-      )
-      .ignoresSafeArea()
-      .opacity(extraOpacity)
-      .animation(.easeInOut(duration: 1.0), value: conditionCode)
-      .allowsHitTesting(false)
-
-      content
-    }
-  }
-}
-
-extension View {
-  func weatherBackground(
-    conditionCode: Int?,
-    isDay: Bool = WeatherBackgroundView.inferredIsDay,
-    intensity: BackgroundIntensity = .full,
-    extraOpacity: Double = 1.0
-  ) -> some View {
-    modifier(
-      WeatherBackgroundModifier(
-        conditionCode: conditionCode,
-        isDay: isDay,
-        intensity: intensity,
-        extraOpacity: extraOpacity
-      )
-    )
   }
 }
 
