@@ -406,6 +406,7 @@ private struct TodayWeatherPanel: View {
       tacticalDetailsGrid
       sunriseSunsetSection
       hourlyPrecipSection
+      tripPlannerCard
       GrokImagineButton(
         weather: weather,
         isGenerating: isGeneratingImage,
@@ -415,6 +416,35 @@ private struct TodayWeatherPanel: View {
       refreshButton
     }
     .padding(.top, DesignTokens.Spacing.space8)
+  }
+
+  private var tripPlannerCard: some View {
+    NavigationLink {
+      TripPlannerView()
+    } label: {
+      HStack(spacing: DesignTokens.Spacing.space12) {
+        Image(systemName: "airplane.departure")
+          .font(.title2)
+          .foregroundStyle(DesignTokens.Palette.accent)
+
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
+          Text("Trip Weather Planner")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+          Text("Check forecast, packing list & AI advice for your trip")
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+        }
+
+        Spacer()
+
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      }
+      .padding(DesignTokens.Spacing.space16)
+      .glassCardStyle()
+    }
   }
 
   @ViewBuilder
