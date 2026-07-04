@@ -36,7 +36,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>31</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>GrokCast uses your location in the background for timely weather alerts and GrokCast updates.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
