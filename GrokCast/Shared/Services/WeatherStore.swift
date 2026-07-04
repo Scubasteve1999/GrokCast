@@ -109,7 +109,13 @@ final class WeatherStore {
       guard newValue != _morningBriefEnabled else { return }
       _morningBriefEnabled = newValue
       UserDefaults.standard.set(newValue, forKey: MorningBriefNotificationService.enabledKey)
-      Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
+      if newValue {
+        Task {
+          await MorningBriefGenerator.generateIfStale(weatherStore: self)
+        }
+      } else {
+        MorningBriefNotificationService.cancel()
+      }
     }
   }
 
@@ -751,7 +757,8 @@ final class WeatherStore {
         async let alerts = refreshAlerts()
         async let nws = refreshNWSObservation()
         async let owm = refreshOpenWeatherMap()
-        _ = await (alerts, nws, owm)
+        async let brief: () = MorningBriefGenerator.generateIfStale(weatherStore: self)
+        _ = await (alerts, nws, owm, brief)
       }
     } catch {
       // Keep showing cached weather on refresh failure; only surface errors when nothing to display.
