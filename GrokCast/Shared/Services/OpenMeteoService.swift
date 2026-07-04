@@ -60,7 +60,7 @@ final class OpenMeteoService {
       URLQueryItem(
         name: "daily",
         value:
-          "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,rain_sum,showers_sum,snowfall_sum"
+          "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,rain_sum,showers_sum,snowfall_sum,sunrise,sunset"
       ),
       URLQueryItem(
         name: "minutely_15",
@@ -227,6 +227,8 @@ final class OpenMeteoService {
         let weatherCode = OpenMeteoDailyDerivation.derivedWeatherCode(
           dailyAPI: apiCode, precipChance: precipChance, slices: slices)
         let (sym, _) = mapWeatherCode(weatherCode, isDay: true)
+        let sunriseDate: Date? = d.sunrise.flatMap { $0.count > i ? parseHourlyDate($0[i]) : nil }
+        let sunsetDate: Date? = d.sunset.flatMap { $0.count > i ? parseHourlyDate($0[i]) : nil }
         dailyForecasts.append(
           DailyForecast(
             date: date,
@@ -238,7 +240,9 @@ final class OpenMeteoService {
             uvMax: d.uv_index_max?[i] ?? nil,
             rainSum: d.rain_sum?[i] ?? nil,
             showersSum: d.showers_sum?[i] ?? nil,
-            snowfallSum: d.snowfall_sum?[i] ?? nil
+            snowfallSum: d.snowfall_sum?[i] ?? nil,
+            sunrise: sunriseDate,
+            sunset: sunsetDate
           ))
       }
     }

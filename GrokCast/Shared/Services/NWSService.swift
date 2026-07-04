@@ -378,7 +378,9 @@ final class NWSService {
             uvMax: nil,
             rainSum: nil,
             showersSum: nil,
-            snowfallSum: nil
+            snowfallSum: nil,
+            sunrise: nil,
+            sunset: nil
           )
         )
       }
@@ -390,7 +392,8 @@ final class NWSService {
         DailyForecast(
           date: Date(), high: currentTemp + 5, low: currentTemp - 5,
           precipChance: 0, weatherCode: dwcode, symbolName: sym,
-          uvMax: nil, rainSum: nil, showersSum: nil, snowfallSum: nil
+          uvMax: nil, rainSum: nil, showersSum: nil, snowfallSum: nil,
+          sunrise: nil, sunset: nil
         )
       )
     }

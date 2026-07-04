@@ -175,7 +175,9 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
         uvMax: 6,
         rainSum: offset == 3 ? 0.4 : nil,
         showersSum: nil,
-        snowfallSum: nil
+        snowfallSum: nil,
+        sunrise: Calendar.current.date(bySettingHour: 6, minute: 15, second: 0, of: date),
+        sunset: Calendar.current.date(bySettingHour: 20, minute: 45, second: 0, of: date)
       )
     }
     return WidgetWeatherSnapshot(

@@ -19,6 +19,7 @@ struct TodayView: View {
   /// (from the Get Started button in the welcome card). "Continue" in the sheet
   /// calls requestLocationPermission() (triggering the iOS prompt) and marks the flow complete.
   @State private var showPermissionExplanation = false
+  @State private var showShareSheet = false
 
   var body: some View {
     NavigationStack {
@@ -119,6 +120,16 @@ struct TodayView: View {
       }
       .navigationTitle("")
       .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          if weather != nil {
+            Button {
+              Haptic.impact(.light)
+              showShareSheet = true
+            } label: {
+              Image(systemName: "square.and.arrow.up")
+            }
+          }
+        }
         ToolbarItem(placement: .topBarTrailing) {
           Button {
             Haptic.impact(.light)
@@ -126,6 +137,20 @@ struct TodayView: View {
           } label: {
             Image(systemName: "location.circle.fill")
           }
+        }
+      }
+      .sheet(isPresented: $showShareSheet) {
+        if let w = weather {
+          let score = GrokCastScoreCalculator.score(
+            for: w, alerts: store.displayableActiveAlerts, units: store.temperatureUnit)
+          let items = WeatherShareService.shareItems(
+            weather: w,
+            score: score,
+            locationName: store.currentLocation?.name ?? w.location.name,
+            grokBrief: nil
+          )
+          ActivityViewRepresentable(items: items)
+            .presentationDetents([.medium, .large])
         }
       }
       .sheet(isPresented: $showImagineResult) {
@@ -379,6 +404,8 @@ private struct TodayWeatherPanel: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
       tonightSection
       tacticalDetailsGrid
+      sunriseSunsetSection
+      hourlyPrecipSection
       GrokImagineButton(
         weather: weather,
         isGenerating: isGeneratingImage,
@@ -388,6 +415,20 @@ private struct TodayWeatherPanel: View {
       refreshButton
     }
     .padding(.top, DesignTokens.Spacing.space8)
+  }
+
+  @ViewBuilder
+  private var sunriseSunsetSection: some View {
+    if let today = weather.daily.first, today.sunrise != nil || today.sunset != nil {
+      SunriseSunsetCard(sunrise: today.sunrise, sunset: today.sunset)
+    }
+  }
+
+  @ViewBuilder
+  private var hourlyPrecipSection: some View {
+    if !weather.hourly.isEmpty {
+      HourlyPrecipCard(hourly: weather.hourly)
+    }
   }
 
   private var refreshButton: some View {

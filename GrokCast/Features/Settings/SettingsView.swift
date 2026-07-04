@@ -332,6 +332,15 @@ struct SettingsView: View {
           )
         }
 
+        // MARK: - Tools
+        Section("TOOLS") {
+          NavigationLink {
+            TripPlannerView()
+          } label: {
+            Label("Trip Weather Planner", systemImage: "airplane.departure")
+          }
+        }
+
         // MARK: - App Information
         Section("APP") {
           LabeledContent("Version") {

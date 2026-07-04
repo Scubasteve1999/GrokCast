@@ -54,6 +54,8 @@ struct Daily: Decodable {
   let showers_sum: [Double?]?
   let snowfall_sum: [Double?]?
   let uv_index_max: [Double?]?
+  let sunrise: [String]?
+  let sunset: [String]?
 }
 
 // Air Quality
@@ -221,13 +223,14 @@ struct DailyForecast: Equatable, Codable, Identifiable {
   let rainSum: Double?
   let showersSum: Double?
   let snowfallSum: Double?
+  let sunrise: Date?
+  let sunset: Date?
 
-  // Stable identity based on the actual forecast day
   var id: Date { date }
 
   enum CodingKeys: String, CodingKey {
     case date, high, low, precipChance, weatherCode, symbolName, uvMax, rainSum, showersSum,
-      snowfallSum
+      snowfallSum, sunrise, sunset
   }
 }
 
