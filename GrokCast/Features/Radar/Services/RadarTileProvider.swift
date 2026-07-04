@@ -1,10 +1,9 @@
 import Foundation
 
 /// Selects which backend serves precipitation map tiles.
-/// RainViewer is the international fallback for live radar.
-/// IEM CONUS composite (N0Q) is the default US Reflectivity source.
-/// Single-site N0B/N0S load only when the user picks Super-Res or SRV.
-/// OpenWeatherMap PR0 is preferred for FUTURE when configured; Xweather fradar is last resort.
+///
+/// Live:     IEM (US CONUS/single-site) → RainViewer (international fallback)
+/// Forecast: OpenWeatherMap PR0 → Xweather fradar (fallback)
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
   case xweather
@@ -12,10 +11,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   /// NWS NEXRAD single-site products (Velocity/SRV) via IEM RIDGE cache. Live-only.
   case iem
 
-  /// Default live (NOW) radar — IEM CONUS composite, else site fallback, OWM, RainViewer.
   static let preferredLive: RadarTileProvider = .iem
-
-  /// Forecast (FUTURE) radar — OpenWeatherMap when configured, else RainViewer, else Xweather.
   static let preferredForecast: RadarTileProvider = .openWeatherMap
 
   var displayName: String {
