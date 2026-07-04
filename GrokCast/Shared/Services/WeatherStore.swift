@@ -965,6 +965,9 @@ final class WeatherStore {
         enabled: alertNotificationsEnabled,
         taskStart: taskStart
       )
+
+      await MorningBriefGenerator.generateIfStale(weatherStore: self)
+
       return true
     } catch is CancellationError {
       return false

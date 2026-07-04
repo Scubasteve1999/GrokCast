@@ -68,11 +68,9 @@ struct MainTabView: View {
     .onOpenURL { url in
       handleDeepLink(url)
     }
-    .onReceive(NotificationCenter.default.publisher(for: .grokCastOpenAlertsTab)) { notification in
+    .onReceive(NotificationCenter.default.publisher(for: .grokCastDeepLink)) { notification in
       if let url = notification.userInfo?["url"] as? URL {
         handleDeepLink(url)
-      } else {
-        store.selectedTab = .alerts
       }
     }
     .task {
@@ -88,6 +86,10 @@ struct MainTabView: View {
       store.selectedTab = .today
     case GrokCastDeepLinks.alertsHost:
       store.selectedTab = .alerts
+    case GrokCastDeepLinks.forecastHost:
+      store.selectedTab = .forecast
+    case GrokCastDeepLinks.grokHost:
+      store.selectedTab = .grok
     default:
       break
     }

@@ -70,14 +70,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       options: []
     )
 
-    let openToday = UNNotificationAction(
-      identifier: "OPEN_TODAY",
-      title: "Open GrokCast",
+    let viewForecast = UNNotificationAction(
+      identifier: "OPEN_FORECAST",
+      title: "Full Forecast",
+      options: [.foreground]
+    )
+    let askGrok = UNNotificationAction(
+      identifier: "OPEN_GROK",
+      title: "Ask Grok",
       options: [.foreground]
     )
     let morningBrief = UNNotificationCategory(
       identifier: MorningBriefNotificationService.categoryIdentifier,
-      actions: [openToday],
+      actions: [viewForecast, askGrok],
       intentIdentifiers: [],
       options: []
     )

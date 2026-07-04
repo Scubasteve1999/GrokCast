@@ -118,19 +118,33 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
     _ center: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse
   ) async {
-    let userInfo = response.notification.request.content.userInfo
-    if let link = userInfo["deepLink"] as? String, let url = URL(string: link) {
-      await MainActor.run {
-        NotificationCenter.default.post(
-          name: .grokCastOpenAlertsTab,
-          object: nil,
-          userInfo: ["url": url]
-        )
+    let url: URL
+    switch response.actionIdentifier {
+    case "OPEN_FORECAST":
+      url = GrokCastDeepLinks.forecastURL
+    case "OPEN_GROK":
+      url = GrokCastDeepLinks.grokURL
+    case "OPEN_ALERTS":
+      url = GrokCastDeepLinks.alertsURL
+    default:
+      let userInfo = response.notification.request.content.userInfo
+      if let link = userInfo["deepLink"] as? String, let parsed = URL(string: link) {
+        url = parsed
+      } else {
+        url = GrokCastDeepLinks.todayURL
       }
+    }
+
+    await MainActor.run {
+      NotificationCenter.default.post(
+        name: .grokCastDeepLink,
+        object: nil,
+        userInfo: ["url": url]
+      )
     }
   }
 }
 
 extension Notification.Name {
-  static let grokCastOpenAlertsTab = Notification.Name("grokcast.openAlertsTab")
+  static let grokCastDeepLink = Notification.Name("grokcast.deepLink")
 }

@@ -1,7 +1,13 @@
 import Foundation
 import UserNotifications
 
-/// Schedules a repeating local notification with the latest cached Grok morning brief.
+struct MorningBriefContent {
+  var briefBody: String
+  var locationName: String?
+  var temperature: String?
+  var condition: String?
+}
+
 @MainActor
 enum MorningBriefNotificationService {
   static let enabledKey = "grokcast_morning_brief_enabled"
@@ -19,6 +25,11 @@ enum MorningBriefNotificationService {
   }
 
   static func scheduleIfEnabled(briefBody: String?) async {
+    let content = MorningBriefContent(briefBody: briefBody ?? "")
+    await scheduleIfEnabled(content: content)
+  }
+
+  static func scheduleIfEnabled(content brief: MorningBriefContent) async {
     guard persistedEnabled else {
       cancel()
       return
@@ -33,14 +44,16 @@ enum MorningBriefNotificationService {
     date.minute = 0
 
     let content = UNMutableNotificationContent()
-    content.title = "GrokCast Morning Brief"
-    let trimmed = briefBody?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    content.title = greeting(for: hour, location: brief.locationName)
+    content.subtitle = subtitle(temperature: brief.temperature, condition: brief.condition)
+    let trimmed = brief.briefBody.trimmingCharacters(in: .whitespacesAndNewlines)
     content.body =
       trimmed.isEmpty
       ? "Open GrokCast for today's weather and Grok's take."
       : String(trimmed.prefix(220))
     GrokCastNotificationSounds.apply(to: content)
     content.categoryIdentifier = categoryIdentifier
+    content.threadIdentifier = "grokcast-morning-brief"
     content.userInfo = ["deepLink": GrokCastDeepLinks.todayURL.absoluteString]
 
     let trigger = UNCalendarNotificationTrigger(dateMatching: date, repeats: true)
@@ -58,5 +71,23 @@ enum MorningBriefNotificationService {
   static func cancel() {
     UNUserNotificationCenter.current().removePendingNotificationRequests(
       withIdentifiers: [requestIdentifier])
+  }
+
+  private static func greeting(for hour: Int, location: String?) -> String {
+    let place = location ?? "your area"
+    switch hour {
+    case 7...9: return "Good morning — \(place)"
+    case 10...11: return "Morning update — \(place)"
+    default: return "Weather brief — \(place)"
+    }
+  }
+
+  private static func subtitle(temperature: String?, condition: String?) -> String {
+    switch (temperature, condition) {
+    case let (temp?, cond?): return "\(temp) · \(cond)"
+    case let (temp?, nil): return temp
+    case let (nil, cond?): return cond
+    case (nil, nil): return ""
+    }
   }
 }
