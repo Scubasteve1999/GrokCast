@@ -131,6 +131,20 @@ final class WeatherStore {
     }
   }
 
+  private static let rainAlertsEnabledKey = "grokcast_rain_alerts_enabled"
+
+  private var _rainAlertsEnabled: Bool = UserDefaults.standard.bool(
+    forKey: WeatherStore.rainAlertsEnabledKey)
+
+  var rainAlertsEnabled: Bool {
+    get { _rainAlertsEnabled }
+    set {
+      guard newValue != _rainAlertsEnabled else { return }
+      _rainAlertsEnabled = newValue
+      UserDefaults.standard.set(newValue, forKey: Self.rainAlertsEnabledKey)
+    }
+  }
+
   private var _notificationSoundsEnabled = GrokCastNotificationSounds.isEnabled
 
   var notificationSoundsEnabled: Bool {
@@ -760,6 +774,12 @@ final class WeatherStore {
         async let brief: () = MorningBriefGenerator.generateIfStale(weatherStore: self)
         _ = await (alerts, nws, owm, brief)
       }
+
+      if rainAlertsEnabled {
+        Task {
+          await RainAlertService.checkAndNotify(weather: data, units: temperatureUnit)
+        }
+      }
     } catch {
       // Keep showing cached weather on refresh failure; only surface errors when nothing to display.
       if currentWeather == nil {
@@ -974,6 +994,10 @@ final class WeatherStore {
       )
 
       await MorningBriefGenerator.generateIfStale(weatherStore: self)
+
+      if rainAlertsEnabled, let weather = currentWeather {
+        await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit)
+      }
 
       return true
     } catch is CancellationError {

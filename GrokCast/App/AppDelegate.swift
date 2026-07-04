@@ -99,8 +99,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       options: []
     )
 
+    let viewToday = UNNotificationAction(
+      identifier: "OPEN_TODAY",
+      title: "View Today",
+      options: [.foreground]
+    )
+    let rainAlert = UNNotificationCategory(
+      identifier: RainAlertService.categoryIdentifier,
+      actions: [viewToday, viewRadar],
+      intentIdentifiers: [],
+      options: []
+    )
+
     UNUserNotificationCenter.current().setNotificationCategories([
-      severeAlert, criticalAlert, morningBrief,
+      severeAlert, criticalAlert, morningBrief, rainAlert,
     ])
   }
 }

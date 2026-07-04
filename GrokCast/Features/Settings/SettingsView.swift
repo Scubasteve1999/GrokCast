@@ -243,6 +243,25 @@ struct SettingsView: View {
         }
 
         Section {
+          Toggle(
+            "Hyper-Local Rain Alerts",
+            isOn: Binding(
+              get: { store.rainAlertsEnabled },
+              set: { store.rainAlertsEnabled = $0 }
+            )
+          )
+          .onChange(of: store.rainAlertsEnabled) { _, _ in
+            Haptic.impact(.light)
+          }
+        } header: {
+          Text("RAIN ALERTS")
+        } footer: {
+          Text(
+            "Get notified when rain is about to start or stop at your exact location using 15-minute precipitation data."
+          )
+        }
+
+        Section {
           Picker(
             "Temperature",
             selection: Binding(
