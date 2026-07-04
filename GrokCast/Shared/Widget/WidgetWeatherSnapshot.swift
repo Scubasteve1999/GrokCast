@@ -161,6 +161,23 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
         snowfall: nil
       )
     }
+    let daily = (0..<5).map { offset in
+      let date = Calendar.current.date(byAdding: .day, value: offset, to: now) ?? now
+      let symbols = ["sun.max.fill", "cloud.sun.fill", "cloud.fill", "cloud.rain.fill", "sun.max.fill"]
+      let codes = [0, 2, 3, 61, 0]
+      return DailyForecast(
+        date: date,
+        high: 78 + Double(offset),
+        low: 62 - Double(offset),
+        precipChance: offset == 3 ? 70 : (offset == 2 ? 30 : 0),
+        weatherCode: codes[offset],
+        symbolName: symbols[offset],
+        uvMax: 6,
+        rainSum: offset == 3 ? 0.4 : nil,
+        showersSum: nil,
+        snowfallSum: nil
+      )
+    }
     return WidgetWeatherSnapshot(
       location: location,
       currentTemp: 72,
@@ -169,6 +186,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
       high: 78,
       low: 62,
       hourly: hourly,
+      daily: daily,
       fetchedAt: now,
       grokCastScore: 82,
       grokCastScoreLabel: "Go Outside",

@@ -65,6 +65,8 @@ struct PaywallView: View {
   private var featureList: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       paywallRow("Grok AI without an API key", "sparkles", "Chat, briefs, Storm Spotter, Imagine")
+      paywallRow("AI morning briefing", "sunrise.fill", "Daily notification with personalized forecast")
+      paywallRow("Critical weather alerts", "exclamationmark.triangle.fill", "Breaks DND for life-threatening events")
       paywallRow("Forecast radar (FUTURE)", "cloud.rain.fill", "Animated precipitation outlook")
       paywallRow("Live Activity & rich widgets", "lock.rectangle.stack.fill", "Score + Minutecast on Lock Screen")
       paywallRow("Unlimited saved locations", "mappin.and.ellipse", "Track every place you care about")
@@ -211,6 +213,8 @@ enum PaywallFeature {
   case radarFuture
   case locations
   case liveActivity
+  case morningBrief
+  case severeAlerts
 
   var headline: String {
     switch self {
@@ -218,6 +222,8 @@ enum PaywallFeature {
     case .radarFuture: "See what's coming"
     case .locations: "Track every location"
     case .liveActivity: "Weather on your Lock Screen"
+    case .morningBrief: "Your personal weather briefing"
+    case .severeAlerts: "Never miss a severe alert"
     }
   }
 
@@ -231,6 +237,10 @@ enum PaywallFeature {
       "Save unlimited cities and switch between them from Today, Radar, and widgets."
     case .liveActivity:
       "Live Activity shows your GrokCast Score and Minutecast without opening the app."
+    case .morningBrief:
+      "Wake up to a personalized AI weather brief every morning — what to wear, when to leave, and what to watch for."
+    case .severeAlerts:
+      "Critical alerts break through Do Not Disturb for life-threatening weather. Never miss a tornado warning."
     }
   }
 
@@ -240,6 +250,8 @@ enum PaywallFeature {
     case .radarFuture: "cloud.rain.fill"
     case .locations: "mappin.and.ellipse"
     case .liveActivity: "lock.rectangle.stack.fill"
+    case .morningBrief: "sunrise.fill"
+    case .severeAlerts: "exclamationmark.triangle.fill"
     }
   }
 }
