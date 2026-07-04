@@ -51,6 +51,7 @@
 		2E975B23876329AF2013CAB0 /* GrokCastWatchWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193106313B7ADB6BA375B9E8 /* GrokCastWatchWidgets.swift */; };
 		2F4E3C5C66331848B40CB614 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B4DAED0A7D4A44604FD047D /* UserNotifications.framework */; };
 		2FAAB3048E6D75B8D007A13F /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B49FC5632B1E2C34B3EF994E /* CustomTabBar.swift */; };
+		2FDCD90E5AE6BE5F0ADFA3F2 /* RadarPreviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F7A507CB35DBB333AE6DE3 /* RadarPreviewCard.swift */; };
 		3243DEB2988C7850C56CA7D5 /* RadarState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 467892BF56F27E98DEA2E515 /* RadarState.swift */; };
 		359A32765089F957122817FF /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 334F43C43821F602DA1BC600 /* AppIntents.framework */; };
 		37CF015288F0DBFD3C2FE3F3 /* WidgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D08A58D32AD99EB4F158B2B /* WidgetEmptyStateView.swift */; };
@@ -67,6 +68,7 @@
 		4228D04C787FE9E6015A9CC1 /* LocationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0465651FD94EA7ADAB85021D /* LocationsView.swift */; };
 		4365DF5F7A5CA72243F95F57 /* DesignComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F7406445F7B5BBC017573 /* DesignComponents.swift */; };
 		444AA54356DCEF848015AF56 /* WidgetWeatherSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCD12831CD2F178E92ECA3C /* WidgetWeatherSnapshot.swift */; };
+		4452805188B017F77E7B7781 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42F52F9E545B0F18FF67A3E2 /* PushNotificationService.swift */; };
 		45C22EB7D9110676FFC2FDC8 /* WeatherTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76AA36D1169D9E4FE83E235 /* WeatherTimelineProvider.swift */; };
 		47CC29EF5BB2F59BCC0D231D /* DeveloperAPIKey.swift.example in Resources */ = {isa = PBXBuildFile; fileRef = E74FF11D8FF30DE0D70917DE /* DeveloperAPIKey.swift.example */; };
 		485D08491A51DC51353B0E32 /* GrokBriefSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2913B75C9C13380D57C1E4B8 /* GrokBriefSnapshot.swift */; };
@@ -75,6 +77,7 @@
 		4DAAFCFA3B24E2B6890D11B6 /* GrokBriefCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EF322FC50810E8B9668995 /* GrokBriefCard.swift */; };
 		4DB33A82F08993B16B081420 /* OpenMeteoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AC6F1C9E439A9230B5C8F1 /* OpenMeteoModels.swift */; };
 		4EA53F71EE8BF2A1E4DB1A62 /* NWSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F5DCF1897595329028EDFD /* NWSService.swift */; };
+		4F16F412CCE2B5B8C6598F82 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0A89ECE2152EEA2D4914DBF3 /* GoogleService-Info.plist */; };
 		4F51200950598EC96AE6229B /* GrokImagineResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4859F764EF397C427F90B8 /* GrokImagineResultView.swift */; };
 		508ED43A7279F922E77BA62E /* OpenWeatherMapKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59C6D7956FC298B6754D5F4C /* OpenWeatherMapKeys.swift */; };
 		512D845D405B517CEC77E8B3 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DCCCC00901C2556D670B9ECA /* ActivityKit.framework */; };
@@ -151,6 +154,7 @@
 		BCDCC73DCC2FE8CE08049F8C /* WeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99AF0C9BC8641A6A0B6161A /* WeatherStore.swift */; };
 		BD66F73C1E60DEEC553E4B3A /* WatchWeatherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F219F55668E6F19492E2040 /* WatchWeatherView.swift */; };
 		BE3A445ADFD2531DFE889D4A /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7EEF73544D52066C4F49D5E /* MapKit.framework */; };
+		C03B69318E2262D194F03455 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D884A80F5A8ED3966206614C /* FirebaseMessaging */; };
 		C0FBA0E8E92B95E9205CEE4A /* WeatherModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA58D4BC81EF86583742A48C /* WeatherModels.swift */; };
 		C32F508B62BB8D927B050A40 /* ExplainRadarSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6140F37F8406B8BA0E83F4F6 /* ExplainRadarSheet.swift */; };
 		C3455A6D8F3592E8BE8C4C30 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A160A4C38A25303E381CF134 /* WidgetKit.framework */; };
@@ -272,6 +276,7 @@
 		0465651FD94EA7ADAB85021D /* LocationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationsView.swift; sourceTree = "<group>"; };
 		068F02350C20BC6713F0994F /* GrokCastProProducts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokCastProProducts.swift; sourceTree = "<group>"; };
 		07150FBBD90648B1D951093D /* WidgetDeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDeepLink.swift; sourceTree = "<group>"; };
+		0A89ECE2152EEA2D4914DBF3 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		0B5F6BC27FBEAC3681635599 /* GrokBuildService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBuildService.swift; sourceTree = "<group>"; };
 		0C25A7B566D08E27166A7B5E /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		0EF63853BCA99B79D04118AF /* GrokCastApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokCastApp.swift; sourceTree = "<group>"; };
@@ -307,6 +312,7 @@
 		3D08A58D32AD99EB4F158B2B /* WidgetEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetEmptyStateView.swift; sourceTree = "<group>"; };
 		40D6D6B81E90663D3AC7E8E6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		41F5DCF1897595329028EDFD /* NWSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSService.swift; sourceTree = "<group>"; };
+		42F52F9E545B0F18FF67A3E2 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		435BDA1BF6252513D2A0E1CC /* OpenWeatherMapRadarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapRadarService.swift; sourceTree = "<group>"; };
 		446AB396BCB092986A0C99FC /* MinutecastStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinutecastStrip.swift; sourceTree = "<group>"; };
 		467892BF56F27E98DEA2E515 /* RadarState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarState.swift; sourceTree = "<group>"; };
@@ -351,6 +357,7 @@
 		7F4AAB620197217D747FE6F4 /* GrokStormSpotterButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokStormSpotterButton.swift; sourceTree = "<group>"; };
 		7FFBF7C3C65CC0E02C2DE4E2 /* NWSModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSModels.swift; sourceTree = "<group>"; };
 		8050009F671B4F8AA080777C /* GrokAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAIService.swift; sourceTree = "<group>"; };
+		86F7A507CB35DBB333AE6DE3 /* RadarPreviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPreviewCard.swift; sourceTree = "<group>"; };
 		879CB5CC2C2110E7438ED949 /* GrokAPIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIConfiguration.swift; sourceTree = "<group>"; };
 		89970C4552FF166D5A6810EB /* Location.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
 		89CFD6A08678B268A316DA1B /* GrokAPIKeyEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIKeyEmptyStateView.swift; sourceTree = "<group>"; };
@@ -466,6 +473,7 @@
 				3E84014B6C3EEB336C9F5D1D /* ActivityKit.framework in Frameworks */,
 				AA5AB351C8A19CCB135E0A0F /* AppIntents.framework in Frameworks */,
 				A8B5E609EADED5ED0DEF7375 /* MapboxMaps in Frameworks */,
+				C03B69318E2262D194F03455 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -532,6 +540,7 @@
 				41F5DCF1897595329028EDFD /* NWSService.swift */,
 				24FB7E4175CD6258A98696CC /* OpenMeteoService.swift */,
 				78EC48DF7471DBEC967CF55F /* OpenWeatherMapService.swift */,
+				42F52F9E545B0F18FF67A3E2 /* PushNotificationService.swift */,
 				AA42FF15F258D415820F4A34 /* WeatherLiveActivityManager.swift */,
 				D7F3FE6A5319338585ED1587 /* WeatherService.swift */,
 				A99AF0C9BC8641A6A0B6161A /* WeatherStore.swift */,
@@ -591,6 +600,7 @@
 				CE4859F764EF397C427F90B8 /* GrokImagineResultView.swift */,
 				6A7D4F466700EE60EBBD76C6 /* LocationPermissionView.swift */,
 				446AB396BCB092986A0C99FC /* MinutecastStrip.swift */,
+				86F7A507CB35DBB333AE6DE3 /* RadarPreviewCard.swift */,
 				B3B0636DE5F7A4D95A8700EC /* TodayView.swift */,
 			);
 			path = Today;
@@ -652,6 +662,7 @@
 			children = (
 				B2170685CE45F6B6BEE23F05 /* DeveloperAPIKey.swift */,
 				E74FF11D8FF30DE0D70917DE /* DeveloperAPIKey.swift.example */,
+				0A89ECE2152EEA2D4914DBF3 /* GoogleService-Info.plist */,
 				EF1CBC39CBE8E1559A7ADB43 /* GrokCastProConfig.swift */,
 				25F9B6DA5EDC0B94ED2BA0B6 /* GrokCastUtilitiesDeveloperAPIKey.swift */,
 				59C6D7956FC298B6754D5F4C /* OpenWeatherMapKeys.swift */,
@@ -1002,6 +1013,7 @@
 			name = GrokCast;
 			packageProductDependencies = (
 				563A11C885AD8B7E76BB9A18 /* MapboxMaps */,
+				D884A80F5A8ED3966206614C /* FirebaseMessaging */,
 			);
 			productName = GrokCast;
 			productReference = 506F52BA3C8123228C51BA28 /* GrokCast.app */;
@@ -1063,6 +1075,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				2C888254923311A9BAD7F19F /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */,
+				E375EE136B2766BB7150A483 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0829052748FAAE8C4944D1FA /* Products */;
@@ -1092,6 +1105,7 @@
 			files = (
 				E0CFA393053E50079C2073E1 /* Assets.xcassets in Resources */,
 				47CC29EF5BB2F59BCC0D231D /* DeveloperAPIKey.swift.example in Resources */,
+				4F16F412CCE2B5B8C6598F82 /* GoogleService-Info.plist in Resources */,
 				38A0319142F96307FC5D3251 /* GrokProducts.storekit in Resources */,
 				DA17592DF84360358F0D6829 /* OpenWeatherMapKeys.swift.example in Resources */,
 			);
@@ -1217,6 +1231,7 @@
 				5DD0A4B1E34E5907625C8AC4 /* OpenWeatherMapService.swift in Sources */,
 				5A780DAFEA48B95D9834B4CF /* PaywallCoordinator.swift in Sources */,
 				2E6987EC7C46E51DCDD00531 /* PaywallView.swift in Sources */,
+				4452805188B017F77E7B7781 /* PushNotificationService.swift in Sources */,
 				F1B64C5232D9650419A3AF77 /* RadarControlPanel.swift in Sources */,
 				E570FDA8DA94BA45C4DF3E25 /* RadarDataset.swift in Sources */,
 				A5E5D5B58047740E76544016 /* RadarFrame.swift in Sources */,
@@ -1226,6 +1241,7 @@
 				E1909FCA55B8553C314B2CC3 /* RadarModeTransition.swift in Sources */,
 				A7CD07919A151947EC496C47 /* RadarPlayback.swift in Sources */,
 				E75DA31C340492F59ECEFBEB /* RadarPlaybackControls.swift in Sources */,
+				2FDCD90E5AE6BE5F0ADFA3F2 /* RadarPreviewCard.swift in Sources */,
 				E029FED4BC5D33E41AD62D5A /* RadarProduct.swift in Sources */,
 				3243DEB2988C7850C56CA7D5 /* RadarState.swift in Sources */,
 				F759F6E9439553358C316C8C /* RadarTileProvider.swift in Sources */,
@@ -1387,7 +1403,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1552,7 +1568,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1655,6 +1671,14 @@
 				minimumVersion = 11.0.0;
 			};
 		};
+		E375EE136B2766BB7150A483 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1662,6 +1686,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2C888254923311A9BAD7F19F /* XCRemoteSwiftPackageReference "mapbox-maps-ios" */;
 			productName = MapboxMaps;
+		};
+		D884A80F5A8ED3966206614C /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E375EE136B2766BB7150A483 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

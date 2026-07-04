@@ -82,8 +82,10 @@ Secrets.swift
 GrokCast/Config/Secrets.swift
 GrokCast/Config/DeveloperAPIKey.swift
 GrokCast/Config/OpenWeatherMapKeys.swift
+GrokCast/Config/GoogleService-Info.plist
 *.key
 *.pem
+*.p8
 .env
 .env.local
 .env.*.local

@@ -1,28 +1,99 @@
 import BackgroundTasks
+import FirebaseCore
+import FirebaseMessaging
 import UIKit
 import UserNotifications
 
-/// UIKit delegate adapter for BGTask registration and notification delegate wiring.
+/// UIKit delegate adapter for BGTask registration, APNs, Firebase, and notification delegate wiring.
 final class AppDelegate: NSObject, UIApplicationDelegate {
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    // Register only at launch. Scheduling happens in applicationDidEnterBackground —
-    // submitting here often fails with BGTaskScheduler.Error.unavailable (error 1),
-    // especially on Simulator while the app is still foregrounded.
+    FirebaseApp.configure()
+    Messaging.messaging().delegate = self
+
     BackgroundAlertRefreshService.register()
+    registerAllNotificationCategories()
 
     Task { @MainActor in
       await AlertNotificationService.shared.refreshAuthorizationStatus()
+      PushNotificationService.shared.registerForRemoteNotifications()
     }
-
-    MorningBriefNotificationService.registerCategory()
 
     return true
   }
 
   func applicationDidEnterBackground(_ application: UIApplication) {
     BackgroundAlertRefreshService.scheduleAlertRefreshTask()
+  }
+
+  // MARK: - APNs
+
+  func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    Task { @MainActor in
+      PushNotificationService.shared.didRegisterForRemoteNotifications(deviceToken: deviceToken)
+    }
+  }
+
+  func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    Task { @MainActor in
+      PushNotificationService.shared.didFailToRegisterForRemoteNotifications(error: error)
+    }
+  }
+
+  func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any]
+  ) async -> UIBackgroundFetchResult {
+    await PushNotificationService.shared.didReceiveRemoteNotification(userInfo: userInfo)
+  }
+
+  // MARK: - Notification categories
+
+  private func registerAllNotificationCategories() {
+    let viewAlerts = UNNotificationAction(
+      identifier: "OPEN_ALERTS",
+      title: "View Alerts",
+      options: [.foreground]
+    )
+    let severeAlert = UNNotificationCategory(
+      identifier: AlertNotificationService.categoryIdentifier,
+      actions: [viewAlerts],
+      intentIdentifiers: [],
+      options: []
+    )
+
+    let openToday = UNNotificationAction(
+      identifier: "OPEN_TODAY",
+      title: "Open GrokCast",
+      options: [.foreground]
+    )
+    let morningBrief = UNNotificationCategory(
+      identifier: MorningBriefNotificationService.categoryIdentifier,
+      actions: [openToday],
+      intentIdentifiers: [],
+      options: []
+    )
+
+    UNUserNotificationCenter.current().setNotificationCategories([severeAlert, morningBrief])
+  }
+}
+
+// MARK: - Firebase Cloud Messaging
+
+extension AppDelegate: MessagingDelegate {
+  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+    guard let fcmToken else { return }
+    print("[FCM] Token: \(fcmToken.prefix(20))…")
+    Task { @MainActor in
+      PushNotificationService.shared.didReceiveFCMToken(fcmToken)
+    }
   }
 }

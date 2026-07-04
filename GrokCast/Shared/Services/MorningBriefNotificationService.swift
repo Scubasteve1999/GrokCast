@@ -18,21 +18,6 @@ enum MorningBriefNotificationService {
     return (7...11).contains(h) ? h : 7
   }
 
-  static func registerCategory() {
-    let open = UNNotificationAction(
-      identifier: "OPEN_TODAY",
-      title: "Open GrokCast",
-      options: [.foreground]
-    )
-    let category = UNNotificationCategory(
-      identifier: categoryIdentifier,
-      actions: [open],
-      intentIdentifiers: [],
-      options: []
-    )
-    UNUserNotificationCenter.current().setNotificationCategories([category])
-  }
-
   static func scheduleIfEnabled(briefBody: String?) async {
     guard persistedEnabled else {
       cancel()

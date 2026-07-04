@@ -14,7 +14,6 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
   private override init() {
     super.init()
     center.delegate = self
-    registerCategory()
   }
 
   var authorizationStatus: UNAuthorizationStatus = .notDetermined
@@ -104,21 +103,6 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
       // failed to schedule notification (log removed)
       return false
     }
-  }
-
-  private func registerCategory() {
-    let open = UNNotificationAction(
-      identifier: "OPEN_ALERTS",
-      title: "View Alerts",
-      options: [.foreground]
-    )
-    let category = UNNotificationCategory(
-      identifier: Self.categoryIdentifier,
-      actions: [open],
-      intentIdentifiers: [],
-      options: []
-    )
-    center.setNotificationCategories([category])
   }
 
   // MARK: - UNUserNotificationCenterDelegate
