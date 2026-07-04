@@ -1,0 +1,118 @@
+============================================================
+GrokCast — App Store Connect Metadata
+============================================================
+
+APP NAME: GrokCast - AI Weather
+SUBTITLE: Smart Forecasts & Live Radar
+
+------------------------------------------------------------
+DESCRIPTION (4000 char max)
+------------------------------------------------------------
+
+GrokCast is a next-generation weather app powered by AI. Get hyper-local forecasts, real-time radar, and intelligent insights that help you plan your day — not just check the temperature.
+
+WHAT MAKES GROKCAST DIFFERENT
+
+- GrokCast Score — A single 0-100 number that tells you how good it is to be outside right now, factoring in temperature, humidity, UV, wind, and precipitation.
+
+- AI Daily Briefing — Wake up to a personalized weather summary written by Grok AI. Not a template — an actual briefing that tells you what to wear, when to leave, and what to watch for.
+
+- Storm Spotter — Point your camera at the sky and get an AI-powered analysis of cloud formations and severe weather potential.
+
+- Minutecast — Know exactly when rain starts and stops in the next 2 hours down to the minute.
+
+PROFESSIONAL-GRADE DATA
+
+- Open-Meteo primary forecasts with NWS observations and alerts for US locations
+- Live NEXRAD radar (IEM) and international coverage via RainViewer
+- Forecast radar with animated precipitation outlook (OWM + Xweather)
+- Air quality index, pollen levels, and UV tracking
+
+SEVERE WEATHER ALERTS
+
+- Critical interruption alerts for life-threatening events (tornado warnings, hurricane warnings) that break through Do Not Disturb
+- Rich lock screen notifications with affected area, expiry countdown, and NWS instructions
+- One tap to view on radar or read full alert details
+
+WIDGETS & COMPLICATIONS
+
+- Small, Medium, and Large home screen widgets with daily forecast
+- Lock Screen widgets (circular gauge, rectangular, inline)
+- Apple Watch complications with temperature range gauge and AI brief
+- Live Activity with GrokCast Score on your Lock Screen
+
+BUILT FOR PRIVACY
+
+- No account required for core features
+- Location used only for weather — never tracked or stored
+- API keys stored in iOS Keychain, never in plain text
+
+GrokCast Pro unlocks Grok AI without your own API key, forecast radar, Live Activity, unlimited saved locations, and AI morning briefings.
+
+------------------------------------------------------------
+KEYWORDS (100 char max, comma-separated)
+------------------------------------------------------------
+
+weather,forecast,radar,AI,alerts,tornado,hurricane,widgets,complications,live radar,NWS,storm
+
+------------------------------------------------------------
+WHAT'S NEW (for next release)
+------------------------------------------------------------
+
+- NEW: AI Morning Briefing — personalized weather notification every morning
+- NEW: Critical weather alerts break through Do Not Disturb for life-threatening events
+- NEW: Large home screen widget with 5-day forecast and AI insights
+- NEW: Enhanced Apple Watch complications with temperature gauge
+- NEW: Push notification infrastructure (Firebase Cloud Messaging)
+- Improved: Rich alert notifications with area, expiry countdown, and NWS instructions
+- Improved: Radar provider architecture (cleaner fallback chain)
+- Fixed: "Tomorrow" high in Tonight section now shows actual tomorrow's forecast
+
+------------------------------------------------------------
+PROMOTIONAL TEXT (170 char max, can change without review)
+------------------------------------------------------------
+
+AI-powered weather that actually helps you plan. GrokCast Score, morning briefs, storm spotter, and critical alerts that break through DND.
+
+------------------------------------------------------------
+SUPPORT URL
+------------------------------------------------------------
+
+https://grokcast.app/support
+
+------------------------------------------------------------
+PRIVACY POLICY URL
+------------------------------------------------------------
+
+https://grokcast.app/privacy
+
+------------------------------------------------------------
+CATEGORIES
+------------------------------------------------------------
+
+Primary: Weather
+Secondary: Utilities
+
+------------------------------------------------------------
+AGE RATING
+------------------------------------------------------------
+
+4+ (no objectionable content)
+
+------------------------------------------------------------
+SCREENSHOT ORDER (6.7" iPhone — 1290×2796)
+------------------------------------------------------------
+
+1. Today tab — Hero temp + GrokCast Score + AI brief
+2. Radar — Live radar with control panel
+3. Grok AI — Briefing Studio + Storm Spotter
+4. Widgets — Large widget + Lock Screen + Watch complications
+5. Alerts — Critical alert notification + Alerts tab
+6. Forecast — Hourly + daily with dynamic sky background
+
+------------------------------------------------------------
+APP PREVIEW (optional 30s video)
+------------------------------------------------------------
+
+Open on Today → show Score animating → swipe to Radar → scrub future timeline →
+tap Grok AI → ask "what should I wear" → show response → show widget on home screen

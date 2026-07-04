@@ -151,11 +151,119 @@ struct AppStoreScreenshotGrok: View {
   }
 }
 
+struct AppStoreScreenshotWidgets: View {
+  var body: some View {
+    ZStack {
+      DesignTokens.Palette.bgPrimary.ignoresSafeArea()
+      VStack(spacing: 24) {
+        Text("Widgets Everywhere")
+          .font(.title.bold())
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+        VStack(alignment: .leading, spacing: 12) {
+          Label("HOME SCREEN", systemImage: "square.grid.2x2")
+            .font(.caption.weight(.heavy))
+            .foregroundStyle(DesignTokens.Palette.accent)
+          Text("Small, Medium, and Large widgets with live temperature, daily forecast, and Grok AI insights.")
+            .font(.body)
+        }
+        .padding(16)
+        .glassCardStyle()
+
+        VStack(alignment: .leading, spacing: 12) {
+          Label("LOCK SCREEN", systemImage: "lock.rectangle.stack.fill")
+            .font(.caption.weight(.heavy))
+            .foregroundStyle(DesignTokens.Palette.accentCool)
+          Text("Circular gauge, rectangular forecast, and inline conditions — always visible at a glance.")
+            .font(.body)
+        }
+        .padding(16)
+        .glassCardStyle()
+
+        VStack(alignment: .leading, spacing: 12) {
+          Label("APPLE WATCH", systemImage: "applewatch")
+            .font(.caption.weight(.heavy))
+            .foregroundStyle(DesignTokens.Palette.accentWarm)
+          Text("Temperature range gauge, AI brief, and GrokCast Score right on your wrist.")
+            .font(.body)
+        }
+        .padding(16)
+        .glassCardStyle()
+
+        Spacer(minLength: 0)
+      }
+      .padding(24)
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+    }
+    .preferredColorScheme(.dark)
+  }
+}
+
+struct AppStoreScreenshotAlerts: View {
+  var body: some View {
+    ZStack {
+      DesignTokens.Palette.bgPrimary.ignoresSafeArea()
+      VStack(alignment: .leading, spacing: 20) {
+        Text("Critical Alerts")
+          .font(.title.bold())
+
+        VStack(alignment: .leading, spacing: 12) {
+          HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+              .font(.title2)
+              .foregroundStyle(DesignTokens.Palette.danger)
+            VStack(alignment: .leading) {
+              Text("TORNADO WARNING")
+                .font(.caption.weight(.black))
+              Text("DeSoto County, MS · Expires in 45m")
+                .font(.caption2)
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
+            }
+          }
+          Text("TAKE SHELTER NOW. Move to an interior room on the lowest floor of a sturdy building. Avoid windows.")
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+        }
+        .padding(16)
+        .background(DesignTokens.Palette.danger.opacity(0.1))
+        .cardStyle(stroke: DesignTokens.Palette.danger.opacity(0.4))
+
+        VStack(alignment: .leading, spacing: 8) {
+          Label("BREAKS THROUGH DND", systemImage: "bell.badge.fill")
+            .font(.caption.weight(.heavy))
+            .foregroundStyle(DesignTokens.Palette.danger)
+          Text("Life-threatening alerts use iOS Critical Interruption to reach you even when Do Not Disturb is on.")
+            .font(.body)
+        }
+        .padding(16)
+        .glassCardStyle()
+
+        VStack(alignment: .leading, spacing: 8) {
+          Label("AI MORNING BRIEF", systemImage: "sunrise.fill")
+            .font(.caption.weight(.heavy))
+            .foregroundStyle(DesignTokens.Palette.accentWarm)
+          Text("\"Light jacket this morning — great afternoon for a walk. UV peaks around 2pm, sunscreen if you'll be outside.\"")
+            .font(.body.italic())
+        }
+        .padding(16)
+        .glassCardStyle()
+
+        Spacer(minLength: 0)
+      }
+      .padding(24)
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+    }
+    .preferredColorScheme(.dark)
+  }
+}
+
 #if DEBUG
 enum MarketingScreenshotMode: String {
   case today
   case radar
   case grok
+  case widgets
+  case alerts
 }
 
 /// Launch with: `-MarketingScreenshot today|radar|grok` (used by Scripts/capture_aso_screenshots.sh).
@@ -175,6 +283,8 @@ struct MarketingScreenshotLauncher: View {
       case .today: AppStoreScreenshotToday()
       case .radar: AppStoreScreenshotRadar()
       case .grok: AppStoreScreenshotGrok()
+      case .widgets: AppStoreScreenshotWidgets()
+      case .alerts: AppStoreScreenshotAlerts()
       }
     }
     .preferredColorScheme(.dark)
@@ -191,5 +301,13 @@ struct MarketingScreenshotLauncher: View {
 
 #Preview("ASO — Grok") {
   AppStoreScreenshotGrok()
+}
+
+#Preview("ASO — Widgets") {
+  AppStoreScreenshotWidgets()
+}
+
+#Preview("ASO — Alerts") {
+  AppStoreScreenshotAlerts()
 }
 #endif
