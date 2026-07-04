@@ -1,13 +1,6 @@
 import SwiftUI
 
-// Follows GrokCast Design System v1 exactly (see /DesignSystem.md at project root).
-// Colors via DesignTokens.Palette, spacing/radius/shadows per spec.
-// IA: large hero (icon left of dominant temp + prominent FEELS LIKE) + dedicated TONIGHT'S WEATHER + clean 2-col grid.
-
-// Shared bottom clearance for Today tab states (data, skeleton, non-scroll) to clear
-// the custom tab bar on .compact (iPhone) incl. large phones like iPhone 16 Pro Max.
 private let bottomTabClearance = DesignTokens.Spacing.space32
-/// Figma Today screen: content starts below status bar with modest top inset.
 private let todayContentTopPadding = DesignTokens.Spacing.space16
 
 struct TodayView: View {
@@ -40,12 +33,6 @@ struct TodayView: View {
 
         let status = store.locationService.authorizationStatus
         if !store.hasRequestedLocationPermission {
-          // First-launch onboarding welcome (Today tab). Shown *only* on true first launch
-          // (flag false + typically .notDetermined). "Get Started" presents the short
-          // friendly explanation sheet (once) before any iOS prompt. After grant + load,
-          // the reactive status + flag flip + existing skeleton/data paths give a smooth
-          // transition to the normal Today UI. Build directly on the welcome state added
-          // in empty-states work; uses identical TacticalCard styling + Haptic.
           firstLaunchWelcome()
             .padding(.bottom, bottomTabClearance)
         } else if !(status == .authorizedWhenInUse || status == .authorizedAlways) {
@@ -69,8 +56,6 @@ struct TodayView: View {
             await store.refreshWeather()
           }
         } else {
-          // First load / no data state: welcome message + "Use My Position" button (neutral, per empty states rules and mockup).
-          // Error state handled in actions via errorBanner pattern (red only for errors).
           ContentUnavailableView {
             Label("Welcome to GrokCast", systemImage: "sun.max")
           } description: {
@@ -90,8 +75,6 @@ struct TodayView: View {
               } else if store.weatherError != nil
                 && !(store.locationService.isLoading || store.isLoadingWeather)
               {
-                // Error state uses the new errorBanner pattern (icon + message + Retry).
-                // Red accents for errors only.
                 HStack(spacing: 8) {
                   Image(
                     systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill"
@@ -123,7 +106,6 @@ struct TodayView: View {
                 .tint(DesignTokens.Palette.accent)
               }
             }
-            // TacticalCard-inspired styling for the actions container (pure empty or error state).
             .padding(16)
             .background(DesignTokens.Palette.cardBackground)
             .overlay(
@@ -180,13 +162,8 @@ struct TodayView: View {
     .preferredColorScheme(.dark)
   }
 
-  // MARK: - First Launch / Onboarding (light touch, shown only when !hasRequestedLocationPermission)
+  // MARK: - Onboarding
 
-  /// The welcoming first-launch card shown in the Today tab on a true first launch.
-  /// "Get Started" presents the one-time permission explanation sheet (new copy per spec).
-  /// Uses the same TacticalCard-inspired styling as the recovery welcome and detail cards.
-  /// Haptic on the CTA. After the flow + grant the existing reactive branches + skeleton
-  /// provide the smooth transition to the normal weather UI.
   private func firstLaunchWelcome() -> some View {
     VStack {
       Spacer()
@@ -221,16 +198,8 @@ struct TodayView: View {
       .readableContentWidth(ReadableContentWidth.compact)
       Spacer()
     }
-    .onAppear {
-      // First-launch welcome appeared (no-op for production; diagnostics removed).
-    }
   }
 
-  /// The short, friendly, one-time explanation shown (as a sheet) right before the
-  /// system iOS location permission prompt. Triggered by "Get Started" on first launch.
-  /// "Continue" marks the flow complete (via hasRequestedLocationPermission), calls the
-  /// unified requestLocationPermission(), and dismisses. Exact text per current query mockup.
-  /// TacticalCard styling for premium feel.
   private func permissionExplanation() -> some View {
     VStack(spacing: 20) {
       Image(systemName: "location.fill")
@@ -301,10 +270,9 @@ private struct TodayWeatherPanel: View {
     }
   }
 
-  /// Figma Today screen — location, hero temp, score, minutecast, Grok brief.
   private var compactFigmaTodayLayout: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-      figmaHeroSection
+    VStack(spacing: DesignTokens.Spacing.space16) {
+      centeredHeroSection
 
       GrokCastScoreCard(
         score: currentScore,
@@ -314,11 +282,13 @@ private struct TodayWeatherPanel: View {
 
       MinutecastStrip(summary: currentMinutecast)
 
-      GrokBriefCard(presentation: .figma)
-
       if !store.displayableActiveAlerts.isEmpty {
         alertsSection
       }
+
+      GrokBriefCard(presentation: .figma)
+
+      RadarPreviewCard()
 
       extendedTodayDetails
     }
@@ -346,6 +316,7 @@ private struct TodayWeatherPanel: View {
         VStack(spacing: DesignTokens.Spacing.space16) {
           heroCard
           tonightSection
+          RadarPreviewCard()
         }
         .frame(maxWidth: .infinity)
 
@@ -366,33 +337,37 @@ private struct TodayWeatherPanel: View {
     }
   }
 
-  private var figmaHeroSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-      Text((store.currentLocation?.name ?? weather.location.name).uppercased())
-        .font(.caption.weight(.bold))
-        .tracking(DesignTokens.Typography.cardLabelTracking)
+  private var centeredHeroSection: some View {
+    VStack(spacing: DesignTokens.Spacing.space4) {
+      Text(store.currentLocation?.name ?? weather.location.name)
+        .font(.title2.weight(.semibold))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+
+      Image(systemName: weather.symbolName)
+        .font(.system(size: 42))
+        .symbolRenderingMode(.multicolor)
+        .padding(.top, DesignTokens.Spacing.space4)
+
+      Text(store.formatTemperatureShort(weather.currentTemp))
+        .font(DesignTokens.Typography.heroTemperature())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+
+      Text(weather.conditionText)
+        .font(.title3.weight(.medium))
         .foregroundStyle(DesignTokens.Palette.textSecondary)
 
-      HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: weather.symbolName)
-          .font(.system(size: 48))
-          .symbolRenderingMode(.multicolor)
-
-        Text(store.formatTemperatureShort(weather.currentTemp))
-          .font(DesignTokens.Typography.heroTemperature())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .monospacedDigit()
-          .lineLimit(1)
-          .allowsTightening(true)
-          .minimumScaleFactor(0.5)
+      HStack(spacing: DesignTokens.Spacing.space12) {
+        Text(feelsLikeSubtitle)
+        Text("H:\(Int(round(weather.high)))°  L:\(Int(round(weather.low)))°")
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-
-      Text("\(feelsLikeSubtitle) · \(weather.conditionText)")
-        .font(.subheadline)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .fixedSize(horizontal: false, vertical: true)
+      .font(.subheadline)
+      .foregroundStyle(DesignTokens.Palette.textSecondary)
     }
+    .frame(maxWidth: .infinity)
+    .padding(.top, DesignTokens.Spacing.space8)
   }
 
   private var feelsLikeSubtitle: String {
@@ -429,7 +404,6 @@ private struct TodayWeatherPanel: View {
     .padding(.top, DesignTokens.Spacing.space8)
   }
 
-  // DesignSystem v1 header (location + date, uppercase labels per scale).
   private var header: some View {
     HStack {
       Text("GrokCast")
@@ -453,10 +427,6 @@ private struct TodayWeatherPanel: View {
   }
 
   private var heroCard: some View {
-    // DesignSystem v1: Hero card. DesignTokens.Card.cornerRadiusLarge for prominence, space20 internal padding.
-    // Dominant temperature + icon grouped with layoutPriority + aggressive scale factor to prevent
-    // truncation (e.g. "7..."). Icon left of temp, RealFeel right (or wraps gracefully). Tokens everywhere.
-    // Matches recent Radar control panel token discipline + TacticalCard patterns.
     VStack(spacing: DesignTokens.Spacing.space4) {
       HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
         // Icon + dominant temp: temp gets priority and can scale down before other elements clip it.
@@ -504,8 +474,6 @@ private struct TodayWeatherPanel: View {
   }
 
   private var tonightSection: some View {
-    // DesignSystem v1: Dedicated TONIGHT'S WEATHER block. DesignTokens.Card.cornerRadius, space20 padding,
-    // premium shadow. Low/High with accent icons. Dynamic short desc.
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Text("TONIGHT'S WEATHER")
         .font(.caption.weight(.semibold))
@@ -534,7 +502,7 @@ private struct TodayWeatherPanel: View {
             Image(systemName: "sun.max.fill")
               .font(.title3)
               .foregroundStyle(DesignTokens.Palette.accentWarm)
-            Text("High \(Int(round(weather.high)))°")
+            Text("High \(Int(round(tomorrowHigh)))°")
               .font(.title2.weight(.bold))
               .foregroundStyle(DesignTokens.Palette.textPrimary)
           }
@@ -554,6 +522,11 @@ private struct TodayWeatherPanel: View {
     )
   }
 
+  private var tomorrowHigh: Double {
+    guard weather.daily.count > 1 else { return weather.high }
+    return weather.daily[1].high
+  }
+
   private var tonightDescription: String {
     let p = weather.precipitationChance
     if p >= 50 { return "Rain or showers likely" }
@@ -568,8 +541,6 @@ private struct TodayWeatherPanel: View {
   }
 
   private var tacticalDetailsGrid: some View {
-    // DesignSystem v1: Clean 2-col condition grid. DesignTokens.Spacing.space20. No duplicate FEELS LIKE (shown in hero).
-    // Cards use .tacticalCard() + elevated shadow per spec.
     let precipValue: String = {
       let c = weather.precipitationChance
       if let d0 = weather.daily.first {
@@ -743,16 +714,12 @@ extension TodayView {
     Task {
       do {
         let url = try await store.xaiService.generateDayImage(prompt: prompt)
-        Task { @MainActor in
-          isGeneratingImage = false
-          generatedImageURL = url
-          showImagineResult = true
-        }
+        isGeneratingImage = false
+        generatedImageURL = url
+        showImagineResult = true
       } catch {
-        Task { @MainActor in
-          isGeneratingImage = false
-          imagineError = error.localizedDescription
-        }
+        isGeneratingImage = false
+        imagineError = error.localizedDescription
       }
     }
   }

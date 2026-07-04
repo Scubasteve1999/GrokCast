@@ -56,33 +56,12 @@ enum DesignTokens {
     static let xLarge: CGFloat = 32
   }
 
-  // MARK: - Card Styling (updated for new palette)
+  // MARK: - Card Styling
   enum Card {
-    /// Primary card background using new palette
-    static let background = DesignTokens.Palette.cardBackground
-
-    /// Elevated card background
-    static let elevated = DesignTokens.Palette.cardElevated
-
-    /// Subtle card border
-    static let stroke = DesignTokens.Palette.cardStroke
-
-    /// Default card radius (DesignSystem v1 radiusMedium). TacticalCard + most rows.
-    static let cornerRadius: CGFloat = DesignTokens.Radius.medium
-
-    /// Compact card / row radius (hourly cards, daily rows).
     static let cornerRadiusCompact: CGFloat = DesignTokens.Radius.small
-
-    /// Medium row radius (some forecast rows, welcome states).
+    static let cornerRadius: CGFloat = DesignTokens.Radius.medium
     static let cornerRadiusMedium: CGFloat = DesignTokens.Radius.medium
-
-    /// Large / hero card radius (DesignSystem v1 radiusLarge).
     static let cornerRadiusLarge: CGFloat = DesignTokens.Radius.large
-
-    /// Small utility (badges, small pills).
-    static let cornerRadiusSmall: CGFloat = DesignTokens.Radius.small
-
-    /// Standard stroke width for cards.
     static let strokeWidth: CGFloat = 1
   }
 
@@ -99,26 +78,13 @@ enum DesignTokens {
 
     /// Large hero temperature on Today and marketing screenshots.
     static func heroTemperature() -> Font {
-      .system(size: 92, weight: .black, design: .rounded)
+      .system(size: 96, weight: .thin, design: .rounded)
     }
   }
 
-  // MARK: - Other Repeated Values (from dark theme work)
+  // MARK: - Opacity
   enum Opacity {
-    /// Very subtle white for icons / secondary text.
-    static let subtleWhite: Double = 0.55
-
-    /// Icon / secondary.
     static let iconWhite: Double = 0.65
-
-    /// Hero condition text.
-    static let heroCondition: Double = 0.92
-
-    /// Freshness / fine print.
-    static let finePrint: Double = 0.5
-
-    /// High/low labels.
-    static let highLowLabel: Double = 0.6
   }
 
   /// Pixel-matched metrics from the GrokCast Screens Figma page (393×852).
