@@ -101,10 +101,14 @@ struct SunriseSunsetCard: View {
     return CGPoint(x: x, y: y)
   }
 
-  private func formatTime(_ date: Date?) -> String {
-    guard let date else { return "--:--" }
+  private static let timeFormatter: DateFormatter = {
     let f = DateFormatter()
     f.dateFormat = "h:mm a"
-    return f.string(from: date)
+    return f
+  }()
+
+  private func formatTime(_ date: Date?) -> String {
+    guard let date else { return "--:--" }
+    return Self.timeFormatter.string(from: date)
   }
 }

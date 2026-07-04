@@ -26,7 +26,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
   func requestAuthorization() async -> Bool {
     do {
       let granted = try await center.requestAuthorization(
-        options: [.alert, .sound, .badge, .criticalAlert])
+        options: [.alert, .sound, .badge])
       await refreshAuthorizationStatus()
       return granted
     } catch {
@@ -73,8 +73,8 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
 
     if alert.isLifeThreatening {
       content.title = "\u{26A0}\u{FE0F} \(alert.event)"
-      content.interruptionLevel = .critical
-      content.sound = UNNotificationSound.defaultCritical
+      content.interruptionLevel = .timeSensitive
+      GrokCastNotificationSounds.apply(to: content)
       content.categoryIdentifier = Self.criticalCategoryIdentifier
     } else if alert.isWarning {
       content.title = alert.event

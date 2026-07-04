@@ -86,10 +86,14 @@ struct HourlyPrecipCard: View {
     return DesignTokens.Palette.textTertiary.opacity(0.2)
   }
 
-  private func formatHour(_ date: Date?) -> String {
-    guard let date else { return "" }
+  private static let hourFormatter: DateFormatter = {
     let f = DateFormatter()
     f.dateFormat = "ha"
-    return f.string(from: date).lowercased()
+    return f
+  }()
+
+  private func formatHour(_ date: Date?) -> String {
+    guard let date else { return "" }
+    return Self.hourFormatter.string(from: date).lowercased()
   }
 }

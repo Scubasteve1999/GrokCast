@@ -78,7 +78,7 @@ enum DesignTokens {
 
     /// Large hero temperature on Today and marketing screenshots.
     static func heroTemperature() -> Font {
-      .system(size: 96, weight: .thin, design: .rounded)
+      .system(size: 96, weight: .black, design: .rounded)
     }
   }
 

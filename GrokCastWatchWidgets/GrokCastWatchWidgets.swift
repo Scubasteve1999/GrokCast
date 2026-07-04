@@ -33,7 +33,10 @@ struct WatchCircularComplicationView: View {
 
   var body: some View {
     if let snapshot = entry.snapshot {
-      Gauge(value: snapshot.currentTemp, in: snapshot.low...snapshot.high) {
+      let lo = min(snapshot.low, snapshot.high)
+      let hi = max(snapshot.low, snapshot.high)
+      let safeRange = lo < hi ? lo...hi : (lo - 1)...(lo + 1)
+      Gauge(value: snapshot.currentTemp, in: safeRange) {
         Image(systemName: snapshot.symbolName)
           .symbolRenderingMode(.multicolor)
       } currentValueLabel: {

@@ -49,8 +49,9 @@ enum TripForecastService {
 
     let start = isoDateFormatter.string(from: startDate)
     let end = isoDateFormatter.string(from: endDate)
+    let tempUnit = store.temperatureUnit.openMeteoTemperatureUnit
 
-    let url = URL(string: "\(forecastURL)?latitude=\(coords.lat)&longitude=\(coords.lon)&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&temperature_unit=fahrenheit&precipitation_unit=inch&start_date=\(start)&end_date=\(end)&timezone=auto")!
+    let url = URL(string: "\(forecastURL)?latitude=\(coords.lat)&longitude=\(coords.lon)&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&temperature_unit=\(tempUnit)&precipitation_unit=inch&start_date=\(start)&end_date=\(end)&timezone=auto")!
 
     let (data, _) = try await URLSession.shared.data(from: url)
     let response = try JSONDecoder().decode(TripOpenMeteoResponse.self, from: data)
@@ -58,11 +59,12 @@ enum TripForecastService {
     let days = buildDays(from: response)
     let dateRange = "\(dayFormatter.string(from: startDate)) – \(dayFormatter.string(from: endDate))"
 
+    let isCelsius = store.temperatureUnit == .celsius
     let avgHigh = days.map(\.high).reduce(0, +) / Double(max(days.count, 1))
     let avgPrecip = days.map { Double($0.precipChance) }.reduce(0, +) / Double(max(days.count, 1))
-    let avgScore = computeTripScore(avgHigh: avgHigh, avgPrecip: avgPrecip)
+    let avgScore = computeTripScore(avgHigh: avgHigh, avgPrecip: avgPrecip, isCelsius: isCelsius)
 
-    let packing = buildPackingList(days: days)
+    let packing = buildPackingList(days: days, isCelsius: isCelsius)
 
     var grokAdvice: String?
     if GrokAuthResolver.canAccessGrok(subscription: SubscriptionManager.shared) {
@@ -103,24 +105,31 @@ enum TripForecastService {
     return zip(0..<daily.time.count, daily.time).map { index, dateStr in
       let date = isoDateFormatter.date(from: dateStr) ?? Date()
       let code = daily.weathercode[index]
+      let (symbol, text) = mapWeatherCode(code, isDay: true)
       return TripDayForecast(
         date: date,
         dayLabel: dayFormatter.string(from: date),
         high: daily.temperature_2m_max[index],
         low: daily.temperature_2m_min[index],
         precipChance: daily.precipitation_probability_max[index],
-        condition: weatherConditionText(code: code),
-        symbolName: weatherSymbol(code: code, isDay: true)
+        condition: text,
+        symbolName: symbol
       )
     }
   }
 
-  private static func computeTripScore(avgHigh: Double, avgPrecip: Double) -> Int {
+  private static func computeTripScore(avgHigh: Double, avgPrecip: Double, isCelsius: Bool) -> Int {
     var score = 80
-    if avgHigh > 95 { score -= 20 }
-    else if avgHigh > 85 { score -= 10 }
-    else if avgHigh < 40 { score -= 15 }
-    else if avgHigh < 55 { score -= 5 }
+
+    let extremeHot: Double = isCelsius ? 35 : 95
+    let hot: Double = isCelsius ? 29 : 85
+    let cold: Double = isCelsius ? 4 : 40
+    let cool: Double = isCelsius ? 13 : 55
+
+    if avgHigh > extremeHot { score -= 20 }
+    else if avgHigh > hot { score -= 10 }
+    else if avgHigh < cold { score -= 15 }
+    else if avgHigh < cool { score -= 5 }
 
     if avgPrecip > 60 { score -= 25 }
     else if avgPrecip > 30 { score -= 10 }
@@ -128,21 +137,27 @@ enum TripForecastService {
     return max(10, min(100, score))
   }
 
-  private static func buildPackingList(days: [TripDayForecast]) -> [String] {
+  private static func buildPackingList(days: [TripDayForecast], isCelsius: Bool) -> [String] {
     var items: Set<String> = ["Phone charger"]
 
-    let maxHigh = days.map(\.high).max() ?? 70
-    let minLow = days.map(\.low).min() ?? 50
+    let maxHigh = days.map(\.high).max() ?? (isCelsius ? 21 : 70)
+    let minLow = days.map(\.low).min() ?? (isCelsius ? 10 : 50)
     let anyRain = days.contains { $0.precipChance > 30 }
     let anySnow = days.contains { $0.symbolName.contains("snow") }
 
-    if maxHigh > 80 { items.insert("Sunscreen"); items.insert("Sunglasses") }
-    if maxHigh > 90 { items.insert("Hat"); items.insert("Water bottle") }
-    if minLow < 50 { items.insert("Light jacket") }
-    if minLow < 35 { items.insert("Warm coat"); items.insert("Gloves") }
+    let hotThreshold: Double = isCelsius ? 27 : 80
+    let veryHotThreshold: Double = isCelsius ? 32 : 90
+    let coolThreshold: Double = isCelsius ? 10 : 50
+    let coldThreshold: Double = isCelsius ? 2 : 35
+    let swingThreshold: Double = isCelsius ? 14 : 25
+
+    if maxHigh > hotThreshold { items.insert("Sunscreen"); items.insert("Sunglasses") }
+    if maxHigh > veryHotThreshold { items.insert("Hat"); items.insert("Water bottle") }
+    if minLow < coolThreshold { items.insert("Light jacket") }
+    if minLow < coldThreshold { items.insert("Warm coat"); items.insert("Gloves") }
     if anyRain { items.insert("Umbrella"); items.insert("Rain jacket") }
     if anySnow { items.insert("Warm boots"); items.insert("Heavy coat") }
-    if maxHigh - minLow > 25 { items.insert("Layers") }
+    if maxHigh - minLow > swingThreshold { items.insert("Layers") }
 
     return items.sorted()
   }
@@ -174,39 +189,6 @@ enum TripForecastService {
     }
   }
 
-  private static func weatherConditionText(code: Int) -> String {
-    switch code {
-    case 0: return "Clear"
-    case 1: return "Mainly Clear"
-    case 2: return "Partly Cloudy"
-    case 3: return "Overcast"
-    case 45, 48: return "Foggy"
-    case 51, 53, 55: return "Drizzle"
-    case 61, 63, 65: return "Rain"
-    case 71, 73, 75, 77: return "Snow"
-    case 80, 81, 82: return "Showers"
-    case 85, 86: return "Snow Showers"
-    case 95, 96, 99: return "Thunderstorm"
-    default: return "Mixed"
-    }
-  }
-
-  private static func weatherSymbol(code: Int, isDay: Bool) -> String {
-    switch code {
-    case 0: return isDay ? "sun.max.fill" : "moon.stars.fill"
-    case 1: return isDay ? "sun.max.fill" : "moon.fill"
-    case 2: return isDay ? "cloud.sun.fill" : "cloud.moon.fill"
-    case 3: return "cloud.fill"
-    case 45, 48: return "cloud.fog.fill"
-    case 51, 53, 55: return "cloud.drizzle.fill"
-    case 61, 63, 65: return "cloud.rain.fill"
-    case 71, 73, 75, 77: return "cloud.snow.fill"
-    case 80, 81, 82: return "cloud.heavyrain.fill"
-    case 85, 86: return "cloud.snow.fill"
-    case 95, 96, 99: return "cloud.bolt.rain.fill"
-    default: return "cloud.fill"
-    }
-  }
 }
 
 enum TripPlannerError: LocalizedError {
