@@ -46,6 +46,8 @@ struct RadarTimelineScrubber: View {
             .frame(width: max(4, thumbX), height: 4)
 
           if isScrubbing {
+            let tooltipWidth: CGFloat = 60
+            let clampedX = min(max(thumbX - tooltipWidth / 2, 0), geo.size.width - tooltipWidth)
             Text(radarState.currentFrameDisplayTime)
               .font(.caption2.weight(.semibold).monospacedDigit())
               .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
@@ -55,7 +57,7 @@ struct RadarTimelineScrubber: View {
                 Capsule().fill(DesignTokens.Palette.radarTrack)
               )
               .fixedSize()
-              .offset(x: thumbX - 24, y: -22)
+              .offset(x: clampedX, y: -22)
               .transition(.opacity)
               .animation(.easeOut(duration: 0.12), value: clampedIndex)
           }

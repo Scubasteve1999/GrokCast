@@ -64,19 +64,13 @@ final class RadarLoader {
     defer { isLoading = false }
 
     async let rainViewerLive = RainViewerRadarService.loadLiveFrames()
-    async let owmProbeOK: Bool = {
-      guard OpenWeatherMapRadarService.apiKeyConfigured else { return false }
-      return await OpenWeatherMapRadarService.probeForecastAvailability()
-    }()
 
     let liveOutcome = await resolveLive(
       site: site,
       coordinate: coordinate,
       rainViewerLive: await rainViewerLive
     )
-    let forecastOutcome = await resolveForecast(
-      owmProbeOK: await owmProbeOK
-    )
+    let forecastOutcome = await resolveForecast()
 
     return RadarDatasetResult(
       live: liveOutcome.frames,
@@ -181,23 +175,7 @@ final class RadarLoader {
     )
   }
 
-  private func resolveForecast(
-    owmProbeOK: Bool
-  ) async -> LoadOutcome {
-    if OpenWeatherMapRadarService.apiKeyConfigured, owmProbeOK {
-      let frames = OpenWeatherMapRadarService.loadForecastFrames()
-      if !frames.isEmpty {
-        print(
-          "[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0"
-        )
-        return LoadOutcome(
-          frames: frames,
-          provider: .openWeatherMap,
-          availability: .available
-        )
-      }
-    }
-
+  private func resolveForecast() async -> LoadOutcome {
     if XweatherRadarService.mapsAuthConfigured {
       let xwFrames = XweatherRadarService.loadForecastRadarFrames()
       if !xwFrames.isEmpty {
@@ -211,9 +189,26 @@ final class RadarLoader {
       }
     }
 
+    if OpenWeatherMapRadarService.apiKeyConfigured {
+      let probeOK = await OpenWeatherMapRadarService.probeForecastAvailability()
+      if probeOK {
+        let frames = OpenWeatherMapRadarService.loadForecastFrames()
+        if !frames.isEmpty {
+          print(
+            "[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0"
+          )
+          return LoadOutcome(
+            frames: frames,
+            provider: .openWeatherMap,
+            availability: .available
+          )
+        }
+      }
+    }
+
     let message =
-      OpenWeatherMapRadarService.userFacingUnavailableMessage
-      ?? XweatherRadarService.userFacingUnavailableMessage
+      XweatherRadarService.userFacingUnavailableMessage
+      ?? OpenWeatherMapRadarService.userFacingUnavailableMessage
       ?? "Forecast radar unavailable."
     print("[RadarLoader] Forecast timeline unavailable (no valid provider)")
     return LoadOutcome(

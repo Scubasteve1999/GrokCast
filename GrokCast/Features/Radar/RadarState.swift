@@ -238,8 +238,8 @@ final class RadarState {
     guard let activeTransition = transition else { return }
     committedIsFuture = activeTransition.targetIsFuture
     transition = nil
-    if committedIsFuture, playback.playbackSpeed > 1.0 {
-      playback.playbackSpeed = 1.0
+    if committedIsFuture, playback.playbackSpeed > 2.0 {
+      playback.playbackSpeed = 2.0
     }
     activateCurrentForCommittedMode()
     // Auto-play FUTURE so switching into it animates the forecast immediately
