@@ -43,8 +43,8 @@ struct RadarPlaybackControls: View {
   @ViewBuilder
   private var playbackSpeedPicker: some View {
     HStack(spacing: 0) {
-      ForEach([2.0, 1.0, 0.5], id: \.self) { speed in
-        let label = speed == 2.0 ? "2x" : (speed == 1.0 ? "1x" : "0.5x")
+      ForEach([3.0, 2.0, 1.0], id: \.self) { speed in
+        let label = speed == 3.0 ? "3x" : (speed == 2.0 ? "2x" : "1x")
         let isSelected = abs(radarState.playbackSpeed - speed) < 0.05
         Text(label)
           .font(.caption2.weight(isSelected ? .semibold : .regular))

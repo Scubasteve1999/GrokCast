@@ -5,7 +5,7 @@ import Foundation
 final class RadarPlayback {
   var currentIndex: Int = 0
   var isAnimating = false
-  var playbackSpeed: Double = 1.0
+  var playbackSpeed: Double = 2.0
 
   var frameCount: () -> Int = { 0 }
   var frameTimestamps: () -> [Date] = { [] }
@@ -15,7 +15,7 @@ final class RadarPlayback {
   private static let baselineScreenInterval: TimeInterval = 2.8
   private static let referenceDataGap: TimeInterval = 5 * 60
   /// Minimum time a frame stays on screen during playback so tiles can crossfade in.
-  private static let minAnimatingInterval: TimeInterval = 0.65
+  private static let minAnimatingInterval: TimeInterval = 0.45
   /// Upper bound on a single frame's screen time (before speed). Without this,
   /// wide real gaps — hourly FUTURE frames are 60 min apart — scale to ~30s per
   /// frame, so playback looks frozen. Caps every mode to a watchable cadence.

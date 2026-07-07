@@ -24,39 +24,87 @@ struct RadarTimelineScrubber: View {
     }
   }
 
+  @ViewBuilder
   private var figmaScrubber: some View {
-    GeometryReader { geo in
-      let progress =
-        radarState.activeFrameCount > 1
-        ? CGFloat(clampedIndex) / CGFloat(radarState.activeFrameCount - 1)
-        : 0
+    let count = radarState.activeFrameCount
+    let labels = radarState.activeFrameLabels
 
-      ZStack(alignment: .leading) {
-        Capsule()
-          .fill(DesignTokens.Palette.radarTrack)
-          .frame(height: 4)
-        Capsule()
-          .fill(DesignTokens.Palette.radarProgress)
-          .frame(width: max(4, geo.size.width * progress), height: 4)
-      }
-      .frame(maxHeight: .infinity, alignment: .center)
-      .contentShape(Rectangle())
-      .gesture(
-        DragGesture(minimumDistance: 0)
-          .onChanged { value in
-            if !isScrubbing {
-              handleScrubEditing(true)
+    VStack(spacing: DesignTokens.Spacing.space4) {
+      GeometryReader { geo in
+        let progress =
+          count > 1
+          ? CGFloat(clampedIndex) / CGFloat(count - 1)
+          : 0
+        let thumbX = geo.size.width * progress
+
+        ZStack(alignment: .leading) {
+          Capsule()
+            .fill(DesignTokens.Palette.radarTrack)
+            .frame(height: 4)
+          Capsule()
+            .fill(DesignTokens.Palette.radarProgress)
+            .frame(width: max(4, thumbX), height: 4)
+
+          if isScrubbing {
+            Text(radarState.currentFrameDisplayTime)
+              .font(.caption2.weight(.semibold).monospacedDigit())
+              .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 3)
+              .background(
+                Capsule().fill(DesignTokens.Palette.radarTrack)
+              )
+              .fixedSize()
+              .offset(x: thumbX - 24, y: -22)
+              .transition(.opacity)
+              .animation(.easeOut(duration: 0.12), value: clampedIndex)
+          }
+        }
+        .frame(maxHeight: .infinity, alignment: .center)
+        .contentShape(Rectangle())
+        .gesture(
+          DragGesture(minimumDistance: 0)
+            .onChanged { value in
+              if !isScrubbing {
+                handleScrubEditing(true)
+              }
+              let fraction = min(max(0, value.location.x / max(geo.size.width, 1)), 1)
+              let index = Int((fraction * CGFloat(count - 1)).rounded())
+              radarState.currentIndex = index
             }
-            let fraction = min(max(0, value.location.x / max(geo.size.width, 1)), 1)
-            let index = Int((fraction * CGFloat(radarState.activeFrameCount - 1)).rounded())
-            radarState.currentIndex = index
-          }
-          .onEnded { _ in
-            handleScrubEditing(false)
-          }
-      )
+            .onEnded { _ in
+              handleScrubEditing(false)
+            }
+        )
+      }
+      .frame(height: 24)
+
+      if !labels.isEmpty, count > 1 {
+        figmaTickLabels(labels: labels, count: count)
+      }
     }
-    .frame(height: 24)
+  }
+
+  private func figmaTickLabels(labels: [String], count: Int) -> some View {
+    let stride = max(1, count / 4)
+    let indices = (0..<count).filter { $0 % stride == 0 || $0 == count - 1 }
+
+    return HStack(spacing: 0) {
+      ForEach(indices, id: \.self) { i in
+        let label = i < labels.count ? labels[i] : "?"
+        Text(label)
+          .font(.system(size: 9).monospacedDigit())
+          .foregroundStyle(
+            clampedIndex == i
+              ? DesignTokens.Palette.radarTextPrimary
+              : DesignTokens.Palette.radarTextSecondary
+          )
+          .frame(
+            maxWidth: .infinity,
+            alignment: i == indices.first ? .leading : (i == indices.last ? .trailing : .center)
+          )
+      }
+    }
   }
 
   private var standardScrubber: some View {
