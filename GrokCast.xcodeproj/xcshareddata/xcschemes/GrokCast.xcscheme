@@ -29,34 +29,6 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BAB87FF93BC39C1964953936"
-               BuildableName = "GrokCastWatch.app"
-               BlueprintName = "GrokCastWatch"
-               ReferencedContainer = "container:GrokCast.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D3C5995A5729A646BFAD3D72"
-               BuildableName = "GrokCastWatchWidgets.appex"
-               BlueprintName = "GrokCastWatchWidgets"
-               ReferencedContainer = "container:GrokCast.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "ACC3B5EB6B6D5ED991E971C1"
                BuildableName = "GrokCastWidgets.appex"
                BlueprintName = "GrokCastWidgets"
