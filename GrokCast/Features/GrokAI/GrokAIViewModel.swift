@@ -15,6 +15,9 @@ final class GrokAIViewModel {
   private let grokAIService = GrokAIService()
   private let conversationStore = GrokAIConversationStore()
   @ObservationIgnored private nonisolated(unsafe) var generationTask: Task<Void, Never>?
+  /// Identifies the current generation so a cancelled/superseded task's teardown can't
+  /// clobber the state of the generation that replaced it.
+  @ObservationIgnored private var activeGenerationID = UUID()
   private(set) var generationWasCancelled = false
 
   private(set) var lastStormImageData: Data?
@@ -95,6 +98,8 @@ final class GrokAIViewModel {
       apiMessages.append(GrokBuildMessage(role: msg.role.rawValue, content: msg.content))
     }
 
+    let generationID = UUID()
+    activeGenerationID = generationID
     generationTask = Task { @MainActor [weak self] in
       guard let self else { return }
       var tokenCount = 0
@@ -110,6 +115,8 @@ final class GrokAIViewModel {
           self.errorMessage = error.localizedDescription
         }
       }
+      // A newer generation replaced this one — don't touch shared state it now owns.
+      guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
 
       // On completion, append the full assistant message to history
@@ -158,6 +165,8 @@ final class GrokAIViewModel {
     let alerts = weatherStore.activeAlerts
     let observation = weatherStore.currentNWSObservation
 
+    let generationID = UUID()
+    activeGenerationID = generationID
     generationTask = Task { @MainActor [weak self] in
       guard let self else { return }
       do {
@@ -176,6 +185,8 @@ final class GrokAIViewModel {
           self.errorMessage = self.userFriendlyStormError(for: error)
         }
       }
+      // A newer generation replaced this one — don't touch shared state it now owns.
+      guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
       self.stormAnalysisMode = false
       self.generationTask = nil

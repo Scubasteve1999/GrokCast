@@ -150,11 +150,16 @@ final class GrokBuildService {
 
             guard let data = jsonString.data(using: .utf8) else { continue }
 
-            if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data),
-              let content = chunk.choices.first?.delta.content,
-              !content.isEmpty
-            {
-              continuation.yield(content)
+            if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data) {
+              if let content = chunk.choices.first?.delta.content, !content.isEmpty {
+                continuation.yield(content)
+              }
+            } else if let message = Self.streamErrorMessage(from: data) {
+              // The stream opened 200 but emitted an error event mid-stream (e.g. rate
+              // limit). Surface it instead of silently ending as an empty success.
+              continuation.finish(
+                throwing: GrokBuildError.apiError(statusCode: 200, message: message))
+              return
             }
           }
 
@@ -165,6 +170,21 @@ final class GrokBuildService {
         }
       }
     }
+  }
+
+  /// Extracts an `{"error": {"message": ...}}` envelope from an SSE data chunk that
+  /// failed to decode as a delta, so mid-stream errors aren't swallowed.
+  private static func streamErrorMessage(from data: Data) -> String? {
+    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return nil
+    }
+    if let error = json["error"] as? [String: Any], let message = error["message"] as? String {
+      return message
+    }
+    if let message = json["error"] as? String {
+      return message
+    }
+    return nil
   }
 }
 

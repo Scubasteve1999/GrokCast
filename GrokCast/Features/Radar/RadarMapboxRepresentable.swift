@@ -328,7 +328,15 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
       updatePaintIfNeeded(mapView: mapView, desired: desired)
 
-      guard desired.tileKey != displayedFrontKey else { return }
+      guard desired.tileKey != displayedFrontKey else {
+        // Already showing the desired frame — but if a crossfade to a *different* frame
+        // is still in flight, letting it finish would leave the map on the wrong frame
+        // (out of sync with the scrubber). Queue the desired frame so the drain returns to it.
+        if crossfadeTask != nil, inFlightKey != desired.tileKey {
+          queuedDesiredState = desired
+        }
+        return
+      }
 
       if crossfadeTask != nil {
         // Keep only the latest frame that isn't already visible or in-flight.

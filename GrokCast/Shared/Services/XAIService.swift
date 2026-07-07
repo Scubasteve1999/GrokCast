@@ -135,11 +135,19 @@ final class XAIService {
 
               guard let data = jsonString.data(using: .utf8) else { continue }
 
-              if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data),
-                let content = chunk.choices.first?.delta.content,
-                !content.isEmpty
+              if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data) {
+                if let content = chunk.choices.first?.delta.content, !content.isEmpty {
+                  continuation.yield(content)
+                }
+              } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                let error = json["error"] as? [String: Any],
+                let message = error["message"] as? String
               {
-                continuation.yield(content)
+                // Stream opened 200 but emitted an error event mid-stream — surface it
+                // instead of ending as a silent empty success.
+                continuation.finish(
+                  throwing: GrokAPIError.apiError(statusCode: 200, message: message))
+                return
               }
             }
           }

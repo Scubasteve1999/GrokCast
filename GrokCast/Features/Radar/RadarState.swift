@@ -224,8 +224,14 @@ final class RadarState {
     abortTransition(restoreIndex: true)
   }
 
-  func abortTransition(restoreIndex: Bool = true, unavailableMessage: String? = nil) {
+  /// Rolls back the in-flight mode transition. When `expectedID` is supplied, the abort
+  /// is a no-op unless that transition is still the active one — this prevents a stale
+  /// transition task from tearing down a newer transition that replaced it (rapid taps).
+  func abortTransition(
+    restoreIndex: Bool = true, unavailableMessage: String? = nil, expectedID: UUID? = nil
+  ) {
     guard let activeTransition = transition else { return }
+    if let expectedID, activeTransition.id != expectedID { return }
     if let unavailableMessage {
       forecastTileAvailability = .timelineOnly(message: unavailableMessage)
     } else {
@@ -244,9 +250,6 @@ final class RadarState {
     guard let activeTransition = transition else { return }
     committedIsFuture = activeTransition.targetIsFuture
     transition = nil
-    if committedIsFuture, playback.playbackSpeed > 2.0 {
-      playback.playbackSpeed = 2.0
-    }
     activateCurrentForCommittedMode()
     // Auto-play FUTURE so switching into it animates the forecast immediately
     // instead of sitting paused on frame 1 (beginTransition stopped playback).
@@ -333,6 +336,9 @@ extension RadarState {
 
     guard !showsFuture, let site = nearestSite else { return }
 
+    // The currently displayed product/timeline stays untouched until fresh frames arrive,
+    // so revert to it (not blindly to reflectivity) if the load yields nothing.
+    let previousProduct = selectedProduct
     selectedProduct = product
     let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
 
@@ -342,10 +348,11 @@ extension RadarState {
 
     guard !frames.isEmpty else {
       print("[RadarState] \(product.displayName) unavailable for \(site.id) — keeping current view")
+      // Revert so the chip and later composite reloads don't think a site product is active.
+      selectedProduct = previousProduct
       return
     }
 
-    selectedProduct = product
     timeline.live = frames
     liveTileAvailability = .available
     playback.currentIndex = max(0, frames.count - 1)

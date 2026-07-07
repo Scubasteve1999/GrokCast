@@ -164,14 +164,16 @@ struct RadarView: View {
 
     try? await Task.sleep(for: RadarTimelineConfig.modeSwitchDelay)
     guard !Task.isCancelled, radarState.transition?.id == activeTransition.id else {
-      radarState.abortTransition()
+      // Only roll back if OUR transition is still active — a newer transition from a
+      // rapid FUTURE↔LIVE tap must not be torn down here.
+      radarState.abortTransition(expectedID: activeTransition.id)
       return
     }
 
     if activeTransition.targetIsFuture {
       _ = await radarState.refreshForecastTileAvailability()
       guard !Task.isCancelled, radarState.transition?.id == activeTransition.id else {
-        radarState.abortTransition()
+        radarState.abortTransition(expectedID: activeTransition.id)
         return
       }
     }

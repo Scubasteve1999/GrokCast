@@ -51,12 +51,28 @@ enum TripForecastService {
     let end = isoDateFormatter.string(from: endDate)
     let tempUnit = store.temperatureUnit.openMeteoTemperatureUnit
 
-    let url = URL(string: "\(forecastURL)?latitude=\(coords.lat)&longitude=\(coords.lon)&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&temperature_unit=\(tempUnit)&precipitation_unit=inch&start_date=\(start)&end_date=\(end)&timezone=auto")!
+    var forecastComponents = URLComponents(string: forecastURL)!
+    forecastComponents.queryItems = [
+      URLQueryItem(name: "latitude", value: String(coords.lat)),
+      URLQueryItem(name: "longitude", value: String(coords.lon)),
+      URLQueryItem(
+        name: "daily",
+        value: "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode"),
+      URLQueryItem(name: "temperature_unit", value: tempUnit),
+      URLQueryItem(name: "precipitation_unit", value: "inch"),
+      URLQueryItem(name: "start_date", value: start),
+      URLQueryItem(name: "end_date", value: end),
+      URLQueryItem(name: "timezone", value: "auto"),
+    ]
+    guard let url = forecastComponents.url else { throw TripPlannerError.locationNotFound }
 
-    let (data, _) = try await URLSession.shared.data(from: url)
-    let response = try JSONDecoder().decode(TripOpenMeteoResponse.self, from: data)
+    let (data, response) = try await URLSession.shared.data(from: url)
+    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+      throw URLError(.badServerResponse)
+    }
+    let decoded = try JSONDecoder().decode(TripOpenMeteoResponse.self, from: data)
 
-    let days = buildDays(from: response)
+    let days = buildDays(from: decoded)
     let dateRange = "\(dayFormatter.string(from: startDate)) – \(dayFormatter.string(from: endDate))"
 
     let isCelsius = store.temperatureUnit == .celsius
@@ -86,9 +102,18 @@ enum TripForecastService {
   }
 
   private static func geocode(_ query: String) async throws -> (lat: Double, lon: Double, name: String) {
-    let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-    let url = URL(string: "\(geocodeURL)?name=\(encoded)&count=1&language=en&format=json")!
-    let (data, _) = try await URLSession.shared.data(from: url)
+    var components = URLComponents(string: geocodeURL)!
+    components.queryItems = [
+      URLQueryItem(name: "name", value: query),
+      URLQueryItem(name: "count", value: "1"),
+      URLQueryItem(name: "language", value: "en"),
+      URLQueryItem(name: "format", value: "json"),
+    ]
+    guard let url = components.url else { throw TripPlannerError.locationNotFound }
+    let (data, response) = try await URLSession.shared.data(from: url)
+    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+      throw URLError(.badServerResponse)
+    }
     let result = try JSONDecoder().decode(GeocodeResponse.self, from: data)
     guard let first = result.results?.first else {
       throw TripPlannerError.locationNotFound

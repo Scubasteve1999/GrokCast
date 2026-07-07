@@ -91,8 +91,16 @@ struct RadarTimelineScrubber: View {
     let stride = max(1, count / 4)
     let indices = (0..<count).filter { $0 % stride == 0 || $0 == count - 1 }
 
-    return HStack(spacing: 0) {
+    // Position each tick at its true fractional position on the track (matching the
+    // thumb's `width * index/(count-1)`) rather than in equal-width columns, so the
+    // times line up with where the thumb actually sits. Edge labels are clamped inward
+    // so they don't clip off the ends.
+    return GeometryReader { geo in
       ForEach(indices, id: \.self) { i in
+        let fraction = count > 1 ? CGFloat(i) / CGFloat(count - 1) : 0
+        let estHalfWidth: CGFloat = 20
+        let x = min(
+          max(fraction * geo.size.width, estHalfWidth), max(estHalfWidth, geo.size.width - estHalfWidth))
         let label = i < labels.count ? labels[i] : "?"
         Text(label)
           .font(.system(size: 9).monospacedDigit())
@@ -101,12 +109,11 @@ struct RadarTimelineScrubber: View {
               ? DesignTokens.Palette.radarTextPrimary
               : DesignTokens.Palette.radarTextSecondary
           )
-          .frame(
-            maxWidth: .infinity,
-            alignment: i == indices.first ? .leading : (i == indices.last ? .trailing : .center)
-          )
+          .fixedSize()
+          .position(x: x, y: geo.size.height / 2)
       }
     }
+    .frame(height: 12)
   }
 
   private var standardScrubber: some View {
