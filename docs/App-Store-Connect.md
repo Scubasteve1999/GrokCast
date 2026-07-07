@@ -4,14 +4,14 @@ Use this when you are ready to upload metadata and screenshots. **Do not submit 
 
 ## 1. TestFlight upload (when ready)
 
-**Prerequisite:** In [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list), ensure App Groups `group.com.scubasteve1999.GrokCast` is enabled for **GrokCast**, **GrokCastWidgets**, **GrokCastWatch**, and **GrokCastWatchWidgets**. Then in Xcode, open **Signing & Capabilities** for each target and let Xcode refresh provisioning profiles.
+**Prerequisite:** In [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list), ensure App Groups `group.com.scubasteve1999.GrokCast` is enabled for **GrokCast** and **GrokCastWidgets** (iPhone app + widget extension only — **no Apple Watch target in this submission**). Then in Xcode, open **Signing & Capabilities** for each target and let Xcode refresh provisioning profiles.
 
 ```bash
 ./grok-build archive          # Release archive → build/GrokCast.xcarchive
 ./grok-build archive --increment   # bump build number first
 ```
 
-If archive fails with Watch App Group provisioning errors, fix capabilities in Developer portal (above) or archive from Xcode (**Product → Archive**) after signing resolves.
+If archive fails with App Group provisioning errors, fix capabilities in Developer portal (above) or archive from Xcode (**Product → Archive**) after signing resolves.
 
 Then in Xcode:
 
@@ -70,13 +70,15 @@ GrokCast combines accurate Open-Meteo forecasts and NWS alerts with a beautiful 
 - Radar: live and forecast frames with Explain Radar
 - Alerts: NWS warnings with plain-English Grok summaries
 - Grok AI: chat, Imagine, Storm Spotter photo analysis
-- Widgets & Watch: temp, score, and brief one-liner
+- Widgets & Live Activity: temp, score, and brief one-liner (iPhone)
 
 **Keywords:** weather,forecast,radar,alerts,Grok,AI,Minutecast,widget
 
 **Category:** Weather
 
 **Privacy Policy URL:** https://scubasteve1999.github.io/GrokCast/privacy.html
+
+**Terms of Use URL:** https://scubasteve1999.github.io/GrokCast/terms.html
 
 **Support URL:** https://scubasteve1999.github.io/GrokCast/support.html
 

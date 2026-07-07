@@ -204,7 +204,7 @@ struct AppStoreScreenshotAlerts: View {
     ZStack {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
       VStack(alignment: .leading, spacing: 20) {
-        Text("Critical Alerts")
+        Text("Severe Weather Alerts")
           .font(.title.bold())
 
         VStack(alignment: .leading, spacing: 12) {
@@ -229,10 +229,10 @@ struct AppStoreScreenshotAlerts: View {
         .cardStyle(stroke: DesignTokens.Palette.danger.opacity(0.4))
 
         VStack(alignment: .leading, spacing: 8) {
-          Label("BREAKS THROUGH DND", systemImage: "bell.badge.fill")
+          Label("TIME-SENSITIVE ALERTS", systemImage: "bell.badge.fill")
             .font(.caption.weight(.heavy))
             .foregroundStyle(DesignTokens.Palette.danger)
-          Text("Life-threatening alerts use iOS Critical Interruption to reach you even when Do Not Disturb is on.")
+          Text("Warnings and watches use iOS time-sensitive notifications so severe weather reaches you promptly when alerts are enabled.")
             .font(.body)
         }
         .padding(16)

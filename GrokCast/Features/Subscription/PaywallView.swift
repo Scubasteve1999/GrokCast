@@ -66,7 +66,6 @@ struct PaywallView: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       paywallRow("Grok AI without an API key", "sparkles", "Chat, briefs, Storm Spotter, Imagine")
       paywallRow("AI morning briefing", "sunrise.fill", "Daily notification with personalized forecast")
-      paywallRow("Critical weather alerts", "exclamationmark.triangle.fill", "Breaks DND for life-threatening events")
       paywallRow("Forecast radar (FUTURE)", "cloud.rain.fill", "Animated precipitation outlook")
       paywallRow("Live Activity & rich widgets", "lock.rectangle.stack.fill", "Score + Minutecast on Lock Screen")
       paywallRow("Unlimited saved locations", "mappin.and.ellipse", "Track every place you care about")
@@ -211,7 +210,7 @@ struct PaywallView: View {
 
       HStack(spacing: 16) {
         Link("Privacy", destination: AppLinks.privacyPolicy)
-        Link("Terms", destination: AppLinks.support)
+        Link("Terms", destination: AppLinks.termsOfUse)
       }
       .font(.caption2)
     }
@@ -251,7 +250,7 @@ enum PaywallFeature {
     case .morningBrief:
       "Wake up to a personalized AI weather brief every morning — what to wear, when to leave, and what to watch for."
     case .severeAlerts:
-      "Critical alerts break through Do Not Disturb for life-threatening weather. Never miss a tornado warning."
+      "NWS warnings and watches with rich, time-sensitive notifications — free for all users. GrokCast Pro adds AI briefings and radar tools to help you plan around severe weather."
     }
   }
 

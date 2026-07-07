@@ -41,6 +41,10 @@
 	<string>GrokCast uses your location in the background for timely weather alerts and GrokCast updates.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>GrokCast uses your location to show accurate local weather forecasts and AI-powered insights.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>GrokCast saves AI-generated weather images to your Photo Library when you choose Save.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>

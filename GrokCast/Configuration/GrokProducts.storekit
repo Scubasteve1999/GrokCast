@@ -83,7 +83,7 @@
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Grok AI, morning briefs, critical alerts, forecast radar, unlimited locations",
+              "description" : "Grok AI, morning briefs, forecast radar, Live Activity, unlimited locations",
               "displayName" : "GrokCast Pro Monthly",
               "locale" : "en_US"
             }

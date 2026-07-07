@@ -69,7 +69,13 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.scubasteve1999.GrokCast
-        aps-environment: development
+        aps-environment: production
+    settings:
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: GrokCast/GrokCast-Debug.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: GrokCast/GrokCast.entitlements
     info:
       path: GrokCast/Info.plist
       properties:
@@ -90,6 +96,8 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
         NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates."
+        NSPhotoLibraryAddUsageDescription: "GrokCast saves AI-generated weather images to your Photo Library when you choose Save."
+        ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:
           - location
           - fetch

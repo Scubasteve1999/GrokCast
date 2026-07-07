@@ -30,15 +30,14 @@ PROFESSIONAL-GRADE DATA
 
 SEVERE WEATHER ALERTS
 
-- Critical interruption alerts for life-threatening events (tornado warnings, hurricane warnings) that break through Do Not Disturb
+- Time-sensitive notifications for NWS warnings and watches with rich lock screen detail
 - Rich lock screen notifications with affected area, expiry countdown, and NWS instructions
 - One tap to view on radar or read full alert details
 
-WIDGETS & COMPLICATIONS
+WIDGETS & LIVE ACTIVITY (iPhone)
 
 - Small, Medium, and Large home screen widgets with daily forecast
 - Lock Screen widgets (circular gauge, rectangular, inline)
-- Apple Watch complications with temperature range gauge and AI brief
 - Live Activity with GrokCast Score on your Lock Screen
 
 BUILT FOR PRIVACY
@@ -60,9 +59,8 @@ WHAT'S NEW (for next release)
 ------------------------------------------------------------
 
 - NEW: AI Morning Briefing — personalized weather notification every morning
-- NEW: Critical weather alerts break through Do Not Disturb for life-threatening events
+- NEW: Time-sensitive severe weather notifications with rich alert detail
 - NEW: Large home screen widget with 5-day forecast and AI insights
-- NEW: Enhanced Apple Watch complications with temperature gauge
 - NEW: Push notification infrastructure (Firebase Cloud Messaging)
 - Improved: Rich alert notifications with area, expiry countdown, and NWS instructions
 - Improved: Radar provider architecture (cleaner fallback chain)
@@ -72,19 +70,19 @@ WHAT'S NEW (for next release)
 PROMOTIONAL TEXT (170 char max, can change without review)
 ------------------------------------------------------------
 
-AI-powered weather that actually helps you plan. GrokCast Score, morning briefs, storm spotter, and critical alerts that break through DND.
+AI-powered weather that actually helps you plan. GrokCast Score, morning briefs, storm spotter, and time-sensitive severe weather alerts.
 
 ------------------------------------------------------------
 SUPPORT URL
 ------------------------------------------------------------
 
-https://grokcast.app/support
+https://scubasteve1999.github.io/GrokCast/support.html
 
 ------------------------------------------------------------
 PRIVACY POLICY URL
 ------------------------------------------------------------
 
-https://grokcast.app/privacy
+https://scubasteve1999.github.io/GrokCast/privacy.html
 
 ------------------------------------------------------------
 CATEGORIES
@@ -106,7 +104,7 @@ SCREENSHOT ORDER (6.7" iPhone — 1290×2796)
 1. Today tab — Hero temp + GrokCast Score + AI brief
 2. Radar — Live radar with control panel
 3. Grok AI — Briefing Studio + Storm Spotter
-4. Widgets — Large widget + Lock Screen + Watch complications
+4. Widgets — Large widget + Lock Screen widgets
 5. Alerts — Critical alert notification + Alerts tab
 6. Forecast — Hourly + daily with dynamic sky background
 

@@ -526,6 +526,8 @@ struct SettingsView: View {
         SettingsGroupCard {
           SettingsLinkRow(title: "Privacy Policy", icon: "hand.raised", url: AppLinks.privacyPolicy)
           SettingsDivider()
+          SettingsLinkRow(title: "Terms of Use", icon: "doc.text", url: AppLinks.termsOfUse)
+          SettingsDivider()
           SettingsLinkRow(title: "Support", icon: "questionmark.circle", url: AppLinks.support)
           SettingsDivider()
           SettingsLinkRow(title: "Contact", icon: "envelope", url: AppLinks.supportEmail)

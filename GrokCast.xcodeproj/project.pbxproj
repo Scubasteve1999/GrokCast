@@ -69,6 +69,7 @@
 		463CC900B513D0B6F9EA7DC2 /* TripForecastService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B1A0335398BE9A94195940 /* TripForecastService.swift */; };
 		479D5DEB8A7938D048F63616 /* LargeWeatherWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEC21CCCF030BDD862409B91 /* LargeWeatherWidgetView.swift */; };
 		47CC29EF5BB2F59BCC0D231D /* DeveloperAPIKey.swift.example in Resources */ = {isa = PBXBuildFile; fileRef = E74FF11D8FF30DE0D70917DE /* DeveloperAPIKey.swift.example */; };
+		499B1CB53BD53674ED42EBDE /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 61B15E82C9D4E2E4E4ED3847 /* PrivacyInfo.xcprivacy */; };
 		4B4FABC679FBECD1C7C78906 /* GrokAIViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5323CA2EA7F8F936CFA9CDCA /* GrokAIViewModel.swift */; };
 		4DAAFCFA3B24E2B6890D11B6 /* GrokBriefCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25EF322FC50810E8B9668995 /* GrokBriefCard.swift */; };
 		4EA53F71EE8BF2A1E4DB1A62 /* NWSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F5DCF1897595329028EDFD /* NWSService.swift */; };
@@ -284,6 +285,7 @@
 		5DBFC2002C435AA001658629 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6140F37F8406B8BA0E83F4F6 /* ExplainRadarSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplainRadarSheet.swift; sourceTree = "<group>"; };
 		619346A32D301716B431978A /* RainAlertService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RainAlertService.swift; sourceTree = "<group>"; };
+		61B15E82C9D4E2E4E4ED3847 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6377ABD7FF772697B9186FF5 /* GrokPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokPrompts.swift; sourceTree = "<group>"; };
 		64DA42B674EC2070A4348300 /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
 		66D450AF927C40BCFD71D355 /* BackgroundAlertRefreshService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundAlertRefreshService.swift; sourceTree = "<group>"; };
@@ -381,6 +383,7 @@
 		F9AFC1FCA6F763FCC7B44977 /* GrokCastAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokCastAppIntents.swift; sourceTree = "<group>"; };
 		F9CE0FC3106C7FAC22F6290D /* GrokProducts.storekit */ = {isa = PBXFileReference; path = GrokProducts.storekit; sourceTree = "<group>"; };
 		FC4187B014ED170D0415154D /* RadarMapboxRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapboxRepresentable.swift; sourceTree = "<group>"; };
+		FD0FD6B80DC6637D28B934B3 /* GrokCast-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "GrokCast-Debug.entitlements"; sourceTree = "<group>"; };
 		FDE9772F416DFEF9A57448E5 /* DebugFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugFlags.swift; sourceTree = "<group>"; };
 		FE3FE3FE7366628D4E9509D4 /* AlertsGrokSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsGrokSummaryCard.swift; sourceTree = "<group>"; };
 		FEC21CCCF030BDD862409B91 /* LargeWeatherWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeWeatherWidgetView.swift; sourceTree = "<group>"; };
@@ -767,6 +770,7 @@
 			isa = PBXGroup;
 			children = (
 				2F5F0F139F62CAE7BB11916F /* ContentView.swift */,
+				FD0FD6B80DC6637D28B934B3 /* GrokCast-Debug.entitlements */,
 				67E09DFA50831449DC84A134 /* GrokCast.entitlements */,
 				5DBFC2002C435AA001658629 /* PrivacyInfo.xcprivacy */,
 				35253A2183CD9155CFCA9C60 /* App */,
@@ -863,6 +867,7 @@
 			children = (
 				94335AB043939799B88D8CA6 /* GrokCastWidgets.entitlements */,
 				173F8E2E1E52A13ED9EF7932 /* GrokCastWidgets.swift */,
+				61B15E82C9D4E2E4E4ED3847 /* PrivacyInfo.xcprivacy */,
 				E8083BAA8A5B10D5C25ED161 /* WeatherLiveActivityWidget.swift */,
 				FF1E81300FE5F2CCF4E8000A /* Configuration */,
 				FBC2603DAC7AA5BCF2237094 /* Providers */,
@@ -895,6 +900,7 @@
 			buildConfigurationList = A23730D7386CB539729431E3 /* Build configuration list for PBXNativeTarget "GrokCastWidgets" */;
 			buildPhases = (
 				A22494E8A5A6FA512EB9EF49 /* Sources */,
+				080C44163DB99C9EA3BEE208 /* Resources */,
 				A8F983F104C1AEB534EC6F4A /* Frameworks */,
 			);
 			buildRules = (
@@ -975,6 +981,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		080C44163DB99C9EA3BEE208 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				499B1CB53BD53674ED42EBDE /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5E84C271818B1B12E5B3F4DF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;

@@ -6,7 +6,9 @@ Copy into **App Store Connect → App Review Information → Notes** when you su
 
 ## App summary
 
-GrokCast is a weather app for iPhone (and Apple Watch companion) that combines Open-Meteo forecasts, NWS alerts and observations, Mapbox radar, and optional Grok/xAI features for briefings and storm photo analysis.
+GrokCast is an iPhone weather app that combines Open-Meteo forecasts, NWS alerts and observations, Mapbox radar, and optional Grok/xAI features for briefings and storm photo analysis.
+
+**This submission (v1.0.1) is iPhone only** — no Apple Watch app or watchOS complications are included in this build.
 
 ## Location
 

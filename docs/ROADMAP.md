@@ -120,6 +120,7 @@ App Store blockers and baseline polish.
 - [ ] Final app icon polish (assets exist; optional refresh)
 - [ ] TestFlight QA on 2+ devices (Phase 0)
 - [ ] Submit for App Store review (when ready — not required tonight)
+- **Scope:** v1.0.1 submission is **iPhone only** (no Apple Watch app in this build; watch code on disk is deferred)
 
 ---
 
