@@ -6,7 +6,7 @@ import Foundation
 /// Service for Xweather radar tiles (primary provider).
 /// Uses https://maps.api.xweather.com for high-quality radar layers.
 /// NOW uses the live `radar` layer with past offsets (e.g. `current`, `-5minutes`).
-/// FUTURE uses the forecast `fradar` layer with forward offsets (e.g. `current`, `+1h`).
+/// FUTURE uses the combined `radar` layer with forward offsets (e.g. `current`, `+1hour`).
 final class XweatherRadarService {
 
   private static let mapHosts = ["maps1", "maps2", "maps3", "maps4"]
@@ -76,16 +76,14 @@ final class XweatherRadarService {
   }
 
   /// Produces RadarFrame descriptors suitable for the active Mapbox radar timeline + overlay.
-  /// Uses the fradar layer for FUTURE precipitation forecast (offsets like "current", "+1h").
+  /// Uses the `radar` layer for FUTURE precipitation forecast (offsets like `current`, `+1hour`).
   static func loadForecastRadarFrames(
     maxFrames: Int = RadarTimelineConfig.forecastMaxFrames,
     intervalMinutes: Int = RadarTimelineConfig.forecastIntervalMinutes
   ) -> [RadarFrame] {
     let xwFrames = loadForecastFrames(maxFrames: maxFrames, intervalMinutes: intervalMinutes)
-    // Request @2x (512px) retina tiles: sharper on iPhone's 3x display.
-    // Mapbox tileSize must be set to 512 for these frames (handled in RadarMapboxRepresentable).
     return xwFrames.compactMap { xf -> RadarFrame? in
-      guard let templates = tileURLs(layer: .fradar, offset: xf.offset, retina: true),
+      guard let templates = tileURLs(layer: .radar, offset: xf.offset, retina: true),
         !templates.isEmpty
       else {
         return nil
@@ -128,7 +126,7 @@ final class XweatherRadarService {
         timestamp = roundedNow.addingTimeInterval(Double(step) * intervalSeconds)
       }
 
-      let layer: XweatherRadarLayer = direction == .past ? .radar : .fradar
+      let layer: XweatherRadarLayer = .radar
       frames.append(
         XweatherRadarFrame(
           layer: layer,
@@ -148,7 +146,9 @@ final class XweatherRadarService {
     let hours = minutes / 60
     switch direction {
     case .past: return "-\(minutes)minutes"
-    case .future: return "+\(hours)h"
+    case .future:
+      if hours == 1 { return "+1hour" }
+      return "+\(hours)hours"
     }
   }
 
@@ -175,30 +175,38 @@ final class XweatherRadarService {
     await probeOffsetCached(layer: .radar, offset: "current")
   }
 
-  /// Validates fradar tile access before FUTURE overlays are shown.
+  /// Validates forecast `radar` tile access before FUTURE overlays are shown.
   static func probeForecastAvailability() async -> Bool {
-    await probeOffsetCached(layer: .fradar, offset: "current")
+    await probeOffsetCached(layer: .radar, offset: "+1hour", retina: true)
   }
 
-  private static func probeCacheKey(layer: XweatherRadarLayer, offset: String) -> String {
-    "\(layer.rawValue)/\(offset)"
+  private static func probeCacheKey(layer: XweatherRadarLayer, offset: String, retina: Bool) -> String {
+    "\(layer.rawValue)/\(offset)/\(retina ? "2x" : "1x")"
   }
 
-  private static func probeOffsetCached(layer: XweatherRadarLayer, offset: String) async -> Bool {
-    let key = probeCacheKey(layer: layer, offset: offset)
+  private static func probeOffsetCached(
+    layer: XweatherRadarLayer, offset: String, retina: Bool = false
+  ) async -> Bool {
+    let key = probeCacheKey(layer: layer, offset: offset, retina: retina)
     if let cached = cachedProbe(for: key) {
       return cached
     }
-    let ok = await probeOffset(layer: layer, offset: offset)
+    let ok = await probeOffset(layer: layer, offset: offset, retina: retina)
     storeProbe(ok, for: key)
     return ok
   }
 
-  private static func probeOffset(layer: XweatherRadarLayer, offset: String) async -> Bool {
-    guard let auth = DeveloperAPIKey.xweatherMapsAuth,
+  private static func probeOffset(
+    layer: XweatherRadarLayer, offset: String, retina: Bool = false
+  ) async -> Bool {
+    guard let auth = DeveloperAPIKey.xweatherMapsAuth else {
+      return false
+    }
+    let ext = retina ? "@2x.png" : ".png"
+    guard
       let url = URL(
         string:
-          "https://maps1.api.xweather.com/\(auth)/\(layer.rawValue)/3/2/3/\(offset).png"
+          "https://maps1.api.xweather.com/\(auth)/\(layer.rawValue)/6/16/24/\(offset)\(ext)"
       )
     else {
       return false
@@ -214,6 +222,12 @@ final class XweatherRadarService {
       }
       let ok = (200..<300).contains(http.statusCode) || http.statusCode == 302
       if ok {
+        if let contentType = http.value(forHTTPHeaderField: "Content-Type")?.lowercased(),
+          contentType.contains("json")
+        {
+          lastProbeFailure = failureFromResponse(statusCode: http.statusCode, data: data)
+          return false
+        }
         lastProbeFailure = nil
         return true
       }

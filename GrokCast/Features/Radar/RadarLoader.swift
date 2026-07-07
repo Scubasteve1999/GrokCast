@@ -203,7 +203,7 @@ final class RadarLoader {
       if !xwFrames.isEmpty {
         let probeOK = await XweatherRadarService.probeForecastAvailability()
         if probeOK {
-          print("[RadarLoader] Forecast timeline ready (\(xwFrames.count) frames) — Xweather fradar")
+          print("[RadarLoader] Forecast timeline ready (\(xwFrames.count) frames) — Xweather radar")
           return LoadOutcome(
             frames: xwFrames,
             provider: .xweather,
@@ -211,7 +211,7 @@ final class RadarLoader {
           )
         }
 
-        print("[RadarLoader] Xweather fradar probe failed — trying OpenWeatherMap fallback")
+        print("[RadarLoader] Xweather forecast probe failed — trying OpenWeatherMap fallback")
         if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
           return LoadOutcome(
             frames: owmOutcome.frames,

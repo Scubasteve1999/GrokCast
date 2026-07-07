@@ -18,6 +18,7 @@ enum DeveloperAPIKey {
 
   // Xweather (primary radar provider)
   static let xweatherClientID: String? = nil  // "YOUR_XWEATHER_CLIENT_ID"
+  // Secret only — NOT the full `{id}_{secret}` access key (unless id is set separately above).
   static let xweatherClientSecret: String? = nil  // "YOUR_XWEATHER_CLIENT_SECRET"
 
   static var xweatherMapsAuth: String? {
@@ -25,6 +26,8 @@ enum DeveloperAPIKey {
     else {
       return nil
     }
+    // Dashboard shows one combined access key: `{client_id}_{client_secret}`.
+    if secret.hasPrefix("\(id)_") { return secret }
     return "\(id)_\(secret)"
   }
 
