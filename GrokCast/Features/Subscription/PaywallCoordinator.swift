@@ -32,7 +32,13 @@ struct PaywallPresentationModifier: ViewModifier {
 }
 
 extension View {
-  func paywallSheet(coordinator: PaywallCoordinator = .shared) -> some View {
+  @MainActor
+  func paywallSheet() -> some View {
+    modifier(PaywallPresentationModifier(coordinator: .shared))
+  }
+
+  @MainActor
+  func paywallSheet(coordinator: PaywallCoordinator) -> some View {
     modifier(PaywallPresentationModifier(coordinator: coordinator))
   }
 }

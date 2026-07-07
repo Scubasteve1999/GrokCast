@@ -5,7 +5,7 @@ import UIKit
 import UserNotifications
 
 /// UIKit delegate adapter for BGTask registration, APNs, Firebase, and notification delegate wiring.
-final class AppDelegate: NSObject, UIApplicationDelegate {
+final class AppDelegate: NSObject, @preconcurrency UIApplicationDelegate {
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
