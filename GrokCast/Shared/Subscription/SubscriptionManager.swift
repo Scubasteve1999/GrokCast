@@ -16,7 +16,12 @@ final class SubscriptionManager {
 
   private var updatesTask: Task<Void, Never>?
 
-  private init() {}
+  private init() {
+    // Hydrate from the last-known entitlement so Pro users aren't paywalled during
+    // the cold-launch window before StoreKit's entitlement check completes.
+    // refreshEntitlements() corrects this within seconds if the subscription lapsed.
+    isPro = WidgetAppGroup.userDefaults?.bool(forKey: WidgetDataStore.isProKey) ?? false
+  }
 
   func start() async {
     guard updatesTask == nil else {
@@ -32,8 +37,10 @@ final class SubscriptionManager {
         }
       }
     }
-    await loadProducts()
+    // Entitlements gate features (paywall, widget brief) — resolve them before the
+    // slower product-catalog load instead of after it.
     await refreshEntitlements()
+    await loadProducts()
   }
 
   func loadProducts() async {

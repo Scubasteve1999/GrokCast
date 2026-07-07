@@ -195,17 +195,18 @@ final class OpenMeteoService {
       let count = min(24, h.time.count)
       for i in 0..<count {
         let date = parseHourlyDate(h.time[i])
-        let (sym, _) = mapWeatherCode(h.weather_code[i] ?? 0)
+        let weatherCode = openMeteoValue(h.weather_code, at: i) ?? 0
+        let (sym, _) = mapWeatherCode(weatherCode)
         hourlyForecasts.append(
           HourlyForecast(
             time: date,
-            temp: h.temperature_2m[i] ?? 0,
-            precipChance: h.precipitation_probability?[i] ?? 0,
-            weatherCode: h.weather_code[i] ?? 0,
+            temp: openMeteoValue(h.temperature_2m, at: i) ?? 0,
+            precipChance: openMeteoValue(h.precipitation_probability, at: i) ?? 0,
+            weatherCode: weatherCode,
             symbolName: sym,
-            rain: h.rain?[i] ?? nil,
-            showers: h.showers?[i] ?? nil,
-            snowfall: h.snowfall?[i] ?? nil
+            rain: openMeteoValue(h.rain, at: i),
+            showers: openMeteoValue(h.showers, at: i),
+            snowfall: openMeteoValue(h.snowfall, at: i)
           ))
       }
     }
@@ -220,10 +221,10 @@ final class OpenMeteoService {
           hourly.map { h in
             OpenMeteoDailyDerivation.hourlySlices(for: date, hourly: h, parseHour: parseHourlyDate)
           } ?? []
-        let apiPrecip = d.precipitation_probability_max?[i] ?? 0
+        let apiPrecip = openMeteoValue(d.precipitation_probability_max, at: i) ?? 0
         let precipChance = OpenMeteoDailyDerivation.derivedPrecipChance(
           dailyAPI: apiPrecip, slices: slices)
-        let apiCode = d.weather_code[i] ?? 0
+        let apiCode = openMeteoValue(d.weather_code, at: i) ?? 0
         let weatherCode = OpenMeteoDailyDerivation.derivedWeatherCode(
           dailyAPI: apiCode, precipChance: precipChance, slices: slices)
         let (sym, _) = mapWeatherCode(weatherCode, isDay: true)
@@ -232,15 +233,15 @@ final class OpenMeteoService {
         dailyForecasts.append(
           DailyForecast(
             date: date,
-            high: d.temperature_2m_max[i] ?? 0,
-            low: d.temperature_2m_min[i] ?? 0,
+            high: openMeteoValue(d.temperature_2m_max, at: i) ?? 0,
+            low: openMeteoValue(d.temperature_2m_min, at: i) ?? 0,
             precipChance: precipChance,
             weatherCode: weatherCode,
             symbolName: sym,
-            uvMax: d.uv_index_max?[i] ?? nil,
-            rainSum: d.rain_sum?[i] ?? nil,
-            showersSum: d.showers_sum?[i] ?? nil,
-            snowfallSum: d.snowfall_sum?[i] ?? nil,
+            uvMax: openMeteoValue(d.uv_index_max, at: i),
+            rainSum: openMeteoValue(d.rain_sum, at: i),
+            showersSum: openMeteoValue(d.showers_sum, at: i),
+            snowfallSum: openMeteoValue(d.snowfall_sum, at: i),
             sunrise: sunriseDate,
             sunset: sunsetDate
           ))
@@ -278,8 +279,8 @@ final class OpenMeteoService {
         minutelyForecasts.append(
           MinutelyForecast(
             time: date,
-            precipitation: m.precipitation?[i] ?? 0,
-            precipChance: m.precipitation_probability?[i] ?? 0
+            precipitation: openMeteoValue(m.precipitation, at: i) ?? 0,
+            precipChance: openMeteoValue(m.precipitation_probability, at: i) ?? 0
           ))
       }
     }

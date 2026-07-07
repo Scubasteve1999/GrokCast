@@ -46,10 +46,12 @@ struct RadarView: View {
           }
         }
       }
-      // Site products (Super-Res/SRV) follow the selected weather location.
+      // Site products (Super-Res/SRV) follow the selected weather location, and the
+      // composite timeline rebuilds when the location moved (provider is per-coordinate).
       .task(id: store.currentLocation?.id) {
         let center = store.currentLocation?.coordinate ?? defaultMapCenter
         await radarState.updateNearestSite(for: center)
+        await radarState.reloadIfStale(for: center)
       }
       .task(id: radarState.transition?.id) {
         await runModeTransitionIfNeeded()

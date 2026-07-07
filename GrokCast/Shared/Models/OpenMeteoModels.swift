@@ -114,6 +114,14 @@ struct MinutelyForecast: Equatable, Codable, Identifiable {
   var id: Date { time }
 }
 
+/// Safe access into an Open-Meteo parallel value array. These arrays are indexed by
+/// `time.count`, but a degraded payload can return shorter (or missing) value arrays —
+/// out-of-range reads return nil instead of trapping.
+func openMeteoValue<T>(_ array: [T?]?, at index: Int) -> T? {
+  guard let array, array.indices.contains(index) else { return nil }
+  return array[index]
+}
+
 // MARK: - Daily forecast derivation (hourly → daily precip % + representative code)
 
 enum OpenMeteoDailyDerivation {
@@ -141,8 +149,8 @@ enum OpenMeteoDailyDerivation {
       slices.append(
         HourlySlice(
           time: time,
-          precipChance: hourly.precipitation_probability?[i] ?? 0,
-          weatherCode: hourly.weather_code[i] ?? 0
+          precipChance: openMeteoValue(hourly.precipitation_probability, at: i) ?? 0,
+          weatherCode: openMeteoValue(hourly.weather_code, at: i) ?? 0
         ))
     }
     return slices

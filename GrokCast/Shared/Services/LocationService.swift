@@ -91,6 +91,11 @@ final class LocationService: NSObject {
       // Event-driven `significantLocationHandler` closure is intentionally kept (per spec)
       // for background Significant Location Changes updates (wired by WeatherStore).
       return try await withCheckedThrowingContinuation { continuation in
+        // A second concurrent request must not silently overwrite the stored
+        // continuation — that would leave the first caller awaiting forever.
+        if let superseded = self.continuation {
+          superseded.resume(throwing: CLError(.locationUnknown))
+        }
         self.continuation = continuation
 
         if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {

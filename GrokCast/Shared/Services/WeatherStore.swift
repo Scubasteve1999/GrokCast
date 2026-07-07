@@ -645,6 +645,19 @@ final class WeatherStore {
     }
   }
 
+  /// UserDefaults key holding the UUID of the auto-managed "current device location" entry,
+  /// so movement updates that entry in place instead of accumulating one entry per move.
+  private static let deviceLocationEntryIDKey = "grokcast_device_location_entry_id"
+
+  private var deviceLocationEntryID: UUID? {
+    get {
+      UserDefaults.standard.string(forKey: Self.deviceLocationEntryIDKey).flatMap(UUID.init)
+    }
+    set {
+      UserDefaults.standard.set(newValue?.uuidString, forKey: Self.deviceLocationEntryIDKey)
+    }
+  }
+
   @MainActor
   private func updateCurrentDeviceLocationEntry(using clLoc: CLLocation, name: String) {
     // Clear isCurrent flags (exact logic extracted from useCurrentDeviceLocation success path)
@@ -668,10 +681,27 @@ final class WeatherStore {
       existing.longitude = targetLon
       existing.isCurrent = true
       savedLocations[idx] = existing
+    } else if let autoID = deviceLocationEntryID,
+      let idx = savedLocations.firstIndex(where: { $0.id == autoID })
+    {
+      // Device moved: relocate the auto-managed entry instead of inserting a new one,
+      // so significant-location updates can't grow savedLocations unbounded.
+      var existing = savedLocations[idx]
+      existing.name = name
+      existing.latitude = targetLat
+      existing.longitude = targetLon
+      existing.isCurrent = true
+      savedLocations[idx] = existing
+      // Its old-coordinate snapshot is stale; the id is unchanged so the next
+      // refresh overwrites the widget snapshot in place.
+      if currentLocation?.id == autoID {
+        currentLocation = existing
+      }
     } else {
       let newCurrent = SavedLocation(
         name: name, latitude: targetLat, longitude: targetLon, isCurrent: true)
       savedLocations.insert(newCurrent, at: 0)
+      deviceLocationEntryID = newCurrent.id
     }
     saveLocations()
   }
@@ -762,6 +792,12 @@ final class WeatherStore {
           throw error
         }
       }
+      // A location switch during the (up to 16s) fetch supersedes this result —
+      // installing it would show the old city's weather under the new city's name.
+      guard currentLocation?.id == loc.id else {
+        if showLoadingIndicator { isLoadingWeather = false }
+        return
+      }
       currentWeather = data
       syncScoreSurfacesFromCurrentWeather()
       // TODO: Cache to SwiftData here
@@ -781,8 +817,9 @@ final class WeatherStore {
         }
       }
     } catch {
-      // Keep showing cached weather on refresh failure; only surface errors when nothing to display.
-      if currentWeather == nil {
+      // Keep showing cached weather on refresh failure; only surface errors when nothing to
+      // display, and only if this fetch is still for the selected location.
+      if currentWeather == nil, currentLocation?.id == loc.id {
         weatherError =
           isOffline
           ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
@@ -947,7 +984,10 @@ final class WeatherStore {
 
   /// Non-expired alerts for UI display. Falls back to persisted history only when the last
   /// fetch failed (offline); returns [] after a successful fetch that found no active alerts.
+  /// Alerts are only valid for the location they were fetched for — after a location switch
+  /// whose fetch failed, showing the previous city's warnings would be a wrong-city alert.
   var displayableActiveAlerts: [NWSAlert] {
+    guard alertsForLocation == currentLocation?.id else { return [] }
     let fromActive = activeAlerts.filter { !$0.isExpired }
     if !fromActive.isEmpty { return fromActive }
     guard !lastAlertsFetchSucceeded else { return [] }

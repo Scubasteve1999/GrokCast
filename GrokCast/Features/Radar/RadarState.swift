@@ -76,6 +76,12 @@ final class RadarState {
   private var lastLoadedAt: Date?
   private static let staleReloadThreshold: TimeInterval = 15 * 60
 
+  /// Coordinate the timeline was built for. Provider selection is per-coordinate
+  /// (IEM CONUS vs international fallbacks), so a location switch must rebuild
+  /// even inside the time threshold.
+  private var lastLoadedCoordinate: CLLocationCoordinate2D?
+  private static let staleReloadDistanceDegrees = 0.25
+
   private let loader = RadarLoader()
   var playback = RadarPlayback()
   private var manualIsLoading = false
@@ -395,9 +401,14 @@ extension RadarState {
   }
 
   /// Rebuild the timeline only if the last load is stale (or never happened).
-  /// Cheap no-op on quick tab switches; refreshes after a long idle session.
+  /// Cheap no-op on quick tab switches; refreshes after a long idle session or
+  /// when the selected location moved away from the loaded coordinate.
   func reloadIfStale(for coordinate: CLLocationCoordinate2D) async {
-    if let lastLoadedAt, Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold {
+    if let lastLoadedAt, let lastLoadedCoordinate,
+      Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold,
+      abs(lastLoadedCoordinate.latitude - coordinate.latitude) < Self.staleReloadDistanceDegrees,
+      abs(lastLoadedCoordinate.longitude - coordinate.longitude) < Self.staleReloadDistanceDegrees
+    {
       return
     }
     await loadDefaultRadar(for: coordinate)
@@ -445,6 +456,7 @@ extension RadarState {
     }
 
     lastLoadedAt = Date()
+    lastLoadedCoordinate = coordinate
     isLoading = false
   }
 }
