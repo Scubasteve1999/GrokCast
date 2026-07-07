@@ -266,6 +266,18 @@ final class RadarState {
     }
 
     let availability = await loader.refreshForecastAvailability(provider: provider)
+    if availability.showsTiles {
+      forecastTileAvailability = availability
+      return true
+    }
+
+    if provider == .xweather, let fallback = await loader.loadOpenWeatherMapForecastIfAvailable() {
+      timeline.forecast = fallback.frames
+      forecastTileAvailability = fallback.availability
+      print("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
+      return fallback.availability.hasFrames
+    }
+
     forecastTileAvailability = availability
     return availability.hasFrames
   }

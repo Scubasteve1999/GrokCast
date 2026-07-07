@@ -88,9 +88,16 @@ final class RadarLoader {
       return .unavailable(message: "Forecast radar unavailable.")
     case .xweather:
       if XweatherRadarService.mapsAuthConfigured {
-        // Probe is advisory; serve as available so tiles can be attempted.
-        Task { _ = await XweatherRadarService.probeForecastAvailability() }
-        return .available
+        let probeOK = await XweatherRadarService.probeForecastAvailability()
+        if probeOK {
+          return .available
+        }
+
+        let message =
+          XweatherRadarService.userFacingUnavailableMessage
+          ?? "Xweather forecast radar unavailable."
+        print("[Xweather] FUTURE probe failed — timeline-only")
+        return .timelineOnly(message: message)
       }
       return .timelineOnly(message: "Xweather keys not configured for forecast.")
     case .openWeatherMap:
@@ -106,9 +113,24 @@ final class RadarLoader {
       let message =
         OpenWeatherMapRadarService.userFacingUnavailableMessage
         ?? "OpenWeatherMap FUTURE tiles require a Maps-enabled key (see OpenWeatherMapKeys.swift)."
-      print("[OpenWeatherMap] FUTURE probe failed — using timeline-only (optimistic)")
+      print("[OpenWeatherMap] FUTURE probe failed — using timeline-only")
       return .timelineOnly(message: message)
     }
+  }
+
+  /// Loads OpenWeatherMap PR0 forecast frames when the probe succeeds.
+  func loadOpenWeatherMapForecastIfAvailable() async -> (
+    frames: [RadarFrame], availability: RadarTileAvailability
+  )? {
+    guard OpenWeatherMapRadarService.apiKeyConfigured else { return nil }
+    let probeOK = await OpenWeatherMapRadarService.probeForecastAvailability()
+    guard probeOK else { return nil }
+
+    let frames = OpenWeatherMapRadarService.loadForecastFrames()
+    guard !frames.isEmpty else { return nil }
+
+    print("[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0")
+    return (frames, .available)
   }
 
   private struct LoadOutcome: Equatable {
@@ -179,31 +201,43 @@ final class RadarLoader {
     if XweatherRadarService.mapsAuthConfigured {
       let xwFrames = XweatherRadarService.loadForecastRadarFrames()
       if !xwFrames.isEmpty {
-        Task { _ = await XweatherRadarService.probeForecastAvailability() }
-        print("[RadarLoader] Forecast timeline ready (\(xwFrames.count) frames) — Xweather fradar")
+        let probeOK = await XweatherRadarService.probeForecastAvailability()
+        if probeOK {
+          print("[RadarLoader] Forecast timeline ready (\(xwFrames.count) frames) — Xweather fradar")
+          return LoadOutcome(
+            frames: xwFrames,
+            provider: .xweather,
+            availability: .available
+          )
+        }
+
+        print("[RadarLoader] Xweather fradar probe failed — trying OpenWeatherMap fallback")
+        if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
+          return LoadOutcome(
+            frames: owmOutcome.frames,
+            provider: .openWeatherMap,
+            availability: owmOutcome.availability
+          )
+        }
+
+        let message =
+          XweatherRadarService.userFacingUnavailableMessage
+          ?? "Xweather forecast radar unavailable."
+        print("[RadarLoader] Xweather tiles unavailable — timeline-only (\(xwFrames.count) frames)")
         return LoadOutcome(
           frames: xwFrames,
           provider: .xweather,
-          availability: .available
+          availability: .timelineOnly(message: message)
         )
       }
     }
 
-    if OpenWeatherMapRadarService.apiKeyConfigured {
-      let probeOK = await OpenWeatherMapRadarService.probeForecastAvailability()
-      if probeOK {
-        let frames = OpenWeatherMapRadarService.loadForecastFrames()
-        if !frames.isEmpty {
-          print(
-            "[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0"
-          )
-          return LoadOutcome(
-            frames: frames,
-            provider: .openWeatherMap,
-            availability: .available
-          )
-        }
-      }
+    if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
+      return LoadOutcome(
+        frames: owmOutcome.frames,
+        provider: .openWeatherMap,
+        availability: owmOutcome.availability
+      )
     }
 
     let message =

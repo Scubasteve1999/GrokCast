@@ -175,7 +175,7 @@ final class XweatherRadarService {
     await probeOffsetCached(layer: .radar, offset: "current")
   }
 
-  /// Single fradar probe for status messaging; tiles are attempted optimistically when keys exist.
+  /// Validates fradar tile access before FUTURE overlays are shown.
   static func probeForecastAvailability() async -> Bool {
     await probeOffsetCached(layer: .fradar, offset: "current")
   }
