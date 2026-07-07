@@ -34,7 +34,7 @@ struct RadarPlaybackControls: View {
   }
 
   private var frameCounter: some View {
-    Text("\(radarState.currentIndex + 1)/\(radarState.activeFrameCount)")
+    Text(radarState.currentFrameDisplayTime)
       .font(.caption)
       .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
       .monospacedDigit()

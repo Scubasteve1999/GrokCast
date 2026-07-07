@@ -155,7 +155,7 @@ struct RadarControlPanel: View {
       }
       .buttonStyle(.plain)
 
-      Text("\(radarState.currentIndex + 1)/\(radarState.activeFrameCount)")
+      Text(radarState.currentFrameDisplayTime)
         .font(.caption.monospacedDigit())
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
 
