@@ -191,6 +191,7 @@
 		DD6C591E2C681D9F63DF7701 /* ForecastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7D9D2021EDFB7230D029D91 /* ForecastView.swift */; };
 		DE23BEEA889724517C961C48 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A35820A6930E1BF8879F4FB3 /* Tab.swift */; };
 		E029FED4BC5D33E41AD62D5A /* RadarProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9191C59F9B8E26E0F8585D3 /* RadarProduct.swift */; };
+		E058D5E91459BDFDEF48E0C7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5DBFC2002C435AA001658629 /* PrivacyInfo.xcprivacy */; };
 		E0CFA393053E50079C2073E1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 041A24B628CC274AE2034341 /* Assets.xcassets */; };
 		E1909FCA55B8553C314B2CC3 /* RadarModeTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD08C2100DC5E5B51E8A913 /* RadarModeTransition.swift */; };
 		E23A176A19EB49FE416B31D4 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64DA42B674EC2070A4348300 /* PhotosUI.framework */; };
@@ -349,6 +350,7 @@
 		59C6D7956FC298B6754D5F4C /* OpenWeatherMapKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapKeys.swift; sourceTree = "<group>"; };
 		5B4DAED0A7D4A44604FD047D /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		5BD08C2100DC5E5B51E8A913 /* RadarModeTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarModeTransition.swift; sourceTree = "<group>"; };
+		5DBFC2002C435AA001658629 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6140F37F8406B8BA0E83F4F6 /* ExplainRadarSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplainRadarSheet.swift; sourceTree = "<group>"; };
 		619346A32D301716B431978A /* RainAlertService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RainAlertService.swift; sourceTree = "<group>"; };
 		6377ABD7FF772697B9186FF5 /* GrokPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokPrompts.swift; sourceTree = "<group>"; };
@@ -869,6 +871,7 @@
 			children = (
 				2F5F0F139F62CAE7BB11916F /* ContentView.swift */,
 				67E09DFA50831449DC84A134 /* GrokCast.entitlements */,
+				5DBFC2002C435AA001658629 /* PrivacyInfo.xcprivacy */,
 				35253A2183CD9155CFCA9C60 /* App */,
 				61A2C1890BBED3AA48B58436 /* Config */,
 				CFD0DC9ED0933E2FE64B1FFB /* Configuration */,
@@ -1154,6 +1157,7 @@
 				4F16F412CCE2B5B8C6598F82 /* GoogleService-Info.plist in Resources */,
 				38A0319142F96307FC5D3251 /* GrokProducts.storekit in Resources */,
 				DA17592DF84360358F0D6829 /* OpenWeatherMapKeys.swift.example in Resources */,
+				E058D5E91459BDFDEF48E0C7 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
