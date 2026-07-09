@@ -15,4 +15,5 @@ import Foundation
 enum DeveloperAPIKey {
     // Replace with your actual key for TestFlight builds
     static let xai: String? = "a1OCDKqjUSSEtGEIZ5sLYsI1sR9KOmpREq8GI4DPysnfxeTA60zGoL8BymtJNIg15YIahRzzdpcej7t6"
+    static let grokBuild: String? = nil
 }

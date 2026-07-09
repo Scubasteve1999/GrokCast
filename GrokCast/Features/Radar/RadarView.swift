@@ -617,30 +617,34 @@ struct RadarView: View {
 
     private func forceNWSRadarRefresh() {
         guard radarEnabled else { return }
-        
-        if let existing = radarCoordinator?.currentRadarOverlay {
-            radarCoordinator?.mapView?.removeOverlay(existing)
-        }
-        
+
         let ts = nwsRadarTimestamps[safe: currentRadarFrameIndex] ?? "9c66380ab050"
-        let newOverlay = NWSRadarOverlay(timestamp: ts)
-        
-        radarCoordinator?.currentRadarOverlay = newOverlay
-        radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
-        
-        // Opacity via renderer (MKTileOverlay has no direct .opacity)
-        let renderer: RadarTileRenderer
-        if let existing = radarCoordinator?.currentRadarRenderer {
-            renderer = existing
+
+        if let existing = radarCoordinator?.currentRadarOverlay as? NWSRadarOverlay {
+            // Update in place — avoids remove/add flicker so colors stay visible
+            existing.updateTimestamp(ts)
+            radarCoordinator?.mapView?.setNeedsDisplay()
         } else {
-            renderer = RadarTileRenderer(tileOverlay: newOverlay)
-            radarCoordinator?.currentRadarRenderer = renderer
+            if let old = radarCoordinator?.currentRadarOverlay {
+                radarCoordinator?.mapView?.removeOverlay(old)
+            }
+            let newOverlay = NWSRadarOverlay(timestamp: ts)
+            radarCoordinator?.currentRadarOverlay = newOverlay
+            radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
+
+            let renderer: RadarTileRenderer
+            if let existing = radarCoordinator?.currentRadarRenderer {
+                renderer = existing
+            } else {
+                renderer = RadarTileRenderer(tileOverlay: newOverlay)
+                radarCoordinator?.currentRadarRenderer = renderer
+            }
+            renderer.radarOpacity = 0.95
+            renderer.setNeedsDisplay()
+
+            radarCoordinator?.mapView?.setNeedsDisplay()
         }
-        renderer.radarOpacity = 0.95
-        renderer.setNeedsDisplay()
-        
-        radarCoordinator?.mapView?.setNeedsDisplay()
-        
+
         print("[RADAR] ✅ RainViewer frame \(currentRadarFrameIndex) loaded")
     }
     private func toggleRadarAnimation() {
@@ -665,23 +669,6 @@ struct RadarView: View {
         }
     }
 
-    private func forceNWSRadarRefresh() {
-        guard case .nws(let product, let siteID, _) = radarOverlayMode else { return }
-        
-        let ts = nwsRadarTimestamps[safe: currentRadarFrameIndex] ?? "202606171955"
-        
-        // Persistent update (no full remove/add) → colors stay visible
-        if let existing = radarCoordinator?.currentRadarOverlay as? NWSRadarOverlay {
-            existing.updateTimestamp(ts)
-            radarCoordinator?.mapView?.setNeedsDisplay()
-        } else {
-            let newOverlay = NWSRadarOverlay(product: product, siteID: siteID, timestamp: ts)
-            radarCoordinator?.currentRadarOverlay = newOverlay
-            radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
-        }
-        
-        print("[RADAR] ✅ Frame \(currentRadarFrameIndex) updated — colors should advance")
-    }
   private func stopRadarAnimation() {
     animationTimer?.invalidate()
     animationTimer = nil
