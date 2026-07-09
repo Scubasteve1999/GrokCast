@@ -190,6 +190,25 @@ struct SettingsView: View {
           )
         }
 
+        // MARK: - Legal (required for App Store subscriptions)
+        Section {
+          Link(destination: AppLinks.privacyPolicy) {
+            Label("Privacy Policy", systemImage: "hand.raised.fill")
+          }
+
+          Link(destination: AppLinks.termsOfUse) {
+            Label("Terms of Use", systemImage: "doc.text.fill")
+          }
+
+          Link(destination: AppLinks.manageSubscriptions) {
+            Label("Manage Subscription", systemImage: "creditcard")
+          }
+        } header: {
+          Text("LEGAL")
+        } footer: {
+          SubscriptionLegalFooter()
+        }
+
         // MARK: - App Information
         Section("APP") {
           LabeledContent("Version") {

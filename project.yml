@@ -21,8 +21,8 @@ targetTemplates:
           - "**/Info.plist"
     settings:
       base:
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: "43"
         PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast
         INFOPLIST_FILE: GrokCast/Info.plist
         DEVELOPMENT_TEAM: ""
@@ -72,11 +72,11 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates." # optional
+        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses low-power Significant Location Changes (not continuous GPS tracking) to refresh weather when you travel significant distances. Enable in Settings → Background Weather Updates."
         NSWeatherKitUsageDescription: "GrokCast uses Apple Weather to provide forecasts and current conditions."
         UIBackgroundModes:
-          - location
           - fetch
+          - processing
         BGTaskSchedulerPermittedIdentifiers:
           - com.grokcast.alerts.refresh
         CFBundleURLTypes:
@@ -112,8 +112,8 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: "43"
         # Nested under host app bundle ID (required for embedded widget extensions).
         PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast.GrokCastWidgets
         INFOPLIST_FILE: GrokCastWidgets/Info.plist
