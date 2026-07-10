@@ -5,7 +5,7 @@ import UIKit
 import UserNotifications
 
 /// UIKit delegate adapter for BGTask registration, APNs, Firebase, and notification delegate wiring.
-final class AppDelegate: NSObject, @preconcurrency UIApplicationDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate {
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -50,9 +50,13 @@ final class AppDelegate: NSObject, @preconcurrency UIApplicationDelegate {
 
   func application(
     _ application: UIApplication,
-    didReceiveRemoteNotification userInfo: [AnyHashable: Any]
-  ) async -> UIBackgroundFetchResult {
-    await PushNotificationService.shared.didReceiveRemoteNotification(userInfo: userInfo)
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    Task { @MainActor in
+      let result = await PushNotificationService.shared.didReceiveRemoteNotification(userInfo: userInfo)
+      completionHandler(result)
+    }
   }
 
   // MARK: - Notification categories
