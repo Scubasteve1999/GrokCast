@@ -45,18 +45,20 @@ struct GrokAPIConfiguration {
   /// Returns the current developer API key.
   ///
   /// Priority:
-  /// 1. Embedded developer key from `Config/DeveloperAPIKey.swift` (for TestFlight / internal builds)
-  /// 2. Key stored in iOS Keychain (user-entered via Settings)
+  /// 1. Key stored in iOS Keychain (user-entered via Settings) — wins so Settings saves take effect
+  /// 2. Embedded developer key from `Config/DeveloperAPIKey.swift` (TestFlight / internal builds)
   var developerAPIKey: String? {
     guard mode == .developerKey else { return nil }
 
-    // 1. Check for embedded developer key (used for TestFlight builds)
+    if let keychainKey = try? keychain.load(), !keychainKey.isEmpty {
+      return keychainKey
+    }
+
     if let embeddedKey = DeveloperAPIKey.xai, !embeddedKey.isEmpty {
       return embeddedKey
     }
 
-    // 2. Fall back to Keychain
-    return try? keychain.load()
+    return nil
   }
 
   var hasValidDeveloperKey: Bool {
@@ -113,7 +115,7 @@ enum GrokAPIError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "GrokCast Pro required. Subscribe in Settings or add a developer key for advanced use."
+      return "Add an xAI developer key in Settings to use Grok."
     case .invalidKeyFormat:
       return "Invalid xAI API key format. Keys must start with 'xai-'."
     case .invalidMode(let message):

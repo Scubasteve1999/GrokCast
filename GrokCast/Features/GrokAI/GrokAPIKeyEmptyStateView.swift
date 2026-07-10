@@ -17,30 +17,27 @@ struct GrokAPIKeyEmptyStateView: View {
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(
-        "Weather, live radar, and alerts are free. Pro unlocks Grok chat, daily briefs, Storm Spotter, forecast radar, Live Activity, and unlimited locations — no developer key needed."
+        "Weather, live radar, and alerts are free. Grok chat needs an xAI developer key in Settings. Pro unlocks forecast radar, Live Activity, and unlimited locations."
       )
       .font(.subheadline)
       .foregroundStyle(DesignTokens.Palette.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
 
       HStack(spacing: 12) {
-        Button(subscription.isPro ? "Pro Active" : "Upgrade to Pro") {
-          Haptic.impact(.light)
-          if subscription.isPro {
-            store.selectedTab = .settings
-          } else {
-            PaywallCoordinator.shared.present(.grokAI)
-          }
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(DesignTokens.Palette.accent)
-        .disabled(subscription.isPro)
-
-        Button("Settings") {
+        Button("Add Key in Settings") {
           Haptic.impact(.light)
           store.selectedTab = .settings
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.borderedProminent)
+        .tint(DesignTokens.Palette.accent)
+
+        if !subscription.isPro {
+          Button("View Pro") {
+            Haptic.impact(.light)
+            PaywallCoordinator.shared.present(.locations)
+          }
+          .buttonStyle(.bordered)
+        }
       }
     }
     .padding(DesignTokens.Spacing.space16)

@@ -54,8 +54,15 @@ struct GrokBriefCard: View {
           .foregroundStyle(DesignTokens.Palette.textSecondary)
 
         if !store.xaiService.hasValidKey {
-          Button("Upgrade to GrokCast Pro") {
-            PaywallCoordinator.shared.present(.grokAI)
+          Button(
+            PaywallCoordinator.shared.canUnlockGrokViaPro
+              ? "Upgrade to GrokCast Pro" : "Add Key in Settings"
+          ) {
+            if PaywallCoordinator.shared.canUnlockGrokViaPro {
+              PaywallCoordinator.shared.present(.grokAI)
+            } else {
+              store.selectedTab = .settings
+            }
           }
           .font(.caption.weight(.semibold))
           .buttonStyle(.borderedProminent)

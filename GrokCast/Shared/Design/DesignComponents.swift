@@ -262,7 +262,7 @@ struct MoreHubSheet: View {
   private func moreSubtitle(for tab: WeatherStore.Tab) -> String {
     switch tab {
     case .grok:
-      store.xaiService.hasValidKey ? "Chat, Imagine, Storm Spotter" : "GrokCast Pro"
+      store.xaiService.hasValidKey ? "Chat, Imagine, Storm Spotter" : "Add key in Settings"
     case .locations: "\(store.savedLocations.count) saved places"
     case .settings: "Units, alerts, privacy"
     default: ""

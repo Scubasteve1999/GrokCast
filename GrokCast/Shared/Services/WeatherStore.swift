@@ -1183,6 +1183,11 @@ final class WeatherStore {
     }
   }
 
+  /// Removes the Keychain developer key so an embedded TestFlight key (if any) can take over.
+  func clearXAIApiKey() {
+    try? grokConfig.clearDeveloperKey()
+  }
+
   // For demo / preview
   func loadPreviewData() {
     // Olive Branch preview

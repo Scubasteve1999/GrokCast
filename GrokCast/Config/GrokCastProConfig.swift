@@ -1,8 +1,9 @@
 import Foundation
 
 /// Production configuration for GrokCast Pro hosted services.
-/// Set `grokProxyBaseURL` when your Grok proxy is deployed (see `server/grok-proxy/README.md`).
+/// Set `grokProxyBaseURL` only after the proxy worker is deployed (see `docs/GrokCast-Pro-Setup.md`).
+/// While `nil`, Grok calls use a developer/Keychain xAI key against `api.x.ai` directly.
 enum GrokCastProConfig {
-  /// e.g. `"https://grok-proxy.grokcast.app/v1"`
+  /// e.g. `"https://YOUR-WORKER.workers.dev/v1"` — must be a live host, not a placeholder.
   static let grokProxyBaseURL: String? = nil
 }

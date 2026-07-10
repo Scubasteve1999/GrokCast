@@ -240,7 +240,7 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "GrokCast Pro includes Grok chat, daily briefs, Storm Spotter, and radar explanations — no developer key required."
+      "GrokCast Pro unlocks forecast radar, Live Activity, and unlimited locations. Grok chat currently needs an xAI developer key in Settings."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:

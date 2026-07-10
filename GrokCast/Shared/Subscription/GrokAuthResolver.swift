@@ -31,6 +31,17 @@ enum GrokAuthResolver {
     configuration: GrokAPIConfiguration = GrokAPIConfiguration(),
     subscription: SubscriptionManager
   ) throws -> GrokAuthContext {
+    // Prefer a real xAI key whenever available. The Pro proxy is optional and only
+    // used when explicitly configured — an undeployed default host must never win
+    // over a working embedded/Keychain key (that was breaking all Grok fetches).
+    if configuration.hasValidDeveloperKey {
+      return GrokAuthContext(
+        baseURL: configuration.baseURL,
+        authorizationHeader: try configuration.authHeader(),
+        subscriptionTransactionID: nil
+      )
+    }
+
     if subscription.isPro, let transactionID = subscription.proAuthToken,
       let proxyBase = GrokProxyConfiguration.baseURL
     {
@@ -41,14 +52,6 @@ enum GrokAuthResolver {
       )
     }
 
-    guard configuration.hasValidDeveloperKey else {
-      throw GrokAPIError.missingAPIKey
-    }
-
-    return GrokAuthContext(
-      baseURL: configuration.baseURL,
-      authorizationHeader: try configuration.authHeader(),
-      subscriptionTransactionID: nil
-    )
+    throw GrokAPIError.missingAPIKey
   }
 }

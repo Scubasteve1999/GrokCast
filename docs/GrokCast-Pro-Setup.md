@@ -19,6 +19,7 @@ Pro subscribers call this proxy instead of xAI directly. Your **xAI API key stay
    ```swift
    static let grokProxyBaseURL: String? = "https://YOUR-WORKER.workers.dev/v1"
    ```
+   Leave this `nil` until the worker is live. While `nil`, Pro users with an embedded/Keychain xAI key call `api.x.ai` directly. Do **not** point at `grok-proxy.grokcast.app` unless that hostname is deployed and DNS resolves.
 
 ## Local dev
 
@@ -44,12 +45,14 @@ Link `GrokCast/Configuration/GrokProducts.storekit` in Xcode: **Product → Sche
 | Feature | Free | Pro |
 |---------|------|-----|
 | Today / forecast / alerts / live radar | ✅ | ✅ |
-| Grok AI (chat, brief, Storm Spotter, Imagine) | ❌ | ✅ |
+| Grok AI (chat, brief, Storm Spotter, Imagine) | ❌ (BYOK key OK) | ✅ via hosted proxy **or** BYOK |
 | Radar FUTURE | ❌ | ✅ |
 | Live Activity | ❌ | ✅ |
 | Widget Grok one-liner | ❌ | ✅ |
 | Saved locations | 1 | Unlimited |
 | BYOK developer key | ✅ (advanced) | ✅ |
+
+> **Note:** Until `GrokCastProConfig.grokProxyBaseURL` points at a live worker, Grok features require an xAI developer key even for Pro subscribers. Other Pro perks (radar FUTURE, Live Activity, unlimited locations) still unlock with Pro alone.
 
 ## Security notes (v1)
 

@@ -9,8 +9,10 @@ enum EntitlementChecker {
     subscription: SubscriptionManager,
     hasDeveloperKey: Bool
   ) -> GrokAccessTier {
-    if subscription.isPro { return .pro }
+    // Keep aligned with canUseGrokAI: Pro alone is not enough for Grok until the
+    // hosted proxy is configured.
     if hasDeveloperKey { return .developerKey }
+    if subscription.isPro, GrokProxyConfiguration.isConfigured { return .pro }
     return .free
   }
 
@@ -18,10 +20,12 @@ enum EntitlementChecker {
     subscription: SubscriptionManager,
     hasDeveloperKey: Bool
   ) -> Bool {
-    switch access(subscription: subscription, hasDeveloperKey: hasDeveloperKey) {
-    case .pro, .developerKey: true
-    case .free: false
-    }
+    // BYOK / embedded key always works against api.x.ai.
+    if hasDeveloperKey { return true }
+    // Pro-only (no local key) requires a live hosted proxy; otherwise the app would
+    // claim access and then fail every request against an undeployed host.
+    if subscription.isPro, GrokProxyConfiguration.isConfigured { return true }
+    return false
   }
 
   static func canUseRadarFuture(

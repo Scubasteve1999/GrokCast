@@ -16,7 +16,7 @@ struct SettingsView: View {
   @State private var connectionTestSuccess = false
 
   private var hasKey: Bool {
-    store.xaiService.hasValidKey
+    store.xaiService.hasDeveloperAPIKey
   }
 
   private var maskedKey: String {
@@ -69,11 +69,11 @@ struct SettingsView: View {
             }
           } else {
             VStack(alignment: .leading, spacing: 8) {
-              Text("Unlock Grok AI, forecast radar, Live Activity, and more.")
+              Text("Unlock forecast radar, Live Activity, unlimited locations, and more.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
               Button("View GrokCast Pro") {
-                PaywallCoordinator.shared.present(.grokAI)
+                PaywallCoordinator.shared.present(.locations)
               }
               .buttonStyle(.borderedProminent)
             }
@@ -93,7 +93,9 @@ struct SettingsView: View {
         } header: {
           Text("GROKCAST PRO")
         } footer: {
-          Text("Pro includes hosted Grok AI — no xAI developer key required.")
+          Text(
+            "Pro unlocks forecast radar, Live Activity, and unlimited locations. Grok chat uses an xAI developer key in Settings."
+          )
         }
 
         // MARK: - Grok API Configuration (Developer Key Mode)
@@ -137,12 +139,24 @@ struct SettingsView: View {
                   }
                 }
                 Spacer()
-                Button(hasKey ? "Change Key" : "Add Developer Key") {
-                  apiKeyInput = ""
-                  isEditingKey = true
-                  connectionTestResult = nil
+                VStack(spacing: 8) {
+                  Button(hasKey ? "Change Key" : "Add Developer Key") {
+                    apiKeyInput = ""
+                    isEditingKey = true
+                    connectionTestResult = nil
+                  }
+                  .buttonStyle(.bordered)
+
+                  if hasKey, !store.xaiService.isUsingEmbeddedDeveloperKey {
+                    Button("Clear Key") {
+                      store.clearXAIApiKey()
+                      connectionTestResult = nil
+                      Haptic.notification(.success)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                  }
                 }
-                .buttonStyle(.bordered)
               }
             } else {
               // Developer key input
@@ -331,10 +345,10 @@ struct SettingsView: View {
           )
         }
 
-        // MARK: - Background Location (Significant Location Changes)
+        // MARK: - Significant Location Changes (not continuous GPS)
         Section {
           Toggle(
-            "Background Weather Updates",
+            "Travel Weather Refresh",
             isOn: Binding(
               get: { store.significantLocationUpdatesEnabled },
               set: { store.significantLocationUpdatesEnabled = $0 }
@@ -344,10 +358,10 @@ struct SettingsView: View {
             Haptic.impact(.light)
           }
         } header: {
-          Text("BACKGROUND UPDATES")
+          Text("LOCATION UPDATES")
         } footer: {
           Text(
-            "When enabled and Always location access is granted, GrokCast uses low-power Significant Location Changes to automatically refresh weather when you travel significant distances — even while the app is in the background or suspended. This is much more battery-efficient than continuous tracking. Turn off anytime to disable."
+            "When enabled and Always location access is granted, GrokCast uses Apple’s low-power Significant Location Changes to refresh weather after you travel a significant distance. This is not continuous GPS tracking. Turn off anytime."
           )
         }
 
@@ -488,10 +502,10 @@ struct SettingsView: View {
           figmaDeveloperKeySection
         }
 
-        FigmaSectionLabel(title: "BACKGROUND")
+        FigmaSectionLabel(title: "LOCATION UPDATES")
         SettingsGroupCard {
           figmaToggleRow(
-            title: "Background Weather Updates",
+            title: "Travel Weather Refresh",
             subtitle: store.significantLocationUpdatesEnabled ? "Significant location changes" : "Off",
             icon: "location.circle.fill",
             isOn: Binding(
@@ -556,14 +570,14 @@ struct SettingsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
         } else {
-          Text("Unlock Grok AI, forecast radar, Live Activity, and more.")
+          Text("Unlock forecast radar, Live Activity, unlimited locations, and more.")
             .font(.system(size: 14))
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
 
           Button("View GrokCast Pro") {
-            PaywallCoordinator.shared.present(.grokAI)
+            PaywallCoordinator.shared.present(.locations)
           }
           .font(.system(size: 15, weight: .semibold))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
@@ -653,7 +667,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, DesignTokens.Spacing.space16)
         .padding(.bottom, DesignTokens.Spacing.space12)
-      } else if hasKey && !store.xaiService.isUsingEmbeddedDeveloperKey {
+      } else if hasKey {
         SettingsDivider()
         Button {
           testGrokConnection()
@@ -679,6 +693,18 @@ struct SettingsView: View {
             .foregroundStyle(connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.bottom, DesignTokens.Spacing.space8)
+        }
+
+        if !store.xaiService.isUsingEmbeddedDeveloperKey {
+          Button("Clear Key") {
+            store.clearXAIApiKey()
+            connectionTestResult = nil
+            Haptic.notification(.success)
+          }
+          .font(.footnote)
+          .foregroundStyle(DesignTokens.Palette.danger)
+          .padding(.horizontal, DesignTokens.Spacing.space16)
+          .padding(.bottom, DesignTokens.Spacing.space12)
         }
       }
     }

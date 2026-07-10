@@ -17,9 +17,16 @@ final class XAIService {
     GrokAuthResolver.canAccessGrok(configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
+  /// True when the active key is the embedded TestFlight key (no Keychain override).
   var isUsingEmbeddedDeveloperKey: Bool {
-    guard let key = DeveloperAPIKey.xai, !key.isEmpty else { return false }
-    return true
+    guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }
+    guard let active = configuration.developerAPIKey else { return false }
+    return active == embedded
+  }
+
+  /// True when a real xAI developer key is available (Keychain or embedded).
+  var hasDeveloperAPIKey: Bool {
+    configuration.hasValidDeveloperKey
   }
 
   var maskedAPIKey: String {

@@ -10,7 +10,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.0.1"
-    CURRENT_PROJECT_VERSION: "33"
+    CURRENT_PROJECT_VERSION: "45"
 
 configs:
   Debug: debug
@@ -95,11 +95,10 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses your location in the background for timely weather alerts and GrokCast updates."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings."
         NSPhotoLibraryAddUsageDescription: "GrokCast saves AI-generated weather images to your Photo Library when you choose Save."
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:
-          - location
           - fetch
           - remote-notification
         BGTaskSchedulerPermittedIdentifiers:

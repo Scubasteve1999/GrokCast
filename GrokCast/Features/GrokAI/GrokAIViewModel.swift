@@ -62,7 +62,12 @@ final class GrokAIViewModel {
 
     // Early key guard (prevents append + silent fail; GrokBuild falls back to xai key)
     if !grokAIService.hasValidKey {
-      PaywallCoordinator.shared.present(.grokAI)
+      if PaywallCoordinator.shared.canUnlockGrokViaPro {
+        PaywallCoordinator.shared.present(.grokAI)
+      } else {
+        errorMessage = "Add an xAI developer key in Settings to use Grok."
+        weatherStore.selectedTab = .settings
+      }
       return
     }
 
@@ -153,7 +158,12 @@ final class GrokAIViewModel {
     }
 
     guard weatherStore.xaiService.hasValidKey else {
-      PaywallCoordinator.shared.present(.grokAI)
+      if PaywallCoordinator.shared.canUnlockGrokViaPro {
+        PaywallCoordinator.shared.present(.grokAI)
+      } else {
+        errorMessage = "Add an xAI developer key in Settings to use Grok."
+        weatherStore.selectedTab = .settings
+      }
       isStreaming = false
       stormAnalysisMode = false
       return
@@ -235,7 +245,7 @@ final class GrokAIViewModel {
     if let apiError = error as? GrokAPIError {
       switch apiError {
       case .missingAPIKey:
-        return "GrokCast Pro required. Subscribe in Settings or add a developer key."
+        return "Add an xAI developer key in Settings to use Grok."
       case .networkError(let underlying):
         if let urlError = underlying as? URLError, urlError.code == .timedOut {
           return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
@@ -401,7 +411,12 @@ final class GrokAIViewModel {
     guard !isStreaming && !isGeneratingImage else { return }
 
     guard weatherStore.xaiService.hasValidKey else {
-      PaywallCoordinator.shared.present(.grokAI)
+      if PaywallCoordinator.shared.canUnlockGrokViaPro {
+        PaywallCoordinator.shared.present(.grokAI)
+      } else {
+        errorMessage = "Add an xAI developer key in Settings to use Grok."
+        weatherStore.selectedTab = .settings
+      }
       return
     }
 

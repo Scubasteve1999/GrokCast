@@ -15,6 +15,12 @@ final class PaywallCoordinator {
     self.feature = feature
     isPresented = true
   }
+
+  /// Opens the paywall for Grok only when Pro can actually unlock it (live proxy).
+  /// Otherwise callers should send the user to Settings for a developer key.
+  var canUnlockGrokViaPro: Bool {
+    GrokProxyConfiguration.isConfigured
+  }
 }
 
 struct PaywallPresentationModifier: ViewModifier {

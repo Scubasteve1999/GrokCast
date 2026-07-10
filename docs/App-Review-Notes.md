@@ -12,14 +12,17 @@ GrokCast is an iPhone weather app that combines Open-Meteo forecasts, NWS alerts
 
 ## Location
 
-- **When In Use** and optional **Always** for Significant Location Changes (background refresh when the user travels).
-- Location drives local forecast, radar center, and NWS alerts.
+- **When In Use** for local forecast, radar center, and NWS alerts.
+- Optional **Always** only for Apple’s Significant Location Changes API (low-power, event-driven refresh when the user travels a significant distance). This is **not** continuous / persistent real-time GPS tracking.
+- There is no `location` entry in `UIBackgroundModes` — we do not use `startUpdatingLocation` or `allowsBackgroundLocationUpdates`.
 - The first-launch flow explains why location is needed before the system prompt.
+- Settings includes a user toggle to disable Significant Location Changes anytime.
 
 ## Background modes
 
-- `location` — Significant Location Changes (user toggle in Settings; requires Always authorization).
 - `fetch` — BGAppRefreshTask for NWS alert polling when alert notifications are enabled.
+- `remote-notification` — push / remote notification delivery.
+- **Not declared:** `location` (Guideline 2.5.4 — app does not require persistent real-time background location).
 
 ## Grok / xAI
 

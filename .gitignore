@@ -163,3 +163,6 @@ rereview-*.md
 # Logs
 *.log
 logs/
+
+# Cloudflare Wrangler local cache (account email / IDs — do not commit)
+.wrangler/

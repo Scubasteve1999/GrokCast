@@ -227,7 +227,7 @@ enum GrokBuildError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "GrokCast Pro required. Subscribe in Settings or add a developer key."
+      return "Add an xAI developer key in Settings to use Grok."
     case .invalidResponse(let code):
       if let c = code {
         return "Invalid response from Grok (HTTP \(c)). Check your API key and model access."

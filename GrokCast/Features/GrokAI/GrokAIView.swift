@@ -268,7 +268,11 @@ private struct GrokAIViewContent: View {
           Button {
             Task {
               guard weatherStore.xaiService.hasValidKey else {
-                PaywallCoordinator.shared.present(.grokAI)
+                if PaywallCoordinator.shared.canUnlockGrokViaPro {
+                  PaywallCoordinator.shared.present(.grokAI)
+                } else {
+                  weatherStore.selectedTab = .settings
+                }
                 return
               }
               showPhotoPicker = true
@@ -404,7 +408,11 @@ private struct GrokAIViewContent: View {
           GrokStormSpotterButton {
             Task {
               guard weatherStore.xaiService.hasValidKey else {
-                PaywallCoordinator.shared.present(.grokAI)
+                if PaywallCoordinator.shared.canUnlockGrokViaPro {
+                  PaywallCoordinator.shared.present(.grokAI)
+                } else {
+                  weatherStore.selectedTab = .settings
+                }
                 return
               }
               let targetLocation =
