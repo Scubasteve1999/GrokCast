@@ -21,7 +21,7 @@ SpotterCast
 ## Privacy Policy URL (App Store Connect → App Privacy)
 
 ```
-https://scubasteve1999.github.io/GrokCast/privacy
+https://scubasteve1999.github.io/SpotterCast/privacy
 ```
 
 Update the hosted page content to say **SpotterCast** (URL path can stay).
@@ -33,7 +33,7 @@ Update the hosted page content to say **SpotterCast** (URL path can stay).
 You are using a **custom Terms of Use** hosted on GitHub Pages. Add this line to the **bottom of your App Description** (required by Guideline 3.1.2):
 
 ```
-Terms of Use: https://scubasteve1999.github.io/GrokCast/terms
+Terms of Use: https://scubasteve1999.github.io/SpotterCast/terms
 ```
 
 Alternatively, paste the same URL in App Store Connect → App Information → License Agreement (Custom EULA).
@@ -93,7 +93,7 @@ SpotterCast Pro (auto-renewable subscription)
 - Monthly and annual plans available; prices shown in-app before purchase
 - Cancel anytime in App Store account settings
 
-Terms of Use: https://scubasteve1999.github.io/GrokCast/terms
+Terms of Use: https://scubasteve1999.github.io/SpotterCast/terms
 
 ---
 
