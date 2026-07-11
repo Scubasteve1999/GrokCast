@@ -8,7 +8,7 @@ import Foundation
 final class NWSService {
 
   private let baseURL = "https://api.weather.gov"
-  private let userAgent = "GrokCast/1.0 (https://grokcast.app)"
+  private let userAgent = "SpotterCast/1.0 (https://grokcast.app)"
 
   /// Fetches currently active NWS alerts for a point (lat,lon).
   /// Returns [] on success with no alerts (common for non-US or quiet US areas).

@@ -30,7 +30,7 @@ final class XAIService {
     let temp = Int(round(weather.currentTemp))
     let feels = Int(round(weather.feelsLike))
     return """
-      You are Grok, a witty and knowledgeable AI weather assistant built into GrokCast. \
+      You are a witty and knowledgeable AI weather assistant built into SpotterCast. \
       You have access to the current weather data for \(weather.location.name).
 
       Current conditions:

@@ -216,7 +216,7 @@ final class GrokAIViewModel: ObservableObject {
 
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
-      return "You are a helpful weather assistant inside the GrokCast app."
+      return "You are a helpful weather assistant inside the SpotterCast app."
     }
 
     let location = weatherStore.currentLocation?.name ?? "your location"
@@ -224,7 +224,7 @@ final class GrokAIViewModel: ObservableObject {
     let condition = current.conditionText
 
     return """
-      You are a helpful weather assistant inside the GrokCast app.
+      You are a helpful weather assistant inside the SpotterCast app.
 
       Current conditions for \(location):
       - Temperature: \(temp)°F

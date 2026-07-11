@@ -734,7 +734,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GrokCastWidgets/GrokCastWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 48;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = GrokCastWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -822,7 +822,7 @@
 				CODE_SIGN_ENTITLEMENTS = GrokCast/GrokCast.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 48;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = GrokCast/Info.plist;
@@ -846,7 +846,7 @@
 				CODE_SIGN_ENTITLEMENTS = GrokCast/GrokCast.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 48;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = GrokCast/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -868,7 +868,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GrokCastWidgets/GrokCastWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 48;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = GrokCastWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

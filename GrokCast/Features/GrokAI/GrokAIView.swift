@@ -123,7 +123,7 @@ private struct GrokAIViewContent: View {
             .padding(.bottom, 12)
         }
       }
-      .navigationTitle("GROK AI")
+      .navigationTitle("AI")
       .navigationBarTitleDisplayMode(.large)
     }
     .preferredColorScheme(.dark)

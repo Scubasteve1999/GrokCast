@@ -61,7 +61,7 @@ struct TodayView: View {
           // First load / no data state: welcome message + "Use My Position" button (neutral, per empty states rules and mockup).
           // Error state handled in actions via errorBanner pattern (red only for errors).
           ContentUnavailableView {
-            Label("Welcome to GrokCast", systemImage: "sun.max")
+            Label("Welcome to SpotterCast", systemImage: "sun.max")
           } description: {
             Text(
               "Establish your location to get started with accurate, personalized forecasts and insights."
@@ -182,7 +182,7 @@ struct TodayView: View {
         Image(systemName: "sun.max")
           .font(.system(size: 48))
           .foregroundStyle(.secondary)
-        Text("Welcome to GrokCast")
+        Text("Welcome to SpotterCast")
           .font(.title2.weight(.semibold))
         Text(
           "Your AI-powered weather companion. Get accurate, localized forecasts with smart insights."
@@ -225,7 +225,7 @@ struct TodayView: View {
         .font(.system(size: 48))
         .foregroundStyle(.white)
       VStack(spacing: 12) {
-        Text("GrokCast uses your location to show accurate weather forecasts for where you are.")
+        Text("SpotterCast uses your location to show accurate weather forecasts for where you are.")
           .font(.body)
           .multilineTextAlignment(.center)
         Text("Your location is only used for weather — we don’t track or store it.")

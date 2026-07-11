@@ -22,7 +22,7 @@ targetTemplates:
     settings:
       base:
         MARKETING_VERSION: "1.0.1"
-        CURRENT_PROJECT_VERSION: "43"
+        CURRENT_PROJECT_VERSION: "48"
         PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast
         INFOPLIST_FILE: GrokCast/Info.plist
         DEVELOPMENT_TEAM: ""
@@ -58,7 +58,7 @@ targets:
     info:
       path: GrokCast/Info.plist
       properties:
-        CFBundleDisplayName: GrokCast
+        CFBundleDisplayName: SpotterCast
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconName: AppIcon
@@ -71,9 +71,9 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        NSLocationWhenInUseUsageDescription: "GrokCast uses your location to show accurate local weather forecasts and AI-powered insights."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "GrokCast uses low-power Significant Location Changes (not continuous GPS tracking) to refresh weather when you travel significant distances. Enable in Settings → Background Weather Updates."
-        NSWeatherKitUsageDescription: "GrokCast uses Apple Weather to provide forecasts and current conditions."
+        NSLocationWhenInUseUsageDescription: "SpotterCast uses your location to show accurate local weather forecasts and AI-powered insights."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "SpotterCast uses low-power Significant Location Changes (not continuous GPS tracking) to refresh weather when you travel significant distances. Enable in Settings → Background Weather Updates."
+        NSWeatherKitUsageDescription: "SpotterCast uses Apple Weather to provide forecasts and current conditions."
         UIBackgroundModes:
           - fetch
           - processing
@@ -105,7 +105,7 @@ targets:
     info:
       path: GrokCastWidgets/Info.plist
       properties:
-        CFBundleDisplayName: GrokCast Widgets
+        CFBundleDisplayName: SpotterCast Widgets
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
@@ -113,7 +113,7 @@ targets:
     settings:
       base:
         MARKETING_VERSION: "1.0.1"
-        CURRENT_PROJECT_VERSION: "43"
+        CURRENT_PROJECT_VERSION: "48"
         # Nested under host app bundle ID (required for embedded widget extensions).
         PRODUCT_BUNDLE_IDENTIFIER: com.grokcast.GrokCast.GrokCastWidgets
         INFOPLIST_FILE: GrokCastWidgets/Info.plist

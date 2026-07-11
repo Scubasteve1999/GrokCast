@@ -85,7 +85,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
     } else if let headline = alert.headline, !headline.isEmpty {
       content.body = headline
     } else {
-      content.body = "Tap to view alert details in GrokCast."
+      content.body = "Tap to view alert details in SpotterCast."
     }
     content.sound = .default
     content.categoryIdentifier = Self.categoryIdentifier

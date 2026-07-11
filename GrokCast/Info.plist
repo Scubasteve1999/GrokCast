@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>GrokCast</string>
+	<string>SpotterCast</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconName</key>
@@ -38,11 +38,11 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>GrokCast uses low-power Significant Location Changes (not continuous GPS tracking) to refresh weather when you travel significant distances. Enable in Settings → Background Weather Updates.</string>
+	<string>SpotterCast uses low-power Significant Location Changes (not continuous GPS tracking) to refresh weather when you travel significant distances. Enable in Settings → Background Weather Updates.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>GrokCast uses your location to show accurate local weather forecasts and AI-powered insights.</string>
+	<string>SpotterCast uses your location to show accurate local weather forecasts and AI-powered insights.</string>
 	<key>NSWeatherKitUsageDescription</key>
-	<string>GrokCast uses Apple Weather to provide forecasts and current conditions.</string>
+	<string>SpotterCast uses Apple Weather to provide forecasts and current conditions.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

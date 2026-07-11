@@ -74,7 +74,7 @@ final class WeatherStore {
     case forecast = "Forecast"
     case radar = "Radar"
     case alerts = "Alerts"
-    case grok = "Grok AI"
+    case grok = "AI"
     case locations = "Locations"
     case settings = "Settings"
 

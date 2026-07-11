@@ -1,6 +1,20 @@
-# GrokCast — App Store Copy
+# SpotterCast — App Store Copy
 
-Paste into App Store Connect when resubmitting after the July 8, 2026 review.
+Paste into App Store Connect when resubmitting after the July 11, 2026 Guideline 4.1(a) rejection.
+
+**Public name:** SpotterCast  
+**Build:** 1.0.1 (48)  
+**Do not use** the words Grok, GrokCast, or xAI Grok anywhere in App Store metadata.
+
+> **Name locked:** SpotterCast (confirmed available in App Store Connect). `StormCast` and `NimbusCast` were taken.
+
+---
+
+## App Name (30 chars max)
+
+```
+SpotterCast
+```
 
 ---
 
@@ -9,6 +23,8 @@ Paste into App Store Connect when resubmitting after the July 8, 2026 review.
 ```
 https://scubasteve1999.github.io/GrokCast/privacy
 ```
+
+Update the hosted page content to say **SpotterCast** (URL path can stay).
 
 ---
 
@@ -22,27 +38,33 @@ Terms of Use: https://scubasteve1999.github.io/GrokCast/terms
 
 Alternatively, paste the same URL in App Store Connect → App Information → License Agreement (Custom EULA).
 
+Update the hosted page content to say **SpotterCast**.
+
 ---
 
 ## Subtitle (30 chars max)
 
+**Not keywords.** Subtitle is a short marketing line shown under the app name.
+
 ```
 AI Weather & Severe Alerts
 ```
+
+Do **not** paste `weather,forecast,radar,AI,NWS` here — that belongs in Keywords.
 
 ---
 
 ## Promotional Text (170 chars max)
 
 ```
-Grok-powered weather with NWS radar, severe alert notifications, and Significant Location refresh when you travel — not continuous GPS tracking.
+AI-powered weather with NWS radar, severe alert notifications, and Significant Location refresh when you travel — not continuous GPS tracking.
 ```
 
 ---
 
 ## Description
 
-GrokCast is your AI-powered weather command center — beautiful forecasts, NWS severe alerts, live radar, and Grok intelligence in one native iOS app.
+SpotterCast is your AI-powered weather command center — beautiful forecasts, NWS severe alerts, live radar, and smart weather insights in one native iOS app.
 
 **Today & Forecast**
 - Stunning current-conditions hero with hourly and 10-day outlooks
@@ -54,7 +76,7 @@ GrokCast is your AI-powered weather command center — beautiful forecasts, NWS 
 - Optional local notifications when new alerts are issued
 - Interactive radar with NWS reflectivity overlays
 
-**Grok AI**
+**AI Weather Assistant**
 - Quick prompts: outfit advice, activity suggestions, weekly summary
 - Full conversational chat with live weather context injected
 - Storm Spotter vision analysis for sky and storm photos
@@ -66,8 +88,8 @@ GrokCast is your AI-powered weather command center — beautiful forecasts, NWS 
 **Widgets**
 - Home Screen and Lock Screen widgets for your saved locations
 
-GrokCast Pro (auto-renewable subscription)
-- Unlock premium Grok AI features and advanced capabilities
+SpotterCast Pro (auto-renewable subscription)
+- Unlock premium AI weather features and advanced capabilities
 - Monthly and annual plans available; prices shown in-app before purchase
 - Cancel anytime in App Store account settings
 
@@ -77,14 +99,25 @@ Terms of Use: https://scubasteve1999.github.io/GrokCast/terms
 
 ## Keywords
 
-weather,forecast,radar,Grok,AI,NWS,alerts,severe,storm,widget
+Paste only in the **Keywords** field (not Subtitle):
+
+```
+weather,forecast,radar,AI,NWS,alerts,severe,storm,widget,assistant
+```
+
+(Do **not** include Grok or GrokCast.)
 
 ---
 
 ## Review notes (private, App Review Information → Notes)
 
+**Guideline 4.1(a) — Branding**
+- App display name and all user-facing branding are now **SpotterCast**.
+- Removed third-party “Grok” references from the app name, UI, icon, and App Store metadata.
+- AI features are presented as SpotterCast’s own weather assistant (no association claimed with another developer’s product).
+
 **Guideline 2.5.4 — Background location**
-- Removed `location` from `UIBackgroundModes`. GrokCast does **not** use persistent real-time background GPS.
+- Removed `location` from `UIBackgroundModes`. SpotterCast does **not** use persistent real-time background GPS.
 - Background weather refresh uses **Significant Location Changes** (`startMonitoringSignificantLocationChanges`) plus `BGAppRefreshTask` for NWS alert polling.
 - Optional toggle: Settings → Background Weather Updates.
 
@@ -94,20 +127,45 @@ weather,forecast,radar,Grok,AI,NWS,alerts,severe,storm,widget
 - Privacy Policy URL is set in App Store Connect; Terms of Use (EULA) link is in the App Description above.
 
 **Demo account / API key**
-- Grok AI features require an xAI API key (Settings → xAI Developer Key) or the embedded TestFlight developer key if included in this build.
+- AI features require a developer API key (Settings → Developer Key) or the embedded TestFlight developer key if included in this build.
 
 ---
 
-## Resubmission reply template (paste in App Store Connect resolution center)
+## Resubmission reply template (paste in App Store Connect Resolution Center)
 
 ```
 Hello App Review,
 
-We have addressed both issues:
+Thank you for the feedback regarding Guideline 4.1(a).
 
-1. Guideline 3.1.2(c): Added a functional Terms of Use (EULA) link to the App Store description and confirmed Privacy Policy + Terms links in the app under Settings → Legal, including subscription auto-renew disclosure.
+We have removed all third-party “Grok” branding from the app and metadata. The app is now named SpotterCast. We updated:
 
-2. Guideline 2.5.4: Removed the "location" UIBackgroundModes entry. GrokCast uses Significant Location Changes and BGAppRefreshTask only — not persistent background GPS. The optional feature is Settings → Background Weather Updates.
+• App name and display name
+• App icon (no third-party marks or former brand text)
+• Description, promotional text, and keywords
+• In-app UI strings (tabs, prompts, widgets, notifications)
+• Screenshots (please use the new set attached to this version)
+
+SpotterCast does not claim affiliation with any other developer’s app or intellectual property. AI weather features are presented as SpotterCast’s own assistant.
+
+Build 1.0.1 (48) includes these changes.
 
 Thank you for your review.
 ```
+
+---
+
+## App Store Connect checklist (manual)
+
+Complete these in ASC / asset tooling before submitting:
+
+1. **App Information → Name** → `SpotterCast` (confirmed)
+2. **Subtitle** → `AI Weather & Severe Alerts` (not comma-separated keywords)
+3. **Keywords** → paste the Keywords block above
+4. Paste **Promotional Text** and **Description** from this file
+5. Upload **new screenshots** that show SpotterCast / AI (not GrokCast / Grok AI)
+6. Confirm **app icon** in the binary is the new text-free weather icon (build 48)
+7. Update **IAP / subscription display name** to `SpotterCast Pro` if it still says GrokCast Pro
+8. Update hosted **Privacy**, **Terms**, and **Support** page titles/body to SpotterCast (URLs may stay)
+9. Paste the **Resolution Center reply** above when you resubmit
+10. Archive & upload **1.0.1 (48)** from Xcode (scheme `GrokCast`)

@@ -24,7 +24,7 @@ struct SettingsView: View {
   var body: some View {
     NavigationStack {
       Form {
-        // MARK: - Grok API Configuration (Developer Key Mode)
+        // MARK: - AI API Configuration (Developer Key Mode)
         Section {
           VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -59,7 +59,7 @@ struct SettingsView: View {
                   } else {
                     Text("No developer key configured")
                       .foregroundStyle(.secondary)
-                    Text("Required for all Grok AI features (chat, vision, image generation)")
+                    Text("Required for all AI features (chat, vision, image generation)")
                       .font(.caption)
                       .foregroundStyle(.orange)
                   }
@@ -109,15 +109,15 @@ struct SettingsView: View {
             if hasKey && !isEditingKey {
               Divider()
               Button {
-                testGrokConnection()
+                testAPIConnection()
               } label: {
                 HStack {
                   if isTestingConnection {
                     ProgressView()
                       .scaleEffect(0.8)
-                    Text("Testing Grok API...")
+                    Text("Testing API connection...")
                   } else {
-                    Label("Test Grok Connection", systemImage: "network")
+                    Label("Test API Connection", systemImage: "network")
                   }
                 }
               }
@@ -139,7 +139,7 @@ struct SettingsView: View {
           }
           .padding(.vertical, 4)
         } header: {
-          Text("GROK API — DEVELOPER KEY")
+          Text("AI API — DEVELOPER KEY")
         } footer: {
           Text(
             "Keys are stored exclusively in the iOS Keychain with the highest protection level. Never transmitted except to api.x.ai."
@@ -186,7 +186,7 @@ struct SettingsView: View {
           Text("BACKGROUND UPDATES")
         } footer: {
           Text(
-            "When enabled and Always location access is granted, GrokCast uses low-power Significant Location Changes to automatically refresh weather when you travel significant distances — even while the app is in the background or suspended. This is much more battery-efficient than continuous tracking. Turn off anytime to disable."
+            "When enabled and Always location access is granted, SpotterCast uses low-power Significant Location Changes to automatically refresh weather when you travel significant distances — even while the app is in the background or suspended. This is much more battery-efficient than continuous tracking. Turn off anytime to disable."
           )
         }
 
@@ -240,7 +240,7 @@ struct SettingsView: View {
             Label("Weather Data: Open-Meteo", systemImage: "link")
           }
 
-          Text("GrokCast uses free Open-Meteo for forecasts and xAI Grok models for intelligence.")
+          Text("SpotterCast uses free Open-Meteo for forecasts and AI models for weather intelligence.")
             .font(.caption)
             .foregroundStyle(.secondary)
         } header: {
@@ -339,7 +339,7 @@ struct SettingsView: View {
     case .denied:
       return "Enable notifications in iOS Settings to receive severe weather alerts."
     case .notDetermined:
-      return "GrokCast will ask for permission when you enable alerts."
+      return "SpotterCast will ask for permission when you enable alerts."
     @unknown default:
       return ""
     }
@@ -359,7 +359,7 @@ struct SettingsView: View {
     showSaveConfirmation = true
   }
 
-  private func testGrokConnection() {
+  private func testAPIConnection() {
     guard hasKey else { return }
 
     isTestingConnection = true
@@ -367,8 +367,8 @@ struct SettingsView: View {
 
     Task {
       do {
-        // Lightweight test: ask Grok for a very short response
-        let testMessages = [ChatMessage.user("Reply with exactly: 'GrokCast connection OK'")]
+        // Lightweight test: ask for a very short response
+        let testMessages = [ChatMessage.user("Reply with exactly: 'SpotterCast connection OK'")]
         let response = try await store.xaiService.sendMessage(messages: testMessages, context: nil)
 
         Task { @MainActor in
@@ -376,7 +376,7 @@ struct SettingsView: View {
           connectionTestSuccess = response.lowercased().contains("ok") || response.contains("OK")
           connectionTestResult =
             connectionTestSuccess
-            ? "Connection successful • Grok responded correctly"
+            ? "Connection successful • API responded correctly"
             : "Unexpected response: \(response)"
         }
       } catch {

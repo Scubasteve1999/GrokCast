@@ -59,7 +59,7 @@ struct ChatMessage: Identifiable, Equatable {
 }
 
 enum QuickPrompt: String, CaseIterable, Identifiable {
-  case grokTake = "Grok's Take"
+  case grokTake = "Today's Take"
   case outfit = "What to Wear"
   case activity = "Good for a Walk?"
   case weekend = "Weekend Outlook"
@@ -77,7 +77,7 @@ enum QuickPrompt: String, CaseIterable, Identifiable {
   }
   var prompt: String {
     switch self {
-    case .grokTake: "Give me a short, witty Grok-style summary of today's weather and vibe."
+    case .grokTake: "Give me a short, witty summary of today's weather and vibe."
     case .outfit:
       "Based on the current weather, temperature, wind, and UV, recommend what I should wear today. Be specific and fun."
     case .activity:
