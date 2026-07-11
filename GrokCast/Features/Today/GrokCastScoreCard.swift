@@ -31,7 +31,7 @@ struct GrokCastScoreCard: View {
 
   private var figmaLayout: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("GROKCAST SCORE")
+      Text("SPOTTERCAST SCORE")
         .font(.caption.weight(.bold))
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -59,7 +59,7 @@ struct GrokCastScoreCard: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle()
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("GrokCast score \(score.value). \(score.label). \(score.subtitle)")
+    .accessibilityLabel("SpotterCast score \(score.value). \(score.label). \(score.subtitle)")
   }
 
   private var ringLayout: some View {
@@ -107,7 +107,7 @@ struct GrokCastScoreCard: View {
     .padding(DesignTokens.Spacing.space16)
     .glassCardStyle()
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("GrokCast score \(score.value). \(score.label). \(score.subtitle)")
+    .accessibilityLabel("SpotterCast score \(score.value). \(score.label). \(score.subtitle)")
   }
 }
 

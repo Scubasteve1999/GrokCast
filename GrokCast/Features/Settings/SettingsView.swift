@@ -341,7 +341,7 @@ struct SettingsView: View {
           Text("DISPLAY & NOTIFICATIONS")
         } footer: {
           Text(
-            "Live Activity shows your GrokCast Score and Minutecast on the Lock Screen. Morning brief uses your cached Grok take when scheduled."
+            "Live Activity shows your SpotterCast Score and Minutecast on the Lock Screen. Morning brief uses your cached Grok take when scheduled."
           )
         }
 

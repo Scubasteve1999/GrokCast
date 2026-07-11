@@ -246,7 +246,7 @@ enum PaywallFeature {
     case .locations:
       "Save unlimited cities and switch between them from Today, Radar, and widgets."
     case .liveActivity:
-      "Live Activity shows your GrokCast Score and Minutecast without opening the app."
+      "Live Activity shows your SpotterCast Score and Minutecast without opening the app."
     case .morningBrief:
       "Wake up to a personalized AI weather brief every morning — what to wear, when to leave, and what to watch for."
     case .severeAlerts:

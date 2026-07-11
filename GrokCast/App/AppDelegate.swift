@@ -7,7 +7,7 @@ import UserNotifications
 /// UIKit delegate adapter for BGTask registration, APNs, Firebase, and notification delegate wiring.
 final class AppDelegate: NSObject, UIApplicationDelegate {
   /// Silent-push handlers must call `fetchCompletionHandler` within ~30s.
-  private static let remoteNotificationBudgetSeconds: CFAbsoluteTime = 25
+  private nonisolated static let remoteNotificationBudgetSeconds: CFAbsoluteTime = 25
 
   func application(
     _ application: UIApplication,

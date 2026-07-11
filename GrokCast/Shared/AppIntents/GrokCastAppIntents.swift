@@ -2,8 +2,8 @@ import AppIntents
 import Foundation
 
 struct GrokCastScoreIntent: AppIntent {
-  static var title: LocalizedStringResource = "GrokCast Score"
-  static var description = IntentDescription("Get your Go Outside score from GrokCast.")
+  static var title: LocalizedStringResource = "SpotterCast Score"
+  static var description = IntentDescription("Get your Go Outside score from SpotterCast.")
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
@@ -11,7 +11,7 @@ struct GrokCastScoreIntent: AppIntent {
     }
     if let score = snapshot.grokCastScore {
       let label = snapshot.grokCastScoreLabel ?? "Score"
-      return .result(value: "\(snapshot.location.name): GrokCast score \(score) — \(label).")
+      return .result(value: "\(snapshot.location.name): SpotterCast score \(score) — \(label).")
     }
     return .result(
       value:
@@ -22,7 +22,7 @@ struct GrokCastScoreIntent: AppIntent {
 
 struct GrokCastMinutecastIntent: AppIntent {
   static var title: LocalizedStringResource = "Minutecast"
-  static var description = IntentDescription("Get the next-hour precipitation outlook from GrokCast.")
+  static var description = IntentDescription("Get the next-hour precipitation outlook from SpotterCast.")
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
@@ -40,11 +40,11 @@ struct GrokCastShortcuts: AppShortcutsProvider {
     AppShortcut(
       intent: GrokCastScoreIntent(),
       phrases: [
-        "What's my GrokCast score in \(.applicationName)?",
+        "What's my SpotterCast score in \(.applicationName)?",
         "Go outside score in \(.applicationName)",
-        "GrokCast score in \(.applicationName)",
+        "SpotterCast score in \(.applicationName)",
       ],
-      shortTitle: "GrokCast Score",
+      shortTitle: "SpotterCast Score",
       systemImageName: "figure.walk"
     )
     AppShortcut(

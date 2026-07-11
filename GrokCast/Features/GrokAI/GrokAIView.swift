@@ -633,7 +633,7 @@ private struct GrokAIViewContent: View {
         .tint(DesignTokens.Palette.accent)
       }
 
-      ShareLink(item: shareText, subject: Text("GrokCast Storm Spotter")) {
+      ShareLink(item: shareText, subject: Text("SpotterCast Storm Spotter")) {
         Label("Share Report", systemImage: "square.and.arrow.up")
       }
       .buttonStyle(.bordered)

@@ -184,7 +184,7 @@ struct AppStoreScreenshotWidgets: View {
           Label("APPLE WATCH", systemImage: "applewatch")
             .font(.caption.weight(.heavy))
             .foregroundStyle(DesignTokens.Palette.accentWarm)
-          Text("Temperature range gauge, AI brief, and GrokCast Score right on your wrist.")
+          Text("Temperature range gauge, AI brief, and SpotterCast Score right on your wrist.")
             .font(.body)
         }
         .padding(16)

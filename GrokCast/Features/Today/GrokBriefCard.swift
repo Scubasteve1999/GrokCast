@@ -131,7 +131,7 @@ struct GrokBriefCard: View {
 
       ShareLink(
         item: shareText(for: briefText),
-        subject: Text("GrokCast Weather Brief"),
+        subject: Text("SpotterCast Weather Brief"),
         message: Text(shareText(for: briefText))
       ) {
         Image(systemName: "square.and.arrow.up")

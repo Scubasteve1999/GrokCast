@@ -7,37 +7,37 @@ enum ShareableBriefText {
     condition: String?,
     brief: String
   ) -> String {
-    var lines = ["GrokCast — \(locationName)"]
+    var lines = ["SpotterCast — \(locationName)"]
     if let temperatureLine, !temperatureLine.isEmpty {
       lines.append(temperatureLine + (condition.map { " · \($0)" } ?? ""))
     }
     lines.append("")
     lines.append(brief)
     lines.append("")
-    lines.append("Shared from GrokCast")
+    lines.append("Shared from SpotterCast")
     return lines.joined(separator: "\n")
   }
 
   static func alertsSummary(locationName: String, summary: String, alertEvents: [String]) -> String {
-    var lines = ["GrokCast Alert Summary — \(locationName)"]
+    var lines = ["SpotterCast Alert Summary — \(locationName)"]
     if !alertEvents.isEmpty {
       lines.append(alertEvents.joined(separator: " · "))
     }
     lines.append("")
     lines.append(summary)
     lines.append("")
-    lines.append("Shared from GrokCast")
+    lines.append("Shared from SpotterCast")
     return lines.joined(separator: "\n")
   }
 
   static func radarExplanation(context: RadarExplainContext, body: String) -> String {
     let lines = [
-      "GrokCast Radar — \(context.locationName)",
+      "SpotterCast Radar — \(context.locationName)",
       "\(context.modeLabel) · \(context.frameLabel) · \(context.productName)",
       "",
       body,
       "",
-      "Shared from GrokCast",
+      "Shared from SpotterCast",
     ]
     return lines.joined(separator: "\n")
   }
@@ -48,8 +48,8 @@ enum ShareableBriefText {
     analysis: String
   ) -> String {
     var lines = [
-      "GrokCast Storm Spotter — \(locationName)",
-      "#GrokCastStormSpotter",
+      "SpotterCast Storm Spotter — \(locationName)",
+      "#SpotterCastStormSpotter",
       "",
     ]
     if let notes = observerNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
@@ -58,7 +58,7 @@ enum ShareableBriefText {
     }
     lines.append(analysis)
     lines.append("")
-    lines.append("Shared from GrokCast · Storm Spotter")
+    lines.append("Shared from SpotterCast · Storm Spotter")
     return lines.joined(separator: "\n")
   }
 }

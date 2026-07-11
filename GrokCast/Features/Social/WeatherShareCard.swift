@@ -95,7 +95,7 @@ struct WeatherShareCard: View {
       }
 
       VStack(alignment: .leading, spacing: 2) {
-        Text("GrokCast Score")
+        Text("SpotterCast Score")
           .font(.caption2.weight(.medium))
           .foregroundStyle(.white.opacity(0.6))
         Text(score.label)

@@ -565,7 +565,7 @@ final class GrokAIViewModel {
 
     let location = weatherStore.currentLocation?.name ?? "your area"
     let bulletList = alerts.prefix(5).map { alert in
-      "- \(alert.event): \(alert.headline ?? alert.areaDesc ?? "See GrokCast for details")"
+      "- \(alert.event): \(alert.headline ?? alert.areaDesc ?? "See SpotterCast for details")"
     }.joined(separator: "\n")
 
     let system = """

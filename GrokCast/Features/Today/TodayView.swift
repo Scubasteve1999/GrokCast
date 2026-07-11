@@ -231,7 +231,7 @@ struct TodayView: View {
         .font(.system(size: 48))
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       VStack(spacing: 12) {
-        Text("GrokCast uses your location to show accurate weather forecasts for where you are.")
+        Text("SpotterCast uses your location to show accurate weather forecasts for where you are.")
           .font(.body)
           .multilineTextAlignment(.center)
           .foregroundStyle(DesignTokens.Palette.textPrimary)
