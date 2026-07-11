@@ -166,3 +166,7 @@ logs/
 
 # Cloudflare Wrangler local cache (account email / IDs — do not commit)
 .wrangler/
+
+# App Store Connect API key (never commit)
+fastlane/AuthKey_*.p8
+fastlane/asc_api_key.json
