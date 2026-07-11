@@ -1,4 +1,4 @@
-# GrokCast
+# SpotterCast
 
 **GrokCast** — AI-powered weather forecasts with Grok (xAI).
 
