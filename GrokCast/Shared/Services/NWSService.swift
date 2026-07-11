@@ -345,7 +345,8 @@ final class NWSService {
           symbolName: sym,
           rain: nil,
           showers: nil,
-          snowfall: nil
+          snowfall: nil,
+          isDay: p.isDaytime
         )
       )
     }

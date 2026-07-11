@@ -20,7 +20,7 @@ struct HourlyRow: View {
   }
 
   private var rowSymbol: String {
-    condition.rowSymbolName(precipChance: forecast.precipChance, isDay: true)
+    condition.rowSymbolName(precipChance: forecast.precipChance, isDay: forecast.isDay ?? true)
   }
 
   private var precipLabel: String {

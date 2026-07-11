@@ -56,7 +56,7 @@ final class OpenMeteoService {
       URLQueryItem(
         name: "hourly",
         value:
-          "temperature_2m,weather_code,precipitation_probability,uv_index,rain,showers,snowfall"),
+          "temperature_2m,weather_code,precipitation_probability,uv_index,rain,showers,snowfall,is_day"),
       URLQueryItem(
         name: "daily",
         value:
@@ -196,7 +196,8 @@ final class OpenMeteoService {
       for i in 0..<count {
         let date = parseHourlyDate(h.time[i])
         let weatherCode = openMeteoValue(h.weather_code, at: i) ?? 0
-        let (sym, _) = mapWeatherCode(weatherCode)
+        let hourIsDay = openMeteoValue(h.is_day, at: i).map { $0 == 1 }
+        let (sym, _) = mapWeatherCode(weatherCode, isDay: hourIsDay ?? true)
         hourlyForecasts.append(
           HourlyForecast(
             time: date,
@@ -206,7 +207,8 @@ final class OpenMeteoService {
             symbolName: sym,
             rain: openMeteoValue(h.rain, at: i),
             showers: openMeteoValue(h.showers, at: i),
-            snowfall: openMeteoValue(h.snowfall, at: i)
+            snowfall: openMeteoValue(h.snowfall, at: i),
+            isDay: hourIsDay
           ))
       }
     }

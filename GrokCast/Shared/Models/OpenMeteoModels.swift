@@ -42,6 +42,7 @@ struct Hourly: Decodable {
   let weather_code: [Int?]
   let wind_speed_10m: [Double]?
   let uv_index: [Double?]?
+  let is_day: [Int?]?
 }
 
 struct Daily: Decodable {
@@ -211,12 +212,14 @@ struct HourlyForecast: Equatable, Codable, Identifiable {
   let rain: Double?
   let showers: Double?
   let snowfall: Double?
+  // Optional so cached App Group snapshots written before this field decode as nil (treated as day).
+  var isDay: Bool? = nil
 
   // Stable identity based on the actual forecast time (prevents ForEach duplication bugs)
   var id: Date { time }
 
   enum CodingKeys: String, CodingKey {
-    case time, temp, precipChance, weatherCode, symbolName, rain, showers, snowfall
+    case time, temp, precipChance, weatherCode, symbolName, rain, showers, snowfall, isDay
   }
 }
 
