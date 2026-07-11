@@ -623,6 +623,7 @@ struct RadarView: View {
         if let existing = radarCoordinator?.currentRadarOverlay as? NWSRadarOverlay {
             // Update in place — avoids remove/add flicker so colors stay visible
             existing.updateTimestamp(ts)
+            radarCoordinator?.currentRadarOverlayMode = radarOverlayMode
             radarCoordinator?.mapView?.setNeedsDisplay()
         } else {
             if let old = radarCoordinator?.currentRadarOverlay {
@@ -630,6 +631,7 @@ struct RadarView: View {
             }
             let newOverlay = NWSRadarOverlay(timestamp: ts)
             radarCoordinator?.currentRadarOverlay = newOverlay
+            radarCoordinator?.currentRadarOverlayMode = radarOverlayMode
             radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
 
             let renderer: RadarTileRenderer
