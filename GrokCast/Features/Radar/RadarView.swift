@@ -624,6 +624,8 @@ struct RadarView: View {
             // Update in place — avoids remove/add flicker so colors stay visible
             existing.updateTimestamp(ts)
             radarCoordinator?.currentRadarOverlayMode = radarOverlayMode
+            radarCoordinator?.currentRadarRenderer?.radarOpacity = CGFloat(radarOpacity)
+            radarCoordinator?.currentRadarRenderer?.setNeedsDisplay()
             radarCoordinator?.mapView?.setNeedsDisplay()
         } else {
             if let old = radarCoordinator?.currentRadarOverlay {
@@ -632,16 +634,11 @@ struct RadarView: View {
             let newOverlay = NWSRadarOverlay(timestamp: ts)
             radarCoordinator?.currentRadarOverlay = newOverlay
             radarCoordinator?.currentRadarOverlayMode = radarOverlayMode
-            radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
 
-            let renderer: RadarTileRenderer
-            if let existing = radarCoordinator?.currentRadarRenderer {
-                renderer = existing
-            } else {
-                renderer = RadarTileRenderer(tileOverlay: newOverlay)
-                radarCoordinator?.currentRadarRenderer = renderer
-            }
-            renderer.radarOpacity = 0.95
+            let renderer = RadarTileRenderer(tileOverlay: newOverlay)
+            radarCoordinator?.currentRadarRenderer = renderer
+            renderer.radarOpacity = CGFloat(radarOpacity)
+            radarCoordinator?.mapView?.addOverlay(newOverlay, level: .aboveLabels)
             renderer.setNeedsDisplay()
 
             radarCoordinator?.mapView?.setNeedsDisplay()
