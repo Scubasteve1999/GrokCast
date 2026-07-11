@@ -236,7 +236,7 @@ struct GrokCastLargeWeatherWidget: Widget {
     ) { entry in
       LargeWeatherWidgetView(entry: entry)
     }
-    .configurationDisplayName("GrokCast Daily")
+    .configurationDisplayName("SpotterCast Daily")
     .description("Full forecast with hourly, daily, and AI insights.")
     .supportedFamilies([.systemLarge])
   }

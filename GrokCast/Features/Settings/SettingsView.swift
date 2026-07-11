@@ -57,10 +57,10 @@ struct SettingsView: View {
 
   private var settingsForm: some View {
     Form {
-        // MARK: - GrokCast Pro
+        // MARK: - SpotterCast Pro
         Section {
           if subscription.isPro {
-            Label("GrokCast Pro is active", systemImage: "checkmark.seal.fill")
+            Label("SpotterCast Pro is active", systemImage: "checkmark.seal.fill")
               .foregroundStyle(.green)
             Button("Manage Subscription") {
               if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
@@ -72,7 +72,7 @@ struct SettingsView: View {
               Text("Unlock forecast radar, Live Activity, unlimited locations, and more.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-              Button("View GrokCast Pro") {
+              Button("View SpotterCast Pro") {
                 PaywallCoordinator.shared.present(.locations)
               }
               .buttonStyle(.borderedProminent)
@@ -201,9 +201,9 @@ struct SettingsView: View {
                   if isTestingConnection {
                     ProgressView()
                       .scaleEffect(0.8)
-                    Text("Testing Grok API...")
+                    Text("Testing API connection...")
                   } else {
-                    Label("Test Grok Connection", systemImage: "network")
+                    Label("Test API Connection", systemImage: "network")
                   }
                 }
               }
@@ -303,7 +303,7 @@ struct SettingsView: View {
           )
 
           if !subscription.isPro {
-            Text("Live Activity requires GrokCast Pro.")
+            Text("Live Activity requires SpotterCast Pro.")
               .font(.caption)
               .foregroundStyle(.secondary)
           }
@@ -361,7 +361,7 @@ struct SettingsView: View {
           Text("LOCATION UPDATES")
         } footer: {
           Text(
-            "When enabled and Always location access is granted, GrokCast uses Apple’s low-power Significant Location Changes to refresh weather after you travel a significant distance. This is not continuous GPS tracking. Turn off anytime."
+            "When enabled and Always location access is granted, SpotterCast uses Apple’s low-power Significant Location Changes to refresh weather after you travel a significant distance. This is not continuous GPS tracking. Turn off anytime."
           )
         }
 
@@ -419,7 +419,7 @@ struct SettingsView: View {
             Label("Weather Data: Open-Meteo", systemImage: "link")
           }
 
-          Text("GrokCast uses free Open-Meteo for forecasts and xAI Grok models for intelligence.")
+          Text("SpotterCast uses free Open-Meteo for forecasts and AI models for intelligence.")
             .font(.caption)
             .foregroundStyle(.secondary)
         } header: {
@@ -472,7 +472,7 @@ struct SettingsView: View {
           SettingsDivider()
           figmaToggleRow(
             title: "Live Activity",
-            subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires GrokCast Pro",
+            subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires SpotterCast Pro",
             icon: "lock.rectangle.stack.fill",
             isOn: Binding(
               get: { store.liveActivityEnabled },
@@ -559,7 +559,7 @@ struct SettingsView: View {
     SettingsGroupCard {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         if subscription.isPro {
-          Label("GrokCast Pro is active", systemImage: "checkmark.seal.fill")
+          Label("SpotterCast Pro is active", systemImage: "checkmark.seal.fill")
             .foregroundStyle(DesignTokens.Palette.success)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
@@ -576,7 +576,7 @@ struct SettingsView: View {
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
 
-          Button("View GrokCast Pro") {
+          Button("View SpotterCast Pro") {
             PaywallCoordinator.shared.present(.locations)
           }
           .font(.system(size: 15, weight: .semibold))
@@ -675,9 +675,9 @@ struct SettingsView: View {
           HStack {
             if isTestingConnection {
               ProgressView().scaleEffect(0.8)
-              Text("Testing Grok API…")
+              Text("Testing API connection…")
             } else {
-              Label("Test Grok Connection", systemImage: "network")
+              Label("Test API Connection", systemImage: "network")
             }
             Spacer()
           }
@@ -864,7 +864,7 @@ struct SettingsView: View {
     case .denied:
       return "Enable notifications in iOS Settings to receive severe weather alerts."
     case .notDetermined:
-      return "GrokCast will ask for permission when you enable alerts."
+      return "SpotterCast will ask for permission when you enable alerts."
     @unknown default:
       return ""
     }
@@ -893,7 +893,7 @@ struct SettingsView: View {
     Task {
       do {
         // Lightweight test: ask Grok for a very short response
-        let testMessages = [ChatMessage.user("Reply with exactly: 'GrokCast connection OK'")]
+        let testMessages = [ChatMessage.user("Reply with exactly: 'SpotterCast connection OK'")]
         let response = try await store.xaiService.sendMessage(messages: testMessages, context: nil)
 
         Task { @MainActor in
@@ -901,7 +901,7 @@ struct SettingsView: View {
           connectionTestSuccess = response.lowercased().contains("ok") || response.contains("OK")
           connectionTestResult =
             connectionTestSuccess
-            ? "Connection successful • Grok responded correctly"
+            ? "Connection successful • API responded correctly"
             : "Unexpected response: \(response)"
         }
       } catch {

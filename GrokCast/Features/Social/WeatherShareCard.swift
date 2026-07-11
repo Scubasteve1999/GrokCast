@@ -110,7 +110,7 @@ struct WeatherShareCard: View {
 
   private var footerSection: some View {
     HStack {
-      Text("GrokCast")
+      Text("SpotterCast")
         .font(.footnote.weight(.bold))
         .foregroundStyle(.white.opacity(0.5))
       Spacer()

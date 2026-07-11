@@ -11,7 +11,7 @@ final class IEMRadarService {
   private static let scanListBase = "https://mesonet.agron.iastate.edu/json/radar"
   private static let siteListURL = URL(
     string: "https://mesonet.agron.iastate.edu/json/network.py?network=NEXRAD")!
-  private static let userAgent = "GrokCast/1.0 (https://grokcast.app)"
+  private static let userAgent = "SpotterCast/1.0 (https://grokcast.app)"
   private static let requestTimeout: TimeInterval = 8
 
   /// Beyond this the site's low-level beam is too high to be useful (and we're likely non-US).

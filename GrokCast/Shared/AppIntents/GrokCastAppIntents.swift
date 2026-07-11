@@ -7,7 +7,7 @@ struct GrokCastScoreIntent: AppIntent {
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
-      return .result(value: "Open GrokCast and refresh weather to get your score.")
+      return .result(value: "Open SpotterCast and refresh weather to get your score.")
     }
     if let score = snapshot.grokCastScore {
       let label = snapshot.grokCastScoreLabel ?? "Score"
@@ -26,12 +26,12 @@ struct GrokCastMinutecastIntent: AppIntent {
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
-      return .result(value: "Open GrokCast to load Minutecast.")
+      return .result(value: "Open SpotterCast to load Minutecast.")
     }
     if let message = snapshot.minutecastMessage {
       return .result(value: "\(snapshot.location.name): \(message)")
     }
-    return .result(value: "\(snapshot.location.name): No Minutecast data yet. Refresh in GrokCast.")
+    return .result(value: "\(snapshot.location.name): No Minutecast data yet. Refresh in SpotterCast.")
   }
 }
 

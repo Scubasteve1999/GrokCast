@@ -1,7 +1,7 @@
 import Foundation
 import StoreKit
 
-/// StoreKit 2 subscription state for GrokCast Pro.
+/// StoreKit 2 subscription state for SpotterCast Pro.
 @MainActor
 @Observable
 final class SubscriptionManager {
@@ -103,7 +103,7 @@ final class SubscriptionManager {
       try await AppStore.sync()
       await refreshEntitlements()
       if !isPro {
-        lastErrorMessage = "No active GrokCast Pro subscription found."
+        lastErrorMessage = "No active SpotterCast Pro subscription found."
       }
     } catch {
       lastErrorMessage = error.localizedDescription

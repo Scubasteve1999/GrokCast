@@ -1,6 +1,6 @@
 import Foundation
 
-/// App Store subscription product identifiers for GrokCast Pro.
+/// App Store subscription product identifiers for SpotterCast Pro.
 enum GrokCastProProducts {
   static let monthly = "com.scubasteve1999.GrokCast.pro.monthly"
   static let yearly = "com.scubasteve1999.GrokCast.pro.yearly"

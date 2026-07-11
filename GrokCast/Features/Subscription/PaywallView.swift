@@ -1,7 +1,7 @@
 import StoreKit
 import SwiftUI
 
-/// Primary upsell surface for GrokCast Pro.
+/// Primary upsell surface for SpotterCast Pro.
 struct PaywallView: View {
   @Environment(\.dismiss) private var dismiss
   @Bindable var subscription: SubscriptionManager
@@ -28,7 +28,7 @@ struct PaywallView: View {
         .padding(DesignTokens.Spacing.space20)
       }
       .background(DesignTokens.Palette.bgPrimary.ignoresSafeArea())
-      .navigationTitle("GrokCast Pro")
+      .navigationTitle("SpotterCast Pro")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -240,7 +240,7 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "GrokCast Pro unlocks forecast radar, Live Activity, and unlimited locations. Grok chat currently needs an xAI developer key in Settings."
+      "SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations. Grok chat currently needs an xAI developer key in Settings."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:
@@ -250,7 +250,7 @@ enum PaywallFeature {
     case .morningBrief:
       "Wake up to a personalized AI weather brief every morning — what to wear, when to leave, and what to watch for."
     case .severeAlerts:
-      "NWS warnings and watches with rich, time-sensitive notifications — free for all users. GrokCast Pro adds AI briefings and radar tools to help you plan around severe weather."
+      "NWS warnings and watches with rich, time-sensitive notifications — free for all users. SpotterCast Pro adds AI briefings and radar tools to help you plan around severe weather."
     }
   }
 

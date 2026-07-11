@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown when Grok AI requires GrokCast Pro or a developer key.
+/// Shown when Grok AI requires SpotterCast Pro or a developer key.
 struct GrokAPIKeyEmptyStateView: View {
   @Bindable var store: WeatherStore
   @Bindable var subscription: SubscriptionManager
@@ -12,7 +12,7 @@ struct GrokAPIKeyEmptyStateView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label("GrokCast Pro", systemImage: "sparkles")
+      Label("SpotterCast Pro", systemImage: "sparkles")
         .font(.headline)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 

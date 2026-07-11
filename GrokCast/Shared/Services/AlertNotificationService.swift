@@ -59,6 +59,9 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
 
     var successfullyNotified: [String] = []
     for alert in fresh {
+      if let taskStart, CFAbsoluteTimeGetCurrent() - taskStart >= 20 {
+        break
+      }
       if await postNotification(for: alert, taskStart: taskStart) {
         successfullyNotified.append(alert.id)
       }
@@ -69,6 +72,11 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
   @discardableResult
   private func postNotification(for alert: NWSAlert, taskStart: CFAbsoluteTime? = nil) async -> Bool
   {
+    // Respect BG / silent-push budget so we don't post forever after expiration.
+    if let taskStart, CFAbsoluteTimeGetCurrent() - taskStart >= 20 {
+      return false
+    }
+
     let content = UNMutableNotificationContent()
 
     if alert.isLifeThreatening {
@@ -139,7 +147,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
     if let desc = alert.description, !desc.isEmpty {
       return String(desc.prefix(300))
     }
-    return "Tap to view alert details in GrokCast."
+    return "Tap to view alert details in SpotterCast."
   }
 
   // MARK: - UNUserNotificationCenterDelegate

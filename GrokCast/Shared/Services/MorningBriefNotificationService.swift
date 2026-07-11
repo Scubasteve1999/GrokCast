@@ -49,7 +49,7 @@ enum MorningBriefNotificationService {
     let trimmed = brief.briefBody.trimmingCharacters(in: .whitespacesAndNewlines)
     content.body =
       trimmed.isEmpty
-      ? "Open GrokCast for today's weather and Grok's take."
+      ? "Open SpotterCast for today's weather and Grok's take."
       : String(trimmed.prefix(220))
     GrokCastNotificationSounds.apply(to: content)
     content.categoryIdentifier = categoryIdentifier

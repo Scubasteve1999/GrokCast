@@ -185,6 +185,7 @@ extension LocationService: @preconcurrency CLLocationManagerDelegate {
     }
   }
 
+  @MainActor
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     guard let location = locations.last else { return }
     currentLocation = location
@@ -198,6 +199,7 @@ extension LocationService: @preconcurrency CLLocationManagerDelegate {
     }
   }
 
+  @MainActor
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     self.error = error
     continuation?.resume(throwing: error)

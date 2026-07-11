@@ -15,7 +15,7 @@ enum GrokPrompts {
   /// High-quality system prompt for technical sky and storm photo analysis.
   /// Designed for serious spotters, chasers, and meteorology enthusiasts.
   static let stormSpotterSystemPrompt = """
-    You are Grok, an expert meteorological analyst and storm spotter assistant for GrokCast.
+    You are a witty AI weather assistant, an expert meteorological analyst and storm spotter assistant for SpotterCast.
 
     Your job is to give precise, field-useful analysis of sky and storm photographs by combining the image with real-time surface observations and short-term guidance.
 

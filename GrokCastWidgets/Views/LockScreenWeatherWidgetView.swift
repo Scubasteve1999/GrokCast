@@ -32,7 +32,7 @@ struct LockScreenWeatherWidgetView: View {
       Text(inlineEmptyMessage)
     case .accessoryRectangular:
       VStack(alignment: .leading, spacing: 2) {
-        Text("GrokCast")
+        Text("SpotterCast")
           .font(.headline)
         Text(rectangularEmptyMessage)
           .font(.caption)
@@ -53,11 +53,11 @@ struct LockScreenWeatherWidgetView: View {
   private var inlineEmptyMessage: String {
     switch entry.emptyReason {
     case .locationMismatch(let name):
-      "Open \(name) in GrokCast"
+      "Open \(name) in SpotterCast"
     case .noData:
-      "Open GrokCast to refresh"
+      "Open SpotterCast to refresh"
     case .none:
-      "Open GrokCast"
+      "Open SpotterCast"
     }
   }
 
@@ -111,7 +111,7 @@ struct LockScreenWeatherWidgetView: View {
           .foregroundStyle(.secondary)
           .lineLimit(1)
       } else {
-        Text("Open GrokCast to refresh")
+        Text("Open SpotterCast to refresh")
           .font(.caption2)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -140,7 +140,7 @@ struct GrokCastLockScreenWeatherWidget: Widget {
     ) { entry in
       LockScreenWeatherWidgetView(entry: entry)
     }
-    .configurationDisplayName("GrokCast Lock Screen")
+    .configurationDisplayName("SpotterCast Lock Screen")
     .description("Weather and alerts at a glance on your Lock Screen.")
     .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
   }

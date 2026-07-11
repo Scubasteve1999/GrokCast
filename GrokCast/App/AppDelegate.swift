@@ -6,6 +6,9 @@ import UserNotifications
 
 /// UIKit delegate adapter for BGTask registration, APNs, Firebase, and notification delegate wiring.
 final class AppDelegate: NSObject, UIApplicationDelegate {
+  /// Silent-push handlers must call `fetchCompletionHandler` within ~30s.
+  private static let remoteNotificationBudgetSeconds: CFAbsoluteTime = 25
+
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -53,9 +56,33 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
+    let start = CFAbsoluteTimeGetCurrent()
     Task { @MainActor in
-      let result = await PushNotificationService.shared.didReceiveRemoteNotification(userInfo: userInfo)
+      let result = await Self.withRemoteNotificationBudget(startedAt: start) {
+        await PushNotificationService.shared.didReceiveRemoteNotification(userInfo: userInfo)
+      }
       completionHandler(result)
+    }
+  }
+
+  /// Runs work but always returns by `remoteNotificationBudgetSeconds`, even if work is still running.
+  private static func withRemoteNotificationBudget(
+    startedAt: CFAbsoluteTime,
+    operation: @escaping @MainActor () async -> UIBackgroundFetchResult
+  ) async -> UIBackgroundFetchResult {
+    await withTaskGroup(of: UIBackgroundFetchResult.self) { group in
+      group.addTask { @MainActor in
+        await operation()
+      }
+      group.addTask {
+        let elapsed = CFAbsoluteTimeGetCurrent() - startedAt
+        let remaining = max(0, remoteNotificationBudgetSeconds - elapsed)
+        try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
+        return .failed
+      }
+      let first = await group.next() ?? .failed
+      group.cancelAll()
+      return first
     }
   }
 
@@ -126,7 +153,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 extension AppDelegate: MessagingDelegate {
   func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
     guard let fcmToken else { return }
-    print("[FCM] Token: \(fcmToken.prefix(20))…")
     Task { @MainActor in
       PushNotificationService.shared.didReceiveFCMToken(fcmToken)
     }

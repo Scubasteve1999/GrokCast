@@ -174,7 +174,7 @@ final class WeatherStore {
     case forecast = "Forecast"
     case radar = "Radar"
     case alerts = "Alerts"
-    case grok = "Grok AI"
+    case grok = "AI"
     case locations = "Locations"
     case settings = "Settings"
 
@@ -725,44 +725,63 @@ final class WeatherStore {
 
   /// Caps slow Open-Meteo responses so cold launch doesn't sit on skeleton shimmer indefinitely.
   private func fetchPrimaryWeather(for location: SavedLocation) async -> WeatherFetchResult {
-    await withTaskGroup(of: WeatherFetchResult.self) { group in
-      group.addTask {
-        do {
-          let data = try await self.openMeteo.fetchForecast(
-            for: location, units: self.temperatureUnit)
-          return .success(data)
-        } catch {
-          return .failure(error)
-        }
-      }
-      group.addTask {
-        try? await Task.sleep(nanoseconds: 8_000_000_000)
+    await raceWeatherFetch(timeoutNanoseconds: 8_000_000_000) {
+      do {
+        let data = try await self.openMeteo.fetchForecast(
+          for: location, units: self.temperatureUnit)
+        return .success(data)
+      } catch is CancellationError {
         return .timedOut
+      } catch {
+        return .failure(error)
       }
-      let first = await group.next() ?? .timedOut
-      group.cancelAll()
-      return first
     }
   }
 
   /// NWS fallback with the same 8s cap so a slow grid lookup can't block launch.
   private func fetchNWSFallback(for location: SavedLocation) async -> WeatherFetchResult {
+    await raceWeatherFetch(timeoutNanoseconds: 8_000_000_000) {
+      do {
+        let data = try await self.nwsService.fetchForecast(for: location)
+        return .success(data)
+      } catch is CancellationError {
+        return .timedOut
+      } catch {
+        return .failure(error)
+      }
+    }
+  }
+
+  /// Races a weather fetch against a timeout, preferring a completed fetch over timeout
+  /// when both finish in the same window (avoids false timeouts from dequeue order).
+  private func raceWeatherFetch(
+    timeoutNanoseconds: UInt64,
+    operation: @escaping @MainActor () async -> WeatherFetchResult
+  ) async -> WeatherFetchResult {
     await withTaskGroup(of: WeatherFetchResult.self) { group in
-      group.addTask {
-        do {
-          let data = try await self.nwsService.fetchForecast(for: location)
-          return .success(data)
-        } catch {
-          return .failure(error)
-        }
+      group.addTask { @MainActor in
+        await operation()
       }
       group.addTask {
-        try? await Task.sleep(nanoseconds: 8_000_000_000)
+        try? await Task.sleep(nanoseconds: timeoutNanoseconds)
         return .timedOut
       }
-      let first = await group.next() ?? .timedOut
-      group.cancelAll()
-      return first
+
+      var fetchOutcome: WeatherFetchResult?
+
+      for await value in group {
+        switch value {
+        case .success, .failure:
+          fetchOutcome = value
+          group.cancelAll()
+        case .timedOut:
+          // Hard deadline: stop waiting on a slow fetch, but still drain a
+          // success/failure that may already be queued behind this timeout.
+          group.cancelAll()
+        }
+      }
+
+      return fetchOutcome ?? .timedOut
     }
   }
 
@@ -994,17 +1013,23 @@ final class WeatherStore {
     return alertHistory.filter { !$0.isExpired }
   }
 
+  /// Soft budget for BGAppRefresh / silent-push alert work (leave headroom under iOS ~30s limit).
+  private static let backgroundAlertBudgetSeconds: CFAbsoluteTime = 20
+
   /// Background entry point for BGAppRefreshTask — uses persisted saved locations.
   ///
+  /// Keeps work lightweight: NWS alerts + local notifications + optional rain check.
+  /// Never calls Grok (morning brief) here — that belongs on foreground refresh only.
+  ///
   /// v1 limitation: only the current/preferred location is checked (isCurrent preferred, else first
-  /// saved). This keeps background work lightweight and within BGTask time budgets. Multi-location
-  /// background polling can be added later if user demand warrants it.
+  /// saved). Multi-location background polling can be added later if user demand warrants it.
   @MainActor
   @discardableResult
   func performBackgroundAlertCheck(taskStart: CFAbsoluteTime? = nil) async -> Bool {
     guard alertNotificationsEnabled else {
       return true
     }
+    if Self.isBackgroundBudgetExhausted(taskStart) { return false }
 
     let locations = loadLocationsForBackgroundCheck()
     guard let loc = locations.first else {
@@ -1014,6 +1039,8 @@ final class WeatherStore {
 
     do {
       let alerts = try await nwsService.fetchActiveAlerts(for: loc, timeout: 8)
+      if Self.isBackgroundBudgetExhausted(taskStart) { return false }
+
       if loc.id == currentLocation?.id {
         activeAlerts = alerts
         lastAlertsFetch = Date()
@@ -1033,9 +1060,12 @@ final class WeatherStore {
         taskStart: taskStart
       )
 
-      await MorningBriefGenerator.generateIfStale(weatherStore: self)
-
-      if rainAlertsEnabled, let weather = currentWeather {
+      // Rain alerts only when in-memory weather matches the location we just polled.
+      if rainAlertsEnabled,
+        !Self.isBackgroundBudgetExhausted(taskStart),
+        loc.id == currentLocation?.id,
+        let weather = currentWeather
+      {
         await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit)
       }
 
@@ -1048,6 +1078,11 @@ final class WeatherStore {
       }
       return false
     }
+  }
+
+  private static func isBackgroundBudgetExhausted(_ taskStart: CFAbsoluteTime?) -> Bool {
+    guard let taskStart else { return false }
+    return CFAbsoluteTimeGetCurrent() - taskStart >= backgroundAlertBudgetSeconds
   }
 
   /// Requests notification permission (if needed) then schedules the next BG alert refresh when enabled.

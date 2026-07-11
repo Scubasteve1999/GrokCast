@@ -129,7 +129,7 @@ struct GrokImagineResultView: View {
 
         guard let image = UIImage(data: data) else {
           throw NSError(
-            domain: "GrokCast",
+            domain: "SpotterCast",
             code: 1,
             userInfo: [NSLocalizedDescriptionKey: "Could not create image from downloaded data"]
           )

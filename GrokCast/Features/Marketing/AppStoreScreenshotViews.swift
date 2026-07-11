@@ -16,7 +16,7 @@ struct AppStoreScreenshotToday: View {
 
       VStack(spacing: 20) {
         HStack {
-          Text("GrokCast")
+          Text("SpotterCast")
             .font(.largeTitle.bold())
           Spacer()
           Text("OLIVE BRANCH")

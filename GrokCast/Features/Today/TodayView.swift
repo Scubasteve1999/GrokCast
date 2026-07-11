@@ -58,7 +58,7 @@ struct TodayView: View {
           }
         } else {
           ContentUnavailableView {
-            Label("Welcome to GrokCast", systemImage: "sun.max")
+            Label("Welcome to SpotterCast", systemImage: "sun.max")
           } description: {
             Text(
               "Establish your location to get started with accurate, personalized forecasts and insights."
@@ -196,7 +196,7 @@ struct TodayView: View {
         Image(systemName: "sun.max")
           .font(.system(size: 48))
           .foregroundStyle(DesignTokens.Palette.textTertiary)
-        Text("Welcome to GrokCast")
+        Text("Welcome to SpotterCast")
           .font(.title2.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(
@@ -477,7 +477,7 @@ private struct TodayWeatherPanel: View {
 
   private var header: some View {
     HStack {
-      Text("GrokCast")
+      Text("SpotterCast")
         .font(.largeTitle.bold())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       Spacer()

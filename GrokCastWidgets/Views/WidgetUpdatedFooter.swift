@@ -8,7 +8,7 @@ struct WidgetUpdatedFooter: View {
 
   var body: some View {
     if isStale {
-      Text("Open GrokCast to refresh")
+      Text("Open SpotterCast to refresh")
         .font(.caption2.weight(.medium))
         .foregroundStyle(style.secondaryText.opacity(0.8))
         .lineLimit(1)

@@ -56,7 +56,7 @@ struct GrokBriefCard: View {
         if !store.xaiService.hasValidKey {
           Button(
             PaywallCoordinator.shared.canUnlockGrokViaPro
-              ? "Upgrade to GrokCast Pro" : "Add Key in Settings"
+              ? "Upgrade to SpotterCast Pro" : "Add Key in Settings"
           ) {
             if PaywallCoordinator.shared.canUnlockGrokViaPro {
               PaywallCoordinator.shared.present(.grokAI)
@@ -86,7 +86,7 @@ struct GrokBriefCard: View {
           Button {
             Task { await fetchBrief(force: false) }
           } label: {
-            Label("Get Grok's Take", systemImage: "sparkles")
+            Label("Get Today's Take", systemImage: "sparkles")
               .frame(maxWidth: .infinity)
           }
           .buttonStyle(.borderedProminent)

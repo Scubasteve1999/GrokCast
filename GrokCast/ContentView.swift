@@ -34,7 +34,7 @@ struct MainTabView: View {
 
       GrokAIView()
         .tabItem {
-          Label("Grok AI", systemImage: "sparkles")
+          Label("AI", systemImage: "sparkles")
         }
         .tag(WeatherStore.Tab.grok)
 
