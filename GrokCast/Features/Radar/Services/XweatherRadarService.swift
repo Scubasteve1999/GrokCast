@@ -6,7 +6,7 @@ import Foundation
 /// Service for Xweather radar tiles (primary provider).
 /// Uses https://maps.api.xweather.com for high-quality radar layers.
 /// NOW uses the live `radar` layer with past offsets (e.g. `current`, `-5minutes`).
-/// FUTURE uses the combined `radar` layer with forward offsets (e.g. `current`, `+1hour`).
+/// FUTURE uses the forecast `fradar` layer with forward offsets (e.g. `current`, `+1hour`).
 final class XweatherRadarService {
 
   private static let mapHosts = ["maps1", "maps2", "maps3", "maps4"]
@@ -76,14 +76,14 @@ final class XweatherRadarService {
   }
 
   /// Produces RadarFrame descriptors suitable for the active Mapbox radar timeline + overlay.
-  /// Uses the `radar` layer for FUTURE precipitation forecast (offsets like `current`, `+1hour`).
+  /// Uses the `fradar` layer for FUTURE precipitation forecast (offsets like `current`, `+1hour`).
   static func loadForecastRadarFrames(
     maxFrames: Int = RadarTimelineConfig.forecastMaxFrames,
     intervalMinutes: Int = RadarTimelineConfig.forecastIntervalMinutes
   ) -> [RadarFrame] {
     let xwFrames = loadForecastFrames(maxFrames: maxFrames, intervalMinutes: intervalMinutes)
     return xwFrames.compactMap { xf -> RadarFrame? in
-      guard let templates = tileURLs(layer: .radar, offset: xf.offset, retina: true),
+      guard let templates = tileURLs(layer: xf.layer, offset: xf.offset, retina: true),
         !templates.isEmpty
       else {
         return nil
@@ -126,7 +126,7 @@ final class XweatherRadarService {
         timestamp = roundedNow.addingTimeInterval(Double(step) * intervalSeconds)
       }
 
-      let layer: XweatherRadarLayer = .radar
+      let layer: XweatherRadarLayer = direction == .future ? .fradar : .radar
       frames.append(
         XweatherRadarFrame(
           layer: layer,
@@ -175,9 +175,9 @@ final class XweatherRadarService {
     await probeOffsetCached(layer: .radar, offset: "current")
   }
 
-  /// Validates forecast `radar` tile access before FUTURE overlays are shown.
+  /// Validates forecast `fradar` tile access before FUTURE overlays are shown.
   static func probeForecastAvailability() async -> Bool {
-    await probeOffsetCached(layer: .radar, offset: "+1hour", retina: true)
+    await probeOffsetCached(layer: .fradar, offset: "+1hour", retina: true)
   }
 
   private static func probeCacheKey(layer: XweatherRadarLayer, offset: String, retina: Bool) -> String {

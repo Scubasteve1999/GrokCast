@@ -1,5 +1,45 @@
 import Foundation
 
+/// Shared UserDefaults cache for Grok's Take / morning brief so Today + notifications stay aligned.
+@MainActor
+enum GrokBriefCache {
+  /// Discard cached copy when live temp diverges this much from the temp at write time.
+  static let tempMismatchThreshold: Double = 8
+
+  static func key(for store: WeatherStore) -> String? {
+    guard let loc = store.currentLocation else { return nil }
+    let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
+    return "grok_brief_\(loc.id.uuidString)_\(Int(day))"
+  }
+
+  private static func tempKey(for cacheKey: String) -> String {
+    cacheKey + "_temp"
+  }
+
+  /// Returns cached brief only if it still matches today's live weather within threshold.
+  static func loadValidBrief(for store: WeatherStore) -> String? {
+    guard let key = key(for: store),
+      let text = UserDefaults.standard.string(forKey: key)
+    else { return nil }
+
+    if let cachedTemp = UserDefaults.standard.object(forKey: tempKey(for: key)) as? Double,
+      let current = store.currentWeather?.currentTemp,
+      abs(current - cachedTemp) > tempMismatchThreshold
+    {
+      return nil
+    }
+    return text
+  }
+
+  static func save(_ text: String, for store: WeatherStore) {
+    guard let key = key(for: store) else { return }
+    UserDefaults.standard.set(text, forKey: key)
+    if let temp = store.currentWeather?.currentTemp {
+      UserDefaults.standard.set(temp, forKey: tempKey(for: key))
+    }
+  }
+}
+
 @MainActor
 enum MorningBriefGenerator {
 
@@ -7,8 +47,7 @@ enum MorningBriefGenerator {
     guard MorningBriefNotificationService.persistedEnabled else { return }
     guard GrokAuthResolver.canAccessGrok(subscription: SubscriptionManager.shared) else { return }
 
-    let cached = cachedBrief(for: weatherStore)
-    if cached != nil { return }
+    if GrokBriefCache.loadValidBrief(for: weatherStore) != nil { return }
 
     guard let weather = weatherStore.currentWeather else { return }
 
@@ -18,7 +57,7 @@ enum MorningBriefGenerator {
       .joined(separator: ", ")
 
     let system = """
-      You are a helpful weather assistant inside GrokCast. Write a practical 2–4 sentence weather brief for \(location).
+      You are a helpful weather assistant inside SpotterCast. Write a practical 2–4 sentence weather brief for \(location).
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
@@ -44,7 +83,7 @@ enum MorningBriefGenerator {
       let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !trimmed.isEmpty else { return }
 
-      saveBrief(trimmed, for: weatherStore)
+      GrokBriefCache.save(trimmed, for: weatherStore)
 
       let content = MorningBriefContent(
         briefBody: trimmed,
@@ -57,21 +96,5 @@ enum MorningBriefGenerator {
     } catch {
       print("[MorningBrief] Generation failed (non-fatal): \(error.localizedDescription)")
     }
-  }
-
-  private static func cacheKey(for store: WeatherStore) -> String? {
-    guard let loc = store.currentLocation else { return nil }
-    let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
-    return "grok_brief_\(loc.id.uuidString)_\(Int(day))"
-  }
-
-  private static func cachedBrief(for store: WeatherStore) -> String? {
-    guard let key = cacheKey(for: store) else { return nil }
-    return UserDefaults.standard.string(forKey: key)
-  }
-
-  private static func saveBrief(_ text: String, for store: WeatherStore) {
-    guard let key = cacheKey(for: store) else { return }
-    UserDefaults.standard.set(text, forKey: key)
   }
 }

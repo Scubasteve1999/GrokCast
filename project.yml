@@ -80,6 +80,7 @@ targets:
       path: GrokCast/Info.plist
       properties:
         CFBundleDisplayName: SpotterCast
+        CFBundleName: SpotterCast
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconName: AppIcon

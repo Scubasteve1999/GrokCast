@@ -67,7 +67,7 @@
       "localizations" : [
 
       ],
-      "name" : "GrokCast Pro",
+      "name" : "SpotterCast Pro",
       "subscriptions" : [
         {
           "adHocOffers" : [
@@ -84,13 +84,13 @@
           "localizations" : [
             {
               "description" : "Grok AI, morning briefs, forecast radar, Live Activity, unlimited locations",
-              "displayName" : "GrokCast Pro Monthly",
+              "displayName" : "SpotterCast Pro Monthly",
               "locale" : "en_US"
             }
           ],
           "productID" : "com.scubasteve1999.GrokCast.pro.monthly",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "GrokCast Pro Monthly",
+          "referenceName" : "SpotterCast Pro Monthly",
           "subscriptionGroupID" : "GrokCastPro",
           "type" : "RecurringSubscription"
         },
@@ -114,13 +114,13 @@
           "localizations" : [
             {
               "description" : "Best value — all Pro features for one year. 7-day free trial.",
-              "displayName" : "GrokCast Pro Yearly",
+              "displayName" : "SpotterCast Pro Yearly",
               "locale" : "en_US"
             }
           ],
           "productID" : "com.scubasteve1999.GrokCast.pro.yearly",
           "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "GrokCast Pro Yearly",
+          "referenceName" : "SpotterCast Pro Yearly",
           "subscriptionGroupID" : "GrokCastPro",
           "type" : "RecurringSubscription"
         }

@@ -17,9 +17,14 @@ struct GrokBriefCard: View {
   @State private var isExpanded = false
 
   private var cacheKey: String {
-    let loc = store.currentLocation?.id.uuidString ?? "none"
-    let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
-    return "grok_brief_\(loc)_\(Int(day))"
+    GrokBriefCache.key(for: store) ?? "grok_brief_none"
+  }
+
+  /// Re-run load/fetch when live weather diverges from what the brief was written against.
+  private var weatherTaskID: String {
+    guard let weather = store.currentWeather else { return cacheKey }
+    let bucket = Int((weather.currentTemp / 2).rounded() * 2)
+    return "\(cacheKey)_\(bucket)_\(weather.conditionCode)"
   }
 
   var body: some View {
@@ -102,8 +107,8 @@ struct GrokBriefCard: View {
       guard presentation == .figma else { return }
       store.selectedTab = .grok
     }
-    .task(id: cacheKey) {
-      loadCachedBrief()
+    .task(id: weatherTaskID) {
+      briefText = GrokBriefCache.loadValidBrief(for: store)
       if briefText == nil, store.xaiService.hasValidKey, !isLoading {
         await fetchBrief(force: false)
       }
@@ -151,17 +156,6 @@ struct GrokBriefCard: View {
     }
   }
 
-  private func loadCachedBrief() {
-    briefText = UserDefaults.standard.string(forKey: cacheKey)
-  }
-
-  private func saveCachedBrief(_ text: String) {
-    UserDefaults.standard.set(text, forKey: cacheKey)
-    briefText = text
-    store.refreshWidgetSnapshotGrokBrief()
-    Task { await store.syncMorningBriefNotification(briefBody: text) }
-  }
-
   private func shareText(for brief: String) -> String {
     let loc = store.currentLocation?.name ?? "My location"
     let tempLine = store.currentWeather.map { store.formatTemperature($0.currentTemp) }
@@ -187,7 +181,10 @@ struct GrokBriefCard: View {
 
     do {
       let response = try await store.grokAIViewModel.fetchWeatherBrief()
-      saveCachedBrief(response)
+      GrokBriefCache.save(response, for: store)
+      briefText = response
+      store.refreshWidgetSnapshotGrokBrief()
+      Task { await store.syncMorningBriefNotification(briefBody: response) }
     } catch {
       errorMessage = error.localizedDescription
     }

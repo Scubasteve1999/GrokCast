@@ -523,7 +523,7 @@ final class GrokAIViewModel {
     let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event).joined(separator: ", ")
 
     let system = """
-      You are a helpful weather assistant inside GrokCast. Write a practical 2–4 sentence weather brief for \(location).
+      You are a helpful weather assistant inside SpotterCast. Write a practical 2–4 sentence weather brief for \(location).
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
@@ -544,7 +544,7 @@ final class GrokAIViewModel {
     guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
 
     let system = """
-      You are a helpful weather assistant explaining weather radar to a non-meteorologist inside GrokCast.
+      You are a helpful weather assistant explaining weather radar to a non-meteorologist inside SpotterCast.
       Location: \(context.locationName). Product: \(context.productName). Mode: \(context.modeLabel). Frame: \(context.frameLabel).
       In 3–5 short sentences, describe what the radar likely shows, movement/trends if inferable, and practical impacts.
       No markdown. If uncertain, say so plainly.

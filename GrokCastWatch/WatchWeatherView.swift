@@ -32,7 +32,7 @@ struct WatchWeatherView: View {
       }
       .padding(.horizontal, 4)
     }
-    .navigationTitle(snapshot?.location.name ?? "GrokCast")
+    .navigationTitle(snapshot?.location.name ?? "SpotterCast")
     .onAppear(perform: reload)
     .refreshable { reload() }
   }

@@ -131,7 +131,7 @@ struct PaywallView: View {
     } label: {
       HStack {
         VStack(alignment: .leading, spacing: 4) {
-          Text(product.displayName)
+          Text(friendlyDisplayName(for: product))
             .font(.headline)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(product.description)
@@ -157,6 +157,16 @@ struct PaywallView: View {
       )
     }
     .buttonStyle(.plain)
+  }
+
+  /// Prefer SpotterCast labels even if App Store Connect still has legacy GrokCast product names.
+  private func friendlyDisplayName(for product: Product) -> String {
+    switch product.id {
+    case GrokCastProProducts.monthly: return "SpotterCast Pro Monthly"
+    case GrokCastProProducts.yearly: return "SpotterCast Pro Yearly"
+    default:
+      return product.displayName.replacingOccurrences(of: "GrokCast", with: "SpotterCast")
+    }
   }
 
   private var purchaseButtons: some View {
