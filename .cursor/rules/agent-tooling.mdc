@@ -1,0 +1,14 @@
+---
+description: Build, run, screenshot, and App Store upload tooling for SpotterCast
+alwaysApply: true
+---
+
+# Agent tooling
+
+Read `docs/Agent-Tooling-Handoff.md` before building, running the app, taking screenshots, or uploading to App Store Connect. Key facts:
+
+- **Never build from `~/Desktop/GrokCast`** (iCloud — xcodebuild hangs). Build/run/archive from `~/Documents/GrokCast`; edit and commit on Desktop, sync via git.
+- **XcodeBuildMCP** is configured in `~/.cursor/mcp.json` — use it to build_run_sim, screenshot, snapshot_ui, and tap/swipe the app on the simulator. Refresh snapshot refs after every navigation; on iPad tap the LAST of the duplicated tab refs.
+- **Screenshots for the App Store**: capture with `xcrun simctl io <udid> screenshot` (full-res), status bar overridden to 9:41; upload with `LC_ALL=en_US.UTF-8 fastlane deliver` from the Desktop repo root. The screenshots folder must contain BOTH iPhone and iPad sets.
+- **Build number** lives in `project.yml` (`CURRENT_PROJECT_VERSION`), not agvtool.
+- Secrets: `GrokCast/Config/DeveloperAPIKey.swift` and `fastlane/asc_api_key.json` are gitignored — never commit, never print their contents.
