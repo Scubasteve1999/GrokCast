@@ -20,11 +20,9 @@ struct GrokBriefCard: View {
     GrokBriefCache.key(for: store) ?? "grok_brief_none"
   }
 
-  /// Re-run load/fetch when live weather diverges from what the brief was written against.
+  /// Re-run load/fetch only when cache validity would change (same rules as GrokBriefCache).
   private var weatherTaskID: String {
-    guard let weather = store.currentWeather else { return cacheKey }
-    let bucket = Int((weather.currentTemp / 2).rounded() * 2)
-    return "\(cacheKey)_\(bucket)_\(weather.conditionCode)"
+    "\(cacheKey)_\(GrokBriefCache.refreshToken(for: store))"
   }
 
   var body: some View {

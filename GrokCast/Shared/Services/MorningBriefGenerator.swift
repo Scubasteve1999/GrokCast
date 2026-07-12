@@ -3,7 +3,7 @@ import Foundation
 /// Shared UserDefaults cache for Grok's Take / morning brief so Today + notifications stay aligned.
 @MainActor
 enum GrokBriefCache {
-  /// Discard cached copy when live temp diverges this much from the temp at write time.
+  /// Coarse temp banding for cache identity (same token → same brief still valid).
   static let tempMismatchThreshold: Double = 8
 
   static func key(for store: WeatherStore) -> String? {
@@ -12,31 +12,37 @@ enum GrokBriefCache {
     return "grok_brief_\(loc.id.uuidString)_\(Int(day))"
   }
 
-  private static func tempKey(for cacheKey: String) -> String {
-    cacheKey + "_temp"
+  /// Identity token shared by `.task(id:)` and cache validation — only changes when
+  /// the brief should be regenerated (condition change or ~8° temp band change).
+  static func refreshToken(for store: WeatherStore) -> String {
+    guard let weather = store.currentWeather else { return "pending" }
+    let tempBucket = Int((weather.currentTemp / tempMismatchThreshold).rounded())
+    return "\(tempBucket)_\(weather.conditionCode)"
   }
 
-  /// Returns cached brief only if it still matches today's live weather within threshold.
+  private static func tokenKey(for cacheKey: String) -> String {
+    cacheKey + "_wx"
+  }
+
+  /// Returns cached brief only if live weather still matches the token stored at save time.
   static func loadValidBrief(for store: WeatherStore) -> String? {
     guard let key = key(for: store),
       let text = UserDefaults.standard.string(forKey: key)
     else { return nil }
 
-    if let cachedTemp = UserDefaults.standard.object(forKey: tempKey(for: key)) as? Double,
-      let current = store.currentWeather?.currentTemp,
-      abs(current - cachedTemp) > tempMismatchThreshold
-    {
-      return nil
-    }
+    guard store.currentWeather != nil else { return text }
+
+    let savedToken = UserDefaults.standard.string(forKey: tokenKey(for: key))
+    // Legacy entries without a weather token — force refresh against live conditions.
+    guard let savedToken, savedToken == refreshToken(for: store) else { return nil }
+
     return text
   }
 
   static func save(_ text: String, for store: WeatherStore) {
     guard let key = key(for: store) else { return }
     UserDefaults.standard.set(text, forKey: key)
-    if let temp = store.currentWeather?.currentTemp {
-      UserDefaults.standard.set(temp, forKey: tempKey(for: key))
-    }
+    UserDefaults.standard.set(refreshToken(for: store), forKey: tokenKey(for: key))
   }
 }
 
