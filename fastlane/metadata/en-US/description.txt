@@ -1,0 +1,19 @@
+SpotterCast is a modern, dark-themed weather app that delivers accurate forecasts with the intelligence of xAI's Grok.
+
+See stunning current conditions, an interactive radar map, hourly and 10-day forecasts, and get contextual AI insights about the weather. Ask Grok anything — what to wear, whether it's good for hiking, or if storms are developing.
+
+
+Features:
+• Beautiful hero view with live conditions
+• Detailed hourly and 10-day forecast
+• Interactive radar with animation and overlays
+• Severe weather alerts from the National Weather Service
+• AI chat powered by Grok for weather analysis and advice
+• Storm Spotter photo analysis for developing weather
+• Home screen and Lock Screen widgets
+• Location support and background alerts
+• Clean, professional dark design
+
+Built for people who want more than just basic weather data.
+
+Terms of Use: https://scubasteve1999.github.io/SpotterCast/terms

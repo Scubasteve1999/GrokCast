@@ -1,0 +1,5 @@
+• Fresh SpotterCast branding throughout the app
+• All-new App Store screenshots
+• Hourly forecast now shows correct day and night icons
+• Faster, more reliable background alert delivery
+• Bug fixes and stability improvements

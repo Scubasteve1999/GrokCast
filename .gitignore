@@ -170,3 +170,5 @@ logs/
 # App Store Connect API key (never commit)
 fastlane/AuthKey_*.p8
 fastlane/asc_api_key.json
+fastlane/metadata/review_information/
+fastlane/Preview.html
