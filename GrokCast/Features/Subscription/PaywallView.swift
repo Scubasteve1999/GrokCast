@@ -64,7 +64,7 @@ struct PaywallView: View {
 
   private var featureList: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      paywallRow("AI morning briefing", "sunrise.fill", "Daily notification with personalized forecast")
+      paywallRow("Widget AI brief", "rectangle.3.group.fill", "One-liner insights on Home Screen widgets")
       paywallRow("Forecast radar (FUTURE)", "cloud.rain.fill", "Animated precipitation outlook")
       paywallRow("Live Activity & rich widgets", "lock.rectangle.stack.fill", "Score + Minutecast on Lock Screen")
       paywallRow("Unlimited saved locations", "mappin.and.ellipse", "Track every place you care about")

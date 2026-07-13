@@ -227,13 +227,12 @@ final class GrokAIViewModel {
     return was
   }
 
-  /// Missing-key UX: never red-banner + tab-switch (App Review 2.1). Empty state on AI tab is enough.
+  /// Missing-key UX: open Pro paywall when that unlocks AI; otherwise leave empty-state CTA visible (actions are disabled in the UI).
   private func handleMissingDeveloperKey() {
     errorMessage = nil
     if PaywallCoordinator.shared.canUnlockGrokViaPro {
       PaywallCoordinator.shared.present(.grokAI)
     }
-    // Otherwise GrokAPIKeyEmptyStateView on the AI tab guides the reviewer to Settings.
   }
 
   func userFriendlyStormError(for error: Error) -> String {
@@ -249,17 +248,23 @@ final class GrokAIViewModel {
         if let urlError = underlying as? URLError, urlError.code == .timedOut {
           return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
         }
-        return apiError.errorDescription ?? error.localizedDescription
+        return apiError.errorDescription ?? "Network error. Please try again."
       case .apiError(let statusCode, let message) where statusCode == 400 || statusCode == 422:
         let lower = message.lowercased()
+        if lower.contains("incorrect api key") || lower.contains("invalid api key")
+          || lower.contains("unauthorized")
+        {
+          return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
+        }
         if lower.contains("image") || lower.contains("vision") || lower.contains("format")
           || lower.contains("base64")
         {
           return "That photo couldn't be analyzed. Try a clearer sky image (JPEG/PNG)."
         }
-        return "Storm analysis request was rejected. \(message)"
+        // Never append raw API bodies (can be JSON) — App Review / user-facing.
+        return "Storm analysis couldn’t be completed. Try another photo or try again later."
       default:
-        return apiError.errorDescription ?? error.localizedDescription
+        return apiError.errorDescription ?? "Storm analysis failed. Please try again."
       }
     }
 
@@ -267,7 +272,11 @@ final class GrokAIViewModel {
       return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
     }
 
-    return error.localizedDescription
+    if let buildError = error as? GrokBuildError {
+      return buildError.errorDescription ?? "Storm analysis failed. Please try again."
+    }
+
+    return "Storm analysis failed. Please try again."
   }
 
   private func refreshStormWeatherContext() async {

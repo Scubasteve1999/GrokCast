@@ -12,12 +12,12 @@ struct GrokAPIKeyEmptyStateView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label("SpotterCast Pro", systemImage: "sparkles")
+      Label("AI features", systemImage: "sparkles")
         .font(.headline)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(
-        "Weather, live radar, and alerts are free. AI chat needs an xAI developer key in Settings. Pro unlocks forecast radar, Live Activity, and unlimited locations."
+        "Weather, live radar, and alerts are free. AI chat needs an xAI developer key in Settings. SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations."
       )
       .font(.subheadline)
       .foregroundStyle(DesignTokens.Palette.textSecondary)

@@ -60,11 +60,11 @@ struct AlertsGrokSummaryCard: View {
             .font(.caption.weight(.semibold))
         }
       } else if !store.xaiService.hasValidKey {
-        Text(figmaPlaceholder)
+        Text("Add an xAI key in Settings for AI alert summaries.")
           .font(DesignTokens.Figma.Typography.body)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {
-        Text(figmaPlaceholder)
+        Text(figmaReadyPrompt)
           .font(DesignTokens.Figma.Typography.body)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .onTapGesture {
@@ -81,11 +81,11 @@ struct AlertsGrokSummaryCard: View {
     )
   }
 
-  private var figmaPlaceholder: String {
+  private var figmaReadyPrompt: String {
     let location = store.currentLocation?.name ?? "your area"
     let count = alerts.count
     let noun = count == 1 ? "alert" : "alerts"
-    return "AI analyzed \(count) active \(noun) for \(location)."
+    return "Tap to summarize \(count) active \(noun) for \(location)."
   }
 
   private var standardBody: some View {

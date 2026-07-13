@@ -287,7 +287,7 @@ private struct GrokAIViewContent: View {
           }
           .buttonStyle(.bordered)
           .tint(DesignTokens.Palette.danger)
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
         }
         .padding(DesignTokens.Spacing.space16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -310,8 +310,14 @@ private struct GrokAIViewContent: View {
     }
   }
 
+  private var aiActionsDisabled: Bool {
+    !weatherStore.xaiService.hasValidKey
+      || weatherStore.grokAIViewModel.isStreaming
+      || weatherStore.grokAIViewModel.isGeneratingImage
+  }
+
   private func figmaPromptGrid(viewModel: GrokAIViewModel) -> some View {
-    let disabled = viewModel.isStreaming || viewModel.isGeneratingImage
+    let disabled = aiActionsDisabled
     let columns = [
       GridItem(.flexible(), spacing: DesignTokens.Spacing.space12),
       GridItem(.flexible(), spacing: DesignTokens.Spacing.space12),
@@ -383,32 +389,32 @@ private struct GrokAIViewContent: View {
               viewModel: viewModel
             )
           }
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
           GrokQuickPromptButton(title: "Good for hiking?") {
             askQuickPrompt(
               "Is today a good day for hiking or outdoor activities?",
               viewModel: viewModel
             )
           }
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
           GrokQuickPromptButton(title: "Summarize the week") {
             askQuickPrompt(
               "Give me a short summary of the weather for the next few days.",
               viewModel: viewModel
             )
           }
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
           GrokQuickPromptButton(title: "Any weather risks?") {
             askQuickPrompt(
               "Are there any weather risks or severe conditions I should know about?",
               viewModel: viewModel
             )
           }
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
           GrokQuickPromptButton(title: "Imagine the scene") {
             Task { await viewModel.generateWeatherImage() }
           }
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
           GrokStormSpotterButton {
             Task {
               guard weatherStore.xaiService.hasValidKey else {
@@ -432,7 +438,7 @@ private struct GrokAIViewContent: View {
               showPhotoPicker = true
             }
           }
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(aiActionsDisabled)
         }
       }
     }
@@ -451,7 +457,7 @@ private struct GrokAIViewContent: View {
           question = ""
         }
       }
-      .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+      .disabled(aiActionsDisabled)
     } else {
       HStack(spacing: 12) {
         GrokInputBar(text: $question, isFocused: $isInputFocused) {
@@ -471,10 +477,10 @@ private struct GrokAIViewContent: View {
             .font(.title3)
             .foregroundStyle(.white.opacity(0.85))
         }
-        .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+        .disabled(aiActionsDisabled)
         .help("Generate image from weather + prompt")
       }
-      .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+      .disabled(aiActionsDisabled)
     }
   }
 
