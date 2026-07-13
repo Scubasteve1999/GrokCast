@@ -91,10 +91,10 @@ struct SettingsView: View {
               .foregroundStyle(.red)
           }
         } header: {
-          Text("GROKCAST PRO")
+          Text("SPOTTERCAST PRO")
         } footer: {
           Text(
-            "Pro unlocks forecast radar, Live Activity, and unlimited locations. Grok chat uses an xAI developer key in Settings."
+            "Pro unlocks forecast radar, Live Activity, and unlimited locations. AI chat uses an xAI developer key in Settings."
           )
         }
 
@@ -133,7 +133,7 @@ struct SettingsView: View {
                   } else {
                     Text("No developer key configured")
                       .foregroundStyle(.secondary)
-                    Text("Required for all Grok AI features (chat, vision, image generation)")
+                    Text("Required for all AI features (chat, vision, image generation)")
                       .font(.caption)
                       .foregroundStyle(.orange)
                   }
@@ -225,7 +225,7 @@ struct SettingsView: View {
           }
           .padding(.vertical, 4)
         } header: {
-          Text("GROK API — DEVELOPER KEY")
+          Text("AI API — DEVELOPER KEY")
         } footer: {
           Text(
             "Keys are stored exclusively in the iOS Keychain with the highest protection level. Never transmitted except to api.x.ai."
@@ -309,7 +309,7 @@ struct SettingsView: View {
           }
 
           Toggle(
-            "Morning Grok Brief",
+            "Morning AI Brief",
             isOn: Binding(
               get: { store.morningBriefEnabled },
               set: { store.morningBriefEnabled = $0 }
@@ -341,7 +341,7 @@ struct SettingsView: View {
           Text("DISPLAY & NOTIFICATIONS")
         } footer: {
           Text(
-            "Live Activity shows your SpotterCast Score and Minutecast on the Lock Screen. Morning brief uses your cached Grok take when scheduled."
+            "Live Activity shows your SpotterCast Score and Minutecast on the Lock Screen. Morning brief uses your cached AI take when scheduled."
           )
         }
 
@@ -399,6 +399,9 @@ struct SettingsView: View {
           Link(destination: AppLinks.privacyPolicy) {
             Label("Privacy Policy", systemImage: "hand.raised")
           }
+          Link(destination: AppLinks.termsOfUse) {
+            Label("Terms of Use", systemImage: "doc.text")
+          }
           Link(destination: AppLinks.support) {
             Label("Support", systemImage: "questionmark.circle")
           }
@@ -433,7 +436,7 @@ struct SettingsView: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Settings")
 
-        FigmaSectionLabel(title: "GROKCAST PRO")
+        FigmaSectionLabel(title: "SPOTTERCAST PRO")
         figmaProCard
 
         FigmaSectionLabel(title: "NOTIFICATIONS")

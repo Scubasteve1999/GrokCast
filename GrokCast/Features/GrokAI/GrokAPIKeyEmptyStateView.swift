@@ -17,7 +17,7 @@ struct GrokAPIKeyEmptyStateView: View {
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(
-        "Weather, live radar, and alerts are free. Grok chat needs an xAI developer key in Settings. Pro unlocks forecast radar, Live Activity, and unlimited locations."
+        "Weather, live radar, and alerts are free. AI chat needs an xAI developer key in Settings. Pro unlocks forecast radar, Live Activity, and unlimited locations."
       )
       .font(.subheadline)
       .foregroundStyle(DesignTokens.Palette.textSecondary)

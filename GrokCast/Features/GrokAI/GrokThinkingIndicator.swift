@@ -18,7 +18,7 @@ struct GrokThinkingIndicator: View {
         .tint(.white.opacity(0.7))
         .scaleEffect(0.8)
 
-      Text("Grok is thinking...")
+      Text("Thinking...")
         .font(.subheadline)
         .foregroundStyle(.white.opacity(0.7))
     }

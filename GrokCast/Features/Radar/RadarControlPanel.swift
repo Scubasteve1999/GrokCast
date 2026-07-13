@@ -136,7 +136,7 @@ struct RadarControlPanel: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.radarAccent)
       }
-      .accessibilityLabel("Explain radar with Grok")
+      .accessibilityLabel("Explain radar with AI")
     }
   }
 

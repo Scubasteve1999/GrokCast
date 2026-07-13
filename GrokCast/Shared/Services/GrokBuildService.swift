@@ -227,13 +227,26 @@ enum GrokBuildError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "Add an xAI developer key in Settings to use Grok."
+      return "Add an xAI developer key in Settings to use AI features."
     case .invalidResponse(let code):
       if let c = code {
-        return "Invalid response from Grok (HTTP \(c)). Check your API key and model access."
+        return "Invalid response from AI service (HTTP \(c)). Check your API key and try again."
       }
-      return "Invalid response from Grok"
-    case .apiError(let code, let msg): return "API Error (\(code)): \(msg)"
+      return "Invalid response from AI service"
+    case .apiError(let code, let msg):
+      let lower = msg.lowercased()
+      if lower.contains("incorrect api key") || lower.contains("invalid api key")
+        || code == 401 || code == 403
+      {
+        return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
+      }
+      if code == 429 {
+        return "Too many requests. Please wait and try again."
+      }
+      if (500...599).contains(code) {
+        return "AI service temporarily unavailable. Please try again later."
+      }
+      return "AI request couldn’t be completed. Please try again."
     }
   }
 }

@@ -64,7 +64,6 @@ struct PaywallView: View {
 
   private var featureList: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      paywallRow("Grok AI without an API key", "sparkles", "Chat, briefs, Storm Spotter, Imagine")
       paywallRow("AI morning briefing", "sunrise.fill", "Daily notification with personalized forecast")
       paywallRow("Forecast radar (FUTURE)", "cloud.rain.fill", "Animated precipitation outlook")
       paywallRow("Live Activity & rich widgets", "lock.rectangle.stack.fill", "Score + Minutecast on Lock Screen")
@@ -219,10 +218,11 @@ struct PaywallView: View {
         .multilineTextAlignment(.center)
 
       HStack(spacing: 16) {
-        Link("Privacy", destination: AppLinks.privacyPolicy)
-        Link("Terms", destination: AppLinks.termsOfUse)
+        Link("Privacy Policy", destination: AppLinks.privacyPolicy)
+        Link("Terms of Use (EULA)", destination: AppLinks.termsOfUse)
       }
       .font(.caption2)
+      .underline()
     }
     .frame(maxWidth: .infinity)
   }
@@ -250,7 +250,7 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations. Grok chat currently needs an xAI developer key in Settings."
+      "SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations. AI chat needs an xAI developer key in Settings."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:

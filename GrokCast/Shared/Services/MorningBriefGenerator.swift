@@ -76,7 +76,7 @@ enum MorningBriefGenerator {
       let config = GrokBuildConfiguration(auth: auth)
       let messages = [
         GrokBuildMessage(role: "system", content: system),
-        GrokBuildMessage(role: "user", content: "Give me Grok's take on today's weather."),
+        GrokBuildMessage(role: "user", content: "Give me today's weather take."),
       ]
 
       var result = ""

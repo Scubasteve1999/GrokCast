@@ -36,7 +36,7 @@ struct GrokInputBar: View {
 
   private var figmaBar: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      TextField("Ask Grok about the weather…", text: $text, axis: .vertical)
+      TextField("Ask about the weather…", text: $text, axis: .vertical)
         .textFieldStyle(.plain)
         .font(.system(size: 15))
         .foregroundStyle(DesignTokens.Palette.textPrimary)

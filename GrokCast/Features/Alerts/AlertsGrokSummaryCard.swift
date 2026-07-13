@@ -42,7 +42,7 @@ struct AlertsGrokSummaryCard: View {
       if isLoading {
         HStack(spacing: 8) {
           ProgressView().scaleEffect(0.75)
-          Text("Grok is summarizing alerts…")
+          Text("Summarizing alerts…")
             .font(DesignTokens.Figma.Typography.rowSubtitle)
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
@@ -85,7 +85,7 @@ struct AlertsGrokSummaryCard: View {
     let location = store.currentLocation?.name ?? "your area"
     let count = alerts.count
     let noun = count == 1 ? "alert" : "alerts"
-    return "Grok analyzed \(count) active \(noun) for \(location)."
+    return "AI analyzed \(count) active \(noun) for \(location)."
   }
 
   private var standardBody: some View {
@@ -127,7 +127,7 @@ struct AlertsGrokSummaryCard: View {
             .font(.caption.weight(.semibold))
         }
       } else if !store.xaiService.hasValidKey {
-        Text("Add an xAI key in Settings for Grok alert summaries.")
+        Text("Add an xAI key in Settings for AI alert summaries.")
           .font(.caption)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {

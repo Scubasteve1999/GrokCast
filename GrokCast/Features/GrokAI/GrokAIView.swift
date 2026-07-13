@@ -42,6 +42,12 @@ private struct GrokAIViewContent: View {
             ScrollView {
               VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
                 headerSection
+                if !weatherStore.xaiService.hasValidKey {
+                  GrokAPIKeyEmptyStateView(
+                    store: weatherStore,
+                    subscription: SubscriptionManager.shared
+                  )
+                }
                 quickPromptsSection(viewModel: viewModel)
                 figmaStormSpotterCard(viewModel: viewModel)
 
@@ -259,7 +265,7 @@ private struct GrokAIViewContent: View {
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
           } else {
-            Text("Upload a storm photo for Grok to assess rotation, wall clouds, and hail risk.")
+            Text("Upload a storm photo for AI to assess rotation, wall clouds, and hail risk.")
               .font(.system(size: 15))
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
@@ -270,8 +276,6 @@ private struct GrokAIViewContent: View {
               guard weatherStore.xaiService.hasValidKey else {
                 if PaywallCoordinator.shared.canUnlockGrokViaPro {
                   PaywallCoordinator.shared.present(.grokAI)
-                } else {
-                  weatherStore.selectedTab = .settings
                 }
                 return
               }
@@ -410,8 +414,6 @@ private struct GrokAIViewContent: View {
               guard weatherStore.xaiService.hasValidKey else {
                 if PaywallCoordinator.shared.canUnlockGrokViaPro {
                   PaywallCoordinator.shared.present(.grokAI)
-                } else {
-                  weatherStore.selectedTab = .settings
                 }
                 return
               }

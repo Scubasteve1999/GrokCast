@@ -1,1 +1,1 @@
-weather,forecast,radar,ai,grok,alerts,storm,precipitation,local,insights
+weather,forecast,radar,ai,alerts,storm,precipitation,local,insights,nws

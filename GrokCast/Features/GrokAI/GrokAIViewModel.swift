@@ -60,14 +60,9 @@ final class GrokAIViewModel {
     // Prevent overlapping generations from rapid taps
     guard !isStreaming && !isGeneratingImage else { return }
 
-    // Early key guard (prevents append + silent fail; GrokBuild falls back to xai key)
+    // Early key guard — stay on AI tab with a clear CTA (no error banner / tab bounce).
     if !grokAIService.hasValidKey {
-      if PaywallCoordinator.shared.canUnlockGrokViaPro {
-        PaywallCoordinator.shared.present(.grokAI)
-      } else {
-        errorMessage = "Add an xAI developer key in Settings to use Grok."
-        weatherStore.selectedTab = .settings
-      }
+      handleMissingDeveloperKey()
       return
     }
 
@@ -131,7 +126,7 @@ final class GrokAIViewModel {
         self.conversationHistory = self.trimHistory(self.conversationHistory)
         self.persistCurrentHistory()
       } else if !Task.isCancelled && self.generationWasCancelled == false {
-        self.errorMessage = "Grok returned an empty response. Check your connection and try again."
+        self.errorMessage = "AI returned an empty response. Check your connection and try again."
       }
       self.generationTask = nil
     }
@@ -158,12 +153,7 @@ final class GrokAIViewModel {
     }
 
     guard weatherStore.xaiService.hasValidKey else {
-      if PaywallCoordinator.shared.canUnlockGrokViaPro {
-        PaywallCoordinator.shared.present(.grokAI)
-      } else {
-        errorMessage = "Add an xAI developer key in Settings to use Grok."
-        weatherStore.selectedTab = .settings
-      }
+      handleMissingDeveloperKey()
       isStreaming = false
       stormAnalysisMode = false
       return
@@ -237,6 +227,15 @@ final class GrokAIViewModel {
     return was
   }
 
+  /// Missing-key UX: never red-banner + tab-switch (App Review 2.1). Empty state on AI tab is enough.
+  private func handleMissingDeveloperKey() {
+    errorMessage = nil
+    if PaywallCoordinator.shared.canUnlockGrokViaPro {
+      PaywallCoordinator.shared.present(.grokAI)
+    }
+    // Otherwise GrokAPIKeyEmptyStateView on the AI tab guides the reviewer to Settings.
+  }
+
   func userFriendlyStormError(for error: Error) -> String {
     if weatherStore.isOffline {
       return "No internet connection. Check your Wi-Fi or cellular and try again."
@@ -245,7 +244,7 @@ final class GrokAIViewModel {
     if let apiError = error as? GrokAPIError {
       switch apiError {
       case .missingAPIKey:
-        return "Add an xAI developer key in Settings to use Grok."
+        return "Add an xAI developer key in Settings to use AI features."
       case .networkError(let underlying):
         if let urlError = underlying as? URLError, urlError.code == .timedOut {
           return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
@@ -411,12 +410,7 @@ final class GrokAIViewModel {
     guard !isStreaming && !isGeneratingImage else { return }
 
     guard weatherStore.xaiService.hasValidKey else {
-      if PaywallCoordinator.shared.canUnlockGrokViaPro {
-        PaywallCoordinator.shared.present(.grokAI)
-      } else {
-        errorMessage = "Add an xAI developer key in Settings to use Grok."
-        weatherStore.selectedTab = .settings
-      }
+      handleMissingDeveloperKey()
       return
     }
 
@@ -506,9 +500,9 @@ final class GrokAIViewModel {
 
     var errorDescription: String? {
       switch self {
-      case .busy: "Grok is busy with another request. Try again in a moment."
+      case .busy: "AI is busy with another request. Try again in a moment."
       case .missingWeather: "Weather data isn't loaded yet. Pull to refresh and try again."
-      case .emptyResponse: "Grok returned an empty response. Check your connection and try again."
+      case .emptyResponse: "AI returned an empty response. Check your connection and try again."
       }
     }
   }
@@ -534,7 +528,7 @@ final class GrokAIViewModel {
     return try await completeChat(
       messages: [
         GrokBuildMessage(role: "system", content: system),
-        GrokBuildMessage(role: "user", content: "Give me Grok's take on today's weather."),
+        GrokBuildMessage(role: "user", content: "Give me today's weather take."),
       ],
       maxTokens: 280
     )

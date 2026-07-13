@@ -28,7 +28,7 @@ struct ExplainRadarSheet: View {
           } else if isLoading {
             HStack(spacing: 10) {
               ProgressView()
-              Text("Grok is reading the radar…")
+              Text("Reading the radar…")
                 .font(.subheadline)
                 .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
@@ -74,7 +74,7 @@ struct ExplainRadarSheet: View {
 
   private var contextCard: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Label("Grok Radar Brief", systemImage: "sparkles")
+      Label("Radar Brief", systemImage: "sparkles")
         .font(.caption.weight(.heavy))
         .foregroundStyle(DesignTokens.Palette.accent)
       Text("\(context.locationName) · \(context.productName)")

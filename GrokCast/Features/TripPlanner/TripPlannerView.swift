@@ -190,7 +190,7 @@ struct TripPlannerView: View {
 
   private func grokAdviceSection(_ advice: String) -> some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Label("GROK'S TAKE", systemImage: "sparkles")
+      Label("TODAY'S TAKE", systemImage: "sparkles")
         .font(.caption.weight(.bold))
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.accent)

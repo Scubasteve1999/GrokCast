@@ -115,7 +115,7 @@ enum GrokAPIError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "Add an xAI developer key in Settings to use Grok."
+      return "Add an xAI developer key in Settings to use AI features."
     case .invalidKeyFormat:
       return "Invalid xAI API key format. Keys must start with 'xai-'."
     case .invalidMode(let message):
@@ -133,17 +133,24 @@ enum GrokAPIError: Error, LocalizedError {
       }
       return "Network error: \(error.localizedDescription)"
     case .apiError(let statusCode, let message):
+      let lower = message.lowercased()
+      if lower.contains("incorrect api key") || lower.contains("invalid api key")
+        || lower.contains("unauthorized")
+      {
+        return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
+      }
       switch statusCode {
       case 401, 403:
-        return "Invalid or unauthorized xAI API key. Verify it in Settings."
+        return "AI key isn’t authorized. Verify it in Settings."
       case 429:
         return "Too many requests. Please wait and try again."
       case 400, 422:
-        return "Request rejected by xAI API. \(message)"
+        // Never surface raw JSON bodies to users / App Review.
+        return "AI request couldn’t be completed. Check your key in Settings, then try again."
       case 500...599:
-        return "xAI service temporarily unavailable. Please try again later."
+        return "AI service temporarily unavailable. Please try again later."
       default:
-        return message.isEmpty ? "xAI API error (\(statusCode))." : message
+        return "AI service error. Please try again."
       }
     case .decodingError:
       return "Received an unexpected response from xAI. Please try again."

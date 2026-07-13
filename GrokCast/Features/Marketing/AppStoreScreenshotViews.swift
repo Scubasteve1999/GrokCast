@@ -39,7 +39,7 @@ struct AppStoreScreenshotToday: View {
         )
 
         VStack(alignment: .leading, spacing: 8) {
-          Label("GROK'S TAKE", systemImage: "sparkles")
+          Label("TODAY'S TAKE", systemImage: "sparkles")
             .font(.caption.weight(.heavy))
             .foregroundStyle(DesignTokens.Palette.accent)
           Text("Clear morning, comfortable afternoon — sunscreen after lunch if you're outside long.")
@@ -164,7 +164,7 @@ struct AppStoreScreenshotWidgets: View {
           Label("HOME SCREEN", systemImage: "square.grid.2x2")
             .font(.caption.weight(.heavy))
             .foregroundStyle(DesignTokens.Palette.accent)
-          Text("Small, Medium, and Large widgets with live temperature, daily forecast, and Grok AI insights.")
+          Text("Small, Medium, and Large widgets with live temperature, daily forecast, and AI insights.")
             .font(.body)
         }
         .padding(16)

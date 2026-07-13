@@ -120,7 +120,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     )
     let askGrok = UNNotificationAction(
       identifier: "OPEN_GROK",
-      title: "Ask Grok",
+      title: "Ask AI",
       options: [.foreground]
     )
     let morningBrief = UNNotificationCategory(

@@ -28,7 +28,7 @@ struct GrokBriefCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       HStack {
-        Label("GROK'S TAKE", systemImage: "sparkles")
+        Label("TODAY'S TAKE", systemImage: "sparkles")
           .font(.caption.weight(.heavy))
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.accent)
@@ -145,7 +145,7 @@ struct GrokBriefCard: View {
       Button {
         store.selectedTab = .grok
       } label: {
-        Text("Ask Grok")
+        Text("Ask AI")
           .font(.caption.weight(.semibold))
       }
       .buttonStyle(.bordered)
@@ -169,7 +169,7 @@ struct GrokBriefCard: View {
   @MainActor
   private func fetchBrief(force: Bool) async {
     guard store.xaiService.hasValidKey else {
-      errorMessage = "Add your xAI developer key in Settings to unlock Grok's take."
+      errorMessage = "Add your xAI developer key in Settings to unlock Today's Take."
       return
     }
     if !force, briefText != nil { return }
