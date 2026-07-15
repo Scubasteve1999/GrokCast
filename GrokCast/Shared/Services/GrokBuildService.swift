@@ -170,11 +170,11 @@ enum GrokBuildError: Error, LocalizedError {
     case .missingAPIKey:
       return
         "API key is missing. The AI tab uses your saved developer key. Add it in Settings → Developer Key if you haven't already."
-      case .invalidResponse(let code):
-        if let c = code {
-          return "Invalid response from AI service (HTTP \(c)). Check your API key and model access."
-        }
-        return "Invalid response from AI service"
+    case .invalidResponse(let code):
+      if let c = code {
+        return "Invalid response from AI service (HTTP \(c)). Check your API key and model access."
+      }
+      return "Invalid response from AI service"
     case .apiError(let code, let msg): return "API Error (\(code)): \(msg)"
     }
   }

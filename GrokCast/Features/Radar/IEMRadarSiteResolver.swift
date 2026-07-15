@@ -27,7 +27,7 @@ enum IEMRadarSiteResolver {
   /// Fetches and caches the IEM radar list (non-fatal; retains prior cache on failure).
   static func preloadRadarList() async {
     var request = URLRequest(url: listURL)
-    request.setValue("SpotterCast/1.0 (https://grokcast.app)", forHTTPHeaderField: "User-Agent")
+    request.setValue("SpotterCast/1.0 (https://scubasteve1999.github.io/GrokCast)", forHTTPHeaderField: "User-Agent")
     request.timeoutInterval = 10
     do {
       let (data, response) = try await URLSession.shared.data(for: request)

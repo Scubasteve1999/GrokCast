@@ -543,7 +543,7 @@ struct RadarView: View {
     Task {
       guard let url = URL(string: "https://api.rainviewer.com/public/weather-maps.json") else { return }
       var req = URLRequest(url: url)
-      req.setValue("SpotterCast/1.0 (https://grokcast.app)", forHTTPHeaderField: "User-Agent")
+      req.setValue("SpotterCast/1.0 (https://scubasteve1999.github.io/GrokCast)", forHTTPHeaderField: "User-Agent")
       req.timeoutInterval = 10
       do {
         let (data, resp) = try await URLSession.shared.data(for: req)

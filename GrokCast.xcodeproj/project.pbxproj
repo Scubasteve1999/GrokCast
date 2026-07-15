@@ -155,7 +155,7 @@
 		47A494C0625A844C39B85530 /* WidgetStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetStyle.swift; sourceTree = "<group>"; };
 		4CCD12831CD2F178E92ECA3C /* WidgetWeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetWeatherSnapshot.swift; sourceTree = "<group>"; };
 		4FD18C6C7DE57CC58D6F2B40 /* WidgetAppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetAppGroup.swift; sourceTree = "<group>"; };
-		506F52BA3C8123228C51BA28 /* GrokCast.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GrokCast.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		506F52BA3C8123228C51BA28 /* GrokCast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GrokCast.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		513424C6130A505D77EFE18A /* WidgetUpdatedFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetUpdatedFooter.swift; sourceTree = "<group>"; };
 		5323CA2EA7F8F936CFA9CDCA /* GrokAIViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAIViewModel.swift; sourceTree = "<group>"; };
 		56BC33FFC50164CC8A620840 /* NWSRadarProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSRadarProduct.swift; sourceTree = "<group>"; };
@@ -168,7 +168,7 @@
 		67E09DFA50831449DC84A134 /* GrokCast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GrokCast.entitlements; sourceTree = "<group>"; };
 		69FA276732808D8CA5209734 /* SmallWeatherWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallWeatherWidgetView.swift; sourceTree = "<group>"; };
 		6A7D4F466700EE60EBBD76C6 /* LocationPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPermissionView.swift; sourceTree = "<group>"; };
-		78F42ACD532DA37925D2D8B3 /* GrokCastWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = GrokCastWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		78F42ACD532DA37925D2D8B3 /* GrokCastWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GrokCastWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A2CEA043A3853D18FA1C03F /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
 		7FFBF7C3C65CC0E02C2DE4E2 /* NWSModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSModels.swift; sourceTree = "<group>"; };
 		879CB5CC2C2110E7438ED949 /* GrokAPIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIConfiguration.swift; sourceTree = "<group>"; };
@@ -196,7 +196,7 @@
 		DC37D051A3F528A7C39B6EA9 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		DF3C18A1E60EDAD941F82F5F /* WeatherBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherBackgroundView.swift; sourceTree = "<group>"; };
 		E43F6CA17AA9855355A8C98D /* Haptic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptic.swift; sourceTree = "<group>"; };
-		E74FF11D8FF30DE0D70917DE /* DeveloperAPIKey.swift.example */ = {isa = PBXFileReference; path = DeveloperAPIKey.swift.example; sourceTree = "<group>"; };
+		E74FF11D8FF30DE0D70917DE /* DeveloperAPIKey.swift.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = DeveloperAPIKey.swift.example; sourceTree = "<group>"; };
 		E7D9D2021EDFB7230D029D91 /* ForecastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastView.swift; sourceTree = "<group>"; };
 		E7EB44F0F240FF3B503925CE /* AlertHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertHistoryStore.swift; sourceTree = "<group>"; };
 		E9131837926EDC22936E09B2 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
@@ -734,8 +734,8 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GrokCastWidgets/GrokCastWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 55;
+				DEVELOPMENT_TEAM = 742YD3WJAR;
 				INFOPLIST_FILE = GrokCastWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -822,8 +822,8 @@
 				CODE_SIGN_ENTITLEMENTS = GrokCast/GrokCast.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 55;
+				DEVELOPMENT_TEAM = 742YD3WJAR;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = GrokCast/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -846,8 +846,8 @@
 				CODE_SIGN_ENTITLEMENTS = GrokCast/GrokCast.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 55;
+				DEVELOPMENT_TEAM = 742YD3WJAR;
 				INFOPLIST_FILE = GrokCast/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -868,8 +868,8 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = GrokCastWidgets/GrokCastWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 48;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 55;
+				DEVELOPMENT_TEAM = 742YD3WJAR;
 				INFOPLIST_FILE = GrokCastWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
