@@ -69,8 +69,10 @@ iOSInjectionProject/
 # xAI / Grok API Keys and configuration files containing secrets
 GrokConfig.swift
 Secrets.swift
-GrokCast/Config/Secrets.swift
-GrokCast/Config/DeveloperAPIKey.swift
+**/Config/Secrets.swift
+**/Config/DeveloperAPIKey.swift
+**/Config/GoogleService-Info.plist
+**/Config/OpenWeatherMapKeys.swift
 *.key
 *.pem
 .env
@@ -84,8 +86,8 @@ GrokCast/Config/DeveloperAPIKey.swift
 # Allow example templates (safe to commit with placeholders)
 !GrokConfig.swift.example
 !Secrets.swift.example
-!GrokCast/Config/Secrets.swift.example
-!GrokCast/Config/DeveloperAPIKey.swift.example
+!**/Config/Secrets.swift.example
+!**/Config/DeveloperAPIKey.swift.example
 !GrokAPIConfiguration.swift.example
 !Shared/Configuration/GrokAPIConfiguration.swift.example
 
