@@ -2,7 +2,7 @@ import Foundation
 
 /// Shared App Group identifier for main app ↔ widget extension data exchange.
 enum WidgetAppGroup {
-  static let identifier = "group.com.grokcast.GrokCast"
+  static let identifier = "group.com.grokcast.SpotterCast"
 
   private static let lock = NSLock()
   private static var cachedDefaults: UserDefaults?
