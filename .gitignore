@@ -83,6 +83,11 @@ GrokCast/Config/Secrets.swift
 GrokCast/Config/DeveloperAPIKey.swift
 GrokCast/Config/OpenWeatherMapKeys.swift
 GrokCast/Config/GoogleService-Info.plist
+# Defense in depth — never commit secrets under a SpotterCast path either
+SpotterCast/Config/DeveloperAPIKey.swift
+SpotterCast/Config/OpenWeatherMapKeys.swift
+SpotterCast/Config/GoogleService-Info.plist
+SpotterCast/Config/
 *.key
 *.pem
 *.p8
