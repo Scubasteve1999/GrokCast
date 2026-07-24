@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		44FF76EF446749EA91E95B72 /* SevereWeatherModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1EC222CE1F4B9082017AF5 /* SevereWeatherModels.swift */; };
+		2EC98C0FFE824B26B976D638 /* SPCSevereService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C851B4C53A0744AFB310813E /* SPCSevereService.swift */; };
+		7F07B7A711CF4A198DDBD31D /* SevereWeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF14D7373654C3DBFAC1A80 /* SevereWeatherStore.swift */; };
+		DAC1FAC0537144E1A12CEEB2 /* SevereProductsSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1664C79FDA9C451C8C4548E3 /* SevereProductsSections.swift */; };
 		00AC6E992D5B3251CE2FC61D /* GrokStormSpotterButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4AAB620197217D747FE6F4 /* GrokStormSpotterButton.swift */; };
 		055F6E3A8207EA8359F2A3CD /* RadarTimelineScrubber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6994536D73EB5255AAF02026 /* RadarTimelineScrubber.swift */; };
 		0575A0154384FCAC624C52E7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A160A4C38A25303E381CF134 /* WidgetKit.framework */; };
@@ -218,6 +222,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2D1EC222CE1F4B9082017AF5 /* SevereWeatherModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevereWeatherModels.swift; sourceTree = "<group>"; };
+		C851B4C53A0744AFB310813E /* SPCSevereService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCSevereService.swift; sourceTree = "<group>"; };
+		BFF14D7373654C3DBFAC1A80 /* SevereWeatherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevereWeatherStore.swift; sourceTree = "<group>"; };
+		1664C79FDA9C451C8C4548E3 /* SevereProductsSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevereProductsSections.swift; sourceTree = "<group>"; };
 		000473706CC11B378865D801 /* StreamingText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingText.swift; sourceTree = "<group>"; };
 		038850BBBE8ECBD3D434FFE9 /* DailyTempRangeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTempRangeBar.swift; sourceTree = "<group>"; };
 		041A24B628CC274AE2034341 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -458,6 +466,8 @@
 		248DC58A89434D654F86DF8B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				C851B4C53A0744AFB310813E /* SPCSevereService.swift */,
+				BFF14D7373654C3DBFAC1A80 /* SevereWeatherStore.swift */,
 				E7EB44F0F240FF3B503925CE /* AlertHistoryStore.swift */,
 				C6891523E82AA1ACFE8D3BD6 /* AlertNotificationService.swift */,
 				66D450AF927C40BCFD71D355 /* BackgroundAlertRefreshService.swift */,
@@ -678,6 +688,7 @@
 		8C96C2DBA6CE44D8F9025E0B /* Alerts */ = {
 			isa = PBXGroup;
 			children = (
+				1664C79FDA9C451C8C4548E3 /* SevereProductsSections.swift */,
 				C1F94CE8DC695347143BB931 /* AlertDetailView.swift */,
 				FE3FE3FE7366628D4E9509D4 /* AlertsGrokSummaryCard.swift */,
 				7A2CEA043A3853D18FA1C03F /* AlertsView.swift */,
@@ -706,6 +717,7 @@
 		93C13152E06A06DA96017181 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				2D1EC222CE1F4B9082017AF5 /* SevereWeatherModels.swift */,
 				77CE066F32F67ACC3EEFA3C6 /* ChatMessageEntity.swift */,
 				89970C4552FF166D5A6810EB /* Location.swift */,
 				7FFBF7C3C65CC0E02C2DE4E2 /* NWSModels.swift */,
@@ -1079,6 +1091,10 @@
 				F7880FF3D6F1A5DDB5667F88 /* MorningBriefNotificationService.swift in Sources */,
 				651A17047946F6C59AEA4A17 /* NWSAlertStyle.swift in Sources */,
 				B3449A1B9E2ED2F008B86AA9 /* NWSModels.swift in Sources */,
+				44FF76EF446749EA91E95B72 /* SevereWeatherModels.swift in Sources */,
+				2EC98C0FFE824B26B976D638 /* SPCSevereService.swift in Sources */,
+				7F07B7A711CF4A198DDBD31D /* SevereWeatherStore.swift in Sources */,
+				DAC1FAC0537144E1A12CEEB2 /* SevereProductsSections.swift in Sources */,
 				A387CC97F993320F68549F33 /* NWSRadarProduct.swift in Sources */,
 				4EA53F71EE8BF2A1E4DB1A62 /* NWSService.swift in Sources */,
 				FF7B37D6871488FB448F482E /* OpenMeteoModels.swift in Sources */,

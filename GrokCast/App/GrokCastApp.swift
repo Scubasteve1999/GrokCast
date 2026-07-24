@@ -13,6 +13,7 @@ struct GrokCastApp: App {
       } else {
         MainTabView()
           .environment(WeatherStore.shared)
+          .environment(SevereWeatherStore.shared)
           .environment(subscriptionManager)
           .paywallSheet()
           .tint(.accentColor)
@@ -21,6 +22,7 @@ struct GrokCastApp: App {
       #else
       MainTabView()
         .environment(WeatherStore.shared)
+        .environment(SevereWeatherStore.shared)
         .environment(subscriptionManager)
         .paywallSheet()
         .tint(.accentColor)

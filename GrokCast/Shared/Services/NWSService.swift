@@ -80,7 +80,8 @@ final class NWSService {
         }
       }
 
-      let rep = feature.geometry?.representativePoint
+      let geom = feature.geometry
+      let rep = geom?.representativePoint
       return NWSAlert(
         id: alertId,
         event: p.event,
@@ -92,7 +93,11 @@ final class NWSService {
         expires: expiresDate,
         areaDesc: p.areaDesc,
         latitude: rep?.latitude,
-        longitude: rep?.longitude
+        longitude: rep?.longitude,
+        // Point alerts API only returns alerts that include the query point.
+        containsSelectedPoint: true,
+        geometryVertexCount: geom?.vertexCount,
+        geometryBBoxSummary: geom?.bboxSummary
       )
     }
   }

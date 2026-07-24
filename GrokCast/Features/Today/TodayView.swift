@@ -257,6 +257,7 @@ struct TodayView: View {
 
 private struct TodayWeatherPanel: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
 
@@ -271,6 +272,14 @@ private struct TodayWeatherPanel: View {
 
   private var currentMinutecast: MinutecastSummary {
     MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
+  }
+
+  private var todaySevereContext: SevereWeatherContext? {
+    guard let locID = store.currentLocation?.id.uuidString,
+      severeStore.context.locationID == locID,
+      severeStore.context.shouldShowTodayCard
+    else { return nil }
+    return severeStore.context
   }
 
   private var awaitsWidthMeasurement: Bool {
@@ -307,6 +316,10 @@ private struct TodayWeatherPanel: View {
 
       MinutecastStrip(summary: currentMinutecast)
 
+      if let severe = todaySevereContext {
+        SevereContextCard(context: severe)
+      }
+
       if !store.displayableActiveAlerts.isEmpty {
         alertsSection
       }
@@ -330,6 +343,10 @@ private struct TodayWeatherPanel: View {
       )
 
       MinutecastStrip(summary: currentMinutecast)
+
+      if let severe = todaySevereContext {
+        SevereContextCard(context: severe)
+      }
 
       GrokBriefCard()
 

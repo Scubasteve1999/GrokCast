@@ -103,4 +103,5 @@ struct MainTabView: View {
 #Preview {
   MainTabView()
     .environment(WeatherStore.shared)
+    .environment(SevereWeatherStore.shared)
 }

@@ -61,13 +61,20 @@ enum MorningBriefGenerator {
     let unit = weatherStore.temperatureUnit
     let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
       .joined(separator: ", ")
+    let severe = SevereWeatherStore.shared.context
+    let severeBlock: String = {
+      guard severe.locationID == weatherStore.currentLocation?.id.uuidString,
+        let block = GrokPrompts.severeContextBlock(context: severe)
+      else { return "" }
+      return "\n\(block)"
+    }()
 
     let system = """
       You are a helpful weather assistant inside SpotterCast. Write a practical 2–4 sentence weather brief for \(location).
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
-      Active alerts: \(alerts.isEmpty ? "none" : alerts).
+      Active alerts: \(alerts.isEmpty ? "none" : alerts).\(severeBlock)
       Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
       """
 

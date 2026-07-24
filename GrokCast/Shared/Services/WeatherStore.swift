@@ -1001,12 +1001,16 @@ final class WeatherStore {
         for: alerts,
         enabled: alertNotificationsEnabled
       )
+      // Severe products live in SevereWeatherStore; WeatherStore only triggers refresh.
+      Task { await SevereWeatherStore.shared.refresh(for: loc, force: force) }
     } catch is CancellationError {
       // foreground-alerts fetch cancelled (log removed)
     } catch {
       // Non-fatal: retain last-known active alerts so offline UI stays accurate.
       // Only a successful fetch with an empty list authoritatively clears activeAlerts.
       lastAlertsFetchSucceeded = false
+      // Still attempt SPC refresh — MapServer is independent of CAP alerts.
+      Task { await SevereWeatherStore.shared.refresh(for: loc, force: force) }
       // foreground-alerts fetch failed (log removed for release)
     }
   }

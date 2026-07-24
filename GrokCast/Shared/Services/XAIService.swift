@@ -76,11 +76,13 @@ final class XAIService {
 
   func performAdvancedStormAnalysis(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]? = nil,
+    severeContext: SevereWeatherContext? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) async throws -> String {
     let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
     let body = try buildStormAnalysisBody(
       imageData: imageData, weather: weather, alerts: alerts,
+      severeContext: severeContext,
       nearestStationObservation: nearestStationObservation, userNotes: userNotes, stream: false)
     return try await performChatRequest(body: body, auth: auth)
   }
@@ -88,6 +90,7 @@ final class XAIService {
   /// Streaming variant of storm photo analysis (grok-4.3 vision + SSE tokens).
   func streamAdvancedStormAnalysis(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]? = nil,
+    severeContext: SevereWeatherContext? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) -> AsyncThrowingStream<String, Error> {
     AsyncThrowingStream { continuation in
@@ -96,6 +99,7 @@ final class XAIService {
           let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
           let body = try buildStormAnalysisBody(
             imageData: imageData, weather: weather, alerts: alerts,
+            severeContext: severeContext,
             nearestStationObservation: nearestStationObservation, userNotes: userNotes,
             stream: true)
 
@@ -169,6 +173,7 @@ final class XAIService {
 
   private func buildStormAnalysisBody(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]?,
+    severeContext: SevereWeatherContext? = nil,
     nearestStationObservation: NWSObservation?, userNotes: String?, stream: Bool
   ) throws -> [String: Any] {
     var systemContent = GrokPrompts.stormSpotterSystemPrompt
@@ -176,7 +181,10 @@ final class XAIService {
       systemContent +=
         "\n\n"
         + GrokPrompts.buildTechnicalStormContext(
-          for: weather, alerts: alerts ?? [], nearestStationObservation: nearestStationObservation,
+          for: weather,
+          alerts: alerts ?? [],
+          severeContext: severeContext,
+          nearestStationObservation: nearestStationObservation,
           userNotes: userNotes)
     }
 

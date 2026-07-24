@@ -11,6 +11,7 @@ enum AlertRowLayout {
 
 struct AlertsView: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(SevereWeatherStore.self) private var severeStore
   @State private var selectedAlert: NWSAlert?
 
   private var activeAlerts: [NWSAlert] {
@@ -25,12 +26,25 @@ struct AlertsView: View {
       .sorted { $0.sortDate > $1.sortDate }
   }
 
+  private var severeContextForLocation: SevereWeatherContext? {
+    guard let locID = store.currentLocation?.id.uuidString,
+      severeStore.context.locationID == locID
+    else { return nil }
+    return severeStore.context
+  }
+
+  private var hasSevereProducts: Bool {
+    severeContextForLocation?.hasSPCContent == true
+  }
+
   var body: some View {
     NavigationStack {
       Group {
-        if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty {
+        if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty
+          && !hasSevereProducts
+        {
           alertsSkeleton
-        } else if activeAlerts.isEmpty && historicalAlerts.isEmpty {
+        } else if activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts {
           emptyState
         } else {
           alertsList
@@ -97,6 +111,10 @@ struct AlertsView: View {
               }
             }
           }
+        }
+
+        if let severe = severeContextForLocation, severe.hasSPCContent {
+          SevereProductsSections(context: severe)
         }
 
         if !historicalAlerts.isEmpty {
@@ -306,4 +324,5 @@ struct AlertsView: View {
   store.alertHistory = store.activeAlerts
   return AlertsView()
     .environment(store)
+    .environment(SevereWeatherStore.shared)
 }

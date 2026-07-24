@@ -42,6 +42,9 @@ enum AlertHistoryStore {
           areaDesc: alert.areaDesc,
           latitude: alert.latitude ?? prior.latitude,
           longitude: alert.longitude ?? prior.longitude,
+          containsSelectedPoint: alert.containsSelectedPoint,
+          geometryVertexCount: alert.geometryVertexCount ?? prior.geometryVertexCount,
+          geometryBBoxSummary: alert.geometryBBoxSummary ?? prior.geometryBBoxSummary,
           firstSeen: prior.firstSeen
         )
       } else {
@@ -57,6 +60,9 @@ enum AlertHistoryStore {
           areaDesc: alert.areaDesc,
           latitude: alert.latitude,
           longitude: alert.longitude,
+          containsSelectedPoint: alert.containsSelectedPoint,
+          geometryVertexCount: alert.geometryVertexCount,
+          geometryBBoxSummary: alert.geometryBBoxSummary,
           firstSeen: now
         )
       }

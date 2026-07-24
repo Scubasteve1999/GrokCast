@@ -20,6 +20,13 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
   let latitude: Double?
   let longitude: Double?
 
+  /// True when this alert came from a point query that includes the selected location.
+  let containsSelectedPoint: Bool
+  /// Soft polygon metadata for Grok / UI (never drops the alert if geometry decode fails).
+  let geometryVertexCount: Int?
+  /// Compact bbox string like "34.9–35.2N, 90.1–89.7W" when a polygon is present.
+  let geometryBBoxSummary: String?
+
   /// When GrokCast first recorded this alert (for history sorting / retention).
   let firstSeen: Date
 
@@ -35,6 +42,9 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     areaDesc: String?,
     latitude: Double?,
     longitude: Double?,
+    containsSelectedPoint: Bool = true,
+    geometryVertexCount: Int? = nil,
+    geometryBBoxSummary: String? = nil,
     firstSeen: Date = Date()
   ) {
     self.id = id
@@ -48,6 +58,9 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     self.areaDesc = areaDesc
     self.latitude = latitude
     self.longitude = longitude
+    self.containsSelectedPoint = containsSelectedPoint
+    self.geometryVertexCount = geometryVertexCount
+    self.geometryBBoxSummary = geometryBBoxSummary
     self.firstSeen = firstSeen
   }
 
@@ -126,6 +139,9 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     case areaDesc
     case latitude
     case longitude
+    case containsSelectedPoint
+    case geometryVertexCount
+    case geometryBBoxSummary
     case firstSeen
   }
 
@@ -142,6 +158,10 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     areaDesc = try container.decodeIfPresent(String.self, forKey: .areaDesc)
     latitude = try container.decodeIfPresent(Double.self, forKey: .latitude)
     longitude = try container.decodeIfPresent(Double.self, forKey: .longitude)
+    containsSelectedPoint =
+      try container.decodeIfPresent(Bool.self, forKey: .containsSelectedPoint) ?? true
+    geometryVertexCount = try container.decodeIfPresent(Int.self, forKey: .geometryVertexCount)
+    geometryBBoxSummary = try container.decodeIfPresent(String.self, forKey: .geometryBBoxSummary)
     firstSeen = try container.decodeIfPresent(Date.self, forKey: .firstSeen) ?? Date()
   }
 
@@ -166,6 +186,9 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     try container.encodeIfPresent(areaDesc, forKey: .areaDesc)
     try container.encodeIfPresent(latitude, forKey: .latitude)
     try container.encodeIfPresent(longitude, forKey: .longitude)
+    try container.encode(containsSelectedPoint, forKey: .containsSelectedPoint)
+    try container.encodeIfPresent(geometryVertexCount, forKey: .geometryVertexCount)
+    try container.encodeIfPresent(geometryBBoxSummary, forKey: .geometryBBoxSummary)
     try container.encode(firstSeen, forKey: .firstSeen)
   }
 }
@@ -202,6 +225,10 @@ struct NWSGeometry: Decodable {
   let type: String?
   /// Representative (lat, lon) suitable for a map pin. Extracted from Point or first coord of first Polygon ring.
   let representativePoint: (latitude: Double, longitude: Double)?
+  /// Vertex count across decoded rings (soft; nil when geometry absent/unparsed).
+  let vertexCount: Int?
+  /// Compact bbox summary for prompts ("covers area including selected location").
+  let bboxSummary: String?
 
   private enum CodingKeys: String, CodingKey {
     case type
@@ -212,34 +239,76 @@ struct NWSGeometry: Decodable {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     // try? to keep tolerant (bad "type" value won't poison whole alerts batch decode in NWSService; matches NWSValueUnit + obs paths).
     type = try? container.decodeIfPresent(String.self, forKey: .type)
-    representativePoint = NWSGeometry.extractRepresentativePoint(from: container)
+    let extracted = NWSGeometry.extractGeometry(from: container)
+    representativePoint = extracted.point
+    vertexCount = extracted.vertexCount
+    bboxSummary = extracted.bboxSummary
   }
 
+  private static func extractGeometry(from container: KeyedDecodingContainer<CodingKeys>) -> (
+    point: (latitude: Double, longitude: Double)?,
+    vertexCount: Int?,
+    bboxSummary: String?
+  ) {
+    // Point: "coordinates": [lon, lat]
+    if let coords = try? container.decode([Double].self, forKey: .coordinates), coords.count >= 2 {
+      return (
+        point: (latitude: coords[1], longitude: coords[0]),
+        vertexCount: 1,
+        bboxSummary: nil
+      )
+    }
+    // Polygon: "coordinates": [[[lon, lat], ...], ...]
+    if let rings = try? container.decode([[[Double]]].self, forKey: .coordinates) {
+      return summarizeRings(rings)
+    }
+    // MultiPolygon
+    if let multi = try? container.decode([[[[Double]]]].self, forKey: .coordinates) {
+      let rings = multi.flatMap { $0 }
+      return summarizeRings(rings)
+    }
+    return (nil, nil, nil)
+  }
+
+  private static func summarizeRings(_ rings: [[[Double]]]) -> (
+    point: (latitude: Double, longitude: Double)?,
+    vertexCount: Int?,
+    bboxSummary: String?
+  ) {
+    var count = 0
+    var minLat = Double.greatestFiniteMagnitude
+    var maxLat = -Double.greatestFiniteMagnitude
+    var minLon = Double.greatestFiniteMagnitude
+    var maxLon = -Double.greatestFiniteMagnitude
+    var firstPoint: (latitude: Double, longitude: Double)?
+
+    for ring in rings {
+      for coord in ring where coord.count >= 2 {
+        let lon = coord[0]
+        let lat = coord[1]
+        count += 1
+        if firstPoint == nil { firstPoint = (lat, lon) }
+        minLat = min(minLat, lat)
+        maxLat = max(maxLat, lat)
+        minLon = min(minLon, lon)
+        maxLon = max(maxLon, lon)
+      }
+    }
+
+    guard count > 0, let firstPoint else { return (nil, nil, nil) }
+    let bbox = String(
+      format: "%.1f–%.1fN, %.1f–%.1fW",
+      min(minLat, maxLat), max(minLat, maxLat),
+      abs(max(minLon, maxLon)), abs(min(minLon, maxLon))
+    )
+    return (firstPoint, count, bbox)
+  }
+
+  /// Legacy helper name used by older call sites.
   private static func extractRepresentativePoint(from container: KeyedDecodingContainer<CodingKeys>)
     -> (latitude: Double, longitude: Double)?
   {
-    // Point: "coordinates": [lon, lat]
-    if let coords = try? container.decode([Double].self, forKey: .coordinates), coords.count >= 2 {
-      return (latitude: coords[1], longitude: coords[0])
-    }
-    // Polygon: "coordinates": [[[lon, lat], ...], ...]
-    if let rings = try? container.decode([[[Double]]].self, forKey: .coordinates),
-      let firstRing = rings.first,
-      let firstCoord = firstRing.first,
-      firstCoord.count >= 2
-    {
-      return (latitude: firstCoord[1], longitude: firstCoord[0])
-    }
-    // MultiPolygon or other: take first available for minimal Phase1/2 support
-    if let multi = try? container.decode([[[[Double]]]].self, forKey: .coordinates),
-      let firstPoly = multi.first,
-      let firstRing = firstPoly.first,
-      let firstCoord = firstRing.first,
-      firstCoord.count >= 2
-    {
-      return (latitude: firstCoord[1], longitude: firstCoord[0])
-    }
-    return nil
+    extractGeometry(from: container).point
   }
 }
 

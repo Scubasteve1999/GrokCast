@@ -36,10 +36,11 @@ enum GrokPrompts {
     """
 
   /// Builds a focused technical weather context for storm analysis.
-  /// Now includes optional active NWS alerts and nearest station observation (hybrid data) when present.
+  /// Prefers `severeContext` (alerts + SPC products); falls back to `alerts` alone.
   static func buildTechnicalStormContext(
     for weather: GrokCastWeather,
     alerts: [NWSAlert] = [],
+    severeContext: SevereWeatherContext? = nil,
     nearestStationObservation: NWSObservation? = nil,
     userNotes: String? = nil
   ) -> String {
@@ -79,9 +80,10 @@ enum GrokPrompts {
       }
     }
 
-    if !alerts.isEmpty {
+    let resolvedAlerts = severeContext?.alerts ?? alerts
+    if !resolvedAlerts.isEmpty {
       context += "\n\n**Active NWS Alerts for this area:**"
-      for a in alerts {
+      for a in resolvedAlerts {
         let sev = a.severity ?? "Unknown"
         context += "\n- \(a.event) (\(sev))"
         if let h = a.headline, !h.isEmpty {
@@ -90,7 +92,21 @@ enum GrokPrompts {
         if let area = a.areaDesc, !area.isEmpty {
           context += " — \(area)"
         }
+        if a.containsSelectedPoint {
+          context += " [covers selected location]"
+        }
+        if let bbox = a.geometryBBoxSummary, !bbox.isEmpty {
+          context += " (polygon ~\(bbox)"
+          if let verts = a.geometryVertexCount {
+            context += ", \(verts) verts"
+          }
+          context += ")"
+        }
       }
+    }
+
+    if let severeBlock = severeContextBlock(context: severeContext), !severeBlock.isEmpty {
+      context += "\n\n" + severeBlock
     }
 
     if let notes = userNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
@@ -100,17 +116,55 @@ enum GrokPrompts {
     return context
   }
 
+  /// Short severe-guidance block for Grok briefs/chat when SPC/MD/LSR content exists.
+  static func severeContextBlock(context: SevereWeatherContext?) -> String? {
+    guard let context else { return nil }
+    var lines: [String] = []
+
+    if context.day1Outlook.isMeaningful {
+      lines.append("- \(context.day1Outlook.summaryLine)")
+      if let detail = context.day1Outlook.labelDetail, !detail.isEmpty {
+        lines.append("  \(detail)")
+      }
+    }
+
+    if !context.mesoscaleDiscussions.isEmpty {
+      let mdSummaries = context.mesoscaleDiscussions.prefix(4).map { md in
+        if let detail = md.detailLine, !detail.isEmpty {
+          return "\(md.title): \(detail)"
+        }
+        return md.title
+      }
+      lines.append("- Active mesoscale discussions: \(mdSummaries.joined(separator: "; "))")
+    }
+
+    if !context.localStormReports.isEmpty {
+      let lsrSummaries = context.localStormReports.prefix(5).map { report in
+        let sub = report.subtitle
+        return sub.isEmpty ? report.title : "\(report.title) — \(sub)"
+      }
+      lines.append("- Nearby local storm reports: \(lsrSummaries.joined(separator: "; "))")
+    }
+
+    guard !lines.isEmpty else { return nil }
+    return "**Severe guidance:**\n" + lines.joined(separator: "\n")
+  }
+
   /// Assembles the full prompt for a storm spotter vision request.
   /// nearestStationObservation + alerts forwarded so the technical context includes official NWS ground truth + warnings.
   static func stormSpotterVisionPrompt(
     for weather: GrokCastWeather,
     alerts: [NWSAlert] = [],
+    severeContext: SevereWeatherContext? = nil,
     nearestStationObservation: NWSObservation? = nil,
     userNotes: String?
   ) -> String {
     var prompt = stormSpotterSystemPrompt + "\n\n"
     prompt += buildTechnicalStormContext(
-      for: weather, alerts: alerts, nearestStationObservation: nearestStationObservation,
+      for: weather,
+      alerts: alerts,
+      severeContext: severeContext,
+      nearestStationObservation: nearestStationObservation,
       userNotes: userNotes)
 
     prompt += """

@@ -163,6 +163,7 @@ final class GrokAIViewModel {
 
     let weather = weatherStore.currentWeather
     let alerts = weatherStore.activeAlerts
+    let severeContext = SevereWeatherStore.shared.context
     let observation = weatherStore.currentNWSObservation
 
     let generationID = UUID()
@@ -174,6 +175,8 @@ final class GrokAIViewModel {
           imageData: imageData,
           weather: weather,
           alerts: alerts,
+          severeContext: severeContext.locationID == weatherStore.currentLocation?.id.uuidString
+            ? severeContext : nil,
           nearestStationObservation: observation,
           userNotes: userNotes
         ) {
