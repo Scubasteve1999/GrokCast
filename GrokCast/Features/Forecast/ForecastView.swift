@@ -213,7 +213,7 @@ private struct ForecastAdaptiveBody: View {
   private func neutralForecastContent(for weather: GrokCastWeather) -> some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space32) {
-        let hourly24 = Array(weather.hourly.prefix(24))
+        let hourly24 = Self.nextHourlyForecasts(from: weather)
         let now = Date()
         let nowHourIndex = hourly24.firstIndex(where: { h in
           Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
@@ -253,7 +253,7 @@ private struct ForecastAdaptiveBody: View {
 
   private func compactForecastList(for weather: GrokCastWeather) -> some View {
     ScrollView {
-      let hourly24 = Array(weather.hourly.prefix(24))
+      let hourly24 = Self.nextHourlyForecasts(from: weather)
       let now = Date()
       let nowHourIndex = hourly24.firstIndex(where: { h in
         Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
@@ -297,7 +297,7 @@ private struct ForecastAdaptiveBody: View {
 
   private func wideForecastContent(for weather: GrokCastWeather) -> some View {
     ScrollView {
-      let hourly24 = Array(weather.hourly.prefix(24))
+      let hourly24 = Self.nextHourlyForecasts(from: weather)
       let now = Date()
       let nowHourIndex = hourly24.firstIndex(where: { h in
         Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
@@ -429,6 +429,14 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
+  }
+
+  /// Prefer upcoming hours even if a cached payload still includes earlier-today slots.
+  private static func nextHourlyForecasts(from weather: GrokCastWeather) -> [HourlyForecast] {
+    let hourStart =
+      Calendar.current.dateInterval(of: .hour, for: Date())?.start
+      ?? Date().addingTimeInterval(-60)
+    return Array(weather.hourly.lazy.filter { $0.time >= hourStart }.prefix(24))
   }
 }
 

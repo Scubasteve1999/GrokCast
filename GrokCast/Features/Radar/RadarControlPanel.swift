@@ -163,6 +163,8 @@ struct RadarControlPanel: View {
 
       Button {
         Haptic.impact(.light)
+        // Prefer selected weather location over a prior GPS recenter.
+        recenterUserCoordinate = nil
         recenterDefaultTrigger = UUID()
       } label: {
         Image(systemName: "location")

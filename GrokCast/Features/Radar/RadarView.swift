@@ -8,10 +8,10 @@ struct RadarView: View {
   @State private var radarState = RadarState()
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
-  @State private var autoCenterTask: Task<Void, Never>?
 
-  private var defaultMapCenter: CLLocationCoordinate2D {
-    SavedLocation.oliveBranch.coordinate
+  /// Camera / tile center follows the selected weather location (not device GPS).
+  private var selectedMapCenter: CLLocationCoordinate2D {
+    store.currentLocation?.coordinate ?? SavedLocation.oliveBranch.coordinate
   }
 
   private var radarIsDay: Bool {
@@ -38,9 +38,9 @@ struct RadarView: View {
         if store.selectedTab == .radar {
           // Re-entering Radar after a long idle rebuilds stale frames so FUTURE
           // reflects the provider's newest run; a quick switch is a no-op.
-          let center = store.currentLocation?.coordinate ?? defaultMapCenter
+          let center = selectedMapCenter
           await radarState.reloadIfStale(for: center)
-          autoCenterIfAuthorized()
+          recenterOnSelectedLocation()
           if radarState.showContent {
             radarState.start()
           }
@@ -49,9 +49,12 @@ struct RadarView: View {
       // Site products (Super-Res/SRV) follow the selected weather location, and the
       // composite timeline rebuilds when the location moved (provider is per-coordinate).
       .task(id: store.currentLocation?.id) {
-        let center = store.currentLocation?.coordinate ?? defaultMapCenter
+        let center = selectedMapCenter
         await radarState.updateNearestSite(for: center)
         await radarState.reloadIfStale(for: center)
+        if store.selectedTab == .radar {
+          recenterOnSelectedLocation()
+        }
       }
       .task(id: radarState.transition?.id) {
         await runModeTransitionIfNeeded()
@@ -60,8 +63,6 @@ struct RadarView: View {
         if newTab != .radar {
           radarState.stop()
           radarState.cancelModeSwitch()
-          autoCenterTask?.cancel()
-          autoCenterTask = nil
           recenterDefaultTrigger = nil
           recenterUserCoordinate = nil
         }
@@ -74,8 +75,6 @@ struct RadarView: View {
       .onDisappear {
         radarState.stop()
         radarState.cancelModeSwitch()
-        autoCenterTask?.cancel()
-        autoCenterTask = nil
         recenterDefaultTrigger = nil
         recenterUserCoordinate = nil
       }
@@ -92,7 +91,7 @@ struct RadarView: View {
               RadarMapboxRepresentable(
                 radarState: radarState,
                 opacity: radarOpacity,
-                defaultMapCenter: defaultMapCenter,
+                defaultMapCenter: selectedMapCenter,
                 recenterDefaultTrigger: recenterDefaultTrigger,
                 recenterUserCoordinate: recenterUserCoordinate
               )
@@ -157,6 +156,7 @@ struct RadarView: View {
       .padding(.horizontal, DesignTokens.Spacing.space12)
       .padding(.vertical, 6)
       .background(DesignTokens.Palette.accent.opacity(0.25), in: Capsule())
+      .accessibilityIdentifier(SpotterCastAccessibility.Radar.liveBadge)
   }
 
   private func runModeTransitionIfNeeded() async {
@@ -181,25 +181,11 @@ struct RadarView: View {
     radarState.completeTransition()
   }
 
-  private func autoCenterIfAuthorized() {
-    let status = store.locationService.authorizationStatus
-    guard status == .authorizedWhenInUse || status == .authorizedAlways else { return }
-    autoCenterTask?.cancel()
-    autoCenterTask = Task { @MainActor in
-      let coordinate: CLLocationCoordinate2D
-      if let last = store.locationService.currentLocation {
-        coordinate = last.coordinate
-      } else {
-        do {
-          let loc = try await store.locationService.requestLocation()
-          coordinate = loc.coordinate
-        } catch {
-          return
-        }
-      }
-      guard !Task.isCancelled, store.selectedTab == .radar else { return }
-      recenterUserCoordinate = coordinate
-    }
+  /// Centers the map on the selected weather location. Clears any prior GPS recenter
+  /// so device location cannot override the selected place on the next update pass.
+  private func recenterOnSelectedLocation() {
+    recenterUserCoordinate = nil
+    recenterDefaultTrigger = UUID()
   }
 }
 

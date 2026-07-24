@@ -11,3 +11,26 @@ enum AppLinks {
   static let xAIConsole = URL(string: "https://console.x.ai/")!
   static let openMeteo = URL(string: "https://open-meteo.com/")!
 }
+
+/// Stable accessibility identifiers for XCUITest and VoiceOver.
+enum SpotterCastAccessibility {
+  enum Today {
+    static let location = "spottercast.today.location"
+    static let temperature = "spottercast.today.temperature"
+    static let root = "spottercast.today.root"
+  }
+
+  enum Radar {
+    static let root = "spottercast.radar.root"
+    static let liveBadge = "spottercast.radar.live"
+  }
+
+  enum Grok {
+    static let stormSpotterAnalyze = "spottercast.grok.stormSpotter.analyze"
+    static let chatField = "spottercast.grok.chatField"
+  }
+
+  enum Settings {
+    static let proEntry = "spottercast.settings.pro"
+  }
+}

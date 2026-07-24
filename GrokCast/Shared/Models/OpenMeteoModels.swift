@@ -5,6 +5,8 @@ import Foundation
 struct OpenMeteoResponse: Decodable {
   let latitude: Double
   let longitude: Double
+  /// IANA timezone id from `timezone=auto` (e.g. "America/Chicago").
+  let timezone: String?
   let current: Current?
   let hourly: Hourly?
   let daily: Daily?

@@ -77,6 +77,8 @@ struct RadarPlaybackControls: View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Button {
         Haptic.impact(.light)
+        // Prefer selected weather location over a prior GPS recenter.
+        recenterUserCoordinate = nil
         recenterDefaultTrigger = UUID()
       } label: {
         Image(systemName: "house.fill")
@@ -87,7 +89,7 @@ struct RadarPlaybackControls: View {
           .clipShape(Capsule())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("Recenter to default location")
+      .accessibilityLabel("Recenter to selected location")
 
       Button {
         Haptic.impact(.light)

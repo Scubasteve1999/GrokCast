@@ -288,6 +288,7 @@ private struct GrokAIViewContent: View {
           .buttonStyle(.bordered)
           .tint(DesignTokens.Palette.danger)
           .disabled(aiActionsDisabled)
+          .accessibilityIdentifier(SpotterCastAccessibility.Grok.stormSpotterAnalyze)
         }
         .padding(DesignTokens.Spacing.space16)
         .frame(maxWidth: .infinity, alignment: .leading)

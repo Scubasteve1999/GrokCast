@@ -155,13 +155,18 @@ final class OpenMeteoService {
     let code = current?.weather_code ?? 0
     let (symbol, text) = mapWeatherCode(code, isDay: (current?.is_day ?? 1) == 1)
 
-    // Robust date parsing for Open-Meteo responses
-    // Open-Meteo returns times in the format requested via "timezone=auto"
+    // Robust date parsing for Open-Meteo responses.
+    // `timezone=auto` returns wall-clock strings in the *location* timezone.
+    let responseTimeZone =
+      response.timezone.flatMap { TimeZone(identifier: $0) } ?? TimeZone.current
+    var locationCalendar = Calendar(identifier: .gregorian)
+    locationCalendar.timeZone = responseTimeZone
+
     let openMeteoHourFormatter: DateFormatter = {
       let f = DateFormatter()
       f.dateFormat = "yyyy-MM-dd'T'HH:mm"
       f.locale = Locale(identifier: "en_US_POSIX")
-      f.timeZone = TimeZone.current
+      f.timeZone = responseTimeZone
       return f
     }()
 
@@ -169,7 +174,7 @@ final class OpenMeteoService {
       let f = DateFormatter()
       f.dateFormat = "yyyy-MM-dd"
       f.locale = Locale(identifier: "en_US_POSIX")
-      f.timeZone = TimeZone.current
+      f.timeZone = responseTimeZone
       return f
     }()
 
@@ -180,7 +185,7 @@ final class OpenMeteoService {
       if let date = openMeteoHourFormatter.date(from: string) { return date }
       if let date = isoFallback.date(from: string) { return date }
       // Last resort: use current time + offset so we don't collapse everything
-      return Date().addingTimeInterval(Double(hourlyForecasts.count) * 3600)
+      return Date().addingTimeInterval(Double(allHourlyForecasts.count) * 3600)
     }
 
     func parseDailyDate(_ string: String) -> Date {
@@ -189,16 +194,15 @@ final class OpenMeteoService {
       return Date()
     }
 
-    // Build hourly array (next 24)
-    var hourlyForecasts: [HourlyForecast] = []
+    // Build hourly array — keep the next 24 hours from "now", not midnight.
+    var allHourlyForecasts: [HourlyForecast] = []
     if let h = hourly {
-      let count = min(24, h.time.count)
-      for i in 0..<count {
+      for i in 0..<h.time.count {
         let date = parseHourlyDate(h.time[i])
         let weatherCode = openMeteoValue(h.weather_code, at: i) ?? 0
         let hourIsDay = openMeteoValue(h.is_day, at: i).map { $0 == 1 }
         let (sym, _) = mapWeatherCode(weatherCode, isDay: hourIsDay ?? true)
-        hourlyForecasts.append(
+        allHourlyForecasts.append(
           HourlyForecast(
             time: date,
             temp: openMeteoValue(h.temperature_2m, at: i) ?? 0,
@@ -212,6 +216,12 @@ final class OpenMeteoService {
           ))
       }
     }
+    let hourStart =
+      locationCalendar.dateInterval(of: .hour, for: Date())?.start
+      ?? Date().addingTimeInterval(-60)
+    let hourlyForecasts = Array(
+      allHourlyForecasts.lazy.filter { $0.time >= hourStart }.prefix(24)
+    )
 
     // Build daily (10 days) — derive precip % + weather code from hourly when daily aggregates disagree.
     var dailyForecasts: [DailyForecast] = []
@@ -273,12 +283,13 @@ final class OpenMeteoService {
       dailyForecasts.first?.uvMax
       ?? (hourly?.uv_index?.compactMap { $0 }.first ?? 3.0)
 
-    var minutelyForecasts: [MinutelyForecast] = []
+    // Minutecast: parse the full minutely_15 series, then keep the next ~2 hours.
+    // Taking only the first 8 slots left the strip empty after morning (those slots are past).
+    var allMinutelyForecasts: [MinutelyForecast] = []
     if let m = response.minutely_15 {
-      let count = min(8, m.time.count)
-      for i in 0..<count {
+      for i in 0..<m.time.count {
         let date = parseHourlyDate(m.time[i])
-        minutelyForecasts.append(
+        allMinutelyForecasts.append(
           MinutelyForecast(
             time: date,
             precipitation: openMeteoValue(m.precipitation, at: i) ?? 0,
@@ -286,6 +297,10 @@ final class OpenMeteoService {
           ))
       }
     }
+    let minutelyCutoff = Date().addingTimeInterval(-60)
+    let minutelyForecasts = Array(
+      allMinutelyForecasts.lazy.filter { $0.time >= minutelyCutoff }.prefix(8)
+    )
 
     return GrokCastWeather(
       location: location,

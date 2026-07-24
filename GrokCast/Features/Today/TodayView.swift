@@ -367,6 +367,7 @@ private struct TodayWeatherPanel: View {
       Text(store.currentLocation?.name ?? weather.location.name)
         .font(.title2.weight(.semibold))
         .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .accessibilityIdentifier(SpotterCastAccessibility.Today.location)
 
       Image(systemName: weather.symbolName)
         .font(.system(size: 42))
@@ -379,6 +380,7 @@ private struct TodayWeatherPanel: View {
         .monospacedDigit()
         .lineLimit(1)
         .minimumScaleFactor(0.5)
+        .accessibilityIdentifier(SpotterCastAccessibility.Today.temperature)
 
       Text(weather.conditionText)
         .font(.title3.weight(.medium))

@@ -76,6 +76,7 @@ struct SettingsView: View {
                 PaywallCoordinator.shared.present(.locations)
               }
               .buttonStyle(.borderedProminent)
+              .accessibilityIdentifier(SpotterCastAccessibility.Settings.proEntry)
             }
             .padding(.vertical, 4)
           }
@@ -588,6 +589,7 @@ struct SettingsView: View {
           .padding(.vertical, 10)
           .background(DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: 10))
           .padding(.horizontal, DesignTokens.Spacing.space16)
+          .accessibilityIdentifier(SpotterCastAccessibility.Settings.proEntry)
         }
 
         Button("Restore Purchases") {
