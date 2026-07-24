@@ -42,14 +42,17 @@ struct HourlyRow: View {
   }
 
   private var figmaLayout: some View {
-    VStack(spacing: 6) {
+    VStack(spacing: DesignTokens.Spacing.space8) {
       Text(isNow ? "Now" : formattedTime)
         .font(DesignTokens.Figma.Typography.chipTime)
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .fontWeight(isNow ? .bold : .semibold)
+        .foregroundStyle(
+          isNow ? DesignTokens.Palette.accent : DesignTokens.Palette.textTertiary
+        )
         .lineLimit(1)
 
       Image(systemName: rowSymbol)
-        .font(.system(size: 22))
+        .font(.system(size: 24))
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(forecast.temp)))°")
@@ -58,24 +61,63 @@ struct HourlyRow: View {
         .monospacedDigit()
         .lineLimit(1)
 
-      Text(forecast.precipChance > 0 ? "\(forecast.precipChance)% \(precipLabel)" : " ")
-        .font(.caption2.weight(.medium))
-        .foregroundStyle(DesignTokens.Palette.accent)
-        .lineLimit(1)
+      if forecast.precipChance > 0 {
+        HStack(spacing: DesignTokens.Spacing.space4) {
+          Circle()
+            .fill(DesignTokens.Palette.accentCool)
+            .frame(width: 4, height: 4)
+          Text("\(forecast.precipChance)%")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.accentCool)
+            .monospacedDigit()
+        }
+        .accessibilityLabel("\(forecast.precipChance) percent chance of \(precipLabel)")
+      } else {
+        Color.clear
+          .frame(height: 14)
+      }
     }
     .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
-    .padding(.horizontal, 10)
+    .padding(.horizontal, DesignTokens.Spacing.space12)
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+    .background {
+      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+        .fill(
+          isNow
+            ? DesignTokens.Palette.cardElevated.opacity(0.92)
+            : DesignTokens.Palette.cardBackground.opacity(0.55)
+        )
+        .background {
+          if !isNow {
+            RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+              .fill(.ultraThinMaterial)
+          }
+        }
+    }
+    .overlay {
+      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+        .stroke(
+          isNow
+            ? DesignTokens.Palette.accent.opacity(0.55)
+            : DesignTokens.Palette.cardStroke,
+          lineWidth: isNow ? 1.5 : DesignTokens.Card.strokeWidth
+        )
+    }
+    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius))
+    .shadow(
+      color: isNow ? DesignTokens.Palette.accent.opacity(0.18) : .black.opacity(0.16),
+      radius: isNow ? 10 : 8,
+      y: 4
+    )
   }
 
   private var standardLayout: some View {
-    VStack(spacing: 8) {
+    VStack(spacing: DesignTokens.Spacing.space8) {
       Text(isNow ? "Now" : formattedTime)
         .font(.system(size: 13, weight: isNow ? .bold : .semibold))
         .tracking(DesignTokens.Typography.tightTracking)
         .foregroundStyle(
-          isNow ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
+          isNow ? DesignTokens.Palette.accent : DesignTokens.Palette.textSecondary
         )
         .lineLimit(1)
 
@@ -89,12 +131,19 @@ struct HourlyRow: View {
         .monospacedDigit()
         .lineLimit(1)
 
-      // Always show precip + visual bar (DesignSystem: use accent for chance)
-      VStack(spacing: 3) {
-        Text("\(forecast.precipChance)% \(precipLabel)")
-          .font(.caption2.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.accent)
-          .lineLimit(1)
+      if forecast.precipChance > 0 {
+        HStack(spacing: DesignTokens.Spacing.space4) {
+          Circle()
+            .fill(DesignTokens.Palette.accentCool)
+            .frame(width: 4, height: 4)
+          Text("\(forecast.precipChance)% \(precipLabel)")
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(DesignTokens.Palette.accentCool)
+            .lineLimit(1)
+        }
+      }
+
+      VStack(spacing: DesignTokens.Spacing.space4) {
         let liq = (forecast.rain ?? 0) + (forecast.showers ?? 0)
         let sn = forecast.snowfall ?? 0
         if let amt = precipAmountText(liquid: liq, snow: sn) {
@@ -113,40 +162,49 @@ struct HourlyRow: View {
             .lineLimit(1)
         }
 
-        // Gradient chance bar
-        ZStack(alignment: .leading) {
-          Capsule()
-            .fill(
-              LinearGradient(
-                colors: [
-                  DesignTokens.Palette.accentCool.opacity(0.25),
-                  DesignTokens.Palette.accent.opacity(0.25),
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
+        if forecast.precipChance > 0 {
+          ZStack(alignment: .leading) {
+            Capsule()
+              .fill(
+                LinearGradient(
+                  colors: [
+                    DesignTokens.Palette.accentCool.opacity(0.25),
+                    DesignTokens.Palette.accent.opacity(0.25),
+                  ],
+                  startPoint: .leading,
+                  endPoint: .trailing
+                )
               )
-            )
-            .frame(width: 46, height: 5)
-          Capsule()
-            .fill(
-              LinearGradient(
-                colors: [DesignTokens.Palette.accentCool, DesignTokens.Palette.accent],
-                startPoint: .leading,
-                endPoint: .trailing
+              .frame(width: 46, height: 5)
+            Capsule()
+              .fill(
+                LinearGradient(
+                  colors: [DesignTokens.Palette.accentCool, DesignTokens.Palette.accent],
+                  startPoint: .leading,
+                  endPoint: .trailing
+                )
               )
-            )
-            .frame(width: 46 * CGFloat(forecast.precipChance) / 100.0, height: 5)
+              .frame(width: 46 * CGFloat(forecast.precipChance) / 100.0, height: 5)
+          }
         }
       }
     }
     .frame(width: 88)
     .padding(.vertical, DesignTokens.Spacing.space20)
     .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadius
+      background: isNow
+        ? DesignTokens.Palette.cardElevated : DesignTokens.Palette.cardBackground,
+      stroke: isNow
+        ? DesignTokens.Palette.accent.opacity(0.5) : DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Card.cornerRadius,
+      strokeWidth: isNow ? 1.5 : DesignTokens.Card.strokeWidth
     )
-    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
+    .shadow(
+      color: isNow ? DesignTokens.Palette.accent.opacity(0.2) : .black.opacity(0.18),
+      radius: isNow ? 12 : 10,
+      x: 0,
+      y: 6
+    )
   }
 
   private var formattedTime: String {

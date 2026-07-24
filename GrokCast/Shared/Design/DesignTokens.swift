@@ -106,7 +106,9 @@ enum DesignTokens {
     enum Metrics {
       static let horizontalPadding: CGFloat = Spacing.space20
       static let topPadding: CGFloat = Spacing.space16
-      static let bottomPadding: CGFloat = Spacing.space32
+      /// Scroll/content padding under last cards so they clear CompactTabBar + home indicator.
+      /// Live screenshots showed `space32` still clipping Today/Forecast under the bar.
+      static let bottomPadding: CGFloat = Layout.tabBarScrollClearance
       static let sectionSpacing: CGFloat = Spacing.space16
       static let cardPadding: CGFloat = Spacing.space16
       static let cardInnerSpacing: CGFloat = Spacing.space8
@@ -117,6 +119,12 @@ enum DesignTokens {
       static let hourlyRowHeight: CGFloat = 90
       static let hourlyChipWidth: CGFloat = 100
     }
+  }
+
+  /// Cross-tab layout constants (CompactTabBar + home indicator).
+  enum Layout {
+    /// Extra bottom inset for scroll content / radar HUD above the custom tab bar.
+    static let tabBarScrollClearance: CGFloat = Spacing.space48 + Spacing.space48  // 96
   }
 }
 

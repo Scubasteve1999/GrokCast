@@ -145,7 +145,7 @@ struct RadarView: View {
         recenterUserCoordinate: $recenterUserCoordinate
       )
       .padding(.horizontal)
-      .padding(.bottom, 24)
+      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
     }
     .overlay {
       if radarState.showModeSwitchOverlay {

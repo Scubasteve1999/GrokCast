@@ -88,32 +88,46 @@ struct RadarTimelineScrubber: View {
   }
 
   private func figmaTickLabels(labels: [String], count: Int) -> some View {
-    let stride = max(1, count / 4)
-    let indices = (0..<count).filter { $0 % stride == 0 || $0 == count - 1 }
+    // Cap ticks so dense forecast timelines don't pile "6:20 PM" on "7:00 PM" at the trailing edge.
+    let maxTicks = 5
+    let stride = max(1, Int(ceil(Double(max(count - 1, 1)) / Double(maxTicks - 1))))
+    var indices = Array(Swift.stride(from: 0, to: count, by: stride))
+    if indices.last != count - 1 {
+      indices.append(count - 1)
+    }
+    if indices.count >= 2 {
+      let last = indices[indices.count - 1]
+      let prev = indices[indices.count - 2]
+      // Drop penultimate when it's within ~15% of the track from the final tick.
+      if Double(last - prev) < Double(count) * 0.15 {
+        indices.remove(at: indices.count - 2)
+      }
+    }
 
     // Position each tick at its true fractional position on the track (matching the
-    // thumb's `width * index/(count-1)`) rather than in equal-width columns, so the
-    // times line up with where the thumb actually sits. Edge labels are clamped inward
-    // so they don't clip off the ends.
+    // thumb's `width * index/(count-1)`). Edge labels are clamped inward so they don't clip.
     return GeometryReader { geo in
       ForEach(indices, id: \.self) { i in
         let fraction = count > 1 ? CGFloat(i) / CGFloat(count - 1) : 0
-        let estHalfWidth: CGFloat = 20
+        let estHalfWidth: CGFloat = 28
         let x = min(
-          max(fraction * geo.size.width, estHalfWidth), max(estHalfWidth, geo.size.width - estHalfWidth))
+          max(fraction * geo.size.width, estHalfWidth),
+          max(estHalfWidth, geo.size.width - estHalfWidth))
         let label = i < labels.count ? labels[i] : "?"
         Text(label)
-          .font(.system(size: 9).monospacedDigit())
+          .font(.system(size: 10).monospacedDigit())
           .foregroundStyle(
             clampedIndex == i
               ? DesignTokens.Palette.radarTextPrimary
               : DesignTokens.Palette.radarTextSecondary
           )
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
           .fixedSize()
           .position(x: x, y: geo.size.height / 2)
       }
     }
-    .frame(height: 12)
+    .frame(height: 14)
   }
 
   private var standardScrubber: some View {

@@ -2,7 +2,7 @@ import MapKit
 import SwiftUI
 
 private let locationsContentTopPadding = DesignTokens.Spacing.space16
-private let bottomTabClearance = DesignTokens.Spacing.space32
+private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 
 struct LocationsView: View {
   @Environment(WeatherStore.self) private var store

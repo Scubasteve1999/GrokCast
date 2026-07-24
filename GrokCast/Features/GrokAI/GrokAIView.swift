@@ -48,8 +48,9 @@ private struct GrokAIViewContent: View {
                     subscription: SubscriptionManager.shared
                   )
                 }
-                quickPromptsSection(viewModel: viewModel)
+                // Storm Spotter first — core SpotterCast feature, not buried under lifestyle prompts.
                 figmaStormSpotterCard(viewModel: viewModel)
+                quickPromptsSection(viewModel: viewModel)
 
                 ForEach(viewModel.conversationHistory) { message in
                   messageBubble(for: message)
@@ -283,9 +284,11 @@ private struct GrokAIViewContent: View {
             }
           } label: {
             Label("Analyze Storm Photo", systemImage: "camera.fill")
-              .font(.caption.weight(.semibold))
+              .font(.subheadline.weight(.semibold))
+              .frame(maxWidth: .infinity)
+              .padding(.vertical, DesignTokens.Spacing.space4)
           }
-          .buttonStyle(.bordered)
+          .buttonStyle(.borderedProminent)
           .tint(DesignTokens.Palette.danger)
           .disabled(aiActionsDisabled)
           .accessibilityIdentifier(SpotterCastAccessibility.Grok.stormSpotterAnalyze)
@@ -293,8 +296,8 @@ private struct GrokAIViewContent: View {
         .padding(DesignTokens.Spacing.space16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle(
-          background: DesignTokens.Palette.cardBackground,
-          stroke: DesignTokens.Palette.cardStroke,
+          background: DesignTokens.Palette.cardElevated,
+          stroke: DesignTokens.Palette.danger.opacity(0.45),
           cornerRadius: DesignTokens.Card.cornerRadiusMedium
         )
       }

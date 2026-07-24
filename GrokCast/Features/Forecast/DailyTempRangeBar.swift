@@ -6,34 +6,75 @@ struct DailyTempRangeBar: View {
 
   let low: Double
   let high: Double
+  /// Optional period bounds so today's segment can sit in context of the 10-day span.
+  var periodLow: Double? = nil
+  var periodHigh: Double? = nil
+
+  private let barHeight: CGFloat = 8
 
   var body: some View {
-    HStack(spacing: 4) {
+    HStack(spacing: DesignTokens.Spacing.space8) {
       Text(store.formatTemperatureShort(low))
-        .font(.caption2)
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .frame(width: 28, alignment: .trailing)
+        .font(.caption.weight(.medium))
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .frame(width: 32, alignment: .trailing)
         .monospacedDigit()
 
-      Capsule()
-        .fill(
-          LinearGradient(
-            colors: [DesignTokens.Palette.accentCool, DesignTokens.Palette.accentWarm],
-            startPoint: .leading,
-            endPoint: .trailing
-          )
-        )
-        .frame(width: 52, height: 5)
-        .overlay {
+      GeometryReader { geo in
+        let width = geo.size.width
+        ZStack(alignment: .leading) {
           Capsule()
-            .stroke(DesignTokens.Palette.cardStroke.opacity(0.5), lineWidth: 0.5)
+            .fill(DesignTokens.Palette.cardStroke.opacity(0.65))
+            .frame(height: barHeight)
+
+          Capsule()
+            .fill(
+              LinearGradient(
+                colors: [
+                  DesignTokens.Palette.accentCool,
+                  DesignTokens.Palette.accentWarm,
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+              )
+            )
+            .frame(width: max(barHeight, segmentWidth(in: width)), height: barHeight)
+            .offset(x: segmentOrigin(in: width))
+            .shadow(color: DesignTokens.Palette.accentWarm.opacity(0.25), radius: 3, y: 0)
         }
+        .frame(width: width, height: barHeight, alignment: .leading)
+        .frame(maxHeight: .infinity, alignment: .center)
+      }
+      .frame(height: barHeight)
+      .frame(maxWidth: .infinity)
 
       Text(store.formatTemperatureShort(high))
-        .font(.caption2.weight(.semibold))
+        .font(.caption.weight(.semibold))
         .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .frame(width: 28, alignment: .leading)
+        .frame(width: 32, alignment: .leading)
         .monospacedDigit()
     }
+  }
+
+  private var resolvedPeriodLow: Double {
+    periodLow ?? low
+  }
+
+  private var resolvedPeriodHigh: Double {
+    max(periodHigh ?? high, resolvedPeriodLow + 0.1)
+  }
+
+  private func segmentOrigin(in width: CGFloat) -> CGFloat {
+    let span = resolvedPeriodHigh - resolvedPeriodLow
+    guard span > 0 else { return 0 }
+    let start = CGFloat((low - resolvedPeriodLow) / span)
+    return max(0, min(width - barHeight, start * width))
+  }
+
+  private func segmentWidth(in width: CGFloat) -> CGFloat {
+    let span = resolvedPeriodHigh - resolvedPeriodLow
+    guard span > 0 else { return width }
+    let fraction = CGFloat((high - low) / span)
+    return max(barHeight, min(width, fraction * width))
   }
 }

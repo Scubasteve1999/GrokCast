@@ -1,8 +1,10 @@
 import SwiftUI
 
-private let bottomTabClearance = DesignTokens.Spacing.space32
+private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 /// Figma Forecast screen: content starts below status bar with modest top inset.
 private let forecastContentTopPadding = DesignTokens.Spacing.space16
+/// Room for Now accent + precip indicator under temp.
+private let hourlyStripHeight = DesignTokens.Figma.Metrics.hourlyRowHeight + DesignTokens.Spacing.space24
 
 struct ForecastView: View {
   @Environment(WeatherStore.self) private var store
@@ -128,9 +130,9 @@ private struct ForecastAdaptiveBody: View {
         }
 
         forecastSectionHeader("10-Day Outlook")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-          ForEach(0..<6, id: \.self) { _ in
-            DailyRowSkeleton()
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          ForEach(0..<6, id: \.self) { index in
+            DailyRowSkeleton(isToday: index == 0)
           }
         }
       }
@@ -151,18 +153,18 @@ private struct ForecastAdaptiveBody: View {
 
         FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
+          HStack(spacing: DesignTokens.Spacing.space12) {
             ForEach(0..<8, id: \.self) { index in
               HourlyRowSkeleton(isNow: index == 0, layout: .figma)
             }
           }
         }
-        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
+        .frame(height: hourlyStripHeight)
 
         FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-          ForEach(0..<6, id: \.self) { _ in
-            DailyRowSkeleton(layout: .figma)
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          ForEach(0..<6, id: \.self) { index in
+            DailyRowSkeleton(layout: .figma, isToday: index == 0)
           }
         }
       }
@@ -233,9 +235,15 @@ private struct ForecastAdaptiveBody: View {
         figmaOpenWeatherMapSection
 
         forecastSectionHeader("10-Day Outlook")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          let periodLow = weather.daily.map(\.low).min()
+          let periodHigh = weather.daily.map(\.high).max()
           ForEach(weather.daily) { day in
-            DailyRow(forecast: day)
+            DailyRow(
+              forecast: day,
+              periodLow: periodLow,
+              periodHigh: periodHigh
+            )
           }
         }
       }
@@ -264,21 +272,28 @@ private struct ForecastAdaptiveBody: View {
 
         FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
+          HStack(spacing: DesignTokens.Spacing.space12) {
             ForEach(Array(hourly24.enumerated()), id: \.element.time) {
               index, hour in
               hourlyRow(forecast: hour, isNow: index == nowHourIndex, layout: .figma)
             }
           }
         }
-        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight)
+        .frame(height: hourlyStripHeight)
 
         figmaOpenWeatherMapSection
 
         FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          let periodLow = weather.daily.map(\.low).min()
+          let periodHigh = weather.daily.map(\.high).max()
           ForEach(weather.daily) { day in
-            DailyRow(forecast: day, layout: .figma)
+            DailyRow(
+              forecast: day,
+              layout: .figma,
+              periodLow: periodLow,
+              periodHigh: periodHigh
+            )
           }
         }
       }
@@ -323,11 +338,17 @@ private struct ForecastAdaptiveBody: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
             figmaOpenWeatherMapSection
             forecastSectionHeader("10-Day Outlook")
+            let periodLow = weather.daily.map(\.low).min()
+            let periodHigh = weather.daily.map(\.high).max()
             ForEach(weather.daily) { day in
-              DailyRow(forecast: day)
+              DailyRow(
+                forecast: day,
+                periodLow: periodLow,
+                periodHigh: periodHigh
+              )
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)

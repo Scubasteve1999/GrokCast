@@ -555,7 +555,7 @@ struct SettingsView: View {
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, DesignTokens.Spacing.space16)
-      .padding(.bottom, DesignTokens.Spacing.space32)
+      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
     }
     .scrollContentBackground(.hidden)
     .background(DesignTokens.Palette.bgPrimary)

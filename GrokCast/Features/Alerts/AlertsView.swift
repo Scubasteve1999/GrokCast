@@ -1,6 +1,6 @@
 import SwiftUI
 
-private let bottomTabClearance = DesignTokens.Spacing.space32
+private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 private let alertsContentTopPadding = DesignTokens.Spacing.space16
 
 enum AlertRowLayout {
@@ -166,33 +166,68 @@ struct AlertsView: View {
   }
 
   private func figmaAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text(alert.event)
-        .font(.system(size: isActive ? 17 : 15, weight: isActive ? .bold : .semibold))
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .multilineTextAlignment(.leading)
+    let tint = NWSAlertStyle.tint(for: alert)
+    return HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
+      Image(systemName: NWSAlertStyle.iconName(for: alert))
+        .font(.title3)
+        .foregroundStyle(tint)
+        .frame(width: 28)
 
-      Text(figmaMetaLine(for: alert, isActive: isActive))
-        .font(.system(size: 13))
-        .foregroundStyle(isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary)
-        .lineLimit(2)
-        .multilineTextAlignment(.leading)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
+          Text(alert.event)
+            .font(.system(size: isActive ? 17 : 15, weight: isActive ? .bold : .semibold))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .multilineTextAlignment(.leading)
+          Spacer(minLength: 0)
+          if isActive {
+            Text("LIVE")
+              .font(.caption2.weight(.heavy))
+              .tracking(1)
+              .padding(.horizontal, DesignTokens.Spacing.space8)
+              .padding(.vertical, DesignTokens.Spacing.space4)
+              .background(tint.opacity(0.2), in: Capsule())
+              .foregroundStyle(tint)
+          }
+        }
 
-      if isActive, let headline = alert.headline, !headline.isEmpty {
-        Text(headline)
-          .font(.system(size: 14))
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .lineLimit(3)
+        Text(figmaMetaLine(for: alert, isActive: isActive))
+          .font(.system(size: 13))
+          .foregroundStyle(
+            isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary
+          )
+          .lineLimit(2)
           .multilineTextAlignment(.leading)
+
+        if isActive, let headline = alert.headline, !headline.isEmpty {
+          Text(headline)
+            .font(.system(size: 14))
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .lineLimit(3)
+            .multilineTextAlignment(.leading)
+        }
       }
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle(
       background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
+      stroke: isActive ? tint.opacity(0.45) : DesignTokens.Palette.cardStroke,
       cornerRadius: DesignTokens.Card.cornerRadiusMedium
     )
+    .overlay(alignment: .leading) {
+      if isActive {
+        UnevenRoundedRectangle(
+          topLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
+          bottomLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
+          bottomTrailingRadius: 0,
+          topTrailingRadius: 0
+        )
+        .fill(tint)
+        .frame(width: 3)
+        .padding(.vertical, DesignTokens.Spacing.space8)
+      }
+    }
   }
 
   private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {

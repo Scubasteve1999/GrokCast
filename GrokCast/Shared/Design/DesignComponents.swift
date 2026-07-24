@@ -207,7 +207,7 @@ struct MoreHubSheet: View {
             ForEach(Array(WeatherStore.Tab.moreHub.enumerated()), id: \.element.id) { index, tab in
               if index > 0 { SettingsDivider() }
               SettingsNavigationRow(
-                title: tab.rawValue,
+                title: moreTitle(for: tab),
                 subtitle: moreSubtitle(for: tab),
                 icon: tab.icon,
                 tint: moreTint(for: tab)
@@ -259,10 +259,18 @@ struct MoreHubSheet: View {
     .cardStyle(cornerRadius: DesignTokens.Figma.Metrics.cardRadius)
   }
 
+  private func moreTitle(for tab: WeatherStore.Tab) -> String {
+    switch tab {
+    case .grok: "Storm Spotter"
+    default: tab.rawValue
+    }
+  }
+
   private func moreSubtitle(for tab: WeatherStore.Tab) -> String {
     switch tab {
     case .grok:
-      store.xaiService.hasValidKey ? "Chat, Imagine, Storm Spotter" : "Add key in Settings"
+      store.xaiService.hasValidKey
+        ? "Photo analysis, briefings, and chat" : "Add key in Settings"
     case .locations: "\(store.savedLocations.count) saved places"
     case .settings: "Units, alerts, privacy"
     default: ""
@@ -271,7 +279,7 @@ struct MoreHubSheet: View {
 
   private func moreTint(for tab: WeatherStore.Tab) -> Color {
     switch tab {
-    case .grok: DesignTokens.Palette.accent
+    case .grok: DesignTokens.Palette.danger
     case .locations: DesignTokens.Palette.accentCool
     case .settings: DesignTokens.Palette.textSecondary
     default: DesignTokens.Palette.accent

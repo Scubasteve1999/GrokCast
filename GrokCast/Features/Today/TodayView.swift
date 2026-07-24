@@ -1,6 +1,6 @@
 import SwiftUI
 
-private let bottomTabClearance = DesignTokens.Spacing.space32
+private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 private let todayContentTopPadding = DesignTokens.Spacing.space16
 
 struct TodayView: View {
@@ -260,6 +260,7 @@ private struct TodayWeatherPanel: View {
   @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
+  @State private var selectedAlert: NWSAlert?
 
   let weather: GrokCastWeather
   let isGeneratingImage: Bool
@@ -297,10 +298,15 @@ private struct TodayWeatherPanel: View {
   }
 
   var body: some View {
-    if !awaitsWidthMeasurement && prefersTwoColumnLayout {
-      wideTodayLayout
-    } else {
-      compactFigmaTodayLayout
+    Group {
+      if !awaitsWidthMeasurement && prefersTwoColumnLayout {
+        wideTodayLayout
+      } else {
+        compactFigmaTodayLayout
+      }
+    }
+    .navigationDestination(item: $selectedAlert) { alert in
+      AlertDetailView(alert: alert)
     }
   }
 
@@ -684,48 +690,55 @@ private struct TodayWeatherPanel: View {
   private var alertsSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       ForEach(store.displayableActiveAlerts.prefix(3)) { alert in
-        HStack(spacing: DesignTokens.Spacing.space8) {
-          Image(systemName: NWSAlertStyle.iconName(for: alert))
-            .font(.title3)
-            .foregroundStyle(NWSAlertStyle.tint(for: alert))
+        Button {
+          Haptic.impact(.light)
+          selectedAlert = alert
+        } label: {
+          HStack(spacing: DesignTokens.Spacing.space8) {
+            Image(systemName: NWSAlertStyle.iconName(for: alert))
+              .font(.title3)
+              .foregroundStyle(NWSAlertStyle.tint(for: alert))
 
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-            Text(alert.event.uppercased())
-              .font(.caption.weight(.bold))
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+              Text(alert.event.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+                .multilineTextAlignment(.leading)
 
-            if let headline = alert.headline, !headline.isEmpty {
-              Text(headline)
-                .font(.caption2)
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-                .lineLimit(2)
+              if let headline = alert.headline, !headline.isEmpty {
+                Text(headline)
+                  .font(.caption2)
+                  .foregroundStyle(DesignTokens.Palette.textSecondary)
+                  .lineLimit(3)
+                  .multilineTextAlignment(.leading)
+              } else if let area = alert.areaDesc, !area.isEmpty {
+                Text(area)
+                  .font(.caption2)
+                  .foregroundStyle(DesignTokens.Palette.textTertiary)
+                  .lineLimit(2)
+                  .multilineTextAlignment(.leading)
+              }
+
+              Text("Tap for details")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(DesignTokens.Palette.accent)
             }
 
-            if let area = alert.areaDesc, !area.isEmpty {
-              Text(area)
-                .font(.caption2)
-                .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .lineLimit(1)
-            }
+            Spacer(minLength: 0)
 
-            if let instr = alert.instruction, !instr.isEmpty {
-              Text(instr)
-                .font(.caption2)
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-                .lineLimit(2)
-                .padding(.top, DesignTokens.Spacing.space2)
-            }
+            Image(systemName: "chevron.right")
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
-
-          Spacer()
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(DesignTokens.Spacing.space16)
+          .elevatedCardStyle(
+            background: DesignTokens.Palette.cardBackground,
+            stroke: NWSAlertStyle.tint(for: alert).opacity(0.4),
+            cornerRadius: DesignTokens.Card.cornerRadiusMedium
+          )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(DesignTokens.Spacing.space16)
-        .elevatedCardStyle(
-          background: DesignTokens.Palette.cardBackground,
-          stroke: DesignTokens.Palette.cardStroke,
-          cornerRadius: DesignTokens.Card.cornerRadiusMedium
-        )
+        .buttonStyle(.plain)
       }
     }
   }
