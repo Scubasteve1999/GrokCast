@@ -432,11 +432,16 @@ private struct ForecastAdaptiveBody: View {
   }
 
   /// Prefer upcoming hours even if a cached payload still includes earlier-today slots.
+  /// Uses absolute `Date` cutoffs (not `Calendar.current`) so a remote city's hours —
+  /// already sliced in the location timezone by OpenMeteoService — are not dropped
+  /// when the device timezone differs.
   private static func nextHourlyForecasts(from weather: GrokCastWeather) -> [HourlyForecast] {
-    let hourStart =
-      Calendar.current.dateInterval(of: .hour, for: Date())?.start
-      ?? Date().addingTimeInterval(-60)
-    return Array(weather.hourly.lazy.filter { $0.time >= hourStart }.prefix(24))
+    let cutoff = Date().addingTimeInterval(-45 * 60)
+    let upcoming = weather.hourly.filter { $0.time >= cutoff }
+    if !upcoming.isEmpty {
+      return Array(upcoming.prefix(24))
+    }
+    return Array(weather.hourly.prefix(24))
   }
 }
 

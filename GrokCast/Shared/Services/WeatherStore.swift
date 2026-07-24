@@ -1095,21 +1095,68 @@ final class WeatherStore {
     if needsLiveActivity || needsAlerts,
       !Self.isBackgroundBudgetExhausted(taskStart)
     {
-      // Refresh weather so Live Activity / rain alerts / widgets stay current.
-      await refreshWeather(for: loc)
+      // Fetch without calling refreshWeather(for:), which would overwrite currentLocation
+      // and yank a user off a manually selected city after BGAppRefresh / silent push.
+      guard let weather = await fetchWeatherWithoutSelecting(location: loc) else {
+        return alertOK
+      }
       if Self.isBackgroundBudgetExhausted(taskStart) { return alertOK }
-      syncScoreSurfacesFromCurrentWeather()
 
-      if rainAlertsEnabled,
-        needsAlerts,
-        loc.id == currentLocation?.id,
-        let weather = currentWeather
-      {
-        await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit)
+      if loc.id == currentLocation?.id {
+        currentWeather = weather
+        syncScoreSurfacesFromCurrentWeather()
+        if rainAlertsEnabled, needsAlerts {
+          await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit)
+        }
+      } else if needsLiveActivity {
+        // Keep the selected-city UI intact; still refresh LA + widgets for the BG target
+        // (usually the device "Current Location" entry).
+        publishBackgroundWeatherSurfaces(weather: weather, locationName: loc.name)
       }
     }
 
     return alertOK
+  }
+
+  /// Primary/NWS weather fetch that never mutates `currentLocation` or loading UI.
+  @MainActor
+  private func fetchWeatherWithoutSelecting(location: SavedLocation) async -> GrokCastWeather? {
+    switch await fetchPrimaryWeather(for: location) {
+    case .success(let forecast):
+      return forecast
+    case .timedOut, .failure:
+      switch await fetchNWSFallback(for: location) {
+      case .success(let forecast):
+        return forecast
+      case .timedOut, .failure:
+        return nil
+      }
+    }
+  }
+
+  /// Updates widgets + Live Activity from a background fetch without changing the selected city.
+  @MainActor
+  private func publishBackgroundWeatherSurfaces(weather: GrokCastWeather, locationName: String) {
+    let score = GrokCastScoreCalculator.score(
+      for: weather, alerts: activeAlerts, units: temperatureUnit)
+    let minutecast = MinutecastEngine.summary(
+      from: weather.minutely15, units: temperatureUnit)
+    persistWidgetSnapshot(
+      from: weather,
+      score: score,
+      minutecast: minutecast
+    )
+    guard liveActivityEnabled,
+      EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared)
+    else { return }
+    WeatherLiveActivityManager.sync(
+      weather: weather,
+      score: score,
+      minutecast: minutecast,
+      locationName: locationName,
+      temperatureText: formatTemperatureShort(weather.currentTemp),
+      enabled: true
+    )
   }
 
   private static func isBackgroundBudgetExhausted(_ taskStart: CFAbsoluteTime?) -> Bool {
