@@ -69,7 +69,9 @@ struct SettingsView: View {
             }
           } else {
             VStack(alignment: .leading, spacing: 8) {
-              Text("Unlock forecast radar, Live Activity, unlimited locations, and more.")
+              Text(
+                "Unlock forecast radar, Live Activity, and unlimited locations. AI still uses an xAI key in Settings."
+              )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
               Button("View SpotterCast Pro") {
@@ -95,7 +97,7 @@ struct SettingsView: View {
           Text("SPOTTERCAST PRO")
         } footer: {
           Text(
-            "Pro unlocks forecast radar, Live Activity, and unlimited locations. AI chat uses an xAI developer key in Settings."
+            "Pro unlocks forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when SpotterCast refreshes weather. AI chat / Today's Take need an xAI developer key in Settings — Pro does not replace that until a hosted proxy ships."
           )
         }
 
@@ -342,7 +344,7 @@ struct SettingsView: View {
           Text("DISPLAY & NOTIFICATIONS")
         } footer: {
           Text(
-            "Live Activity shows your SpotterCast Score and Minutecast on the Lock Screen. Morning brief uses your cached AI take when scheduled."
+            "Live Activity (Pro) shows Score + Minutecast on the Lock Screen and updates when the app refreshes weather — not a continuous background push feed yet. Morning brief notifies from your cached Today's Take when scheduled."
           )
         }
 
@@ -574,7 +576,9 @@ struct SettingsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
         } else {
-          Text("Unlock forecast radar, Live Activity, unlimited locations, and more.")
+          Text(
+            "Unlock forecast radar, Live Activity, and unlimited locations. AI still uses an xAI key in Settings."
+          )
             .font(.system(size: 14))
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(.horizontal, DesignTokens.Spacing.space16)

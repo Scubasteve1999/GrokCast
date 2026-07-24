@@ -64,10 +64,34 @@ struct PaywallView: View {
 
   private var featureList: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      paywallRow("Widget AI brief", "rectangle.3.group.fill", "One-liner insights on Home Screen widgets")
-      paywallRow("Forecast radar (FUTURE)", "cloud.rain.fill", "Animated precipitation outlook")
-      paywallRow("Live Activity & rich widgets", "lock.rectangle.stack.fill", "Score + Minutecast on Lock Screen")
-      paywallRow("Unlimited saved locations", "mappin.and.ellipse", "Track every place you care about")
+      paywallRow(
+        "Forecast radar (FUTURE)",
+        "cloud.rain.fill",
+        "Animated precipitation outlook you can scrub ahead"
+      )
+      paywallRow(
+        "Live Activity",
+        "lock.rectangle.stack.fill",
+        "Score + Minutecast on Lock Screen when SpotterCast refreshes weather"
+      )
+      paywallRow(
+        "Home Screen widgets",
+        "rectangle.3.group.fill",
+        "Score + Minutecast on widgets (AI one-liner needs an xAI key)"
+      )
+      paywallRow(
+        "Unlimited saved locations",
+        "mappin.and.ellipse",
+        "Track every place you care about"
+      )
+
+      Text(
+        "AI chat, Today's Take, and Storm Spotter use an xAI developer key in Settings — not unlocked by Pro until a hosted proxy ships."
+      )
+      .font(.caption2)
+      .foregroundStyle(DesignTokens.Palette.textTertiary)
+      .fixedSize(horizontal: false, vertical: true)
+      .padding(.top, 4)
     }
     .padding(DesignTokens.Spacing.space16)
     .cardStyle(
@@ -250,17 +274,17 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations. AI chat needs an xAI developer key in Settings."
+      "AI chat needs an xAI developer key in Settings. SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations — not hosted AI (yet)."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:
       "Save unlimited cities and switch between them from Today, Radar, and widgets."
     case .liveActivity:
-      "Live Activity shows your SpotterCast Score and Minutecast without opening the app."
+      "Pro shows SpotterCast Score and Minutecast on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:
-      "Wake up to a personalized AI weather brief every morning — what to wear, when to leave, and what to watch for."
+      "Schedule a local morning notification from your cached Today's Take. Generating that take needs an xAI key in Settings."
     case .severeAlerts:
-      "NWS warnings and watches with rich, time-sensitive notifications — free for all users. SpotterCast Pro adds AI briefings and radar tools to help you plan around severe weather."
+      "NWS warnings and watches with notifications are free for all users. Pro adds forecast radar, Lock Screen weather, and unlimited locations."
     }
   }
 

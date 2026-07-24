@@ -32,8 +32,8 @@ Product IDs in this binary:
 - `com.scubasteve1999.GrokCast.pro.monthly` — SpotterCast Pro Monthly
 - `com.scubasteve1999.GrokCast.pro.yearly` — SpotterCast Pro Yearly
 
-Pro unlocks: forecast radar (FUTURE), Live Activity, unlimited saved locations, widget AI brief.  
-AI chat works with the embedded key for all users; a hosted Pro proxy is not required for review.
+Pro unlocks: forecast radar (FUTURE), Live Activity (updates when the app refreshes weather), unlimited saved locations, and richer widgets (score + Minutecast).  
+AI chat / Today's Take / Storm Spotter use an embedded or Settings xAI developer key for all users — Pro does not replace the key until a hosted proxy ships. A hosted Pro proxy is not required for review.
 
 Paywall includes **Privacy Policy** and **Terms of Use (EULA)** links and **Restore Purchases**.
 

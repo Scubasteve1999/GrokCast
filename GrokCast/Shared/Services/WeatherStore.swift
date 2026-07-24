@@ -478,7 +478,10 @@ final class WeatherStore {
       minutecast
       ?? MinutecastEngine.summary(from: weather.minutely15, units: temperatureUnit)
     let brief: String?
-    if EntitlementChecker.canUseWidgetGrokBrief(subscription: SubscriptionManager.shared) {
+    if EntitlementChecker.canUseWidgetGrokBrief(
+      subscription: SubscriptionManager.shared,
+      hasDeveloperKey: xaiService.hasValidKey
+    ) {
       brief =
         grokBriefOneLiner
         ?? WidgetDataStore.loadSnapshot(for: weather.location.id)?.grokBriefOneLiner
