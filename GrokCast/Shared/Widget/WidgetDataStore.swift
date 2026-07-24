@@ -19,14 +19,26 @@ enum WidgetDataStore {
     return defaults
   }
 
+  /// True when the last snapshot write could not open the App Group container.
+  private(set) static var lastAppGroupUnavailable = false
+
   // MARK: - Snapshots (keyed by location.id)
 
-  static func saveSnapshot(_ snapshot: WidgetWeatherSnapshot) {
-    guard let defaults = groupDefaults else { return }
+  @discardableResult
+  static func saveSnapshot(_ snapshot: WidgetWeatherSnapshot) -> Bool {
+    guard let defaults = groupDefaults else {
+      lastAppGroupUnavailable = true
+      #if DEBUG
+        print("[WidgetDataStore] App Group unavailable — widget snapshot not saved")
+      #endif
+      return false
+    }
+    lastAppGroupUnavailable = false
     var snapshots = loadAllSnapshots()
     snapshots[snapshot.location.id.uuidString] = snapshot
-    guard let data = try? JSONEncoder().encode(snapshots) else { return }
+    guard let data = try? JSONEncoder().encode(snapshots) else { return false }
     defaults.set(data, forKey: snapshotsKey)
+    return true
   }
 
   static func loadSnapshot(for locationID: UUID?) -> WidgetWeatherSnapshot? {

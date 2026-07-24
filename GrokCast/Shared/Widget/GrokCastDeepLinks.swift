@@ -2,7 +2,9 @@ import Foundation
 
 /// Shared deep-link URLs for the main app and widget extension.
 enum GrokCastDeepLinks {
+  /// Primary scheme (legacy + widgets). `spottercast` is also registered in Info.plist.
   static let scheme = "grokcast"
+  static let alternateScheme = "spottercast"
   static let todayHost = "today"
   static let alertsHost = "alerts"
   static let forecastHost = "forecast"

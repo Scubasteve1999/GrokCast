@@ -41,16 +41,10 @@ final class LocationService: NSObject {
     manager.requestAlwaysAuthorization()
   }
 
-  /// Unified, clear entry point used by the first-launch explanation "Continue",
-  /// the ENABLE button, and the pre-step in useCurrentDeviceLocation().
-  /// Explicitly handles every state:
-  /// - .notDetermined → requests WhenInUse + Always (enables Significant Location Changes).
-  /// - denied/restricted → publishes error so UI can show friendly recovery without a pending location request.
-  /// - already authorized (WhenInUse or Always) → ensures Significant Location Changes is active.
-  ///
-  /// Signature is intentionally synchronous (fire-and-forget the system prompts for WhenInUse + Always).
-  /// The async location result (with continuation from delegate) comes from the separate
-  /// `requestLocation() async throws`. This matches the expected signature per call sites and design.
+  /// Unified entry point for first-launch / ENABLE / pre-step before locating.
+  /// - `.notDetermined` → When In Use only (Always is requested later if Travel Weather needs it).
+  /// - denied/restricted → publishes error for UI recovery.
+  /// - already authorized → ensures Significant Location Changes when Always is available.
   @MainActor
   public func requestLocationPermission() {
     error = nil
@@ -60,7 +54,6 @@ final class LocationService: NSObject {
     }
     if authorizationStatus == .notDetermined {
       manager.requestWhenInUseAuthorization()
-      manager.requestAlwaysAuthorization()
     } else if authorizationStatus == .authorizedWhenInUse
       || authorizationStatus == .authorizedAlways
     {
@@ -101,8 +94,8 @@ final class LocationService: NSObject {
         if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
           manager.requestLocation()
         } else {
+          // When In Use first — Always is only requested from startSignificantLocationChanges().
           manager.requestWhenInUseAuthorization()
-          manager.requestAlwaysAuthorization()
           // Will continue in delegate
         }
       }

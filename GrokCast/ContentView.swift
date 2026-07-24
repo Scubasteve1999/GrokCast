@@ -80,7 +80,9 @@ struct MainTabView: View {
   }
 
   private func handleDeepLink(_ url: URL) {
-    guard url.scheme == GrokCastDeepLinks.scheme else { return }
+    let scheme = url.scheme?.lowercased()
+    guard scheme == GrokCastDeepLinks.scheme || scheme == GrokCastDeepLinks.alternateScheme
+    else { return }
     switch url.host {
     case GrokCastDeepLinks.todayHost:
       store.selectedTab = .today

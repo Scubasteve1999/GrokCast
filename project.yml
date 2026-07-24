@@ -10,7 +10,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.0.2"
-    CURRENT_PROJECT_VERSION: "63"
+    CURRENT_PROJECT_VERSION: "64"
 
 configs:
   Debug: debug
@@ -108,6 +108,7 @@ targets:
           - CFBundleURLName: com.grokcast.GrokCast
             CFBundleURLSchemes:
               - grokcast
+              - spottercast
     dependencies:
       - target: GrokCastWidgets
         embed: true

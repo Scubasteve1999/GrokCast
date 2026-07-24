@@ -231,7 +231,12 @@ final class OpenMeteoService {
         let date = parseDailyDate(d.time[i])
         let slices =
           hourly.map { h in
-            OpenMeteoDailyDerivation.hourlySlices(for: date, hourly: h, parseHour: parseHourlyDate)
+            OpenMeteoDailyDerivation.hourlySlices(
+              for: date,
+              hourly: h,
+              parseHour: parseHourlyDate,
+              calendar: locationCalendar
+            )
           } ?? []
         let apiPrecip = openMeteoValue(d.precipitation_probability_max, at: i) ?? 0
         let precipChance = OpenMeteoDailyDerivation.derivedPrecipChance(

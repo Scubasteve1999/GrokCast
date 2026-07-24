@@ -26,7 +26,7 @@ struct WatchWeatherView: View {
           ContentUnavailableView {
             Label("No Data", systemImage: "cloud")
           } description: {
-            Text("Open GrokCast on iPhone and refresh weather.")
+            Text("Open SpotterCast on iPhone and refresh weather.")
           }
         }
       }

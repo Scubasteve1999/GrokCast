@@ -34,11 +34,13 @@ enum WeatherLiveActivityManager {
       symbolName: weather.symbolName
     )
 
+    // No ActivityKit push server yet (`pushType: nil`). Keep the activity fresh via
+    // foreground + BGAppRefresh weather sync; staleDate matches that cadence (~2h).
+    let staleDate = Date().addingTimeInterval(2 * 60 * 60)
+
     if let activity = currentActivity {
       Task {
-        await activity.update(
-          ActivityContent(state: content, staleDate: Date().addingTimeInterval(30 * 60))
-        )
+        await activity.update(ActivityContent(state: content, staleDate: staleDate))
       }
       return
     }
@@ -46,7 +48,7 @@ enum WeatherLiveActivityManager {
     let attributes = WeatherLiveActivityAttributes()
     if let activity = try? Activity.request(
       attributes: attributes,
-      content: ActivityContent(state: content, staleDate: Date().addingTimeInterval(30 * 60)),
+      content: ActivityContent(state: content, staleDate: staleDate),
       pushType: nil
     ) {
       currentActivity = activity

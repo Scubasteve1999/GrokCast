@@ -85,6 +85,11 @@ final class WeatherStore {
   private let liveActivityEnabledKey = "grokcast_live_activity_enabled"
   private var _liveActivityEnabled = false
 
+  /// Readable from BG task scheduling without hopping through the store instance.
+  nonisolated static var persistedLiveActivityEnabled: Bool {
+    UserDefaults.standard.bool(forKey: "grokcast_live_activity_enabled")
+  }
+
   /// Live Activity on Lock Screen / Dynamic Island (score + minutecast).
   var liveActivityEnabled: Bool {
     get { _liveActivityEnabled }
@@ -94,8 +99,10 @@ final class WeatherStore {
       UserDefaults.standard.set(newValue, forKey: liveActivityEnabledKey)
       if newValue {
         syncScoreSurfacesFromCurrentWeather()
+        BackgroundAlertRefreshService.scheduleAlertRefreshTask()
       } else {
         WeatherLiveActivityManager.end()
+        BackgroundAlertRefreshService.scheduleAlertRefreshTask()
       }
     }
   }
@@ -1022,65 +1029,87 @@ final class WeatherStore {
   /// Background entry point for BGAppRefreshTask — uses persisted saved locations.
   ///
   /// Keeps work lightweight: NWS alerts + local notifications + optional rain check.
+  /// Background entry used by silent push. Prefer `performBackgroundRefresh`.
+  @MainActor
+  @discardableResult
+  func performBackgroundAlertCheck(taskStart: CFAbsoluteTime? = nil) async -> Bool {
+    await performBackgroundRefresh(taskStart: taskStart)
+  }
+
   /// Never calls Grok (morning brief) here — that belongs on foreground refresh only.
+  ///
+  /// Covers NWS alert polling and, when Live Activity is on, a lightweight weather
+  /// refresh so Lock Screen content does not go stale solely from being backgrounded.
   ///
   /// v1 limitation: only the current/preferred location is checked (isCurrent preferred, else first
   /// saved). Multi-location background polling can be added later if user demand warrants it.
   @MainActor
   @discardableResult
-  func performBackgroundAlertCheck(taskStart: CFAbsoluteTime? = nil) async -> Bool {
-    guard alertNotificationsEnabled else {
+  func performBackgroundRefresh(taskStart: CFAbsoluteTime? = nil) async -> Bool {
+    let needsAlerts = alertNotificationsEnabled
+    let needsLiveActivity =
+      liveActivityEnabled
+      && EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared)
+
+    guard needsAlerts || needsLiveActivity else {
       return true
     }
     if Self.isBackgroundBudgetExhausted(taskStart) { return false }
 
     let locations = loadLocationsForBackgroundCheck()
     guard let loc = locations.first else {
-      // Stable empty state: no saved locations means nothing to poll; success avoids penalizing BG retries.
       return true
     }
 
-    do {
-      let alerts = try await nwsService.fetchActiveAlerts(for: loc, timeout: 8)
-      if Self.isBackgroundBudgetExhausted(taskStart) { return false }
+    var alertOK = true
+    if needsAlerts {
+      do {
+        let alerts = try await nwsService.fetchActiveAlerts(for: loc, timeout: 8)
+        if Self.isBackgroundBudgetExhausted(taskStart) { return false }
 
-      if loc.id == currentLocation?.id {
-        activeAlerts = alerts
-        lastAlertsFetch = Date()
-        alertsForLocation = loc.id
-        lastAlertsFetchSucceeded = true
+        if loc.id == currentLocation?.id {
+          activeAlerts = alerts
+          lastAlertsFetch = Date()
+          alertsForLocation = loc.id
+          lastAlertsFetchSucceeded = true
+        }
+        alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
+        AlertHistoryStore.saveHistory(alertHistory)
+        persistWidgetAlertSummary(for: loc, alerts: alerts)
+
+        await AlertNotificationService.shared.notifyIfNeeded(
+          for: alerts,
+          enabled: alertNotificationsEnabled,
+          taskStart: taskStart
+        )
+      } catch is CancellationError {
+        return false
+      } catch {
+        if loc.id == currentLocation?.id {
+          lastAlertsFetchSucceeded = false
+        }
+        alertOK = false
       }
-      alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
-      AlertHistoryStore.saveHistory(alertHistory)
-      persistWidgetAlertSummary(for: loc, alerts: alerts)
-      if loc.id == currentLocation?.id {
-        syncScoreSurfacesFromCurrentWeather()
-      }
+    }
 
-      await AlertNotificationService.shared.notifyIfNeeded(
-        for: alerts,
-        enabled: alertNotificationsEnabled,
-        taskStart: taskStart
-      )
+    if needsLiveActivity || needsAlerts,
+      !Self.isBackgroundBudgetExhausted(taskStart)
+    {
+      // Refresh weather so Live Activity / rain alerts / widgets stay current.
+      await refreshWeather(for: loc)
+      if Self.isBackgroundBudgetExhausted(taskStart) { return alertOK }
+      syncScoreSurfacesFromCurrentWeather()
 
-      // Rain alerts only when in-memory weather matches the location we just polled.
       if rainAlertsEnabled,
-        !Self.isBackgroundBudgetExhausted(taskStart),
+        needsAlerts,
         loc.id == currentLocation?.id,
         let weather = currentWeather
       {
         await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit)
       }
-
-      return true
-    } catch is CancellationError {
-      return false
-    } catch {
-      if loc.id == currentLocation?.id {
-        lastAlertsFetchSucceeded = false
-      }
-      return false
     }
+
+    return alertOK
   }
 
   private static func isBackgroundBudgetExhausted(_ taskStart: CFAbsoluteTime?) -> Bool {
@@ -1088,11 +1117,12 @@ final class WeatherStore {
     return CFAbsoluteTimeGetCurrent() - taskStart >= backgroundAlertBudgetSeconds
   }
 
-  /// Requests notification permission (if needed) then schedules the next BG alert refresh when enabled.
+  /// Requests notification permission (if needed) then schedules BG refresh for alerts and/or Live Activity.
   @MainActor
   func scheduleBackgroundAlertRefreshIfEnabled() async {
-    guard alertNotificationsEnabled else { return }
-    await requestAlertNotificationPermissionIfNeeded()
+    if alertNotificationsEnabled {
+      await requestAlertNotificationPermissionIfNeeded()
+    }
     BackgroundAlertRefreshService.scheduleAlertRefreshTask()
   }
 

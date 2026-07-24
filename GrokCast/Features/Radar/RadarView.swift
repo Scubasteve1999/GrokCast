@@ -122,9 +122,19 @@ struct RadarView: View {
     }
     .overlay(alignment: .topLeading) {
       if store.selectedTab == .radar {
-        radarModeBadge
-          .padding(.top, 8)
-          .padding(.leading, DesignTokens.Spacing.space20)
+        VStack(alignment: .leading, spacing: 8) {
+          radarModeBadge
+          if store.isOffline {
+            Text("Offline — showing last loaded tiles if available")
+              .font(.system(size: 11, weight: .semibold))
+              .foregroundStyle(DesignTokens.Palette.warning)
+              .padding(.horizontal, DesignTokens.Spacing.space12)
+              .padding(.vertical, 6)
+              .background(DesignTokens.Palette.cardBackground.opacity(0.92), in: Capsule())
+          }
+        }
+        .padding(.top, 8)
+        .padding(.leading, DesignTokens.Spacing.space20)
       }
     }
     .overlay(alignment: .bottom) {

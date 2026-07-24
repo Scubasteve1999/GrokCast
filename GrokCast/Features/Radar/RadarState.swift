@@ -177,7 +177,10 @@ final class RadarState {
     if let message = liveUnavailableMessage {
       return RadarStatusFooter(text: message, style: .error)
     }
-    return RadarStatusFooter(text: "Radar unavailable", style: .error)
+    return RadarStatusFooter(
+      text: "Radar unavailable — check connection and try again",
+      style: .error
+    )
   }
 
   var resolvedCurrentTileKey: String? {
