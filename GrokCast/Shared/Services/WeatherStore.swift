@@ -629,10 +629,10 @@ final class WeatherStore {
       }
 
       // Debounce to avoid redundant full refreshes on rapid successive deliveries.
-      // Subsequent real movements will still trigger because enough time will have passed.
+      // Do NOT bump `lastSignificantRefreshDate` on the early return — resetting it
+      // here slides the window forever under burst CLC updates and can starve refresh.
       let now = Date()
       if let last = lastSignificantRefreshDate, now.timeIntervalSince(last) < 45 {
-        lastSignificantRefreshDate = now
         return
       }
       lastSignificantRefreshDate = now
