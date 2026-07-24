@@ -1017,6 +1017,9 @@ final class WeatherStore {
       await SevereWeatherStore.shared.refresh(
         for: loc, force: force, alerts: alertsForSevere)
     }
+    Task {
+      await ShortTermPrecipStore.shared.refresh(for: loc, force: force)
+    }
   }
 
   /// Non-expired alerts for UI display. Falls back to persisted history only when the last

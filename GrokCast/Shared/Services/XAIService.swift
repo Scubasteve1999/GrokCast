@@ -77,12 +77,14 @@ final class XAIService {
   func performAdvancedStormAnalysis(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]? = nil,
     severeContext: SevereWeatherContext? = nil,
+    shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) async throws -> String {
     let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
     let body = try buildStormAnalysisBody(
       imageData: imageData, weather: weather, alerts: alerts,
       severeContext: severeContext,
+      shortTermContext: shortTermContext,
       nearestStationObservation: nearestStationObservation, userNotes: userNotes, stream: false)
     return try await performChatRequest(body: body, auth: auth)
   }
@@ -91,6 +93,7 @@ final class XAIService {
   func streamAdvancedStormAnalysis(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]? = nil,
     severeContext: SevereWeatherContext? = nil,
+    shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) -> AsyncThrowingStream<String, Error> {
     AsyncThrowingStream { continuation in
@@ -100,6 +103,7 @@ final class XAIService {
           let body = try buildStormAnalysisBody(
             imageData: imageData, weather: weather, alerts: alerts,
             severeContext: severeContext,
+            shortTermContext: shortTermContext,
             nearestStationObservation: nearestStationObservation, userNotes: userNotes,
             stream: true)
 
@@ -174,6 +178,7 @@ final class XAIService {
   private func buildStormAnalysisBody(
     imageData: Data, weather: GrokCastWeather?, alerts: [NWSAlert]?,
     severeContext: SevereWeatherContext? = nil,
+    shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation?, userNotes: String?, stream: Bool
   ) throws -> [String: Any] {
     var systemContent = GrokPrompts.stormSpotterSystemPrompt
@@ -184,6 +189,7 @@ final class XAIService {
           for: weather,
           alerts: alerts ?? [],
           severeContext: severeContext,
+          shortTermContext: shortTermContext,
           nearestStationObservation: nearestStationObservation,
           userNotes: userNotes)
     }

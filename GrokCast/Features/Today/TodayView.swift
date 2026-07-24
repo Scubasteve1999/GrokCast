@@ -258,6 +258,7 @@ struct TodayView: View {
 private struct TodayWeatherPanel: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SevereWeatherStore.self) private var severeStore
+  @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
   @State private var selectedAlert: NWSAlert?
@@ -271,8 +272,24 @@ private struct TodayWeatherPanel: View {
       for: weather, alerts: store.displayableActiveAlerts, units: store.temperatureUnit)
   }
 
+  private var hrrrContextForLocation: ShortTermPrecipContext? {
+    guard let locID = store.currentLocation?.id.uuidString,
+      shortTermStore.context.locationID == locID,
+      shortTermStore.context.hasHRRRSlots
+    else { return nil }
+    return shortTermStore.context
+  }
+
   private var currentMinutecast: MinutecastSummary {
-    MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
+    if let hrrr = hrrrContextForLocation {
+      return hrrr.summary
+        ?? MinutecastEngine.summary(from: hrrr.slots, units: store.temperatureUnit)
+    }
+    return MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
+  }
+
+  private var minutecastSourceLabel: String? {
+    hrrrContextForLocation != nil ? "HRRR" : nil
   }
 
   private var todaySevereContext: SevereWeatherContext? {
@@ -320,7 +337,7 @@ private struct TodayWeatherPanel: View {
         layout: .figma
       )
 
-      MinutecastStrip(summary: currentMinutecast)
+      MinutecastStrip(summary: currentMinutecast, sourceLabel: minutecastSourceLabel)
 
       if let severe = todaySevereContext {
         SevereContextCard(context: severe)
@@ -348,7 +365,7 @@ private struct TodayWeatherPanel: View {
         layout: .ring
       )
 
-      MinutecastStrip(summary: currentMinutecast)
+      MinutecastStrip(summary: currentMinutecast, sourceLabel: minutecastSourceLabel)
 
       if let severe = todaySevereContext {
         SevereContextCard(context: severe)
@@ -1000,11 +1017,15 @@ struct TacticalCardSkeleton: View {
 #Preview("Today — iPhone") {
   TodayView()
     .environment(WeatherStore())
+    .environment(SevereWeatherStore.shared)
+    .environment(ShortTermPrecipStore.shared)
 }
 
 #Preview("Today — 500pt regular") {
   TodayView()
     .environment(WeatherStore())
+    .environment(SevereWeatherStore.shared)
+    .environment(ShortTermPrecipStore.shared)
     .frame(width: 500, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1012,6 +1033,8 @@ struct TacticalCardSkeleton: View {
 #Preview("Today — 650pt regular") {
   TodayView()
     .environment(WeatherStore())
+    .environment(SevereWeatherStore.shared)
+    .environment(ShortTermPrecipStore.shared)
     .frame(width: 650, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1019,6 +1042,8 @@ struct TacticalCardSkeleton: View {
 #Preview("Today — 700pt regular") {
   TodayView()
     .environment(WeatherStore())
+    .environment(SevereWeatherStore.shared)
+    .environment(ShortTermPrecipStore.shared)
     .frame(width: 700, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1026,6 +1051,8 @@ struct TacticalCardSkeleton: View {
 #Preview("Today — 1024pt regular") {
   TodayView()
     .environment(WeatherStore())
+    .environment(SevereWeatherStore.shared)
+    .environment(ShortTermPrecipStore.shared)
     .frame(width: 1024, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1033,4 +1060,6 @@ struct TacticalCardSkeleton: View {
 #Preview("Today — iPad Pro 11-inch (M4)") {
   TodayView()
     .environment(WeatherStore())
+    .environment(SevereWeatherStore.shared)
+    .environment(ShortTermPrecipStore.shared)
 }

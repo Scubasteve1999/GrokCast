@@ -61,10 +61,18 @@ enum MorningBriefGenerator {
     let unit = weatherStore.temperatureUnit
     let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
       .joined(separator: ", ")
+    let locationKey = weatherStore.currentLocation?.id.uuidString
     let severe = SevereWeatherStore.shared.context
     let severeBlock: String = {
-      guard severe.locationID == weatherStore.currentLocation?.id.uuidString,
+      guard severe.locationID == locationKey,
         let block = GrokPrompts.severeContextBlock(context: severe)
+      else { return "" }
+      return "\n\(block)"
+    }()
+    let shortTerm = ShortTermPrecipStore.shared.context
+    let shortTermBlock: String = {
+      guard shortTerm.locationID == locationKey,
+        let block = GrokPrompts.shortTermPrecipBlock(context: shortTerm)
       else { return "" }
       return "\n\(block)"
     }()
@@ -74,7 +82,7 @@ enum MorningBriefGenerator {
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
-      Active alerts: \(alerts.isEmpty ? "none" : alerts).\(severeBlock)
+      Active alerts: \(alerts.isEmpty ? "none" : alerts).\(severeBlock)\(shortTermBlock)
       Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
       """
 

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct MinutecastStrip: View {
   let summary: MinutecastSummary
+  /// Optional source cue (e.g. `"HRRR"`) when short-term slots are not Open-Meteo default.
+  var sourceLabel: String? = nil
 
   private var accent: Color {
     switch summary.kind {
@@ -21,6 +23,12 @@ struct MinutecastStrip: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer(minLength: 0)
+        if let sourceLabel, !sourceLabel.isEmpty {
+          Text(sourceLabel)
+            .font(.system(size: 9, weight: .heavy))
+            .tracking(1.0)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+        }
         Text("MINUTECAST")
           .font(.system(size: 9, weight: .heavy))
           .tracking(1.2)

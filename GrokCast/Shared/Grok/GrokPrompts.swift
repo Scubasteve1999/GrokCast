@@ -41,6 +41,7 @@ enum GrokPrompts {
     for weather: GrokCastWeather,
     alerts: [NWSAlert] = [],
     severeContext: SevereWeatherContext? = nil,
+    shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation? = nil,
     userNotes: String? = nil
   ) -> String {
@@ -115,11 +116,36 @@ enum GrokPrompts {
       context += "\n\n" + severeBlock
     }
 
+    if let shortTermBlock = shortTermPrecipBlock(context: shortTermContext), !shortTermBlock.isEmpty {
+      context += "\n\n" + shortTermBlock
+    }
+
     if let notes = userNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
       context += "\n\nObserver notes: \(notes)"
     }
 
     return context
+  }
+
+  /// Short-term (0–90 min) precip block when CONUS HRRR slots are available.
+  static func shortTermPrecipBlock(context: ShortTermPrecipContext?) -> String? {
+    guard let context, context.hasHRRRSlots else { return nil }
+    let summary =
+      context.summary
+      ?? MinutecastEngine.summary(from: context.slots)
+    var lines: [String] = [
+      "- Source: HRRR 15-min (Open-Meteo GFS)",
+      "- Outlook: \(summary.message)",
+    ]
+    let slotBits = context.slots.prefix(6).map { slot in
+      let mins = max(0, Int(slot.time.timeIntervalSinceNow / 60))
+      let precip = String(format: "%.3f", slot.precipitation)
+      return "+\(mins)m: \(precip) in, \(slot.precipChance)%"
+    }
+    if !slotBits.isEmpty {
+      lines.append("- Slots: \(slotBits.joined(separator: "; "))")
+    }
+    return "**Short-term precip (0–90 min):**\n" + lines.joined(separator: "\n")
   }
 
   /// Short severe-guidance block for Grok briefs/chat when SPC/MD/LSR content exists.
@@ -162,6 +188,7 @@ enum GrokPrompts {
     for weather: GrokCastWeather,
     alerts: [NWSAlert] = [],
     severeContext: SevereWeatherContext? = nil,
+    shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation? = nil,
     userNotes: String?
   ) -> String {
@@ -170,6 +197,7 @@ enum GrokPrompts {
       for: weather,
       alerts: alerts,
       severeContext: severeContext,
+      shortTermContext: shortTermContext,
       nearestStationObservation: nearestStationObservation,
       userNotes: userNotes)
 
