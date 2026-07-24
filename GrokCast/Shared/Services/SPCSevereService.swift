@@ -22,8 +22,23 @@ final class SPCSevereService: Sendable {
 
   // MARK: - Day 1 outlook
 
+  struct Day1OutlookFetch: Equatable, Sendable {
+    let outlook: SPCDay1Outlook
+    let succeeded: Bool
+  }
+
+  struct MesoscaleFetch: Equatable, Sendable {
+    let items: [SPCMesoscaleDiscussion]
+    let succeeded: Bool
+  }
+
+  struct LocalStormReportFetch: Equatable, Sendable {
+    let items: [SPCLocalStormReport]
+    let succeeded: Bool
+  }
+
   /// Spatial query for Day 1 categorical + tornado/hail/wind probabilities at a point.
-  func fetchDay1Outlook(latitude: Double, longitude: Double) async -> SPCDay1Outlook {
+  func fetchDay1Outlook(latitude: Double, longitude: Double) async -> Day1OutlookFetch {
     async let categorical = queryHighestDN(
       base: outlookBase, layer: 1, latitude: latitude, longitude: longitude)
     async let tornado = queryHighestDN(
@@ -38,19 +53,37 @@ final class SPCSevereService: Sendable {
     let hailHit = await hail
     let windHit = await wind
 
-    guard let cat else { return .empty }
-
-    return SPCDay1Outlook(
-      category: SPCOutlookCategory(dn: cat.dn),
-      label: cat.label,
-      labelDetail: cat.label2,
-      valid: cat.valid,
-      expire: cat.expire,
-      issue: cat.issue,
-      tornadoProbability: tor.flatMap { Self.probabilityPercent(from: $0) },
-      hailProbability: hailHit.flatMap { Self.probabilityPercent(from: $0) },
-      windProbability: windHit.flatMap { Self.probabilityPercent(from: $0) }
-    )
+    // Categorical layer is authoritative for transport success.
+    switch cat {
+    case .failed:
+      return Day1OutlookFetch(outlook: .empty, succeeded: false)
+    case .empty:
+      return Day1OutlookFetch(outlook: .empty, succeeded: true)
+    case .hit(let hit):
+      return Day1OutlookFetch(
+        outlook: SPCDay1Outlook(
+          category: SPCOutlookCategory(dn: hit.dn),
+          label: hit.label,
+          labelDetail: hit.label2,
+          valid: hit.valid,
+          expire: hit.expire,
+          issue: hit.issue,
+          tornadoProbability: {
+            if case .hit(let t) = tor { return Self.probabilityPercent(from: t) }
+            return nil
+          }(),
+          hailProbability: {
+            if case .hit(let h) = hailHit { return Self.probabilityPercent(from: h) }
+            return nil
+          }(),
+          windProbability: {
+            if case .hit(let w) = windHit { return Self.probabilityPercent(from: w) }
+            return nil
+          }()
+        ),
+        succeeded: true
+      )
+    }
   }
 
   // MARK: - Mesoscale discussions
@@ -60,7 +93,7 @@ final class SPCSevereService: Sendable {
     latitude: Double,
     longitude: Double,
     distanceMiles: Double = 250
-  ) async -> [SPCMesoscaleDiscussion] {
+  ) async -> MesoscaleFetch {
     guard
       let features = await queryFeatures(
         urlString: "\(mdBase)/0/query",
@@ -71,22 +104,30 @@ final class SPCSevereService: Sendable {
         returnGeometry: false,
         resultRecordCount: 12
       )
-    else { return [] }
+    else {
+      return MesoscaleFetch(items: [], succeeded: false)
+    }
 
-    return features.compactMap { feature in
+    let items = features.compactMap { feature -> SPCMesoscaleDiscussion? in
       let attrs = feature.attributes
-      let objectID = attrs.intValue("objectid") ?? Int.random(in: 1...1_000_000)
       let number = attrs.stringValue("name") ?? ""
       let info = attrs.stringValue("folderpath")
       let link = attrs.stringValue("popupinfo")
       guard !number.isEmpty || info != nil || link != nil else { return nil }
+      let stableID: String = {
+        if let objectID = attrs.intValue("objectid") {
+          return "md-\(objectID)"
+        }
+        return "md-\(number)|\(info ?? "")|\(link?.count ?? 0)"
+      }()
       return SPCMesoscaleDiscussion(
-        id: "md-\(objectID)",
+        id: stableID,
         number: number,
         info: info,
         linkHTML: link
       )
     }
+    return MesoscaleFetch(items: items, succeeded: true)
   }
 
   // MARK: - Local storm reports
@@ -96,7 +137,7 @@ final class SPCSevereService: Sendable {
     latitude: Double,
     longitude: Double,
     distanceMiles: Double = 100
-  ) async -> [SPCLocalStormReport] {
+  ) async -> LocalStormReportFetch {
     guard
       let features = await queryFeatures(
         urlString: "\(lsrBase)/0/query",
@@ -109,23 +150,33 @@ final class SPCSevereService: Sendable {
         resultRecordCount: 25,
         orderByFields: "lsr_validtime DESC"
       )
-    else { return [] }
+    else {
+      return LocalStormReportFetch(items: [], succeeded: false)
+    }
 
-    return features.compactMap { feature in
+    let items = features.compactMap { feature -> SPCLocalStormReport? in
       let attrs = feature.attributes
-      let objectID = attrs.intValue("objectid") ?? Int.random(in: 1...1_000_000)
       let descript = attrs.stringValue("descript") ?? ""
+      let loc = attrs.stringValue("loc_desc")
+      let state = attrs.stringValue("state")
       let lat = feature.geometry?.y ?? feature.geometry?.latitude
       let lon = feature.geometry?.x ?? feature.geometry?.longitude
       let reportedAt = Self.parseLSRDate(
         epochMs: attrs.doubleValue("lsr_validtime"),
         validTime: attrs.stringValue("valid_time")
       )
+      let stableID: String = {
+        if let objectID = attrs.intValue("objectid") {
+          return "lsr-\(objectID)"
+        }
+        let timeKey = reportedAt.map { String($0.timeIntervalSince1970) } ?? "na"
+        return "lsr-\(descript)|\(loc ?? "")|\(state ?? "")|\(timeKey)"
+      }()
       return SPCLocalStormReport(
-        id: "lsr-\(objectID)",
+        id: stableID,
         description: descript,
-        locationDescription: attrs.stringValue("loc_desc"),
-        state: attrs.stringValue("state"),
+        locationDescription: loc,
+        state: state,
         magnitude: attrs.stringValue("magnitude"),
         units: attrs.stringValue("units"),
         remarks: attrs.stringValue("remarks"),
@@ -134,11 +185,12 @@ final class SPCSevereService: Sendable {
         longitude: lon
       )
     }
+    return LocalStormReportFetch(items: items, succeeded: true)
   }
 
   // MARK: - ArcGIS helpers
 
-  private struct OutlookHit {
+  private struct OutlookHit: Equatable {
     let dn: Int
     let label: String?
     let label2: String?
@@ -147,12 +199,18 @@ final class SPCSevereService: Sendable {
     let issue: String?
   }
 
+  private enum DNQuery: Equatable {
+    case failed
+    case empty
+    case hit(OutlookHit)
+  }
+
   private func queryHighestDN(
     base: String,
     layer: Int,
     latitude: Double,
     longitude: Double
-  ) async -> OutlookHit? {
+  ) async -> DNQuery {
     guard
       let features = await queryFeatures(
         urlString: "\(base)/\(layer)/query",
@@ -162,8 +220,8 @@ final class SPCSevereService: Sendable {
         outFields: "dn,label,label2,valid,expire,issue",
         returnGeometry: false,
         resultRecordCount: 20
-      ), !features.isEmpty
-    else { return nil }
+      )
+    else { return .failed }
 
     let hits: [OutlookHit] = features.compactMap { feature in
       guard let dn = feature.attributes.intValue("dn") else { return nil }
@@ -176,7 +234,8 @@ final class SPCSevereService: Sendable {
         issue: feature.attributes.stringValue("issue")
       )
     }
-    return hits.max(by: { $0.dn < $1.dn })
+    guard let best = hits.max(by: { $0.dn < $1.dn }) else { return .empty }
+    return .hit(best)
   }
 
   /// Probabilistic outlook layers use `dn` as the percent contour (2, 5, 10, …).
@@ -229,7 +288,8 @@ final class SPCSevereService: Sendable {
       }
       let decoded = try JSONDecoder().decode(ArcGISQueryResponse.self, from: data)
       if decoded.error != nil { return nil }
-      return decoded.features
+      // Empty `features` is a successful quiet response; missing key → treat as empty.
+      return decoded.features ?? []
     } catch {
       return nil
     }

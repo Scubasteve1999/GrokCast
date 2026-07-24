@@ -80,7 +80,13 @@ enum GrokPrompts {
       }
     }
 
-    let resolvedAlerts = severeContext?.alerts ?? alerts
+    // WeatherStore CAP alerts win when severe context's embedded fetch was empty/failed.
+    let resolvedAlerts: [NWSAlert] = {
+      guard let severeAlerts = severeContext?.alerts else { return alerts }
+      if severeAlerts.isEmpty { return alerts }
+      if alerts.isEmpty { return severeAlerts }
+      return alerts
+    }()
     if !resolvedAlerts.isEmpty {
       context += "\n\n**Active NWS Alerts for this area:**"
       for a in resolvedAlerts {

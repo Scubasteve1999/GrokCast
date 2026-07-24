@@ -37,11 +37,17 @@ struct AlertsView: View {
     severeContextForLocation?.hasSPCContent == true
   }
 
+  /// Avoid flashing the empty state while SPC products are still loading.
+  private var isWaitingOnSevereProducts: Bool {
+    activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts
+      && severeStore.isRefreshing
+  }
+
   var body: some View {
     NavigationStack {
       Group {
-        if store.isLoadingWeather && activeAlerts.isEmpty && historicalAlerts.isEmpty
-          && !hasSevereProducts
+        if (store.isLoadingWeather || isWaitingOnSevereProducts)
+          && activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts
         {
           alertsSkeleton
         } else if activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts {

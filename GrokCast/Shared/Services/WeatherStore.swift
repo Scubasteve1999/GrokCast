@@ -978,40 +978,44 @@ final class WeatherStore {
     guard let loc = currentLocation else { return }
 
     // 5-minute (300s) in-memory cache per location (per spec: 5-10 min)
-    if !force,
-      let last = lastAlertsFetch,
-      let cachedLocId = alertsForLocation,
-      cachedLocId == loc.id,
-      Date().timeIntervalSince(last) < 300
-    {
-      return
+    let alertsCacheFresh =
+      !force
+      && lastAlertsFetch.map { Date().timeIntervalSince($0) < 300 } == true
+      && alertsForLocation == loc.id
+
+    if !alertsCacheFresh {
+      do {
+        let alerts = try await nwsService.fetchActiveAlerts(for: loc)
+        activeAlerts = alerts
+        alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
+        AlertHistoryStore.saveHistory(alertHistory)
+        lastAlertsFetch = Date()
+        alertsForLocation = loc.id
+        lastAlertsFetchSucceeded = true
+        persistWidgetAlertSummary(for: loc, alerts: alerts)
+        syncScoreSurfacesFromCurrentWeather()
+        await AlertNotificationService.shared.notifyIfNeeded(
+          for: alerts,
+          enabled: alertNotificationsEnabled
+        )
+      } catch is CancellationError {
+        // foreground-alerts fetch cancelled (log removed)
+        return
+      } catch {
+        // Non-fatal: retain last-known active alerts so offline UI stays accurate.
+        // Only a successful fetch with an empty list authoritatively clears activeAlerts.
+        lastAlertsFetchSucceeded = false
+        // foreground-alerts fetch failed (log removed for release)
+      }
     }
 
-    do {
-      let alerts = try await nwsService.fetchActiveAlerts(for: loc)
-      activeAlerts = alerts
-      alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
-      AlertHistoryStore.saveHistory(alertHistory)
-      lastAlertsFetch = Date()
-      alertsForLocation = loc.id
-      lastAlertsFetchSucceeded = true
-      persistWidgetAlertSummary(for: loc, alerts: alerts)
-      syncScoreSurfacesFromCurrentWeather()
-      await AlertNotificationService.shared.notifyIfNeeded(
-        for: alerts,
-        enabled: alertNotificationsEnabled
-      )
-      // Severe products live in SevereWeatherStore; WeatherStore only triggers refresh.
-      Task { await SevereWeatherStore.shared.refresh(for: loc, force: force) }
-    } catch is CancellationError {
-      // foreground-alerts fetch cancelled (log removed)
-    } catch {
-      // Non-fatal: retain last-known active alerts so offline UI stays accurate.
-      // Only a successful fetch with an empty list authoritatively clears activeAlerts.
-      lastAlertsFetchSucceeded = false
-      // Still attempt SPC refresh — MapServer is independent of CAP alerts.
-      Task { await SevereWeatherStore.shared.refresh(for: loc, force: force) }
-      // foreground-alerts fetch failed (log removed for release)
+    // Always kick severe refresh (its own TTL / generation guard). Pass CAP alerts when
+    // they belong to this location so Storm Spotter never loses watches/warnings.
+    let alertsForSevere: [NWSAlert]? =
+      (alertsForLocation == loc.id) ? activeAlerts : nil
+    Task {
+      await SevereWeatherStore.shared.refresh(
+        for: loc, force: force, alerts: alertsForSevere)
     }
   }
 

@@ -296,10 +296,16 @@ struct NWSGeometry: Decodable {
     }
 
     guard count > 0, let firstPoint else { return (nil, nil, nil) }
+    let loLat = min(minLat, maxLat)
+    let hiLat = max(minLat, maxLat)
+    let loLon = min(minLon, maxLon)
+    let hiLon = max(minLon, maxLon)
     let bbox = String(
-      format: "%.1f–%.1fN, %.1f–%.1fW",
-      min(minLat, maxLat), max(minLat, maxLat),
-      abs(max(minLon, maxLon)), abs(min(minLon, maxLon))
+      format: "%.1f%@–%.1f%@, %.1f%@–%.1f%@",
+      abs(loLat), loLat >= 0 ? "N" : "S",
+      abs(hiLat), hiLat >= 0 ? "N" : "S",
+      abs(loLon), loLon >= 0 ? "E" : "W",
+      abs(hiLon), hiLon >= 0 ? "E" : "W"
     )
     return (firstPoint, count, bbox)
   }
