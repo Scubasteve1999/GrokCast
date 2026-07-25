@@ -21,6 +21,14 @@ struct RadarView: View {
     } ?? WeatherBackgroundView.inferredIsDay
   }
 
+  /// Day-1 line only when severe context is for the selected location (avoids stale city bleed).
+  private var matchingDay1Summary: String? {
+    guard let locationID = store.currentLocation?.id.uuidString else { return nil }
+    let context = SevereWeatherStore.shared.context
+    guard context.locationID == locationID, context.day1Outlook.isMeaningful else { return nil }
+    return context.day1Outlook.summaryLine
+  }
+
   var body: some View {
     NavigationStack {
       ZStack {
@@ -122,9 +130,12 @@ struct RadarView: View {
       }
     }
     .overlay(alignment: .topLeading) {
-      if store.selectedTab == .radar, !chaseDecluttered {
+      if store.selectedTab == .radar {
         VStack(alignment: .leading, spacing: 8) {
-          radarModeBadge
+          if !chaseDecluttered {
+            radarModeBadge
+          }
+          // Keep offline cue even when decluttered — it's safety-critical chrome.
           if store.isOffline {
             Text("Offline — showing last loaded tiles if available")
               .font(.system(size: 11, weight: .semibold))
@@ -144,9 +155,7 @@ struct RadarView: View {
           radarState: radarState,
           mapCenter: selectedMapCenter,
           alerts: store.displayableActiveAlerts,
-          day1Summary: SevereWeatherStore.shared.context.day1Outlook.isMeaningful
-            ? SevereWeatherStore.shared.context.day1Outlook.summaryLine
-            : nil,
+          day1Summary: matchingDay1Summary,
           isDecluttered: $chaseDecluttered
         )
         .padding(.top, 8)
@@ -154,17 +163,18 @@ struct RadarView: View {
       }
     }
     .overlay(alignment: .bottom) {
-      if !chaseDecluttered {
-        RadarControlPanel(
-          radarState: radarState,
-          opacity: $radarOpacity,
-          recenterDefaultTrigger: $recenterDefaultTrigger,
-          recenterUserCoordinate: $recenterUserCoordinate
-        )
-        .padding(.horizontal)
-        .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
+      // Keep the panel mounted so collapse/sheet @State survives declutter.
+      RadarControlPanel(
+        radarState: radarState,
+        opacity: $radarOpacity,
+        recenterDefaultTrigger: $recenterDefaultTrigger,
+        recenterUserCoordinate: $recenterUserCoordinate
+      )
+      .padding(.horizontal)
+      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
+      .opacity(chaseDecluttered ? 0 : 1)
+      .allowsHitTesting(!chaseDecluttered)
+      .accessibilityHidden(chaseDecluttered)
     }
     .overlay {
       if radarState.showModeSwitchOverlay {

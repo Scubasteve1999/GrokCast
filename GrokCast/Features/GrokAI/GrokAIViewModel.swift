@@ -361,7 +361,11 @@ final class GrokAIViewModel {
 
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
-      return "You are a helpful weather assistant inside the SpotterCast app."
+      return """
+        You are the Storm Spotter assistant inside SpotterCast — field-first weather intelligence \
+        for storm spotters and severe-weather watchers. Prioritize hazards, timing, and radar cues. \
+        Lifestyle advice only if the user asks. Be concise. Do not invent warnings.
+        """
     }
 
     let location = weatherStore.currentLocation?.name ?? "your location"

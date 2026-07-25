@@ -113,7 +113,7 @@
           },
           "localizations" : [
             {
-              "description" : "Best value — forecast radar, Live Activity, unlimited locations. 7-day free trial.",
+              "description" : "Forecast radar, Live Activity, unlimited locations",
               "displayName" : "SpotterCast Pro Yearly",
               "locale" : "en_US"
             }
