@@ -46,7 +46,7 @@ BUILT FOR PRIVACY
 - Location used only for weather — never tracked or stored
 - API keys stored in iOS Keychain, never in plain text
 
-GrokCast Pro unlocks Grok AI without your own API key, forecast radar, Live Activity, unlimited saved locations, and AI morning briefings.
+SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited saved locations. AI chat, Today's Take, and Storm Spotter use an xAI developer key in Settings (or the embedded TestFlight key) — Pro does not replace that key until a hosted AI proxy ships.
 
 ------------------------------------------------------------
 KEYWORDS (100 char max, comma-separated)

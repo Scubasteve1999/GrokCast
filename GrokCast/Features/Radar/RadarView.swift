@@ -8,6 +8,7 @@ struct RadarView: View {
   @State private var radarState = RadarState()
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
+  @State private var chaseDecluttered = false
 
   /// Camera / tile center follows the selected weather location (not device GPS).
   private var selectedMapCenter: CLLocationCoordinate2D {
@@ -121,7 +122,7 @@ struct RadarView: View {
       }
     }
     .overlay(alignment: .topLeading) {
-      if store.selectedTab == .radar {
+      if store.selectedTab == .radar, !chaseDecluttered {
         VStack(alignment: .leading, spacing: 8) {
           radarModeBadge
           if store.isOffline {
@@ -137,15 +138,33 @@ struct RadarView: View {
         .padding(.leading, DesignTokens.Spacing.space20)
       }
     }
+    .overlay(alignment: .topTrailing) {
+      if store.selectedTab == .radar {
+        ChaseRadarHUD(
+          radarState: radarState,
+          mapCenter: selectedMapCenter,
+          alerts: store.displayableActiveAlerts,
+          day1Summary: SevereWeatherStore.shared.context.day1Outlook.isMeaningful
+            ? SevereWeatherStore.shared.context.day1Outlook.summaryLine
+            : nil,
+          isDecluttered: $chaseDecluttered
+        )
+        .padding(.top, 8)
+        .padding(.trailing, DesignTokens.Spacing.space16)
+      }
+    }
     .overlay(alignment: .bottom) {
-      RadarControlPanel(
-        radarState: radarState,
-        opacity: $radarOpacity,
-        recenterDefaultTrigger: $recenterDefaultTrigger,
-        recenterUserCoordinate: $recenterUserCoordinate
-      )
-      .padding(.horizontal)
-      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
+      if !chaseDecluttered {
+        RadarControlPanel(
+          radarState: radarState,
+          opacity: $radarOpacity,
+          recenterDefaultTrigger: $recenterDefaultTrigger,
+          recenterUserCoordinate: $recenterUserCoordinate
+        )
+        .padding(.horizontal)
+        .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
     }
     .overlay {
       if radarState.showModeSwitchOverlay {

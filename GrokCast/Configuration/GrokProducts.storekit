@@ -83,7 +83,7 @@
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Grok AI, morning briefs, forecast radar, Live Activity, unlimited locations",
+              "description" : "Forecast radar, Live Activity, unlimited locations",
               "displayName" : "SpotterCast Pro Monthly",
               "locale" : "en_US"
             }
@@ -113,7 +113,7 @@
           },
           "localizations" : [
             {
-              "description" : "Best value — all Pro features for one year. 7-day free trial.",
+              "description" : "Best value — forecast radar, Live Activity, unlimited locations. 7-day free trial.",
               "displayName" : "SpotterCast Pro Yearly",
               "locale" : "en_US"
             }

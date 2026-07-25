@@ -329,48 +329,48 @@ private struct GrokAIViewContent: View {
 
     return LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.space12) {
       GrokQuickPromptButton(
-        title: "Today's vibe",
-        icon: "sparkles",
+        title: "Threat check",
+        icon: "exclamationmark.triangle.fill",
         layout: .figmaTile
       ) {
         askQuickPrompt(
-          "Give me a short read on today's weather vibe where I am.",
+          "Threat check for my location: watches, warnings, SPC Day-1 risk, and what I should monitor next.",
           viewModel: viewModel
         )
       }
       .disabled(disabled)
 
       GrokQuickPromptButton(
-        title: "What to wear",
-        icon: "tshirt",
+        title: "Chase window",
+        icon: "car.fill",
         layout: .figmaTile
       ) {
         askQuickPrompt(
-          "What should I wear today based on the current weather?",
+          "Is there a chase or spotter window today near me? Timing, setup, and hazards if I go mobile.",
           viewModel: viewModel
         )
       }
       .disabled(disabled)
 
       GrokQuickPromptButton(
-        title: "Walk check",
-        icon: "figure.walk",
+        title: "Radar read",
+        icon: "dot.radiowaves.right",
         layout: .figmaTile
       ) {
         askQuickPrompt(
-          "Is now a good time for a walk based on the weather?",
+          "Give me a field radar read for my area: what cells matter, motion, and whether SRV or reflectivity is more useful right now.",
           viewModel: viewModel
         )
       }
       .disabled(disabled)
 
       GrokQuickPromptButton(
-        title: "Week ahead",
-        icon: "calendar",
+        title: "Outlook",
+        icon: "cloud.bolt.fill",
         layout: .figmaTile
       ) {
         askQuickPrompt(
-          "Give me a short summary of the weather for the next few days.",
+          "Summarize the severe outlook for my area today and the next day — SPC risk, timing, and what would change the call.",
           viewModel: viewModel
         )
       }
@@ -387,30 +387,30 @@ private struct GrokAIViewContent: View {
 
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
-          GrokQuickPromptButton(title: "What should I wear?") {
+          GrokQuickPromptButton(title: "Threat check") {
             askQuickPrompt(
-              "What should I wear today based on the current weather?",
+              "Threat check for my location: watches, warnings, SPC Day-1 risk, and what I should monitor next.",
               viewModel: viewModel
             )
           }
           .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Good for hiking?") {
+          GrokQuickPromptButton(title: "Chase window") {
             askQuickPrompt(
-              "Is today a good day for hiking or outdoor activities?",
+              "Is there a chase or spotter window today near me? Timing, setup, and hazards if I go mobile.",
               viewModel: viewModel
             )
           }
           .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Summarize the week") {
+          GrokQuickPromptButton(title: "Radar read") {
             askQuickPrompt(
-              "Give me a short summary of the weather for the next few days.",
+              "Give me a field radar read for my area: what cells matter, motion, and whether SRV or reflectivity is more useful right now.",
               viewModel: viewModel
             )
           }
           .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Any weather risks?") {
+          GrokQuickPromptButton(title: "Severe outlook") {
             askQuickPrompt(
-              "Are there any weather risks or severe conditions I should know about?",
+              "Summarize the severe outlook for my area today and the next day — SPC risk, timing, and what would change the call.",
               viewModel: viewModel
             )
           }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown when Grok AI requires SpotterCast Pro or a developer key.
+/// Shown when Grok AI needs an xAI developer key (Pro does not unlock hosted AI yet).
 struct GrokAPIKeyEmptyStateView: View {
   @Bindable var store: WeatherStore
   @Bindable var subscription: SubscriptionManager

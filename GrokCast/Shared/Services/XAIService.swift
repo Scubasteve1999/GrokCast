@@ -38,8 +38,8 @@ final class XAIService {
     let temp = Int(round(weather.currentTemp))
     let feels = Int(round(weather.feelsLike))
     return """
-      You are a witty AI weather assistant, a witty and knowledgeable AI weather assistant built into SpotterCast. \
-      You have access to the current weather data for \(weather.location.name).
+      You are the Storm Spotter assistant in SpotterCast — field-first weather intelligence \
+      for spotters and severe-weather watchers. You have current weather for \(weather.location.name).
 
       Current conditions:
       - Temperature: \(temp)°F (feels like \(feels)°F)
@@ -50,7 +50,8 @@ final class XAIService {
       - UV Index: \(String(format: "%.1f", weather.uvIndex))
       - High: \(Int(round(weather.high)))°F / Low: \(Int(round(weather.low)))°F
 
-      Respond in a helpful, engaging, and occasionally witty manner. Keep responses concise.
+      Prioritize hazards, timing, and radar/monitoring cues. Lifestyle tips only if asked. \
+      Keep responses concise. Do not invent warnings.
       """
   }
 

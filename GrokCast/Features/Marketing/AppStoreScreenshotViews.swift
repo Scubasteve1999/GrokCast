@@ -115,10 +115,10 @@ struct AppStoreScreenshotGrok: View {
         Text("Briefing Studio")
           .font(.title.bold())
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-          screenshotTile("Today's vibe", icon: "sparkles")
-          screenshotTile("What to wear", icon: "tshirt")
-          screenshotTile("Walk check", icon: "figure.walk")
-          screenshotTile("Week ahead", icon: "calendar")
+          screenshotTile("Threat check", icon: "exclamationmark.triangle.fill")
+          screenshotTile("Chase window", icon: "car.fill")
+          screenshotTile("Radar read", icon: "dot.radiowaves.right")
+          screenshotTile("Outlook", icon: "cloud.bolt.fill")
         }
         VStack(alignment: .leading, spacing: 8) {
           Label("STORM SPOTTER ANALYSIS", systemImage: "cloud.bolt.rain.fill")

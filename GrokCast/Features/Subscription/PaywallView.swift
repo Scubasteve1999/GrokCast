@@ -262,7 +262,7 @@ enum PaywallFeature {
 
   var headline: String {
     switch self {
-    case .grokAI: "AI weather that just works"
+    case .grokAI: "Tools for storm spotters"
     case .radarFuture: "See what's coming"
     case .locations: "Track every location"
     case .liveActivity: "Weather on your Lock Screen"

@@ -368,8 +368,24 @@ final class GrokAIViewModel {
     let temp = Int(current.currentTemp)
     let condition = current.conditionText
 
+    let alerts = weatherStore.displayableActiveAlerts.prefix(5)
+    var alertLines = ""
+    if !alerts.isEmpty {
+      alertLines =
+        "\nActive NWS alerts:\n"
+        + alerts.map { a in
+          let sev = a.severity ?? "Unknown"
+          return "- \(a.event) (\(sev))"
+        }.joined(separator: "\n") + "\n"
+    }
+    let severeExtra =
+      GrokPrompts.severeContextBlock(context: SevereWeatherStore.shared.context)
+      .map { "\n\($0)\n" } ?? ""
+
     return """
-      You are a helpful weather assistant inside the SpotterCast app.
+      You are the Storm Spotter assistant inside SpotterCast — field-first weather intelligence \
+      for storm spotters and severe-weather watchers. Prioritize hazards, timing, radar cues, \
+      and actionable monitoring. Lifestyle advice (outfits, walks) only if the user asks.
 
       Current conditions for \(location):
       - Temperature: \(temp)°F
@@ -377,9 +393,8 @@ final class GrokAIViewModel {
       - Feels like: \(Int(current.feelsLike))°F
       - Humidity: \(current.humidity)%
       - Wind: \(Int(current.windSpeed)) mph
-
-      Be concise, friendly, and practical. When giving recommendations (outfits, activities, etc.),
-      base them on the current weather data.
+      \(alertLines)\(severeExtra)
+      Be concise and practical. Lead with risk and what to watch next. Do not invent warnings.
       """
   }
 

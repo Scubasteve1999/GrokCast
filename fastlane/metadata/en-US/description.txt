@@ -1,6 +1,6 @@
 SpotterCast is a modern, dark-themed weather app that delivers accurate forecasts with optional AI weather intelligence.
 
-See stunning current conditions, an interactive radar map, hourly and 10-day forecasts, and get contextual AI insights about the weather. Ask about what to wear, whether it's good for hiking, or if storms are developing.
+See current conditions, chase-ready radar, hourly and 10-day forecasts, NWS/SPC severe guidance, and Storm Spotter AI for field reads — threat checks, radar cues, and photo analysis when storms are developing.
 
 
 Features:

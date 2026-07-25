@@ -58,6 +58,7 @@
 		2FDCD90E5AE6BE5F0ADFA3F2 /* RadarPreviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F7A507CB35DBB333AE6DE3 /* RadarPreviewCard.swift */; };
 		31B5856BDCD902AAA97EEC67 /* HourlyPrecipCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5022614B4E8A1272BC5AB943 /* HourlyPrecipCard.swift */; };
 		3243DEB2988C7850C56CA7D5 /* RadarState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 467892BF56F27E98DEA2E515 /* RadarState.swift */; };
+		72F5B81F8F975D70120F4EE8 /* ChaseRadarHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509A623BBE4CB7F5A985A832 /* ChaseRadarHUD.swift */; };
 		359A32765089F957122817FF /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 334F43C43821F602DA1BC600 /* AppIntents.framework */; };
 		37CF015288F0DBFD3C2FE3F3 /* WidgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D08A58D32AD99EB4F158B2B /* WidgetEmptyStateView.swift */; };
 		38A0319142F96307FC5D3251 /* GrokProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F9CE0FC3106C7FAC22F6290D /* GrokProducts.storekit */; };
@@ -343,6 +344,7 @@
 		A5EB4FE6318DC6155E880B5C /* PaywallCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallCoordinator.swift; sourceTree = "<group>"; };
 		A83FE51D4847C83FF4580E07 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		A92A111C733E4349C17C4DA7 /* RadarControlPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarControlPanel.swift; sourceTree = "<group>"; };
+		509A623BBE4CB7F5A985A832 /* ChaseRadarHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaseRadarHUD.swift; sourceTree = "<group>"; };
 		A975A67416A15E6F06872F4A /* HourlyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyRow.swift; sourceTree = "<group>"; };
 		A99AF0C9BC8641A6A0B6161A /* WeatherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherStore.swift; sourceTree = "<group>"; };
 		AA42FF15F258D415820F4A34 /* WeatherLiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLiveActivityManager.swift; sourceTree = "<group>"; };
@@ -870,6 +872,7 @@
 		E2210860D1CEC99D70451F44 /* Radar */ = {
 			isa = PBXGroup;
 			children = (
+				509A623BBE4CB7F5A985A832 /* ChaseRadarHUD.swift */,
 				FDE9772F416DFEF9A57448E5 /* DebugFlags.swift */,
 				6140F37F8406B8BA0E83F4F6 /* ExplainRadarSheet.swift */,
 				56BC33FFC50164CC8A620840 /* NWSRadarProduct.swift */,
@@ -1131,6 +1134,7 @@
 				5A780DAFEA48B95D9834B4CF /* PaywallCoordinator.swift in Sources */,
 				2E6987EC7C46E51DCDD00531 /* PaywallView.swift in Sources */,
 				4452805188B017F77E7B7781 /* PushNotificationService.swift in Sources */,
+				72F5B81F8F975D70120F4EE8 /* ChaseRadarHUD.swift in Sources */,
 				F1B64C5232D9650419A3AF77 /* RadarControlPanel.swift in Sources */,
 				E570FDA8DA94BA45C4DF3E25 /* RadarDataset.swift in Sources */,
 				A5E5D5B58047740E76544016 /* RadarFrame.swift in Sources */,
