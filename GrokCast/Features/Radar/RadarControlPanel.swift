@@ -39,6 +39,9 @@ struct RadarControlPanel: View {
       if prefersFigmaHUD {
         RadarTimelineScrubber(radarState: radarState, layout: .figma)
         compactPlaybackRow
+        // Phone layout previously had no product chips — SRV from the chase HUD was one-way.
+        productChips
+        compactStatusFooter
       } else {
         RadarPlaybackControls(
           radarState: radarState,

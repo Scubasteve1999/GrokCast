@@ -55,7 +55,14 @@ struct ChaseRadarHUD: View {
       HStack(spacing: 8) {
         Button {
           Haptic.selection()
-          Task { await radarState.setProduct(.stormRelativeVelocity) }
+          Task {
+            // Toggle: second tap returns to composite reflectivity.
+            if radarState.selectedProduct == .stormRelativeVelocity {
+              await radarState.setProduct(.reflectivity)
+            } else {
+              await radarState.setProduct(.stormRelativeVelocity)
+            }
+          }
         } label: {
           Text("SRV")
             .font(.system(size: 11, weight: .bold))
@@ -76,6 +83,11 @@ struct ChaseRadarHUD: View {
         .buttonStyle(.plain)
         .disabled(radarState.showsFuture || radarState.nearestSite == nil)
         .opacity(radarState.showsFuture || radarState.nearestSite == nil ? 0.45 : 1)
+        .accessibilityLabel(
+          radarState.selectedProduct == .stormRelativeVelocity
+            ? "Exit storm-relative velocity"
+            : "Storm-relative velocity"
+        )
 
         Button {
           Haptic.selection()
