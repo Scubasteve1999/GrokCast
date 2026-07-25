@@ -1,7 +1,7 @@
 import Foundation
 
-// Xweather (with fradar for forecast) is used for FUTURE radar timeline + tiles
-// when RainViewer nowcast is unavailable. Live still prefers RainViewer.
+// Xweather fradar is the preferred FUTURE radar when maps auth + probe succeed.
+// Fallbacks: RainViewer nowcast, then OpenWeatherMap PR0. Live ranking is in RadarLoader.
 
 /// Service for Xweather radar tiles (primary provider).
 /// Uses https://maps.api.xweather.com for high-quality radar layers.

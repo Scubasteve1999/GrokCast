@@ -56,6 +56,9 @@ struct RadarDatasetResult: Equatable {
 final class RadarLoader {
   private(set) var isLoading = false
 
+  /// Prefer OWM only when real scans are this old (OWM timestamps are synthesized).
+  private static let realSourceStaleThreshold: TimeInterval = 25 * 60
+
   func loadAll(
     site: IEMRadarService.Site?,
     coordinate: CLLocationCoordinate2D
@@ -63,14 +66,15 @@ final class RadarLoader {
     isLoading = true
     defer { isLoading = false }
 
-    async let rainViewerLive = RainViewerRadarService.loadLiveFrames()
+    async let rainViewerDataset = RainViewerRadarService.loadDataset()
 
+    let rainViewer = await rainViewerDataset
     let liveOutcome = await resolveLive(
       site: site,
       coordinate: coordinate,
-      rainViewerLive: await rainViewerLive
+      rainViewerLive: rainViewer.live
     )
-    let forecastOutcome = await resolveForecast()
+    let forecastOutcome = await resolveForecast(rainViewerNowcast: rainViewer.nowcast)
 
     return RadarDatasetResult(
       live: liveOutcome.frames,
@@ -84,7 +88,13 @@ final class RadarLoader {
 
   func refreshForecastAvailability(provider: RadarTileProvider) async -> RadarTileAvailability {
     switch provider {
-    case .rainViewer, .iem:
+    case .rainViewer:
+      let nowcast = await RainViewerRadarService.loadNowcastFrames()
+      if !nowcast.isEmpty {
+        return .available
+      }
+      return .unavailable(message: "Forecast radar unavailable.")
+    case .iem:
       return .unavailable(message: "Forecast radar unavailable.")
     case .xweather:
       if XweatherRadarService.mapsAuthConfigured {
@@ -144,45 +154,65 @@ final class RadarLoader {
     coordinate: CLLocationCoordinate2D,
     rainViewerLive: [RadarFrame]
   ) async -> LoadOutcome {
+    // Collect real-scan candidates (IEM / RainViewer), then pick freshest last frame.
+    // OWM timestamps are synthesized — only use when reals are missing or stale.
+    var realCandidates: [(provider: RadarTileProvider, frames: [RadarFrame], label: String)] = []
+
     // Default Reflectivity uses the CONUS composite (N0Q). Single-site N0B/N0S load
     // only when the user picks Super-Res or SRV (see RadarState.setProduct).
     if IEMRadarService.isWithinCONUS(coordinate) {
       let conusFrames = await IEMRadarService.loadCONUSReflectivityFrames()
       if !conusFrames.isEmpty {
-        print("[IEM] Loaded \(conusFrames.count) live scans — NWS CONUS composite")
-        return LoadOutcome(
-          frames: conusFrames,
-          provider: .iem,
-          availability: .available
-        )
+        realCandidates.append(
+          (.iem, conusFrames, "NWS CONUS composite (\(conusFrames.count) scans)"))
       }
     }
 
-    // Single-site super-res when CONUS fails but a nearby site exists.
-    if let site {
+    if realCandidates.isEmpty, let site {
       let iemFrames = await IEMRadarService.loadSiteFrames(
         site: site.id,
         product: .superResReflectivity
       )
       if !iemFrames.isEmpty {
-        print("[IEM] Loaded \(iemFrames.count) live scans — NWS \(site.id) (CONUS fallback)")
-        return LoadOutcome(
-          frames: iemFrames,
-          provider: .iem,
-          availability: .available
-        )
+        realCandidates.append(
+          (.iem, iemFrames, "NWS \(site.id) (\(iemFrames.count) scans)"))
       }
     }
 
+    if !rainViewerLive.isEmpty {
+      realCandidates.append(
+        (
+          .rainViewer, rainViewerLive,
+          "RainViewer (\(rainViewerLive.count) frames)"
+        ))
+    }
+
+    if let bestReal = Self.freshestRealCandidate(realCandidates) {
+      let age = Date().timeIntervalSince(bestReal.frames.last?.timestamp ?? .distantPast)
+      if age <= Self.realSourceStaleThreshold {
+        print("[RadarLoader] Live: \(bestReal.label) (freshest real, age \(Int(age / 60))m)")
+        return LoadOutcome(
+          frames: bestReal.frames,
+          provider: bestReal.provider,
+          availability: .available
+        )
+      }
+      print(
+        "[RadarLoader] Freshest real source stale (\(Int(age / 60))m) — trying OpenWeatherMap"
+      )
+    }
+
     if let openWeatherMap = await loadOpenWeatherMapLive() {
+      print("[RadarLoader] Live: OpenWeatherMap (\(openWeatherMap.frames.count) frames)")
       return openWeatherMap
     }
 
-    if !rainViewerLive.isEmpty {
-      print("[RainViewer] Loaded \(rainViewerLive.count) live frames (international fallback)")
+    // Last resort: stale real source still better than nothing.
+    if let bestReal = Self.freshestRealCandidate(realCandidates) {
+      print("[RadarLoader] Live: \(bestReal.label) (stale real, OWM unavailable)")
       return LoadOutcome(
-        frames: rainViewerLive,
-        provider: .rainViewer,
+        frames: bestReal.frames,
+        provider: bestReal.provider,
         availability: .available
       )
     }
@@ -197,7 +227,17 @@ final class RadarLoader {
     )
   }
 
-  private func resolveForecast() async -> LoadOutcome {
+  private static func freshestRealCandidate(
+    _ candidates: [(provider: RadarTileProvider, frames: [RadarFrame], label: String)]
+  ) -> (provider: RadarTileProvider, frames: [RadarFrame], label: String)? {
+    candidates.max { lhs, rhs in
+      let left = lhs.frames.last?.timestamp ?? .distantPast
+      let right = rhs.frames.last?.timestamp ?? .distantPast
+      return left < right
+    }
+  }
+
+  private func resolveForecast(rainViewerNowcast: [RadarFrame]) async -> LoadOutcome {
     if XweatherRadarService.mapsAuthConfigured {
       let xwFrames = XweatherRadarService.loadForecastRadarFrames()
       if !xwFrames.isEmpty {
@@ -211,7 +251,17 @@ final class RadarLoader {
           )
         }
 
-        print("[RadarLoader] Xweather forecast probe failed — trying OpenWeatherMap fallback")
+        print("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast / OWM")
+        if !rainViewerNowcast.isEmpty {
+          print(
+            "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"
+          )
+          return LoadOutcome(
+            frames: rainViewerNowcast,
+            provider: .rainViewer,
+            availability: .available
+          )
+        }
         if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
           return LoadOutcome(
             frames: owmOutcome.frames,
@@ -230,6 +280,17 @@ final class RadarLoader {
           availability: .timelineOnly(message: message)
         )
       }
+    }
+
+    if !rainViewerNowcast.isEmpty {
+      print(
+        "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"
+      )
+      return LoadOutcome(
+        frames: rainViewerNowcast,
+        provider: .rainViewer,
+        availability: .available
+      )
     }
 
     if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {

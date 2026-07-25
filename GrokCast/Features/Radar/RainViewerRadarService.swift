@@ -8,7 +8,14 @@ struct RainViewerRadarFrame: Equatable {
 struct RainViewerRadarPayload: Equatable {
   var host: String = "https://tilecache.rainviewer.com"
   var pastFrames: [RainViewerRadarFrame] = []
+  var nowcastFrames: [RainViewerRadarFrame] = []
   static let empty = RainViewerRadarPayload()
+}
+
+struct RainViewerRadarDataset: Equatable {
+  var live: [RadarFrame] = []
+  var nowcast: [RadarFrame] = []
+  static let empty = RainViewerRadarDataset()
 }
 
 final class RainViewerRadarService {
@@ -19,8 +26,21 @@ final class RainViewerRadarService {
   ]
 
   static func loadLiveFrames() async -> [RadarFrame] {
+    await loadDataset().live
+  }
+
+  static func loadNowcastFrames() async -> [RadarFrame] {
+    await loadDataset().nowcast
+  }
+
+  /// Single metadata fetch for live past frames + short-horizon nowcast.
+  static func loadDataset() async -> RainViewerRadarDataset {
     let payload = await loadPayload()
-    return frames(from: payload.pastFrames, host: payload.host, kind: .livePrecipitation)
+    return RainViewerRadarDataset(
+      live: frames(from: payload.pastFrames, host: payload.host, kind: .livePrecipitation),
+      nowcast: frames(
+        from: payload.nowcastFrames, host: payload.host, kind: .forecastPrecipitation)
+    )
   }
 
   private static func loadPayload() async -> RainViewerRadarPayload {
@@ -32,7 +52,7 @@ final class RainViewerRadarService {
           return responseData
         }
         let payload = buildPayload(from: data)
-        if !payload.pastFrames.isEmpty {
+        if !payload.pastFrames.isEmpty || !payload.nowcastFrames.isEmpty {
           return payload
         }
       } catch {
@@ -65,7 +85,7 @@ final class RainViewerRadarService {
   }
 
   private static func buildPayload(from data: Data) -> RainViewerRadarPayload {
-    let (host, pastInfos) = parseRainViewerResponse(data)
+    let (host, pastInfos, nowcastInfos) = parseRainViewerResponse(data)
     let now = Int(Date().timeIntervalSince1970)
     var payload = RainViewerRadarPayload(host: host)
 
@@ -77,30 +97,40 @@ final class RainViewerRadarService {
       }
     }
 
+    if !nowcastInfos.isEmpty {
+      payload.nowcastFrames = nowcastInfos.map {
+        RainViewerRadarFrame(time: $0.time, path: $0.path)
+      }
+    }
+
     return payload
   }
 
   private static func parseRainViewerResponse(_ data: Data) -> (
-    String, [(time: Int, path: String)]
+    String, [(time: Int, path: String)], [(time: Int, path: String)]
   ) {
     var host = "https://tilecache.rainviewer.com"
     var pastInfos: [(time: Int, path: String)] = []
+    var nowcastInfos: [(time: Int, path: String)] = []
     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
       if let parsedHost = json["host"] as? String, !parsedHost.isEmpty {
         host = parsedHost
       }
       if let radar = json["radar"] as? [String: Any] {
         if let past = radar["past"] as? [[String: Any]] {
-          pastInfos = past.compactMap { item in
-            if let t = item["time"] as? Int, let p = item["path"] as? String {
-              return (t, p)
-            }
-            return nil
-          }
+          pastInfos = past.compactMap(parseFrameItem)
+        }
+        if let nowcast = radar["nowcast"] as? [[String: Any]] {
+          nowcastInfos = nowcast.compactMap(parseFrameItem)
         }
       }
     }
-    return (host, pastInfos)
+    return (host, pastInfos, nowcastInfos)
+  }
+
+  private static func parseFrameItem(_ item: [String: Any]) -> (time: Int, path: String)? {
+    guard let t = item["time"] as? Int, let p = item["path"] as? String else { return nil }
+    return (t, p)
   }
 
   private static func fetchWithTimeout<T>(

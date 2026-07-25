@@ -2,8 +2,8 @@ import Foundation
 
 /// Selects which backend serves precipitation map tiles.
 ///
-/// Live:     IEM (US CONUS/single-site) → RainViewer (international fallback)
-/// Forecast: OpenWeatherMap PR0 → Xweather fradar (fallback)
+/// Live:     freshest real scan among IEM / RainViewer; OWM if reals missing or >25m stale
+/// Forecast: Xweather fradar → RainViewer nowcast → OpenWeatherMap PR0
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
   case xweather
