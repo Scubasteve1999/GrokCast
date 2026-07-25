@@ -93,6 +93,8 @@ struct GrokCastWeather: Equatable, Codable {
   let low: Double
   let symbolName: String
   let fetchedAt: Date
+  /// IANA timezone from Open-Meteo `timezone=auto` (e.g. `"America/Chicago"`).
+  let timezoneIdentifier: String?
 
   // Extended for competing with AccuWeather
   let airQualityIndex: Int?
@@ -107,6 +109,16 @@ struct GrokCastWeather: Equatable, Codable {
 
   /// Next ~2 hours in 15-minute steps (Open-Meteo minutely_15).
   let minutely15: [MinutelyForecast]
+
+  var locationTimeZone: TimeZone {
+    timezoneIdentifier.flatMap { TimeZone(identifier: $0) } ?? .current
+  }
+
+  var locationCalendar: Calendar {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = locationTimeZone
+    return calendar
+  }
 }
 
 struct MinutelyForecast: Equatable, Codable, Identifiable {

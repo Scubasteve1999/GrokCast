@@ -3,6 +3,7 @@ import SwiftUI
 struct SunriseSunsetCard: View {
   let sunrise: Date?
   let sunset: Date?
+  var timeZone: TimeZone = .current
 
   private var daylight: String? {
     guard let rise = sunrise, let set = sunset else { return nil }
@@ -101,14 +102,9 @@ struct SunriseSunsetCard: View {
     return CGPoint(x: x, y: y)
   }
 
-  private static let timeFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "h:mm a"
-    return f
-  }()
-
   private func formatTime(_ date: Date?) -> String {
     guard let date else { return "--:--" }
-    return Self.timeFormatter.string(from: date)
+    return LocationTimezone.formatter(dateFormat: "h:mm a", timeZone: timeZone)
+      .string(from: date)
   }
 }

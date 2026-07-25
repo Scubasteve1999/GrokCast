@@ -216,6 +216,7 @@ extension GrokCastWeather {
     low = snapshot.low
     symbolName = snapshot.symbolName
     fetchedAt = snapshot.fetchedAt
+    timezoneIdentifier = nil
     airQualityIndex = nil
     pm25 = nil
     pollenLevel = nil

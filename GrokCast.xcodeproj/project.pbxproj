@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		44FF76EF446749EA91E95B72 /* SevereWeatherModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1EC222CE1F4B9082017AF5 /* SevereWeatherModels.swift */; };
 		B2C3D4E5F60718293A4B5C6D /* ShortTermPrecipModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ShortTermPrecipModels.swift */; };
+		B8C9D0E1F203142536A4B5C6 /* LocationTimezone.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B8C9D0E1F203142536A4B5 /* LocationTimezone.swift */; };
 		2EC98C0FFE824B26B976D638 /* SPCSevereService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C851B4C53A0744AFB310813E /* SPCSevereService.swift */; };
 		D4E5F60718293A4B5C6D7E8F /* OpenMeteoHRRRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* OpenMeteoHRRRService.swift */; };
 		7F07B7A711CF4A198DDBD31D /* SevereWeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF14D7373654C3DBFAC1A80 /* SevereWeatherStore.swift */; };
@@ -227,6 +228,7 @@
 /* Begin PBXFileReference section */
 		2D1EC222CE1F4B9082017AF5 /* SevereWeatherModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevereWeatherModels.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5C /* ShortTermPrecipModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortTermPrecipModels.swift; sourceTree = "<group>"; };
+		A7B8C9D0E1F203142536A4B5 /* LocationTimezone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationTimezone.swift; sourceTree = "<group>"; };
 		C851B4C53A0744AFB310813E /* SPCSevereService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCSevereService.swift; sourceTree = "<group>"; };
 		C3D4E5F60718293A4B5C6D7E /* OpenMeteoHRRRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoHRRRService.swift; sourceTree = "<group>"; };
 		BFF14D7373654C3DBFAC1A80 /* SevereWeatherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevereWeatherStore.swift; sourceTree = "<group>"; };
@@ -461,6 +463,7 @@
 				82D3DB797A41A68F48301450 /* Grok */,
 				A9A7F3602AF4B36AD979A055 /* LiveActivity */,
 				93C13152E06A06DA96017181 /* Models */,
+				C9D0E1F203142536A4B5C6D7 /* Utilities */,
 				248DC58A89434D654F86DF8B /* Services */,
 				6245F8CECCD925314A423D8B /* Subscription */,
 				91CBB8D4DB4D485324561B8F /* Views */,
@@ -720,6 +723,14 @@
 				DF3C18A1E60EDAD941F82F5F /* WeatherBackgroundView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		C9D0E1F203142536A4B5C6D7 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A7B8C9D0E1F203142536A4B5 /* LocationTimezone.swift */,
+			);
+			path = Utilities;
 			sourceTree = "<group>";
 		};
 		93C13152E06A06DA96017181 /* Models */ = {
@@ -1102,6 +1113,7 @@
 				B3449A1B9E2ED2F008B86AA9 /* NWSModels.swift in Sources */,
 				44FF76EF446749EA91E95B72 /* SevereWeatherModels.swift in Sources */,
 				B2C3D4E5F60718293A4B5C6D /* ShortTermPrecipModels.swift in Sources */,
+				B8C9D0E1F203142536A4B5C6 /* LocationTimezone.swift in Sources */,
 				2EC98C0FFE824B26B976D638 /* SPCSevereService.swift in Sources */,
 				D4E5F60718293A4B5C6D7E8F /* OpenMeteoHRRRService.swift in Sources */,
 				7F07B7A711CF4A198DDBD31D /* SevereWeatherStore.swift in Sources */,

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HourlyPrecipCard: View {
   let hourly: [HourlyForecast]
+  var timeZone: TimeZone = .current
 
   private var next12Hours: [HourlyForecast] {
     Array(hourly.prefix(12))
@@ -86,14 +87,10 @@ struct HourlyPrecipCard: View {
     return DesignTokens.Palette.textTertiary.opacity(0.2)
   }
 
-  private static let hourFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "ha"
-    return f
-  }()
-
   private func formatHour(_ date: Date?) -> String {
     guard let date else { return "" }
-    return Self.hourFormatter.string(from: date).lowercased()
+    return LocationTimezone.formatter(dateFormat: "ha", timeZone: timeZone)
+      .string(from: date)
+      .lowercased()
   }
 }

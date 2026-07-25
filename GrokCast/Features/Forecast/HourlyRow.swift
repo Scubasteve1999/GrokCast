@@ -13,6 +13,8 @@ struct HourlyRow: View {
   var layout: HourlyRowLayout = .standard
   var openWeatherMapTempF: Int? = nil
   var openWeatherMapPrecipChance: Int? = nil
+  /// Location timezone for hour labels (defaults to device).
+  var timeZone: TimeZone = .current
   @State private var appeared = false
 
   private var condition: WeatherCondition {
@@ -208,12 +210,7 @@ struct HourlyRow: View {
   }
 
   private var formattedTime: String {
-    Self.timeFormatter.string(from: forecast.time)
+    LocationTimezone.formatter(dateFormat: "ha", timeZone: timeZone)
+      .string(from: forecast.time)
   }
-
-  private static let timeFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "ha"
-    return f
-  }()
 }

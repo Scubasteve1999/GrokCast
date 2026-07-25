@@ -16,7 +16,9 @@ struct ForecastView: View {
           conditionCode: store.currentWeather?.conditionCode,
           isDay: store.currentWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay,
+          } ?? WeatherBackgroundView.inferredIsDay(
+            timeZone: store.currentWeather?.locationTimeZone ?? .current
+          ),
           intensity: .subtle,
           extraOpacity: 0.88
         )
@@ -216,9 +218,11 @@ private struct ForecastAdaptiveBody: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space32) {
         let hourly24 = Self.nextHourlyForecasts(from: weather)
+        let calendar = weather.locationCalendar
+        let timeZone = weather.locationTimeZone
         let now = Date()
         let nowHourIndex = hourly24.firstIndex(where: { h in
-          Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
+          calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
         }) ?? 0
 
         forecastSectionHeader("Hourly — Next 24H")
@@ -226,13 +230,14 @@ private struct ForecastAdaptiveBody: View {
           HStack(spacing: DesignTokens.Spacing.space24) {
             ForEach(Array(hourly24.enumerated()), id: \.element.time) {
               index, hour in
-              hourlyRow(forecast: hour, isNow: index == nowHourIndex)
+              hourlyRow(
+                forecast: hour, isNow: index == nowHourIndex, timeZone: timeZone)
             }
           }
           .padding(.vertical, DesignTokens.Spacing.space8)
         }
 
-        figmaOpenWeatherMapSection
+        figmaOpenWeatherMapSection(timeZone: timeZone)
 
         forecastSectionHeader("10-Day Outlook")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -242,7 +247,9 @@ private struct ForecastAdaptiveBody: View {
             DailyRow(
               forecast: day,
               periodLow: periodLow,
-              periodHigh: periodHigh
+              periodHigh: periodHigh,
+              calendar: calendar,
+              timeZone: timeZone
             )
           }
         }
@@ -262,9 +269,11 @@ private struct ForecastAdaptiveBody: View {
   private func compactForecastList(for weather: GrokCastWeather) -> some View {
     ScrollView {
       let hourly24 = Self.nextHourlyForecasts(from: weather)
+      let calendar = weather.locationCalendar
+      let timeZone = weather.locationTimeZone
       let now = Date()
       let nowHourIndex = hourly24.firstIndex(where: { h in
-        Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
+        calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
       }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -275,13 +284,15 @@ private struct ForecastAdaptiveBody: View {
           HStack(spacing: DesignTokens.Spacing.space12) {
             ForEach(Array(hourly24.enumerated()), id: \.element.time) {
               index, hour in
-              hourlyRow(forecast: hour, isNow: index == nowHourIndex, layout: .figma)
+              hourlyRow(
+                forecast: hour, isNow: index == nowHourIndex, layout: .figma,
+                timeZone: timeZone)
             }
           }
         }
         .frame(height: hourlyStripHeight)
 
-        figmaOpenWeatherMapSection
+        figmaOpenWeatherMapSection(timeZone: timeZone)
 
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -292,7 +303,9 @@ private struct ForecastAdaptiveBody: View {
               forecast: day,
               layout: .figma,
               periodLow: periodLow,
-              periodHigh: periodHigh
+              periodHigh: periodHigh,
+              calendar: calendar,
+              timeZone: timeZone
             )
           }
         }
@@ -313,9 +326,11 @@ private struct ForecastAdaptiveBody: View {
   private func wideForecastContent(for weather: GrokCastWeather) -> some View {
     ScrollView {
       let hourly24 = Self.nextHourlyForecasts(from: weather)
+      let calendar = weather.locationCalendar
+      let timeZone = weather.locationTimeZone
       let now = Date()
       let nowHourIndex = hourly24.firstIndex(where: { h in
-        Calendar.current.isDate(h.time, equalTo: now, toGranularity: .hour)
+        calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
       }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
@@ -332,14 +347,15 @@ private struct ForecastAdaptiveBody: View {
             ) {
               ForEach(Array(hourly24.enumerated()), id: \.element.time) {
                 index, hour in
-                hourlyRow(forecast: hour, isNow: index == nowHourIndex)
+                hourlyRow(
+                  forecast: hour, isNow: index == nowHourIndex, timeZone: timeZone)
               }
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            figmaOpenWeatherMapSection
+            figmaOpenWeatherMapSection(timeZone: timeZone)
             forecastSectionHeader("10-Day Outlook")
             let periodLow = weather.daily.map(\.low).min()
             let periodHigh = weather.daily.map(\.high).max()
@@ -347,7 +363,9 @@ private struct ForecastAdaptiveBody: View {
               DailyRow(
                 forecast: day,
                 periodLow: periodLow,
-                periodHigh: periodHigh
+                periodHigh: periodHigh,
+                calendar: calendar,
+                timeZone: timeZone
               )
             }
           }
@@ -369,7 +387,8 @@ private struct ForecastAdaptiveBody: View {
   private func hourlyRow(
     forecast: HourlyForecast,
     isNow: Bool,
-    layout: HourlyRowLayout = .standard
+    layout: HourlyRowLayout = .standard,
+    timeZone: TimeZone = .current
   ) -> some View {
     let hybrid = store.openWeatherMapEntry(closestTo: forecast.time)
     return HourlyRow(
@@ -377,7 +396,8 @@ private struct ForecastAdaptiveBody: View {
       isNow: isNow,
       layout: layout,
       openWeatherMapTempF: hybrid.map { Int(round($0.temperatureF)) },
-      openWeatherMapPrecipChance: hybrid?.precipitationChance
+      openWeatherMapPrecipChance: hybrid?.precipitationChance,
+      timeZone: timeZone
     )
   }
 
@@ -386,13 +406,14 @@ private struct ForecastAdaptiveBody: View {
   }
 
   @ViewBuilder
-  private var figmaOpenWeatherMapSection: some View {
+  private func figmaOpenWeatherMapSection(timeZone: TimeZone = .current) -> some View {
     if let owm = store.openWeatherMapForecast, !owm.entries.isEmpty {
       FigmaSubsectionLabel(title: openWeatherMapCompactTitle)
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: DesignTokens.Spacing.space8) {
           ForEach(Array(owm.entries.prefix(8))) { entry in
-            OpenWeatherMapForecastChip(entry: entry, layout: .figma)
+            OpenWeatherMapForecastChip(
+              entry: entry, layout: .figma, timeZone: timeZone)
           }
         }
       }

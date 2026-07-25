@@ -476,7 +476,14 @@ struct WeatherBackgroundLayer: View {
 extension WeatherBackgroundView {
   /// Heuristic day/night when Open-Meteo `is_day` is not on `GrokCastWeather`.
   static var inferredIsDay: Bool {
-    let hour = Calendar.current.component(.hour, from: Date())
+    inferredIsDay(timeZone: .current)
+  }
+
+  /// Day/night heuristic using the location timezone when available.
+  static func inferredIsDay(timeZone: TimeZone) -> Bool {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = timeZone
+    let hour = calendar.component(.hour, from: Date())
     return hour >= 6 && hour < 20
   }
 

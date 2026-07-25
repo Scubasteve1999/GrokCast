@@ -13,6 +13,9 @@ struct DailyRow: View {
   /// 10-day period bounds for positioning the temp range segment (presentation only).
   var periodLow: Double? = nil
   var periodHigh: Double? = nil
+  /// Location calendar for "Today" / weekday (defaults to device).
+  var calendar: Calendar = .current
+  var timeZone: TimeZone = .current
   @State private var appeared = false
 
   private var condition: WeatherCondition {
@@ -28,12 +31,13 @@ struct DailyRow: View {
   }
 
   private var isToday: Bool {
-    Calendar.current.isDateInToday(forecast.date)
+    calendar.isDateInToday(forecast.date)
   }
 
   private var dayLabel: String {
     if isToday { return "Today" }
-    return forecast.date.formatted(.dateTime.weekday(.abbreviated))
+    return LocationTimezone.formatter(dateFormat: "EEE", timeZone: timeZone)
+      .string(from: forecast.date)
   }
 
   var body: some View {

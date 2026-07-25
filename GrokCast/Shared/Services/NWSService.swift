@@ -424,6 +424,7 @@ final class NWSService {
       low: low,
       symbolName: symbol,
       fetchedAt: Date(),
+      timezoneIdentifier: nil,
       airQualityIndex: nil,
       pm25: nil,
       pollenLevel: nil,

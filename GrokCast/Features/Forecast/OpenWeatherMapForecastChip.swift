@@ -8,6 +8,7 @@ enum OpenWeatherMapChipLayout {
 struct OpenWeatherMapForecastChip: View {
   let entry: OpenWeatherMapForecastEntry
   var layout: OpenWeatherMapChipLayout = .standard
+  var timeZone: TimeZone = .current
 
   var body: some View {
     Group {
@@ -87,12 +88,7 @@ struct OpenWeatherMapForecastChip: View {
   }
 
   private var formattedTime: String {
-    Self.timeFormatter.string(from: entry.time)
+    LocationTimezone.formatter(dateFormat: "ha", timeZone: timeZone)
+      .string(from: entry.time)
   }
-
-  private static let timeFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "ha"
-    return formatter
-  }()
 }

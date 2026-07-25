@@ -321,6 +321,7 @@ final class OpenMeteoService {
       low: low,
       symbolName: symbol,
       fetchedAt: Date(),
+      timezoneIdentifier: response.timezone,
       airQualityIndex: aqi,
       pm25: pm25,
       pollenLevel: pollen,
