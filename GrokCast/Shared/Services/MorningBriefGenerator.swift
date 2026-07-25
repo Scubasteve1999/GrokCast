@@ -72,7 +72,10 @@ enum MorningBriefGenerator {
     let shortTerm = ShortTermPrecipStore.shared.context
     let shortTermBlock: String = {
       guard shortTerm.locationID == locationKey,
-        let block = GrokPrompts.shortTermPrecipBlock(context: shortTerm)
+        let block = GrokPrompts.shortTermPrecipBlock(
+          context: shortTerm,
+          openMeteoSlots: weather.minutely15
+        )
       else { return "" }
       return "\n\(block)"
     }()

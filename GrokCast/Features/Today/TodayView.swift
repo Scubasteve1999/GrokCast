@@ -28,7 +28,9 @@ struct TodayView: View {
           conditionCode: store.currentWeather?.conditionCode,
           isDay: store.currentWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay,
+          } ?? WeatherBackgroundView.inferredIsDay(
+            timeZone: store.currentWeather?.locationTimeZone ?? .current
+          ),
           extraOpacity: 0.88
         )
 
@@ -292,6 +294,19 @@ private struct TodayWeatherPanel: View {
     hrrrContextForLocation != nil ? "HRRR" : nil
   }
 
+  private var minutecastAgreement: MinutecastAgreement.Result {
+    guard let hrrr = hrrrContextForLocation else { return .agree }
+    return MinutecastAgreement.compare(
+      hrrr: hrrr.slots,
+      openMeteo: weather.minutely15,
+      units: store.temperatureUnit
+    )
+  }
+
+  private var minutecastDisagreementCaption: String? {
+    MinutecastAgreement.caption(for: minutecastAgreement)
+  }
+
   private var todaySevereContext: SevereWeatherContext? {
     guard let locID = store.currentLocation?.id.uuidString,
       severeStore.context.locationID == locID,
@@ -337,7 +352,11 @@ private struct TodayWeatherPanel: View {
         layout: .figma
       )
 
-      MinutecastStrip(summary: currentMinutecast, sourceLabel: minutecastSourceLabel)
+      MinutecastStrip(
+        summary: currentMinutecast,
+        sourceLabel: minutecastSourceLabel,
+        disagreementCaption: minutecastDisagreementCaption
+      )
 
       if let severe = todaySevereContext {
         SevereContextCard(context: severe)
@@ -365,7 +384,11 @@ private struct TodayWeatherPanel: View {
         layout: .ring
       )
 
-      MinutecastStrip(summary: currentMinutecast, sourceLabel: minutecastSourceLabel)
+      MinutecastStrip(
+        summary: currentMinutecast,
+        sourceLabel: minutecastSourceLabel,
+        disagreementCaption: minutecastDisagreementCaption
+      )
 
       if let severe = todaySevereContext {
         SevereContextCard(context: severe)
@@ -492,14 +515,18 @@ private struct TodayWeatherPanel: View {
   @ViewBuilder
   private var sunriseSunsetSection: some View {
     if let today = weather.daily.first, today.sunrise != nil || today.sunset != nil {
-      SunriseSunsetCard(sunrise: today.sunrise, sunset: today.sunset)
+      SunriseSunsetCard(
+        sunrise: today.sunrise,
+        sunset: today.sunset,
+        timeZone: weather.locationTimeZone
+      )
     }
   }
 
   @ViewBuilder
   private var hourlyPrecipSection: some View {
     if !weather.hourly.isEmpty {
-      HourlyPrecipCard(hourly: weather.hourly)
+      HourlyPrecipCard(hourly: weather.hourly, timeZone: weather.locationTimeZone)
     }
   }
 

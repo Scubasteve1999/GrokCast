@@ -4,6 +4,8 @@ struct MinutecastStrip: View {
   let summary: MinutecastSummary
   /// Optional source cue (e.g. `"HRRR"`) when short-term slots are not Open-Meteo default.
   var sourceLabel: String? = nil
+  /// Quiet cue when HRRR and Open-Meteo minutecast disagree.
+  var disagreementCaption: String? = nil
 
   private var accent: Color {
     switch summary.kind {
@@ -46,12 +48,21 @@ struct MinutecastStrip: View {
         }
         .frame(height: 28, alignment: .bottom)
       }
+
+      if let disagreementCaption, !disagreementCaption.isEmpty {
+        Text(disagreementCaption)
+          .font(.caption2)
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      }
     }
     .padding(.vertical, DesignTokens.Spacing.space12)
     .padding(.horizontal, DesignTokens.Spacing.space12)
     .glassCardStyle(cornerRadius: DesignTokens.Radius.small)
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("Minutecast. \(summary.message)")
+    .accessibilityLabel(
+      disagreementCaption.map { "Minutecast. \(summary.message). \($0)" }
+        ?? "Minutecast. \(summary.message)"
+    )
   }
 
   private func barColor(for slot: MinutelyForecast) -> Color {

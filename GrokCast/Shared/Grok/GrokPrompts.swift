@@ -116,7 +116,10 @@ enum GrokPrompts {
       context += "\n\n" + severeBlock
     }
 
-    if let shortTermBlock = shortTermPrecipBlock(context: shortTermContext), !shortTermBlock.isEmpty {
+    if let shortTermBlock = shortTermPrecipBlock(
+      context: shortTermContext,
+      openMeteoSlots: weather.minutely15
+    ), !shortTermBlock.isEmpty {
       context += "\n\n" + shortTermBlock
     }
 
@@ -128,7 +131,10 @@ enum GrokPrompts {
   }
 
   /// Short-term (0–90 min) precip block when CONUS HRRR slots are available.
-  static func shortTermPrecipBlock(context: ShortTermPrecipContext?) -> String? {
+  static func shortTermPrecipBlock(
+    context: ShortTermPrecipContext?,
+    openMeteoSlots: [MinutelyForecast] = []
+  ) -> String? {
     guard let context, context.hasHRRRSlots else { return nil }
     let summary =
       context.summary
@@ -144,6 +150,13 @@ enum GrokPrompts {
     }
     if !slotBits.isEmpty {
       lines.append("- Slots: \(slotBits.joined(separator: "; "))")
+    }
+    if !openMeteoSlots.isEmpty {
+      let agreement = MinutecastAgreement.compare(
+        hrrr: context.slots, openMeteo: openMeteoSlots)
+      if let note = MinutecastAgreement.grokNote(for: agreement) {
+        lines.append("- \(note)")
+      }
     }
     return "**Short-term precip (0–90 min):**\n" + lines.joined(separator: "\n")
   }

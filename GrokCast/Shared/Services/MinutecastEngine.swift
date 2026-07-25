@@ -95,4 +95,90 @@ enum MinutecastEngine {
       strip: strip
     )
   }
+
+  /// Index of the first wet slot in the upcoming strip, or `nil` if clear / empty.
+  static func firstWetIndex(
+    in slots: [MinutelyForecast],
+    units: TemperatureUnit = .fahrenheit,
+    now: Date = Date()
+  ) -> Int? {
+    let precipThreshold = units == .fahrenheit ? 0.008 : 0.2
+    let strip = Array(
+      slots.lazy.filter { $0.time >= now.addingTimeInterval(-60) }.prefix(8)
+    )
+    return strip.indices.first { index in
+      let slot = strip[index]
+      return slot.precipitation >= precipThreshold || slot.precipChance >= chanceThreshold
+    }
+  }
+}
+
+// MARK: - HRRR vs Open-Meteo agreement
+
+enum MinutecastAgreement {
+  enum Result: Equatable {
+    case agree
+    case disagree(preferred: MinutecastSummary, otherKind: MinutecastSummary.Kind)
+  }
+
+  /// Compare CONUS HRRR slots against Open-Meteo blended minutecast.
+  /// Disagreement = kind differs or first-wet index differs by ≥ 2 (30+ min).
+  static func compare(
+    hrrr: [MinutelyForecast],
+    openMeteo: [MinutelyForecast],
+    units: TemperatureUnit = .fahrenheit,
+    now: Date = Date()
+  ) -> Result {
+    guard !hrrr.isEmpty, !openMeteo.isEmpty else { return .agree }
+
+    let preferred = MinutecastEngine.summary(from: hrrr, units: units, now: now)
+    let other = MinutecastEngine.summary(from: openMeteo, units: units, now: now)
+
+    let hrrrWet = MinutecastEngine.firstWetIndex(in: hrrr, units: units, now: now)
+    let omWet = MinutecastEngine.firstWetIndex(in: openMeteo, units: units, now: now)
+
+    let kindDiffers = preferred.kind != other.kind
+    let timingDiffers: Bool = {
+      switch (hrrrWet, omWet) {
+      case (nil, nil):
+        return false
+      case (nil, _), (_, nil):
+        return true
+      case let (h?, o?):
+        return abs(h - o) >= 2
+      }
+    }()
+
+    guard kindDiffers || timingDiffers else { return .agree }
+    return .disagree(preferred: preferred, otherKind: other.kind)
+  }
+
+  /// Quiet strip caption when sources disagree (HRRR remains primary).
+  static func caption(for result: Result) -> String? {
+    guard case .disagree(_, let otherKind) = result else { return nil }
+    switch otherKind {
+    case .clear:
+      return "Sources differ · Open-Meteo clearer"
+    case .startsSoon:
+      return "Sources differ · Open-Meteo starts sooner"
+    case .ongoing:
+      return "Sources differ · Open-Meteo wetter now"
+    case .stoppingSoon:
+      return "Sources differ · Open-Meteo ending sooner"
+    }
+  }
+
+  /// One-liner for Grok prompts.
+  static func grokNote(for result: Result) -> String? {
+    guard case .disagree(_, let otherKind) = result else { return nil }
+    let label: String = {
+      switch otherKind {
+      case .clear: "clear / drier"
+      case .startsSoon: "precip starting soon"
+      case .ongoing: "precip ongoing"
+      case .stoppingSoon: "precip ending soon"
+      }
+    }()
+    return "Open-Meteo blended minutecast differs: \(label)"
+  }
 }
