@@ -16,6 +16,8 @@ struct DailyRow: View {
   /// Location calendar for "Today" / weekday (defaults to device).
   var calendar: Calendar = .current
   var timeZone: TimeZone = .current
+  /// Opens day detail when set (Forecast tap-through).
+  var onSelect: (() -> Void)? = nil
   @State private var appeared = false
 
   private var condition: WeatherCondition {
@@ -49,6 +51,13 @@ struct DailyRow: View {
         figmaLayout
       }
     }
+    .contentShape(Rectangle())
+    .onTapGesture {
+      guard let onSelect else { return }
+      Haptic.selection()
+      onSelect()
+    }
+    .accessibilityAddTraits(onSelect == nil ? [] : .isButton)
     .opacity(appeared ? 1 : 0)
     .animation(.easeInOut(duration: 0.25), value: appeared)
     .onAppear { appeared = true }
@@ -56,14 +65,23 @@ struct DailyRow: View {
 
   private var figmaLayout: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
-      Text(dayLabel)
-        .font(DesignTokens.Figma.Typography.rowTitle)
-        .fontWeight(isToday ? .bold : .semibold)
-        .foregroundStyle(
-          isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
-        )
-        .lineLimit(1)
-        .frame(width: 52, alignment: .leading)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(dayLabel)
+          .font(DesignTokens.Figma.Typography.rowTitle)
+          .fontWeight(isToday ? .bold : .semibold)
+          .foregroundStyle(
+            isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
+          )
+          .lineLimit(1)
+        if let uv = forecast.uvMax {
+          Text("UV \(Int(round(uv)))")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+            .monospacedDigit()
+            .lineLimit(1)
+        }
+      }
+      .frame(width: 52, alignment: .leading)
 
       Image(systemName: rowSymbol)
         .font(.system(size: 22))
@@ -149,13 +167,22 @@ struct DailyRow: View {
 
   private var standardLayout: some View {
     HStack(alignment: .center, spacing: DesignTokens.Spacing.space16) {
-      Text(dayLabel)
-        .font(.system(size: 17, weight: isToday ? .bold : .medium))
-        .foregroundStyle(
-          isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
-        )
-        .frame(width: 56, alignment: .leading)
-        .lineLimit(1)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(dayLabel)
+          .font(.system(size: 17, weight: isToday ? .bold : .medium))
+          .foregroundStyle(
+            isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
+          )
+          .lineLimit(1)
+        if let uv = forecast.uvMax {
+          Text("UV \(Int(round(uv)))")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+            .monospacedDigit()
+            .lineLimit(1)
+        }
+      }
+      .frame(width: 56, alignment: .leading)
 
       Image(systemName: rowSymbol)
         .font(.system(size: 28))

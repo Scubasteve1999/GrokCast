@@ -63,20 +63,32 @@ struct HourlyRow: View {
         .monospacedDigit()
         .lineLimit(1)
 
-      if forecast.precipChance > 0 {
-        HStack(spacing: DesignTokens.Spacing.space4) {
-          Circle()
-            .fill(DesignTokens.Palette.accentCool)
-            .frame(width: 4, height: 4)
-          Text("\(forecast.precipChance)%")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.accentCool)
-            .monospacedDigit()
+      VStack(spacing: 2) {
+        if forecast.precipChance > 0 {
+          HStack(spacing: DesignTokens.Spacing.space4) {
+            Circle()
+              .fill(DesignTokens.Palette.accentCool)
+              .frame(width: 4, height: 4)
+            Text("\(forecast.precipChance)%")
+              .font(.caption2.weight(.semibold))
+              .foregroundStyle(DesignTokens.Palette.accentCool)
+              .monospacedDigit()
+          }
+          .accessibilityLabel("\(forecast.precipChance) percent chance of \(precipLabel)")
+        } else {
+          Color.clear
+            .frame(height: 14)
         }
-        .accessibilityLabel("\(forecast.precipChance) percent chance of \(precipLabel)")
-      } else {
-        Color.clear
-          .frame(height: 14)
+
+        let liq = (forecast.rain ?? 0) + (forecast.showers ?? 0)
+        let sn = forecast.snowfall ?? 0
+        if let amt = precipAmountText(liquid: liq, snow: sn) {
+          Text(amt)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
+        }
       }
     }
     .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)

@@ -37,6 +37,7 @@ private struct ForecastAdaptiveBody: View {
   @Environment(WeatherStore.self) private var store
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
+  @State private var selectedDay: DailyForecast?
 
   private var awaitsWidthMeasurement: Bool {
     AdaptiveLayout.awaitingWidthMeasurement(
@@ -89,6 +90,13 @@ private struct ForecastAdaptiveBody: View {
           Task { await store.refreshWeather() }
         }
       }
+    }
+    .sheet(item: $selectedDay) { day in
+      ForecastDayDetailSheet(
+        forecast: day,
+        calendar: store.currentWeather?.locationCalendar ?? .current,
+        timeZone: store.currentWeather?.locationTimeZone ?? .current
+      )
     }
   }
 
@@ -249,7 +257,8 @@ private struct ForecastAdaptiveBody: View {
               periodLow: periodLow,
               periodHigh: periodHigh,
               calendar: calendar,
-              timeZone: timeZone
+              timeZone: timeZone,
+              onSelect: { selectedDay = day }
             )
           }
         }
@@ -305,7 +314,8 @@ private struct ForecastAdaptiveBody: View {
               periodLow: periodLow,
               periodHigh: periodHigh,
               calendar: calendar,
-              timeZone: timeZone
+              timeZone: timeZone,
+              onSelect: { selectedDay = day }
             )
           }
         }
@@ -365,7 +375,8 @@ private struct ForecastAdaptiveBody: View {
                 periodLow: periodLow,
                 periodHigh: periodHigh,
                 calendar: calendar,
-                timeZone: timeZone
+                timeZone: timeZone,
+                onSelect: { selectedDay = day }
               )
             }
           }

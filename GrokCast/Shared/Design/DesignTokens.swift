@@ -116,7 +116,8 @@ enum DesignTokens {
       static let chipRadius: CGFloat = Radius.small
       static let searchRadius: CGFloat = 10
       static let heroIconSize: CGFloat = 48
-      static let hourlyRowHeight: CGFloat = 90
+      /// Room for precip % + optional amount line under temp.
+      static let hourlyRowHeight: CGFloat = 108
       static let hourlyChipWidth: CGFloat = 100
     }
   }
