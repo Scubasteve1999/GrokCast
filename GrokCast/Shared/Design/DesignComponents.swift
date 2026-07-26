@@ -271,7 +271,8 @@ struct MoreHubSheet: View {
     case .grok:
       store.xaiService.hasValidKey
         ? "Photo analysis, briefings, and chat" : "Add key in Settings"
-    case .locations: "\(store.savedLocations.count) saved places"
+    case .locations:
+      "\(store.savedLocations.count) saved place\(store.savedLocations.count == 1 ? "" : "s")"
     case .settings: "Units, alerts, privacy"
     default: ""
     }

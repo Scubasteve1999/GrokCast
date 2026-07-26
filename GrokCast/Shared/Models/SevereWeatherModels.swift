@@ -94,7 +94,10 @@ struct SPCMesoscaleDiscussion: Identifiable, Codable, Equatable, Hashable, Senda
   let linkHTML: String?
 
   var title: String {
-    let trimmed = number.trimmingCharacters(in: .whitespacesAndNewlines)
+    var trimmed = number.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.uppercased().hasPrefix("MD") {
+      trimmed = String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
     return trimmed.isEmpty ? "Mesoscale Discussion" : "MD \(trimmed)"
   }
 
