@@ -33,7 +33,7 @@ Use these exact color tokens. Do not introduce new colors without updating this 
 
 | Element              | Size     | Weight      | Color            | Usage |
 |----------------------|----------|-------------|------------------|-------|
-| **Hero Temperature** | 108–120pt| Black/Heavy | `textPrimary`    | Main temperature in Today hero |
+| **Hero Temperature** | 96pt     | Black/Heavy | `textPrimary`    | Main temperature in Today hero (Figma-matched) |
 | **Large Title**      | 34pt     | Bold        | `textPrimary`    | Screen titles |
 | **Title**            | 28pt     | Semibold    | `textPrimary`    | Section headers |
 | **Headline**         | 20pt     | Semibold    | `textPrimary`    | Card titles, important labels |

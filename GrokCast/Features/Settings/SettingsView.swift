@@ -391,6 +391,13 @@ struct SettingsView: View {
 
           Button {
             Haptic.impact(.light)
+            AppReviewPrompt.openWriteReview()
+          } label: {
+            Label("Rate SpotterCast", systemImage: "star.fill")
+          }
+
+          Button {
+            Haptic.impact(.light)
             store.clearLocalWeatherCache()
           } label: {
             Label("Clear Local Weather Cache", systemImage: "trash")
@@ -526,6 +533,23 @@ struct SettingsView: View {
           figmaInfoRow(title: "Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
           SettingsDivider()
           figmaInfoRow(title: "Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+          SettingsDivider()
+          Button {
+            Haptic.impact(.light)
+            AppReviewPrompt.openWriteReview()
+          } label: {
+            HStack {
+              Label("Rate SpotterCast", systemImage: "star.fill")
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+              Spacer()
+              Image(systemName: "arrow.up.right")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(DesignTokens.Palette.textTertiary)
+            }
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.vertical, DesignTokens.Spacing.space12)
+          }
+          .buttonStyle(.plain)
           SettingsDivider()
           Button {
             Haptic.impact(.light)

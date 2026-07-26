@@ -77,6 +77,7 @@ struct MainTabView: View {
       await store.performInitialLoadIfNeeded()
       Task { await store.scheduleBackgroundAlertRefreshIfEnabled() }
     }
+    .appReviewPrompting()
   }
 
   private func handleDeepLink(_ url: URL) {

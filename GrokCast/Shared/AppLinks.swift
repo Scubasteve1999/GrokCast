@@ -10,6 +10,8 @@ enum AppLinks {
   static let supportEmail = URL(string: "mailto:stephenmoorecm1357@gmail.com")!
   static let xAIConsole = URL(string: "https://console.x.ai/")!
   static let openMeteo = URL(string: "https://open-meteo.com/")!
+  static let appStore = AppReviewPrompt.appStoreURL
+  static let writeReview = AppReviewPrompt.writeReviewURL
 }
 
 /// Stable accessibility identifiers for XCUITest and VoiceOver.

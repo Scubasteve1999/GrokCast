@@ -194,6 +194,7 @@
 		F7714D3F7A73AE56BB4DA20D /* WeatherUnits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52E509705B51A9153AF41C54 /* WeatherUnits.swift */; };
 		F7880FF3D6F1A5DDB5667F88 /* MorningBriefNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC7A09E81AED35BC9E907D69 /* MorningBriefNotificationService.swift */; };
 		FA2A5A9612812924B5D7D09C /* MorningBriefGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76BA4EAE42B8F2692162D14E /* MorningBriefGenerator.swift */; };
+		C9E8D7F6A5B4039281706E5D /* AppReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6E /* AppReviewPrompt.swift */; };
 		FB3BA9C314AC829E58AF3DCA /* WeatherCondition.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D4C035905762556447A1EE /* WeatherCondition.swift */; };
 		FB8844E815A025F6FD0DC92B /* AppLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10DF3BA5B8A4A075619F061C /* AppLinks.swift */; };
 		FD1DB04735DEBDE1263EEFEC /* WeatherShareService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BFA131C02E36C0CD838768E /* WeatherShareService.swift */; };
@@ -316,6 +317,7 @@
 		74941DAE6DEC3AE2D84B819F /* GrokAIConversationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAIConversationStore.swift; sourceTree = "<group>"; };
 		75E733BE6650A28E6113B048 /* StormSpotterPhotoShare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormSpotterPhotoShare.swift; sourceTree = "<group>"; };
 		76BA4EAE42B8F2692162D14E /* MorningBriefGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningBriefGenerator.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6E /* AppReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPrompt.swift; sourceTree = "<group>"; };
 		7785F2FE3B1E988D7341408D /* GrokCastNotificationSounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokCastNotificationSounds.swift; sourceTree = "<group>"; };
 		77CE066F32F67ACC3EEFA3C6 /* ChatMessageEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageEntity.swift; sourceTree = "<group>"; };
 		78558067F755190B10CA498A /* GrokCastScoreCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokCastScoreCard.swift; sourceTree = "<group>"; };
@@ -495,6 +497,7 @@
 				DC37D051A3F528A7C39B6EA9 /* LocationService.swift */,
 				9C285A9A70DE41AC42D6923A /* MinutecastEngine.swift */,
 				76BA4EAE42B8F2692162D14E /* MorningBriefGenerator.swift */,
+				B2C3D4E5F60718293A4B5C6E /* AppReviewPrompt.swift */,
 				BC7A09E81AED35BC9E907D69 /* MorningBriefNotificationService.swift */,
 				41F5DCF1897595329028EDFD /* NWSService.swift */,
 				24FB7E4175CD6258A98696CC /* OpenMeteoService.swift */,
@@ -1115,6 +1118,7 @@
 				C506A2094C14679487BA8534 /* MinutecastEngine.swift in Sources */,
 				7DC5885C13007F9706597183 /* MinutecastStrip.swift in Sources */,
 				FA2A5A9612812924B5D7D09C /* MorningBriefGenerator.swift in Sources */,
+				C9E8D7F6A5B4039281706E5D /* AppReviewPrompt.swift in Sources */,
 				F7880FF3D6F1A5DDB5667F88 /* MorningBriefNotificationService.swift in Sources */,
 				651A17047946F6C59AEA4A17 /* NWSAlertStyle.swift in Sources */,
 				B3449A1B9E2ED2F008B86AA9 /* NWSModels.swift in Sources */,
@@ -1292,7 +1296,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 68;
+				CURRENT_PROJECT_VERSION = 69;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1311,7 +1315,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1422,7 +1426,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 68;
+				CURRENT_PROJECT_VERSION = 69;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1435,7 +1439,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

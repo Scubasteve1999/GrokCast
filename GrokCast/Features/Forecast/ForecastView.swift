@@ -159,7 +159,7 @@ private struct ForecastAdaptiveBody: View {
   private var compactForecastSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "FORECAST")
+        FigmaScreenTitle(title: "Forecast")
 
         FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
@@ -286,7 +286,7 @@ private struct ForecastAdaptiveBody: View {
       }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "FORECAST")
+        FigmaScreenTitle(title: "Forecast")
 
         FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
@@ -344,7 +344,7 @@ private struct ForecastAdaptiveBody: View {
       }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
-        FigmaScreenTitle(title: "FORECAST")
+        FigmaScreenTitle(title: "Forecast")
           .padding(.bottom, DesignTokens.Spacing.space8)
 
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
