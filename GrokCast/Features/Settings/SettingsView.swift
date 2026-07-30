@@ -406,6 +406,33 @@ struct SettingsView: View {
         }
 
         Section {
+          Toggle(isOn: Binding(
+            get: { !PostHogAnalytics.isOptedOut },
+            set: { PostHogAnalytics.setOptedOut(!$0) }
+          )) {
+            VStack(alignment: .leading, spacing: 2) {
+              Text("Share analytics")
+              Text(
+                PostHogAnalytics.isConfigured
+                  ? "Anonymous usage helps improve SpotterCast. On-device counts always stay local."
+                  : "Analytics is off until POSTHOG_API_KEY is set in this build."
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            }
+          }
+          .disabled(!PostHogAnalytics.isConfigured)
+        } header: {
+          Text("PRIVACY")
+        } footer: {
+          Text(
+            PostHogAnalytics.isConfigured
+              ? "No session replay or screen capture. You can turn this off anytime."
+              : "Set POSTHOG_API_KEY in Config/Secrets.xcconfig to enable product analytics."
+          )
+        }
+
+        Section {
           Link(destination: AppLinks.privacyPolicy) {
             Label("Privacy Policy", systemImage: "hand.raised")
           }
@@ -564,6 +591,22 @@ struct SettingsView: View {
             .padding(.vertical, DesignTokens.Spacing.space12)
           }
           .buttonStyle(.plain)
+        }
+
+        FigmaSectionLabel(title: "PRIVACY")
+        SettingsGroupCard {
+          figmaToggleRow(
+            title: "Share analytics",
+            subtitle: PostHogAnalytics.isConfigured
+              ? "Anonymous usage · no session replay"
+              : "Off until POSTHOG_API_KEY is set",
+            icon: "chart.bar.fill",
+            isOn: Binding(
+              get: { !PostHogAnalytics.isOptedOut },
+              set: { PostHogAnalytics.setOptedOut(!$0) }
+            )
+          )
+          .disabled(!PostHogAnalytics.isConfigured)
         }
 
         FigmaSectionLabel(title: "LEGAL & SUPPORT")

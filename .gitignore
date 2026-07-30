@@ -148,6 +148,12 @@ Temporary Items
 Debug.xcconfig
 *.local
 
+# PostHog / build secrets (Shared.xcconfig is safe; Secrets.xcconfig is not)
+Config/Secrets.xcconfig
+# *secret* also matches the example — keep the template tracked
+!Config/Secrets.xcconfig.example
+!Secrets.xcconfig.example
+
 # Build artifacts we don't want in git
 build/
 DerivedData*

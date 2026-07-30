@@ -643,6 +643,11 @@ private struct GrokAIViewContent: View {
         }
         .buttonStyle(.bordered)
         .tint(DesignTokens.Palette.accent)
+        .simultaneousGesture(
+          TapGesture().onEnded {
+            Analytics.track(.shareStarted, parameters: ["surface": "storm_photo"])
+          }
+        )
       }
 
       ShareLink(item: shareText, subject: Text("SpotterCast Storm Spotter")) {
@@ -650,6 +655,11 @@ private struct GrokAIViewContent: View {
       }
       .buttonStyle(.bordered)
       .tint(DesignTokens.Palette.accent)
+      .simultaneousGesture(
+        TapGesture().onEnded {
+          Analytics.track(.shareStarted, parameters: ["surface": "storm_report"])
+        }
+      )
     }
     .font(.caption.weight(.semibold))
     .frame(maxWidth: .infinity, alignment: .leading)

@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
   ) -> Bool {
     FirebaseApp.configure()
     Messaging.messaging().delegate = self
+    PostHogAnalytics.configure()
 
     BackgroundAlertRefreshService.register()
     registerAllNotificationCategories()

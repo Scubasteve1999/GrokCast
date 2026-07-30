@@ -23,6 +23,9 @@ packages:
   firebase-ios-sdk:
     url: https://github.com/firebase/firebase-ios-sdk.git
     majorVersion: 11.0.0
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios.git
+    majorVersion: 3.0.0
 
 targetTemplates:
   AppTarget:
@@ -70,6 +73,9 @@ targets:
         com.apple.security.application-groups:
           - group.com.scubasteve1999.GrokCast
         aps-environment: production
+    configFiles:
+      Debug: Config/Shared.xcconfig
+      Release: Config/Shared.xcconfig
     settings:
       configs:
         Debug:
@@ -84,6 +90,7 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconName: AppIcon
+        POSTHOG_API_KEY: "$(POSTHOG_API_KEY)"
         NSSupportsLiveActivities: true
         UILaunchScreen:
           UIColorName: LaunchBackground
@@ -115,6 +122,8 @@ targets:
       - package: MapboxMaps
       - package: firebase-ios-sdk
         product: FirebaseMessaging
+      - package: PostHog
+        product: PostHog
 
   GrokCastWidgets:
     type: app-extension
@@ -158,6 +167,25 @@ targets:
       - sdk: ActivityKit.framework
       - sdk: CoreLocation.framework
 
+  GrokCastTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: GrokCastTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCastTests
+        DEVELOPMENT_TEAM: "742YD3WJAR"
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: 1,2
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        SUPPORTS_MACCATALYST: NO
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/GrokCast.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GrokCast"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    dependencies:
+      - target: GrokCast
+
   GrokCastUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -182,12 +210,14 @@ schemes:
       targets:
         GrokCast: all
         GrokCastWidgets: all
+        GrokCastTests: [test]
         GrokCastUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
+        - GrokCastTests
         - GrokCastUITests
     archive:
       config: Release

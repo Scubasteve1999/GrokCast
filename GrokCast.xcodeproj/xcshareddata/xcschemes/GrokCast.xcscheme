@@ -23,6 +23,34 @@
          </BuildActionEntry>
          <BuildActionEntry
             buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D603653EF25BBBF142EC773B"
+               BuildableName = "GrokCastTests.xctest"
+               BlueprintName = "GrokCastTests"
+               ReferencedContainer = "container:GrokCast.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B12274F9DAE35C0DE701BDDC"
+               BuildableName = "GrokCastUITests.xctest"
+               BlueprintName = "GrokCastUITests"
+               ReferencedContainer = "container:GrokCast.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
             buildForRunning = "YES"
             buildForProfiling = "YES"
             buildForArchiving = "YES"
@@ -53,6 +81,28 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D603653EF25BBBF142EC773B"
+               BuildableName = "GrokCastTests.xctest"
+               BlueprintName = "GrokCastTests"
+               ReferencedContainer = "container:GrokCast.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B12274F9DAE35C0DE701BDDC"
+               BuildableName = "GrokCastUITests.xctest"
+               BlueprintName = "GrokCastUITests"
+               ReferencedContainer = "container:GrokCast.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

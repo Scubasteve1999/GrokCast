@@ -78,6 +78,13 @@ struct MainTabView: View {
       Task { await store.scheduleBackgroundAlertRefreshIfEnabled() }
     }
     .appReviewPrompting()
+    .onAppear {
+      Analytics.track(.appOpen)
+      Analytics.track(AnalyticsEvent.tabEvent(for: store.selectedTab))
+    }
+    .onChange(of: store.selectedTab) { _, tab in
+      Analytics.track(AnalyticsEvent.tabEvent(for: tab))
+    }
   }
 
   private func handleDeepLink(_ url: URL) {

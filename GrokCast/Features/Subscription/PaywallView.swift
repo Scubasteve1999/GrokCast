@@ -35,6 +35,9 @@ struct PaywallView: View {
           Button("Not now") { dismiss() }
         }
       }
+      .onAppear {
+        Analytics.track(.paywallView, parameters: ["feature": feature.analyticsName])
+      }
       .task {
         if subscription.products.isEmpty {
           await subscription.loadProducts()
@@ -198,8 +201,12 @@ struct PaywallView: View {
         Button {
           Task {
             do {
+              Analytics.track(.subscribeTap, parameters: ["product_id": product.id])
               try await subscription.purchase(product)
-              if subscription.isPro { dismiss() }
+              if subscription.isPro {
+                Analytics.track(.subscribeSuccess, parameters: ["product_id": product.id])
+                dismiss()
+              }
             } catch {
               subscription.reportError(error.localizedDescription)
             }
@@ -220,7 +227,12 @@ struct PaywallView: View {
       }
 
       Button("Restore Purchases") {
-        Task { await subscription.restorePurchases() }
+        Task {
+          await subscription.restorePurchases()
+          if subscription.isPro {
+            Analytics.track(.restoreSuccess)
+          }
+        }
       }
       .font(.footnote)
       .disabled(subscription.purchaseInFlight)
@@ -296,6 +308,17 @@ enum PaywallFeature {
     case .liveActivity: "lock.rectangle.stack.fill"
     case .morningBrief: "sunrise.fill"
     case .severeAlerts: "exclamationmark.triangle.fill"
+    }
+  }
+
+  var analyticsName: String {
+    switch self {
+    case .grokAI: "grok_ai"
+    case .radarFuture: "radar_future"
+    case .locations: "locations"
+    case .liveActivity: "live_activity"
+    case .morningBrief: "morning_brief"
+    case .severeAlerts: "severe_alerts"
     }
   }
 }
