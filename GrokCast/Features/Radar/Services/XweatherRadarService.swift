@@ -75,6 +75,28 @@ final class XweatherRadarService {
     buildFrames(maxFrames: maxFrames, intervalMinutes: intervalMinutes, direction: .future)
   }
 
+  /// Live `radar` layer frames for NOW mode (past offsets + `current`).
+  /// Uses retina 512×512 tiles — callers must set Mapbox `tileSize = 512`.
+  static func loadLiveRadarFrames(
+    maxFrames: Int = RadarTimelineConfig.liveMaxFrames
+  ) -> [RadarFrame] {
+    let xwFrames = loadRecentFrames(maxFrames: maxFrames)
+    return xwFrames.compactMap { xf -> RadarFrame? in
+      guard let templates = tileURLs(layer: xf.layer, offset: xf.offset, retina: true),
+        !templates.isEmpty
+      else {
+        return nil
+      }
+      return RadarFrame(
+        provider: .xweather,
+        kind: .livePrecipitation,
+        tileEpoch: Int(xf.timestamp.timeIntervalSince1970),
+        timestamp: xf.timestamp,
+        tileURLTemplates: templates
+      )
+    }
+  }
+
   /// Produces RadarFrame descriptors suitable for the active Mapbox radar timeline + overlay.
   /// Uses the `fradar` layer for FUTURE precipitation forecast (offsets like `current`, `+1hour`).
   static func loadForecastRadarFrames(

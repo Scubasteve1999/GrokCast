@@ -2,7 +2,7 @@ import Foundation
 
 /// Selects which backend serves precipitation map tiles.
 ///
-/// Live:     freshest real scan among IEM / RainViewer; OWM if reals missing or >25m stale
+/// Live:     Xweather radar (when probed) → freshest IEM / RainViewer; OWM if reals >25m stale
 /// Forecast: Xweather fradar → RainViewer nowcast → OpenWeatherMap PR0
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
@@ -11,8 +11,8 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   /// NWS NEXRAD single-site products (Velocity/SRV) via IEM RIDGE cache. Live-only.
   case iem
 
-  static let preferredLive: RadarTileProvider = .iem
-  static let preferredForecast: RadarTileProvider = .openWeatherMap
+  static let preferredLive: RadarTileProvider = .xweather
+  static let preferredForecast: RadarTileProvider = .xweather
 
   var displayName: String {
     switch self {
@@ -23,12 +23,22 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     }
   }
 
+  /// Compact HUD label for the active mosaic/provider (not nearest-site ID).
+  var hudSourceLabel: String {
+    switch self {
+    case .rainViewer: "RAINVIEWER"
+    case .xweather: "XWEATHER"
+    case .openWeatherMap: "OWM"
+    case .iem: "CONUS"
+    }
+  }
+
   var liveFooterLabel: String {
     switch self {
     case .rainViewer: "Live radar · RainViewer"
-    case .xweather: "Radar · Xweather"
+    case .xweather: "Live radar · Xweather"
     case .openWeatherMap: "Radar · OpenWeatherMap"
-    case .iem: "Live radar · NWS NEXRAD"
+    case .iem: "Live radar · CONUS mosaic"
     }
   }
 
@@ -46,7 +56,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   var maxZoom: Double {
     switch self {
     case .rainViewer: 10
-    case .xweather: 10  // Aeris serves fradar past z8; the 8 cap forced overzoom blur.
+    case .xweather: 11  // Retina mosaic holds detail slightly past prior z10 cap.
     case .openWeatherMap: 7
     case .iem: 10
     }

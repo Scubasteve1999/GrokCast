@@ -4,7 +4,7 @@ import SwiftUI
 struct RadarView: View {
   @Environment(WeatherStore.self) private var store
 
-  @State private var radarOpacity: Double = 0.75
+  @State private var radarOpacity: Double = 0.85
   @State private var radarState = RadarState()
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?

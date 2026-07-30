@@ -236,8 +236,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
 
       let isFuture = radarState.showsFuture
-      let isXweatherForecast =
-        frame.provider == .xweather && frame.kind == .forecastPrecipitation
+      // Xweather live + forecast use @2x retina templates (512px).
+      let isXweatherRetina = frame.provider == .xweather
       let fadeDuration: Double
       if radarState.isAnimating {
         fadeDuration = isFuture ? 450 : 400
@@ -253,13 +253,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         provider: frame.provider,
         maxZoom: frame.provider.maxZoom,
         opacity: opacity,
-        saturation: radarState.colorScheme.rasterSaturation + (isFuture ? 0.2 : 0.0),
-        contrast: radarState.colorScheme.rasterContrast + (isFuture ? 0.1 : 0.0),
+        saturation: radarState.colorScheme.rasterSaturation + (isFuture ? 0.15 : 0.0),
+        contrast: radarState.colorScheme.rasterContrast + (isFuture ? 0.08 : 0.0),
         showsFuture: isFuture,
         isAnimating: radarState.isAnimating,
         visible: true,
         fadeDuration: fadeDuration,
-        tileSize: isXweatherForecast ? 512 : 256,
+        tileSize: isXweatherRetina ? 512 : 256,
         prefetchZoomDelta: Self.prefetchZoomDelta(for: frame.provider, isAnimating: radarState.isAnimating),
         minimumTileUpdateInterval: Self.minimumTileUpdateInterval(for: frame.provider)
       )

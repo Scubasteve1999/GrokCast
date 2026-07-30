@@ -27,9 +27,8 @@ final class RadarPlayback {
       isAnimating = false
       return
     }
-    if currentIndex >= count - 1 {
-      currentIndex = 0
-    }
+    // Stay on the current frame (usually newest after load). Looping wraps in
+    // `advance()` — do not jump to the oldest frame when opening / resuming Live.
     timer?.invalidate()
     isAnimating = true
     scheduleNextTick()

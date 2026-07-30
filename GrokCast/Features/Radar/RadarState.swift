@@ -74,7 +74,10 @@ final class RadarState {
   /// offsets, so on re-entry after a long gap the forecast/labels drift from
   /// the provider's newest run — reload past this age to stay current.
   private var lastLoadedAt: Date?
-  private static let staleReloadThreshold: TimeInterval = 15 * 60
+  /// Reload composite frames more often so Live doesn’t sit on a stale set.
+  private static let staleReloadThreshold: TimeInterval = 5 * 60
+  /// Even inside the time window, rebuild if the newest live frame is this old.
+  private static let newestFrameStaleThreshold: TimeInterval = 10 * 60
 
   /// Coordinate the timeline was built for. Provider selection is per-coordinate
   /// (IEM CONUS vs international fallbacks), so a location switch must rebuild
@@ -423,15 +426,25 @@ extension RadarState {
   }
 
   /// Rebuild the timeline only if the last load is stale (or never happened).
-  /// Cheap no-op on quick tab switches; refreshes after a long idle session or
-  /// when the selected location moved away from the loaded coordinate.
+  /// Cheap no-op on quick tab switches; refreshes after a short idle, when the
+  /// newest live frame ages out, or when the selected location moved.
   func reloadIfStale(for coordinate: CLLocationCoordinate2D) async {
-    if let lastLoadedAt, let lastLoadedCoordinate,
-      Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold,
-      abs(lastLoadedCoordinate.latitude - coordinate.latitude) < Self.staleReloadDistanceDegrees,
-      abs(lastLoadedCoordinate.longitude - coordinate.longitude) < Self.staleReloadDistanceDegrees
+    let coordinateUnchanged: Bool = {
+      guard let lastLoadedCoordinate else { return false }
+      return abs(lastLoadedCoordinate.latitude - coordinate.latitude)
+        < Self.staleReloadDistanceDegrees
+        && abs(lastLoadedCoordinate.longitude - coordinate.longitude)
+          < Self.staleReloadDistanceDegrees
+    }()
+
+    if let lastLoadedAt, coordinateUnchanged,
+      Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold
     {
-      return
+      // Still reload if the newest composite frame itself is old (paused on Radar).
+      let newestAge = timeline.live.last.map { Date().timeIntervalSince($0.timestamp) } ?? .infinity
+      if newestAge < Self.newestFrameStaleThreshold {
+        return
+      }
     }
     await loadDefaultRadar(for: coordinate)
   }

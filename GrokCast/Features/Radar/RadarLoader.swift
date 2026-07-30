@@ -67,12 +67,17 @@ final class RadarLoader {
     defer { isLoading = false }
 
     async let rainViewerDataset = RainViewerRadarService.loadDataset()
+    async let xweatherLiveProbe = XweatherRadarService.mapsAuthConfigured
+      ? XweatherRadarService.probeAvailability()
+      : false
 
     let rainViewer = await rainViewerDataset
+    let xweatherLiveOK = await xweatherLiveProbe
     let liveOutcome = await resolveLive(
       site: site,
       coordinate: coordinate,
-      rainViewerLive: rainViewer.live
+      rainViewerLive: rainViewer.live,
+      xweatherLiveOK: xweatherLiveOK
     )
     let forecastOutcome = await resolveForecast(rainViewerNowcast: rainViewer.nowcast)
 
@@ -152,8 +157,26 @@ final class RadarLoader {
   private func resolveLive(
     site: IEMRadarService.Site?,
     coordinate: CLLocationCoordinate2D,
-    rainViewerLive: [RadarFrame]
+    rainViewerLive: [RadarFrame],
+    xweatherLiveOK: Bool
   ) async -> LoadOutcome {
+    // Phase 3 default: expand Xweather live as the paid mosaic before adding another
+    // vendor (e.g. Tomorrow.io). Super-Res / SRV stay on IEM single-site via setProduct.
+    if xweatherLiveOK {
+      let xwFrames = XweatherRadarService.loadLiveRadarFrames()
+      if !xwFrames.isEmpty {
+        let age = Date().timeIntervalSince(xwFrames.last?.timestamp ?? .distantPast)
+        print(
+          "[RadarLoader] Live: Xweather radar (\(xwFrames.count) frames, age \(Int(age / 60))m)"
+        )
+        return LoadOutcome(
+          frames: xwFrames,
+          provider: .xweather,
+          availability: .available
+        )
+      }
+    }
+
     // Collect real-scan candidates (IEM / RainViewer), then pick freshest last frame.
     // OWM timestamps are synthesized — only use when reals are missing or stale.
     var realCandidates: [(provider: RadarTileProvider, frames: [RadarFrame], label: String)] = []
@@ -217,7 +240,9 @@ final class RadarLoader {
       )
     }
 
-    print("[RadarLoader] Live radar unavailable — IEM, OpenWeatherMap, and RainViewer failed")
+    print(
+      "[RadarLoader] Live radar unavailable — Xweather, IEM, OpenWeatherMap, and RainViewer failed"
+    )
     return LoadOutcome(
       frames: [],
       provider: nil,

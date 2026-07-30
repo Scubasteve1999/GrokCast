@@ -133,10 +133,16 @@ struct ChaseRadarHUD: View {
 
   private var siteProductLine: String {
     let product = radarState.selectedProduct.displayName.uppercased()
-    if let site = radarState.nearestSite {
+    // Single-site products are truly nearest-NEXRAD; composite Reflectivity is not.
+    if radarState.selectedProduct.isSiteProduct, let site = radarState.nearestSite {
       return "\(site.id) · \(product)"
     }
-    return product
+    if radarState.showsFuture {
+      let name = radarState.activeForecastProvider?.hudSourceLabel ?? "FORECAST"
+      return "\(name) · \(product)"
+    }
+    let name = radarState.activeLiveProvider?.hudSourceLabel ?? "LIVE"
+    return "\(name) · \(product)"
   }
 
   private var coordLine: String {

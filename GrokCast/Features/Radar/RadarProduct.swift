@@ -1,7 +1,7 @@
 import Foundation
 
 /// User-facing radar products for the control panel.
-/// Reflectivity uses the composite providers (RainViewer live / Xweather forecast).
+/// Reflectivity uses composite providers (Xweather live preferred, then IEM/RainViewer).
 /// Site products come from the nearest NEXRAD site via IEM RIDGE tiles
 /// (US only, live only — see IEMRadarService). IEM archives exactly N0B + N0S
 /// nationally (verified 2026-07); plain base velocity (N0U) is not scan-listable.
@@ -49,19 +49,19 @@ enum RadarColorScheme: String, CaseIterable {
     }
   }
 
-  /// `raster-saturation` (-1...1). Vibrant keeps the native palette.
+  /// `raster-saturation` (-1...1). Vibrant slightly boosts precip readability.
   var rasterSaturation: Double {
     switch self {
-    case .vibrant: 0.0
-    case .balanced: -0.5
+    case .vibrant: 0.15
+    case .balanced: -0.35
     }
   }
 
   /// `raster-contrast` (-1...1).
   var rasterContrast: Double {
     switch self {
-    case .vibrant: 0.0
-    case .balanced: -0.15
+    case .vibrant: 0.08
+    case .balanced: -0.1
     }
   }
 }

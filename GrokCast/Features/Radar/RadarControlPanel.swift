@@ -329,7 +329,13 @@ struct RadarControlPanel: View {
       radarState.showsFuture
       ? radarState.activeForecastProvider
       : radarState.activeLiveProvider
-    return provider?.displayName ?? "No source"
+    switch provider {
+    case .iem: return "CONUS mosaic"
+    case .xweather: return "Xweather"
+    case .rainViewer: return "RainViewer"
+    case .openWeatherMap: return "OpenWeatherMap"
+    case .none: return "No source"
+    }
   }
 
   /// Freshness of the newest live radar frame; nil until frames load.
@@ -384,7 +390,7 @@ private struct RadarDisplayOptionsSheet: View {
 
         Section("Opacity") {
           HStack {
-            Slider(value: $opacity, in: 0.3...1.0, step: 0.1)
+            Slider(value: $opacity, in: 0.4...1.0, step: 0.05)
             Text(String(format: "%.0f%%", opacity * 100))
               .font(.caption.monospacedDigit())
               .foregroundStyle(.secondary)
