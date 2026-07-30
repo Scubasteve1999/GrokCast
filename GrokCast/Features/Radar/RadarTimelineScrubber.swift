@@ -88,19 +88,22 @@ struct RadarTimelineScrubber: View {
   }
 
   private func figmaTickLabels(labels: [String], count: Int) -> some View {
-    // Cap ticks so dense forecast timelines don't pile "6:20 PM" on "7:00 PM" at the trailing edge.
-    let maxTicks = 5
+    // Cap ticks so dense timelines don't pile labels at the trailing edge.
+    let maxTicks = 4
     let stride = max(1, Int(ceil(Double(max(count - 1, 1)) / Double(maxTicks - 1))))
     var indices = Array(Swift.stride(from: 0, to: count, by: stride))
     if indices.last != count - 1 {
       indices.append(count - 1)
     }
-    if indices.count >= 2 {
+    // Drop penultimate when too close to the final tick (long "h:mm a" strings overlap).
+    while indices.count >= 2 {
       let last = indices[indices.count - 1]
       let prev = indices[indices.count - 2]
-      // Drop penultimate when it's within ~15% of the track from the final tick.
-      if Double(last - prev) < Double(count) * 0.15 {
+      let minGap = max(2, Int(ceil(Double(count) * 0.22)))
+      if last - prev < minGap {
         indices.remove(at: indices.count - 2)
+      } else {
+        break
       }
     }
 
@@ -109,7 +112,7 @@ struct RadarTimelineScrubber: View {
     return GeometryReader { geo in
       ForEach(indices, id: \.self) { i in
         let fraction = count > 1 ? CGFloat(i) / CGFloat(count - 1) : 0
-        let estHalfWidth: CGFloat = 28
+        let estHalfWidth: CGFloat = 30
         let x = min(
           max(fraction * geo.size.width, estHalfWidth),
           max(estHalfWidth, geo.size.width - estHalfWidth))
@@ -122,7 +125,7 @@ struct RadarTimelineScrubber: View {
               : DesignTokens.Palette.radarTextSecondary
           )
           .lineLimit(1)
-          .minimumScaleFactor(0.8)
+          .minimumScaleFactor(0.75)
           .fixedSize()
           .position(x: x, y: geo.size.height / 2)
       }

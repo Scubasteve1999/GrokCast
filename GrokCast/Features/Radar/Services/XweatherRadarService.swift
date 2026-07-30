@@ -5,16 +5,21 @@ import Foundation
 
 /// Service for Xweather radar tiles (primary provider).
 /// Uses https://maps.api.xweather.com for high-quality radar layers.
-/// NOW uses the live `radar` layer with past offsets (e.g. `current`, `-5minutes`).
+/// NOW prefers live `radar-global` (radar + satellite fill), falling back to `radar`.
 /// FUTURE uses the forecast `fradar` layer with forward offsets (e.g. `current`, `+1hour`).
 final class XweatherRadarService {
 
   private static let mapHosts = ["maps1", "maps2", "maps3", "maps4"]
   private static let probeSuccessCacheTTL: TimeInterval = 300
-  private static let probeFailureCacheTTL: TimeInterval = 3600
+  /// Quota / generic failures — avoid hammering Maps after a hard deny.
+  private static let probeFailureCacheTTL: TimeInterval = 900
+  /// Auth/plan activation recovers quickly (was 1h and kept Forecast dead after subscribe).
+  private static let probeUnauthorizedFailureCacheTTL: TimeInterval = 45
   private static let probeTimeout: TimeInterval = 4
   private static var probeCache: [String: (result: Bool, date: Date)] = [:]
   private static var lastProbeFailure: XweatherProbeFailure?
+  /// Chosen after a successful live probe (`radar-global` preferred).
+  private static var preferredLiveLayer: XweatherRadarLayer = .radarGlobal
 
   enum XweatherProbeFailure: Equatable, CustomStringConvertible {
     case quotaExceeded
@@ -41,7 +46,7 @@ final class XweatherRadarService {
     case .quotaExceeded:
       return "Xweather daily map quota exceeded. Tiles refresh when quota resets."
     case .unauthorized:
-      return "Xweather API keys invalid or lack Maps access."
+      return "Xweather Maps keys invalid or lack Maps access. Check DeveloperAPIKey."
     case .other(let detail):
       return "Xweather radar unavailable. \(detail)"
     }
@@ -75,8 +80,8 @@ final class XweatherRadarService {
     buildFrames(maxFrames: maxFrames, intervalMinutes: intervalMinutes, direction: .future)
   }
 
-  /// Live `radar` layer frames for NOW mode (past offsets + `current`).
-  /// Uses retina 512×512 tiles — callers must set Mapbox `tileSize = 512`.
+  /// Live mosaic frames for NOW mode (past offsets + `current`).
+  /// Prefers `radar-global` @2x (512×512) — callers must set Mapbox `tileSize = 512`.
   static func loadLiveRadarFrames(
     maxFrames: Int = RadarTimelineConfig.liveMaxFrames
   ) -> [RadarFrame] {
@@ -148,7 +153,8 @@ final class XweatherRadarService {
         timestamp = roundedNow.addingTimeInterval(Double(step) * intervalSeconds)
       }
 
-      let layer: XweatherRadarLayer = direction == .future ? .fradar : .radar
+      let layer: XweatherRadarLayer =
+        direction == .future ? .fradar : preferredLiveLayer
       frames.append(
         XweatherRadarFrame(
           layer: layer,
@@ -193,13 +199,28 @@ final class XweatherRadarService {
   }
 
   /// Lightweight status check — does not gate timeline synthesis or mode switches.
+  /// Probes `radar-global` first (best mosaic), then plain `radar`.
   static func probeAvailability() async -> Bool {
-    await probeOffsetCached(layer: .radar, offset: "current")
+    if await probeOffsetCached(layer: .radarGlobal, offset: "current", retina: true) {
+      preferredLiveLayer = .radarGlobal
+      return true
+    }
+    if await probeOffsetCached(layer: .radar, offset: "current", retina: true) {
+      preferredLiveLayer = .radar
+      return true
+    }
+    return false
   }
 
   /// Validates forecast `fradar` tile access before FUTURE overlays are shown.
   static func probeForecastAvailability() async -> Bool {
     await probeOffsetCached(layer: .fradar, offset: "+1hour", retina: true)
+  }
+
+  /// Clears cached probe results (e.g. after fixing Maps credentials / plan).
+  static func invalidateProbeCache() {
+    probeCache.removeAll()
+    lastProbeFailure = nil
   }
 
   private static func probeCacheKey(layer: XweatherRadarLayer, offset: String, retina: Bool) -> String {
@@ -269,27 +290,47 @@ final class XweatherRadarService {
 
   private static func failureFromResponse(statusCode: Int, data: Data) -> XweatherProbeFailure {
     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-      let error = json["error"] as? [String: Any],
-      let message = error["message"] as? String
+      let error = json["error"] as? [String: Any]
     {
+      let code = (error["code"] as? String)?.lowercased() ?? ""
+      let message = (error["message"] as? String) ?? ""
       let lower = message.lowercased()
       if lower.contains("daily accesses") || lower.contains("quota") {
         return .quotaExceeded
       }
-      if statusCode == 401 || statusCode == 403, lower.contains("access") {
+      // Maps often returns 403 + "Invalid client credentials" for wrong/revoked keys
+      // or apps without Raster Maps entitlement — not a daily quota miss.
+      if code.contains("authorization") || lower.contains("invalid client")
+        || lower.contains("credentials") || lower.contains("unauthorized")
+        || statusCode == 401 || (statusCode == 403 && lower.contains("access"))
+      {
         return .unauthorized
       }
-      return .other(message)
+      if statusCode == 403 { return .quotaExceeded }
+      return .other(message.isEmpty ? "HTTP \(statusCode)" : message)
     }
 
-    if statusCode == 403 { return .quotaExceeded }
     if statusCode == 401 { return .unauthorized }
+    if statusCode == 403 { return .quotaExceeded }
     return .other("HTTP \(statusCode)")
+  }
+
+  /// True when the last probe failed due to bad/missing Maps credentials (not quota).
+  static var lastFailureIsUnauthorized: Bool {
+    if case .unauthorized = lastProbeFailure { return true }
+    return false
   }
 
   private static func cachedProbe(for key: String) -> Bool? {
     guard let entry = probeCache[key] else { return nil }
-    let ttl = entry.result ? probeSuccessCacheTTL : probeFailureCacheTTL
+    let ttl: TimeInterval
+    if entry.result {
+      ttl = probeSuccessCacheTTL
+    } else if case .unauthorized = lastProbeFailure {
+      ttl = probeUnauthorizedFailureCacheTTL
+    } else {
+      ttl = probeFailureCacheTTL
+    }
     guard Date().timeIntervalSince(entry.date) < ttl else { return nil }
     return entry.result
   }

@@ -16,7 +16,9 @@ enum DeveloperAPIKey {
   // Replace with your actual key for TestFlight builds
   static let xai: String? = nil  // "YOUR_XAI_API_KEY"
 
-  // Xweather (primary radar provider)
+  // Xweather (primary radar / Raster Maps provider)
+  // Create a Maps-enabled app in the Xweather dashboard with namespace
+  // `com.scubasteve1999.GrokCast`. Weather-API-only keys return 403 on maps.
   static let xweatherClientID: String? = nil  // "YOUR_XWEATHER_CLIENT_ID"
   // Secret only — NOT the full `{id}_{secret}` access key (unless id is set separately above).
   static let xweatherClientSecret: String? = nil  // "YOUR_XWEATHER_CLIENT_SECRET"

@@ -167,7 +167,7 @@ final class RadarLoader {
       if !xwFrames.isEmpty {
         let age = Date().timeIntervalSince(xwFrames.last?.timestamp ?? .distantPast)
         print(
-          "[RadarLoader] Live: Xweather radar (\(xwFrames.count) frames, age \(Int(age / 60))m)"
+          "[RadarLoader] Live: Xweather radar-global (\(xwFrames.count) frames, age \(Int(age / 60))m)"
         )
         return LoadOutcome(
           frames: xwFrames,
@@ -277,28 +277,29 @@ final class RadarLoader {
         }
 
         print("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast / OWM")
-        if !rainViewerNowcast.isEmpty {
-          print(
-            "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"
-          )
-          return LoadOutcome(
-            frames: rainViewerNowcast,
-            provider: .rainViewer,
-            availability: .available
-          )
+        if let fallback = await firstWorkingForecastFallback(rainViewerNowcast: rainViewerNowcast) {
+          return fallback
         }
-        if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
+
+        // Auth failures cannot paint tiles — don't keep a fake Xweather timeline.
+        if XweatherRadarService.lastFailureIsUnauthorized {
+          let message =
+            XweatherRadarService.userFacingUnavailableMessage
+            ?? "Xweather Maps keys invalid or lack Maps access."
+          print("[RadarLoader] Forecast unavailable — Xweather auth failed, no fallback")
           return LoadOutcome(
-            frames: owmOutcome.frames,
-            provider: .openWeatherMap,
-            availability: owmOutcome.availability
+            frames: [],
+            provider: nil,
+            availability: .unavailable(message: message)
           )
         }
 
         let message =
           XweatherRadarService.userFacingUnavailableMessage
           ?? "Xweather forecast radar unavailable."
-        print("[RadarLoader] Xweather tiles unavailable — timeline-only (\(xwFrames.count) frames)")
+        print(
+          "[RadarLoader] Forecast timeline-only (\(xwFrames.count) frames) — \(message)"
+        )
         return LoadOutcome(
           frames: xwFrames,
           provider: .xweather,
@@ -307,23 +308,8 @@ final class RadarLoader {
       }
     }
 
-    if !rainViewerNowcast.isEmpty {
-      print(
-        "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"
-      )
-      return LoadOutcome(
-        frames: rainViewerNowcast,
-        provider: .rainViewer,
-        availability: .available
-      )
-    }
-
-    if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
-      return LoadOutcome(
-        frames: owmOutcome.frames,
-        provider: .openWeatherMap,
-        availability: owmOutcome.availability
-      )
+    if let fallback = await firstWorkingForecastFallback(rainViewerNowcast: rainViewerNowcast) {
+      return fallback
     }
 
     let message =
@@ -336,6 +322,30 @@ final class RadarLoader {
       provider: nil,
       availability: .unavailable(message: message)
     )
+  }
+
+  /// RainViewer nowcast, then OpenWeatherMap PR0 — used when Xweather Maps is down.
+  private func firstWorkingForecastFallback(
+    rainViewerNowcast: [RadarFrame]
+  ) async -> LoadOutcome? {
+    if !rainViewerNowcast.isEmpty {
+      print(
+        "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"
+      )
+      return LoadOutcome(
+        frames: rainViewerNowcast,
+        provider: .rainViewer,
+        availability: .available
+      )
+    }
+    if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
+      return LoadOutcome(
+        frames: owmOutcome.frames,
+        provider: .openWeatherMap,
+        availability: owmOutcome.availability
+      )
+    }
+    return nil
   }
 
   private static func openWeatherMapUnavailableMessage() -> String {

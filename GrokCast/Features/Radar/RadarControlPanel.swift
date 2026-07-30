@@ -214,23 +214,48 @@ struct RadarControlPanel: View {
 
   private var liveForecastPicker: some View {
     HStack(spacing: 0) {
-      Text("Live")
-        .font(.caption2.weight(!radarState.showsFuture ? .semibold : .regular))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 3)
-        .background(!radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-        .clipShape(Capsule())
-        .foregroundStyle(!radarState.showsFuture ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-        .onTapGesture { if radarState.hasFutureFrames { radarState.setFutureMode(false) } }
+      Button {
+        guard radarState.hasFutureFrames else { return }
+        radarState.setFutureMode(false)
+      } label: {
+        Text("Live")
+          .font(.caption2.weight(!radarState.showsFuture ? .semibold : .regular))
+          .padding(.horizontal, 10)
+          .padding(.vertical, 3)
+          .background(
+            !radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear
+          )
+          .clipShape(Capsule())
+          .foregroundStyle(
+            !radarState.showsFuture
+              ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+          )
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Live radar")
+      .accessibilityAddTraits(!radarState.showsFuture ? .isSelected : [])
 
-      Text("Forecast")
-        .font(.caption2.weight(radarState.showsFuture ? .semibold : .regular))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 3)
-        .background(radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear)
-        .clipShape(Capsule())
-        .foregroundStyle(radarState.showsFuture ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-        .onTapGesture { if radarState.hasFutureFrames { radarState.setFutureMode(true) } }
+      Button {
+        guard radarState.hasFutureFrames else { return }
+        radarState.setFutureMode(true)
+      } label: {
+        Text("Forecast")
+          .font(.caption2.weight(radarState.showsFuture ? .semibold : .regular))
+          .padding(.horizontal, 10)
+          .padding(.vertical, 3)
+          .background(
+            radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear
+          )
+          .clipShape(Capsule())
+          .foregroundStyle(
+            radarState.showsFuture
+              ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+          )
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Forecast radar")
+      .accessibilityAddTraits(radarState.showsFuture ? .isSelected : [])
+      .disabled(!radarState.hasFutureFrames)
     }
     .background(DesignTokens.Palette.radarTrack)
     .clipShape(Capsule())
@@ -296,26 +321,36 @@ struct RadarControlPanel: View {
     .opacity(enabled ? 1 : 0.35)
   }
 
-  private func chip(_ title: String, systemImage: String?, isSelected: Bool, action: @escaping () -> Void) -> some View {
-    HStack(spacing: 4) {
-      if let img = systemImage {
-        Image(systemName: img)
-          .font(.caption2)
+  private func chip(
+    _ title: String, systemImage: String?, isSelected: Bool, action: @escaping () -> Void
+  ) -> some View {
+    Button(action: action) {
+      HStack(spacing: 4) {
+        if let img = systemImage {
+          Image(systemName: img)
+            .font(.caption2)
+        }
+        Text(title)
+          .font(.caption2.weight(isSelected ? .semibold : .regular))
       }
-      Text(title)
-        .font(.caption2.weight(isSelected ? .semibold : .regular))
+      .padding(.horizontal, 10)
+      .padding(.vertical, 4)
+      .background(
+        isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : DesignTokens.Palette.radarTrack
+      )
+      .clipShape(Capsule())
+      .overlay(
+        Capsule()
+          .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
+          .opacity(isSelected ? 1 : 0)
+      )
+      .foregroundStyle(
+        isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+      )
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 4)
-    .background(isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : DesignTokens.Palette.radarTrack)
-    .clipShape(Capsule())
-    .overlay(
-      Capsule()
-        .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
-        .opacity(isSelected ? 1 : 0)
-    )
-    .foregroundStyle(isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary)
-    .onTapGesture(perform: action)
+    .buttonStyle(.plain)
+    .accessibilityLabel(title)
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 
   /// Real active tile source for the current mode (replaces the old hardcoded badge).

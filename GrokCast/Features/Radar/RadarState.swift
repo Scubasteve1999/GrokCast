@@ -174,7 +174,7 @@ final class RadarState {
     if let provider = activeLiveProvider {
       return RadarStatusFooter(
         text: provider.liveFooterLabel,
-        style: (provider == .rainViewer || provider == .iem) ? .secondary : .warning
+        style: .secondary
       )
     }
     if let message = liveUnavailableMessage {
@@ -484,10 +484,24 @@ extension RadarState {
     }
 
     if let provider = result.forecastProvider, !result.forecast.isEmpty {
-      print(
-        "[RadarState] Forecast ready (\(result.forecast.count) frames) — \(provider.displayName)")
+      if result.forecastAvailability.showsTiles {
+        print(
+          "[RadarState] Forecast ready (\(result.forecast.count) frames) — \(provider.displayName)")
+      } else if let message = result.futureUnavailableMessage {
+        print(
+          "[RadarState] Forecast timeline-only (\(result.forecast.count) frames) — \(provider.displayName): \(message)"
+        )
+      } else {
+        print(
+          "[RadarState] Forecast timeline-only (\(result.forecast.count) frames) — \(provider.displayName)"
+        )
+      }
     } else if result.forecast.isEmpty {
-      print("[RadarState] Forecast timeline unavailable")
+      if let message = result.futureUnavailableMessage {
+        print("[RadarState] Forecast unavailable — \(message)")
+      } else {
+        print("[RadarState] Forecast timeline unavailable")
+      }
     }
 
     lastLoadedAt = Date()
