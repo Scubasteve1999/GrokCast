@@ -113,7 +113,7 @@ struct ChaseRadarHUD: View {
     if radarState.showsFuture {
       return "FUT \(radarState.currentFrameDisplayTime)"
     }
-    guard let date = radarState.currentFrameDate else { return "SCAN —" }
+    guard let date = scanFreshnessDate() else { return "SCAN —" }
     let age = Int(now.timeIntervalSince(date) / 60)
     if age < 0 { return "SCAN now" }
     if age == 0 { return "SCAN <1m" }
@@ -122,13 +122,24 @@ struct ChaseRadarHUD: View {
 
   private func scanAgeColor(at now: Date) -> Color {
     if radarState.showsFuture { return DesignTokens.Palette.radarAccent }
-    guard let date = radarState.currentFrameDate else {
+    guard let date = scanFreshnessDate() else {
       return DesignTokens.Palette.radarTextPrimary.opacity(0.6)
     }
     let age = now.timeIntervalSince(date) / 60
     if age > 15 { return DesignTokens.Palette.danger }
     if age > 8 { return DesignTokens.Palette.warning }
     return DesignTokens.Palette.radarAccent
+  }
+
+  /// While Live is animating, report freshness of the newest volume — not the
+  /// mid-loop frame the scrubber is briefly on (which incorrectly read as "41m").
+  private func scanFreshnessDate() -> Date? {
+    if radarState.isAnimating, !radarState.showsFuture,
+      let newest = radarState.activeTimestamps.last
+    {
+      return newest
+    }
+    return radarState.currentFrameDate
   }
 
   private var siteProductLine: String {

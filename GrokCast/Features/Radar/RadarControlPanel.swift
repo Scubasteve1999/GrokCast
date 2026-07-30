@@ -146,11 +146,7 @@ struct RadarControlPanel: View {
   private var compactPlaybackRow: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       Button {
-        if radarState.isAnimating {
-          radarState.stop()
-        } else {
-          radarState.start()
-        }
+        radarState.togglePlayback()
       } label: {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
           .font(.body.weight(.semibold))
@@ -466,6 +462,17 @@ private struct RadarDisplayOptionsSheet: View {
         Spacer()
         Text("Away from radar").font(.caption2).foregroundStyle(.secondary)
       }
+
+      // NWS SRV palettes paint range-folded / edge returns purple-magenta.
+      HStack(spacing: 6) {
+        Circle()
+          .fill(Color(red: 0.72, green: 0.28, blue: 0.85))
+          .frame(width: 8, height: 8)
+        Text("Purple at scan edge = range fold (unreliable)")
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+      .accessibilityLabel("Purple at scan edge means range fold and is unreliable")
     }
   }
 

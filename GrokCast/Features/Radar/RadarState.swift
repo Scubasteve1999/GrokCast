@@ -324,7 +324,12 @@ extension RadarState {
 
   func togglePlayback() {
     if playback.isAnimating {
+      // Live loops wrap to older frames; pausing mid-loop made SCAN look hours-stale
+      // even when the newest volume is fresh. Snap Live back to latest on pause.
       playback.stop()
+      if !showsFuture, timeline.hasLive {
+        playback.currentIndex = max(0, timeline.live.count - 1)
+      }
     } else if activeFrameCount > 0 {
       playback.start()
     } else {
@@ -352,29 +357,22 @@ extension RadarState {
       return
     }
 
-    guard !showsFuture, let site = nearestSite else { return }
+    guard !showsFuture, nearestSite != nil else { return }
 
     // The currently displayed product/timeline stays untouched until fresh frames arrive,
     // so revert to it (not blindly to reflectivity) if the load yields nothing.
     let previousProduct = selectedProduct
     selectedProduct = product
-    let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
+    let refreshed = await refreshActiveSiteProduct()
+    guard selectedProduct == product else { return }
 
-    // Re-validate across the await: the user may have entered FUTURE mode, picked a
-    // different site product, or the resolved site may have changed while loading.
-    guard !showsFuture, selectedProduct == product, nearestSite?.id == site.id else { return }
-
-    guard !frames.isEmpty else {
-      print("[RadarState] \(product.displayName) unavailable for \(site.id) — keeping current view")
+    if !refreshed {
+      print(
+        "[RadarState] \(product.displayName) unavailable for \(nearestSite?.id ?? "?") — keeping current view"
+      )
       // Revert so the chip and later composite reloads don't think a site product is active.
       selectedProduct = previousProduct
-      return
     }
-
-    timeline.live = frames
-    liveTileAvailability = .available
-    playback.currentIndex = max(0, frames.count - 1)
-    print("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
   }
 
   private func restoreCompositeLive() {
@@ -385,6 +383,27 @@ extension RadarState {
     if !showsFuture {
       playback.currentIndex = max(0, composite.frames.count - 1)
     }
+  }
+
+  /// Reloads Super-Res / SRV frames for the current nearest site.
+  /// Returns false when unavailable so callers can keep or revert the current view.
+  @discardableResult
+  private func refreshActiveSiteProduct() async -> Bool {
+    guard selectedProduct.isSiteProduct, let site = nearestSite, !showsFuture else {
+      return false
+    }
+    let product = selectedProduct
+    let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
+    guard selectedProduct == product, nearestSite?.id == site.id, !showsFuture else {
+      return false
+    }
+    guard !frames.isEmpty else { return false }
+
+    timeline.live = frames
+    liveTileAvailability = .available
+    playback.currentIndex = max(0, frames.count - 1)
+    print("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
+    return true
   }
 
   /// Resolve the nearest NEXRAD site for the selected weather location and keep
@@ -404,25 +423,17 @@ extension RadarState {
 
     // The active site product belongs to the old site — reload it for the new one.
     guard selectedProduct.isSiteProduct else { return }
-    guard let site else {
+    guard site != nil else {
       restoreCompositeLive()
       return
     }
 
     let product = selectedProduct
-    let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
+    let refreshed = await refreshActiveSiteProduct()
     guard siteResolutionToken == token, selectedProduct == product else { return }
-
-    guard !frames.isEmpty else {
+    if !refreshed {
       restoreCompositeLive()
-      return
     }
-    timeline.live = frames
-    liveTileAvailability = .available
-    if !showsFuture {
-      playback.currentIndex = max(0, frames.count - 1)
-    }
-    print("[RadarState] \(product.displayName) moved to NWS \(site.id) (\(frames.count) scans)")
   }
 
   /// Rebuild the timeline only if the last load is stale (or never happened).
@@ -467,9 +478,18 @@ extension RadarState {
     timeline.forecast = result.forecast
     forecastTileAvailability = result.forecastAvailability
 
-    // Don't stomp a site product (Super-Res/SRV) the user chose during the load.
+    // Don't stomp a site product (Super-Res/SRV) the user chose during the load —
+    // but do refresh those frames so Super-Res/SRV don't sit on a stale hour-old scan
+    // while composite reloads keep running underneath.
     if selectedProduct.isSiteProduct {
       print("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
+      let refreshed = await refreshActiveSiteProduct()
+      if !refreshed {
+        print(
+          "[RadarState] \(selectedProduct.displayName) refresh failed — restoring composite reflectivity"
+        )
+        restoreCompositeLive()
+      }
     } else {
       selectedProduct = .reflectivity
       timeline.live = result.live

@@ -247,14 +247,28 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         fadeDuration = 180
       }
 
+      // IEM single-site Super-Res/SRV ship NWS palettes with clear-air clutter and
+      // range-fold purple at the scan edge. Vibrant sat/contrast makes that noise
+      // look broken — keep paint neutral for site products.
+      let useNeutralPaint = radarState.selectedProduct.isSiteProduct && frame.provider == .iem
+      let saturation: Double
+      let contrast: Double
+      if useNeutralPaint {
+        saturation = 0
+        contrast = 0
+      } else {
+        saturation = radarState.colorScheme.rasterSaturation + (isFuture ? 0.15 : 0.0)
+        contrast = radarState.colorScheme.rasterContrast + (isFuture ? 0.08 : 0.0)
+      }
+
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
         tileKey: frame.tileKey,
         provider: frame.provider,
         maxZoom: frame.provider.maxZoom,
         opacity: opacity,
-        saturation: radarState.colorScheme.rasterSaturation + (isFuture ? 0.15 : 0.0),
-        contrast: radarState.colorScheme.rasterContrast + (isFuture ? 0.08 : 0.0),
+        saturation: saturation,
+        contrast: contrast,
         showsFuture: isFuture,
         isAnimating: radarState.isAnimating,
         visible: true,
