@@ -1,2 +1,2 @@
-• Ask to rate SpotterCast after you’ve used the app a bit (Settings → Rate SpotterCast anytime)
+• Anonymous product analytics to help improve SpotterCast (turn off anytime in Settings → Share analytics)
 • Bug fixes and stability improvements
