@@ -520,6 +520,9 @@ extension RadarState {
       selectedProduct = .reflectivity
       timeline.live = result.live
       liveTileAvailability = result.liveAvailability
+      // A composite reload means we're no longer showing the failed tap's aftermath —
+      // otherwise the warning outlives the tab switch that triggered this reload.
+      siteProductUnavailableMessage = nil
       activateCurrentForCommittedMode()
     }
 

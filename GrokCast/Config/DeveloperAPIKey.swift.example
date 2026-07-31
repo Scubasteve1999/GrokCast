@@ -49,9 +49,6 @@ enum DeveloperAPIKey {
   static let airNow: String? = nil  // "YOUR_AIRNOW_API_KEY"
 }
 
-// OpenWeatherMap API key lives in OpenWeatherMapKeys.swift (committed).
-enum OpenWeatherMap {
-  static var apiKey: String {
-    return OpenWeatherMapKeys.currentKey
-  }
-}
+// The OpenWeatherMap key lives in OpenWeatherMapKeys.swift (see its own .example).
+// Nothing is declared for it here: CI synthesizes this file from the template, so any
+// type declared only here would exist on the runner and on no developer machine.
