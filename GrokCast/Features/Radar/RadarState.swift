@@ -35,6 +35,10 @@ final class RadarState {
   var liveUnavailableMessage: String? { liveTileAvailability.userMessage }
   var futureUnavailableMessage: String? { forecastTileAvailability.userMessage }
 
+  /// Set when a site product had no scans and we silently reverted to the previous
+  /// view. Without this the chip just un-highlights itself and the tap looks ignored.
+  private(set) var siteProductUnavailableMessage: String?
+
   var activeLiveProvider: RadarTileProvider? {
     timeline.live.first?.provider
   }
@@ -173,6 +177,11 @@ final class RadarState {
         style: provider == .openWeatherMap ? .warning : .secondary
       )
     }
+    // Outranks the provider label — a failed product tap needs an explanation more
+    // than the user needs to know which mosaic is on screen.
+    if !showsFuture, let message = siteProductUnavailableMessage {
+      return RadarStatusFooter(text: message, style: .warning)
+    }
     if let provider = activeLiveProvider {
       return RadarStatusFooter(
         text: provider.liveFooterLabel,
@@ -224,6 +233,8 @@ final class RadarState {
     if selectedProduct.isSiteProduct {
       restoreCompositeLive()
     }
+    // A live-mode warning would be stale by the time the user comes back.
+    siteProductUnavailableMessage = nil
 
     beginTransition(targetIsFuture: true)
   }
@@ -352,6 +363,7 @@ extension RadarState {
   /// Silent no-op when the site products aren't available or frames fail to load.
   func setProduct(_ product: RadarProduct) async {
     guard product != selectedProduct else { return }
+    siteProductUnavailableMessage = nil
 
     guard product.isSiteProduct else {
       selectedProduct = .reflectivity
@@ -372,9 +384,16 @@ extension RadarState {
       print(
         "[RadarState] \(product.displayName) unavailable for \(nearestSite?.id ?? "?") — keeping current view"
       )
+      siteProductUnavailableMessage = unavailableMessage(for: product)
       // Revert so the chip and later composite reloads don't think a site product is active.
       selectedProduct = previousProduct
     }
+  }
+
+  /// "Detail rain unavailable for NQA" — named site when we have one.
+  private func unavailableMessage(for product: RadarProduct) -> String {
+    guard let site = nearestSite else { return "\(product.displayName) unavailable" }
+    return "\(product.displayName) unavailable for \(site.id)"
   }
 
   private func restoreCompositeLive() {
@@ -403,6 +422,7 @@ extension RadarState {
 
     timeline.live = frames
     liveTileAvailability = .available
+    siteProductUnavailableMessage = nil
     playback.currentIndex = max(0, frames.count - 1)
     print("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
     return true
@@ -434,6 +454,9 @@ extension RadarState {
     let refreshed = await refreshActiveSiteProduct()
     guard siteResolutionToken == token, selectedProduct == product else { return }
     if !refreshed {
+      // The new site doesn't carry this product — say so rather than just
+      // dropping back to the mosaic.
+      siteProductUnavailableMessage = unavailableMessage(for: product)
       restoreCompositeLive()
     }
   }
@@ -490,6 +513,7 @@ extension RadarState {
         print(
           "[RadarState] \(selectedProduct.displayName) refresh failed — restoring composite reflectivity"
         )
+        siteProductUnavailableMessage = unavailableMessage(for: selectedProduct)
         restoreCompositeLive()
       }
     } else {
