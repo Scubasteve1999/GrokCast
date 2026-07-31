@@ -68,9 +68,9 @@ Starting agent reads: `git log --oneline -5`, `git status`, then this file.
 - **Secrets:** `GrokCast/Config/DeveloperAPIKey.swift` and `OpenWeatherMapKeys.swift` are gitignored.
   When you add a property to the real file, **add it to the `.example` template in the same commit.**
   CI builds from the templates, so drift breaks CI *and* every fresh clone. This broke on 2026-07-31.
-- **`~/Documents/GrokCast` is the only working tree.** `~/Desktop/GrokCast` is a dead leftover —
-  no commits, no remote, just a stale `fastlane/` copy — so committing there goes nowhere, and
-  building there hangs (iCloud). Confirmed and corrected in `agent-tooling.mdc` on 2026-07-31.
+- **`~/Documents/GrokCast` is the only working tree.** The old `~/Desktop/GrokCast` was deleted on
+  2026-07-31: no commits, no remote, just a stale `fastlane/` subset, so commits made there vanished
+  silently. Don't recreate it — it's iCloud-backed and xcodebuild hangs on it.
 - `xcodegen generate` after touching `project.yml` or adding/removing files.
 - Simulators installed: iPhone 17 Pro Max / 17 / 17e / Air. There is no "iPhone 17 Pro".
 
