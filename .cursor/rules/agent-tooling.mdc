@@ -7,8 +7,14 @@ alwaysApply: true
 
 Read `docs/Agent-Tooling-Handoff.md` before building, running the app, taking screenshots, or uploading to App Store Connect. Key facts:
 
-- **Never build from `~/Desktop/GrokCast`** (iCloud — xcodebuild hangs). Build/run/archive from `~/Documents/GrokCast`; edit and commit on Desktop, sync via git.
+- **`~/Documents/GrokCast` is the only working tree.** Edit, commit, build, run, and archive there.
+  `~/Desktop/GrokCast` is a dead leftover — verified 2026-07-31: no commits, no git remote, and nothing
+  but a stale `fastlane/` copy. Committing there silently goes nowhere. Don't build from it either
+  (iCloud — xcodebuild hangs). Earlier guidance said to edit and commit on Desktop and sync via git;
+  that is wrong and has been removed.
 - **XcodeBuildMCP** is configured in `~/.cursor/mcp.json` — use it to build_run_sim, screenshot, snapshot_ui, and tap/swipe the app on the simulator. Refresh snapshot refs after every navigation; on iPad tap the LAST of the duplicated tab refs.
-- **Screenshots for the App Store**: capture with `xcrun simctl io <udid> screenshot` (full-res), status bar overridden to 9:41; upload with `LC_ALL=en_US.UTF-8 fastlane deliver` from the Desktop repo root. The screenshots folder must contain BOTH iPhone and iPad sets.
+- **Screenshots for the App Store**: capture with `xcrun simctl io <udid> screenshot` (full-res), status bar overridden to 9:41; upload with `LC_ALL=en_US.UTF-8 fastlane deliver` from `~/Documents/GrokCast` (it holds the complete
+  fastlane setup — `metadata/`, screenshots, and the ASC key; the Desktop copy is stale). The screenshots
+  folder must contain BOTH iPhone and iPad sets.
 - **Build number** lives in `project.yml` (`CURRENT_PROJECT_VERSION`), not agvtool.
 - Secrets: `GrokCast/Config/DeveloperAPIKey.swift` and `fastlane/asc_api_key.json` are gitignored — never commit, never print their contents.
