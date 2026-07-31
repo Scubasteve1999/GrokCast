@@ -1,21 +1,33 @@
 # Agent tooling handoff — build, run, screenshot, upload
 
-For any coding agent (Cursor, Claude Code, etc.) working on SpotterCast. Everything below is already installed and configured on this Mac (set up 2026-07-11). State at handoff: **v1.0.1 build 50 uploaded and VALID in App Store Connect**, screenshots + metadata uploaded, awaiting "Add for Review".
+For any coding agent (Cursor, Claude Code, etc.) working on SpotterCast. Everything below is already installed and configured on this Mac (set up 2026-07-11, tooling re-verified 2026-07-30).
+
+State as of 2026-07-30: **v1.0.5 build 75** on `main`, compiles clean, PostHog product analytics shipped in code. Outstanding before submission — App Privacy labels applied in the App Store Connect UI (`docs/App-Privacy-1.0.5.md`), archive + upload of build 75, and PostHog Live event verification from a real device or TestFlight build.
+
+> Version numbers go stale in this doc faster than anything else. `project.yml` (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`) is the only source of truth — trust it over this line.
 
 ## Two clones — critical
 
 | Tree | Use for | Notes |
 |------|---------|-------|
-| `~/Desktop/GrokCast` | Editing, git commits, pushes | On iCloud Drive — `xcodebuild` **hangs** here; never build/archive from this tree |
-| `~/Documents/GrokCast` | All Xcode builds, simulator runs, archiving | Keep synced with `git pull` after pushing from Desktop |
+| `~/Documents/GrokCast` | **Everything** — edits, commits, builds, simulator runs, archiving, fastlane | The only working tree. Stay on `main` (see `.cursor/rules/git-workflow.mdc`) |
+| `~/Desktop/GrokCast` | Nothing — do not use | Broken remnant, see below |
 
-Workflow: edit + commit on Desktop `main` → push → `git pull` in Documents → build there. Both must stay on `main` (see `.cursor/rules/git-workflow.mdc`).
+Workflow: edit, commit, and build all in Documents on `main`.
+
+**The Desktop tree is no longer a usable clone** (verified 2026-07-30). It contains only a `fastlane/` folder, has no commits, and `git` there resolves its root to `~/Desktop` itself rather than the project — so `git status` reports unrelated Desktop files as untracked. Earlier revisions of this doc routed editing, committing, and `fastlane deliver` through it; that guidance is dead. Don't commit there, don't `deliver` from there, and don't restore the two-clone workflow without re-cloning first.
+
+Its `fastlane/` folder is a strict subset of the one in Documents (same 10 screenshots; missing `metadata/` and `README-KEY.md`), so nothing is lost by ignoring it. The original reason for the split still holds independently: the Desktop path is on iCloud Drive, where `xcodebuild` hangs — never build or archive from any iCloud-backed tree.
 
 ## XcodeBuildMCP (build / run / drive the app)
 
 - Installed globally: `/opt/homebrew/bin/xcodebuildmcp` (v2.6.2, Node via Homebrew).
 - Registered in `~/.cursor/mcp.json` and Claude Code (`~/.claude.json`) with env `XCODEBUILDMCP_ENABLED_WORKFLOWS=simulator,simulator-management,ui-automation,debugging,project-discovery` (52 tools: build_run_sim, screenshot, snapshot_ui, tap/swipe/type_text, LLDB attach/breakpoints).
-- Set session defaults first: projectPath `~/Documents/GrokCast/GrokCast.xcodeproj`, scheme `GrokCast`, simulator iPhone 17 Pro Max (UDID `B7357E35-6345-44BA-AF5A-6D0E54203106`; iPad Pro 13" M5 is `AE4D58F8-6CE9-4446-B581-581C36BA00EF`). Then `build_run_sim` with empty args.
+- Set session defaults first: projectPath `~/Documents/GrokCast/GrokCast.xcodeproj`, scheme `GrokCast`, simulator iPhone 17 Pro Max (UDID `39C3B630-9A6E-4F5F-BE26-2A5A84FF76DE`; iPad Pro 13" M5 is `EACF8950-D3C0-4D22-B2C8-46163C736E2C`). Then `build_run_sim` with empty args.
+  - UDIDs verified 2026-07-30 (iOS 26.5 runtime). **They are not stable** — Xcode/runtime updates delete and recreate simulators with fresh UDIDs, so a "No booted simulator named X" error usually means the UDID rotated, not that the device is gone. Re-derive rather than trusting this line:
+    ```bash
+    xcrun simctl list devices available | grep -i "iphone 17 pro max\|ipad pro 13"
+    ```
 - Every tool also works one-shot from the CLI, e.g.:
   ```bash
   xcodebuildmcp ui-automation snapshot-ui --simulator-id <udid> --output json
@@ -39,10 +51,10 @@ Workflow: edit + commit on Desktop `main` → push → `git pull` in Documents �
 ## fastlane (upload screenshots / metadata)
 
 - Auth: `fastlane/asc_api_key.json` (gitignored) — embeds the .p8 content inline (this fastlane version rejects `key_filepath`). Key ID `ZCMMSMJLQD`, key file `fastlane/AuthKey_ZCMMSMJLQD.p8`. Recreate via `fastlane/README-KEY.md`.
-- Always run with `LC_ALL=en_US.UTF-8` from the **Desktop** repo root.
+- Always run with `LC_ALL=en_US.UTF-8` from `~/Documents/GrokCast` (the Desktop tree this doc used to point at is broken — see "Two clones" above).
 - Upload screenshots (Deliverfile defaults are screenshot-only + overwrite):
   ```bash
-  cd ~/Desktop/GrokCast && LC_ALL=en_US.UTF-8 fastlane deliver
+  cd ~/Documents/GrokCast && LC_ALL=en_US.UTF-8 fastlane deliver
   ```
   ⚠️ `overwrite_screenshots` deletes ALL device sets first — the folder must contain BOTH iPhone and iPad sets or the missing one is wiped from the listing.
 - Upload metadata (description/URLs/review notes live in `fastlane/metadata/`):
