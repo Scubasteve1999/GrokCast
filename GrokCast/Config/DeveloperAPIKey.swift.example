@@ -16,6 +16,12 @@ enum DeveloperAPIKey {
   // Replace with your actual key for TestFlight builds
   static let xai: String? = nil  // "YOUR_XAI_API_KEY"
 
+  /// Grok Build (SSE streaming) key; falls back to `xai` when unset.
+  static let grokBuild: String? = nil  // "YOUR_GROK_BUILD_API_KEY"
+
+  /// Mapbox public access token for the Radar tab.
+  static let mapbox: String? = nil  // "YOUR_MAPBOX_ACCESS_TOKEN"
+
   // Xweather (primary radar / Raster Maps provider)
   // Create a Maps-enabled app in the Xweather dashboard with namespace
   // `com.scubasteve1999.GrokCast`. Weather-API-only keys return 403 on maps.
