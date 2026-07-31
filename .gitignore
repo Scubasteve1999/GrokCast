@@ -175,6 +175,12 @@ rereview-*.md
 *.log
 logs/
 
+# Local agent tooling config (machine-specific paths / simulator UDIDs)
+.xcodebuildmcp/
+
+# Local QA scratch: screenshots, smoke-test runs, verification artifacts
+scratch/
+
 # Cloudflare Wrangler local cache (account email / IDs — do not commit)
 .wrangler/
 
