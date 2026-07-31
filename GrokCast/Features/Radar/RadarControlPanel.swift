@@ -14,6 +14,12 @@ struct RadarControlPanel: View {
   @State private var showDisplayOptions = false
   /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
   @State private var isCollapsed = true
+  /// User-driven Advanced disclosure; an active site product also forces it open.
+  @State private var advancedManuallyExpanded = false
+  /// Mirrors RadarTipStore so dismissing re-renders without touching UserDefaults on every pass.
+  @State private var dismissedTips: Set<RadarProduct> = Set(
+    RadarProduct.allCases.filter { RadarTipStore.isDismissed($0) }
+  )
 
   private var prefersFigmaHUD: Bool {
     horizontalSizeClass == .compact
@@ -87,6 +93,7 @@ struct RadarControlPanel: View {
           modeLabel: radarState.showsFuture ? "Forecast" : "Live",
           frameLabel: currentFrameLabel,
           productName: radarState.selectedProduct.displayName,
+          productTechnicalName: radarState.selectedProduct.technicalName,
           locationName: store.currentLocation?.name ?? "Map"
         )
       )
@@ -283,38 +290,133 @@ struct RadarControlPanel: View {
     }
   }
 
+  /// Advanced products stay hidden until asked for; a live site product forces the
+  /// row open so a HUD-initiated SRV toggle doesn't leave the panel contradicting itself.
+  private var isAdvancedExpanded: Bool {
+    advancedManuallyExpanded || radarState.selectedProduct.isSiteProduct
+  }
+
+  private var advancedAvailable: Bool {
+    radarState.siteProductsAvailable && !radarState.showsFuture
+  }
+
   private var productChips: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 6) {
-        // Resolved nearest NEXRAD site — lights up when a single-site product is active.
-        if let site = radarState.nearestSite {
-          chip(
-            site.id, systemImage: "wifi",
-            isSelected: radarState.selectedProduct.isSiteProduct
-          ) {}
+    VStack(alignment: .leading, spacing: 6) {
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 6) {
+          productChip(.reflectivity)
+          if advancedAvailable {
+            advancedChip
+          }
         }
-        productChip(.reflectivity)
-        productChip(.superResReflectivity)
-        productChip(.stormRelativeVelocity)
       }
+
+      if isAdvancedExpanded, advancedAvailable {
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 6) {
+            // Nearest NEXRAD site backing these products — only meaningful here,
+            // so it stays out of the default (casual) row.
+            if let site = radarState.nearestSite {
+              siteBadge(site.id)
+            }
+            productChip(.superResReflectivity)
+            productChip(.stormRelativeVelocity)
+          }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+      }
+
+      productTip
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .animation(.easeInOut(duration: 0.2), value: isAdvancedExpanded)
+    .animation(.easeInOut(duration: 0.2), value: advancedAvailable)
+    .onChange(of: radarState.showsFuture) { _, isFuture in
+      // Site products are live-only; don't leave an orphaned row open in forecast.
+      if isFuture { advancedManuallyExpanded = false }
+    }
+    .onChange(of: radarState.siteProductsAvailable) { _, available in
+      if !available { advancedManuallyExpanded = false }
+    }
+  }
+
+  private var advancedChip: some View {
+    chip(
+      "Advanced", systemImage: isAdvancedExpanded ? "chevron.down" : "chevron.right",
+      isSelected: isAdvancedExpanded
+    ) {
+      Haptic.impact(.light)
+      if radarState.selectedProduct.isSiteProduct {
+        // Collapsing while an advanced product is live would strand the selection
+        // in a hidden row, so leaving Advanced returns to plain Rain.
+        advancedManuallyExpanded = false
+        Task { await radarState.setProduct(.reflectivity) }
+      } else {
+        advancedManuallyExpanded.toggle()
+      }
+    }
+    .accessibilityLabel("Advanced radar products")
+    .accessibilityValue(isAdvancedExpanded ? "Expanded" : "Collapsed")
+    .accessibilityHint(
+      isAdvancedExpanded ? "Collapses advanced products" : "Shows detail rain and storm winds"
+    )
+  }
+
+  /// Non-interactive provenance label (the old chip was a no-op Button — a VoiceOver trap).
+  private func siteBadge(_ id: String) -> some View {
+    HStack(spacing: 4) {
+      Image(systemName: "wifi")
+        .font(.caption2)
+      Text(id)
+        .font(.caption2)
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 4)
+    .background(DesignTokens.Palette.radarTrack)
+    .clipShape(Capsule())
+    .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+    .accessibilityLabel("Nearest radar site \(id)")
+  }
+
+  @ViewBuilder
+  private var productTip: some View {
+    let product = radarState.selectedProduct
+    if let tip = product.userTip, !dismissedTips.contains(product) {
+      HStack(alignment: .top, spacing: 6) {
+        Text(tip)
+          .font(.caption2)
+          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+          .fixedSize(horizontal: false, vertical: true)
+
+        Spacer(minLength: 0)
+
+        Button {
+          Haptic.impact(.light)
+          RadarTipStore.dismiss(product)
+          dismissedTips.insert(product)
+        } label: {
+          Image(systemName: "xmark")
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dismiss tip")
+      }
+      .transition(.opacity)
+    }
   }
 
   private func productChip(_ product: RadarProduct) -> some View {
-    // Site products need a resolved US site and only exist for live scans.
-    let enabled =
-      !product.isSiteProduct
-      || (radarState.siteProductsAvailable && !radarState.showsFuture)
-    return chip(
+    // Site products are only rendered inside the gated Advanced row, so by the
+    // time a chip exists it is always tappable.
+    chip(
       product.displayName, systemImage: nil,
       isSelected: radarState.selectedProduct == product
     ) {
-      guard enabled else { return }
       Haptic.impact(.light)
+      if product == .reflectivity { advancedManuallyExpanded = false }
       Task { await radarState.setProduct(product) }
     }
-    .opacity(enabled ? 1 : 0.35)
   }
 
   private func chip(
