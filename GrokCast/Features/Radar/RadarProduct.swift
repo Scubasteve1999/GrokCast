@@ -6,17 +6,53 @@ import Foundation
 /// (US only, live only — see IEMRadarService). IEM archives exactly N0B + N0S
 /// nationally (verified 2026-07); plain base velocity (N0U) is not scan-listable.
 enum RadarProduct: String, CaseIterable, Identifiable {
-  case reflectivity
-  case superResReflectivity
-  case stormRelativeVelocity
+  // Raw values are explicit because they back the tip-dismissal defaults keys —
+  // renaming a case must not silently resurrect a dismissed tip.
+  case reflectivity = "reflectivity"
+  case superResReflectivity = "superResReflectivity"
+  case stormRelativeVelocity = "stormRelativeVelocity"
 
   var id: String { rawValue }
 
+  /// Plain-language name for chips, panel header, and share text. Deliberately
+  /// non-technical — casual users never learn "reflectivity"/"SRV".
+  /// Use `technicalName` for anything a model reads (see GrokAIViewModel).
   var displayName: String {
     switch self {
-    case .reflectivity: "Reflectivity"
-    case .superResReflectivity: "Super-Res"
+    case .reflectivity: "Rain"
+    case .superResReflectivity: "Detail rain"
+    case .stormRelativeVelocity: "Storm winds"
+    }
+  }
+
+  /// Unambiguous meteorological name for LLM prompts. Grok understands
+  /// "storm-relative velocity"; it can't do much with "Storm winds".
+  var technicalName: String {
+    switch self {
+    case .reflectivity: "composite reflectivity"
+    case .superResReflectivity: "super-resolution base reflectivity (N0B)"
+    case .stormRelativeVelocity: "storm-relative velocity (N0S)"
+    }
+  }
+
+  /// Chase HUD shorthand — the strip is too narrow for "Storm winds", and
+  /// chasers read SRV faster than any plain-language label.
+  var shortCode: String {
+    switch self {
+    case .reflectivity: "RAIN"
+    case .superResReflectivity: "DETAIL"
     case .stormRelativeVelocity: "SRV"
+    }
+  }
+
+  /// One-line explainer shown under the product chips the first time a site
+  /// product is used, so clear-air clutter doesn't read as a bug.
+  var userTip: String? {
+    switch self {
+    case .reflectivity: nil
+    case .superResReflectivity: "Grainy circle near the radar is clutter, not rain."
+    case .stormRelativeVelocity:
+      "Green = toward radar · red = away. Look for tight couplets in storms."
     }
   }
 
@@ -33,6 +69,21 @@ enum RadarProduct: String, CaseIterable, Identifiable {
 
   /// SRV shows radial velocity (toward/away legend); the others show dBZ.
   var isVelocityProduct: Bool { self == .stormRelativeVelocity }
+}
+
+/// Remembers which product tips the user has dismissed (once per product, forever).
+enum RadarTipStore {
+  private static func key(for product: RadarProduct) -> String {
+    "radar.tipDismissed.\(product.rawValue)"
+  }
+
+  static func isDismissed(_ product: RadarProduct) -> Bool {
+    UserDefaults.standard.bool(forKey: key(for: product))
+  }
+
+  static func dismiss(_ product: RadarProduct) {
+    UserDefaults.standard.set(true, forKey: key(for: product))
+  }
 }
 
 /// Client-side color treatment for the Mapbox radar raster layer.

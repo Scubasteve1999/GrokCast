@@ -573,7 +573,7 @@ final class GrokAIViewModel {
 
     let system = """
       You are a helpful weather assistant explaining weather radar to a non-meteorologist inside SpotterCast.
-      Location: \(context.locationName). Product: \(context.productName). Mode: \(context.modeLabel). Frame: \(context.frameLabel).
+      Location: \(context.locationName). Product: \(context.productTechnicalName) (shown to the user as "\(context.productName)"). Mode: \(context.modeLabel). Frame: \(context.frameLabel).
       In 3–5 short sentences, describe what the radar likely shows, movement/trends if inferable, and practical impacts.
       No markdown. If uncertain, say so plainly.
       """

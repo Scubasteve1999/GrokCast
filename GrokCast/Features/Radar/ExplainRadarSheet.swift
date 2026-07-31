@@ -3,7 +3,10 @@ import SwiftUI
 struct RadarExplainContext: Equatable {
   let modeLabel: String
   let frameLabel: String
+  /// Plain-language name shown to the user.
   let productName: String
+  /// Meteorological name sent to Grok — the plain label is too vague to prompt with.
+  let productTechnicalName: String
   let locationName: String
 }
 
@@ -108,7 +111,8 @@ struct ExplainRadarSheet: View {
     context: RadarExplainContext(
       modeLabel: "Live",
       frameLabel: "Now",
-      productName: "Reflectivity",
+      productName: "Rain",
+      productTechnicalName: "composite reflectivity",
       locationName: "Olive Branch"
     )
   )

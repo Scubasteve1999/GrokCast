@@ -143,7 +143,8 @@ struct ChaseRadarHUD: View {
   }
 
   private var siteProductLine: String {
-    let product = radarState.selectedProduct.displayName.uppercased()
+    // shortCode, not displayName — "STORM WINDS" overflows the compact strip.
+    let product = radarState.selectedProduct.shortCode
     // Single-site products are truly nearest-NEXRAD; composite Reflectivity is not.
     if radarState.selectedProduct.isSiteProduct, let site = radarState.nearestSite {
       return "\(site.id) · \(product)"
