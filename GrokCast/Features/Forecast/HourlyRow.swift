@@ -39,8 +39,12 @@ struct HourlyRow: View {
       }
     }
     .opacity(appeared ? 1 : 0)
-    .animation(.easeInOut(duration: 0.25), value: appeared)
-    .onAppear { appeared = true }
+    .onAppear {
+      guard !appeared else { return }
+      withAnimation(.easeInOut(duration: 0.25)) {
+        appeared = true
+      }
+    }
   }
 
   private var figmaLayout: some View {

@@ -202,7 +202,8 @@ extension View {
     .elevatedShadow()
   }
 
-  /// Frosted glass card used by score, minutecast, Grok brief, and settings groups.
+  /// Frosted glass — reserve for hero-adjacent / brief moments (Grok brief, Imagine result).
+  /// Data cards (score, minutecast, details, forecast rows) should use `cardStyle` / `elevatedCardStyle`.
   func glassCardStyle(
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
     strokeTint: Color = DesignTokens.Palette.cardStroke

@@ -28,10 +28,6 @@ struct DailyRow: View {
     condition.rowSymbolName(precipChance: forecast.precipChance)
   }
 
-  private var precipLabel: String {
-    condition.rowPrecipTypeLabel(precipChance: forecast.precipChance)
-  }
-
   private var isToday: Bool {
     calendar.isDateInToday(forecast.date)
   }
@@ -59,29 +55,24 @@ struct DailyRow: View {
     }
     .accessibilityAddTraits(onSelect == nil ? [] : .isButton)
     .opacity(appeared ? 1 : 0)
-    .animation(.easeInOut(duration: 0.25), value: appeared)
-    .onAppear { appeared = true }
+    .onAppear {
+      guard !appeared else { return }
+      withAnimation(.easeInOut(duration: 0.25)) {
+        appeared = true
+      }
+    }
   }
 
   private var figmaLayout: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(dayLabel)
-          .font(DesignTokens.Figma.Typography.rowTitle)
-          .fontWeight(isToday ? .bold : .semibold)
-          .foregroundStyle(
-            isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
-          )
-          .lineLimit(1)
-        if let uv = forecast.uvMax {
-          Text("UV \(Int(round(uv)))")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-            .monospacedDigit()
-            .lineLimit(1)
-        }
-      }
-      .frame(width: 52, alignment: .leading)
+      Text(dayLabel)
+        .font(DesignTokens.Figma.Typography.rowTitle)
+        .fontWeight(isToday ? .bold : .semibold)
+        .foregroundStyle(
+          isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
+        )
+        .lineLimit(1)
+        .frame(width: 52, alignment: .leading)
 
       Image(systemName: rowSymbol)
         .font(.system(size: 22))
@@ -96,32 +87,19 @@ struct DailyRow: View {
       )
       .frame(maxWidth: .infinity)
 
-      VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
+      Group {
         if forecast.precipChance > 0 {
           Text("\(forecast.precipChance)%")
             .font(.caption.weight(.semibold))
             .foregroundStyle(DesignTokens.Palette.accentCool)
             .monospacedDigit()
-            .lineLimit(1)
-          Text(precipLabel)
-            .font(.caption2)
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-            .lineLimit(1)
         } else {
           Text("—")
             .font(.caption)
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
-        let liq = (forecast.rainSum ?? 0) + (forecast.showersSum ?? 0)
-        let sn = forecast.snowfallSum ?? 0
-        if let amt = precipAmountText(liquid: liq, snow: sn) {
-          Text(amt)
-            .font(.caption2)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-            .lineLimit(1)
-        }
       }
-      .frame(width: 56, alignment: .trailing)
+      .frame(width: 40, alignment: .trailing)
     }
     .padding(.leading, DesignTokens.Spacing.space16)
     .padding(.trailing, DesignTokens.Spacing.space16)
@@ -130,15 +108,9 @@ struct DailyRow: View {
       RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
         .fill(
           isToday
-            ? DesignTokens.Palette.cardElevated.opacity(0.95)
-            : DesignTokens.Palette.cardBackground.opacity(0.55)
+            ? DesignTokens.Palette.cardElevated
+            : DesignTokens.Palette.cardBackground
         )
-        .background {
-          if !isToday {
-            RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
-              .fill(.ultraThinMaterial)
-          }
-        }
     }
     .overlay(alignment: .leading) {
       if isToday {
@@ -167,22 +139,13 @@ struct DailyRow: View {
 
   private var standardLayout: some View {
     HStack(alignment: .center, spacing: DesignTokens.Spacing.space16) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(dayLabel)
-          .font(.system(size: 17, weight: isToday ? .bold : .medium))
-          .foregroundStyle(
-            isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
-          )
-          .lineLimit(1)
-        if let uv = forecast.uvMax {
-          Text("UV \(Int(round(uv)))")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-            .monospacedDigit()
-            .lineLimit(1)
-        }
-      }
-      .frame(width: 56, alignment: .leading)
+      Text(dayLabel)
+        .font(.system(size: 17, weight: isToday ? .bold : .medium))
+        .foregroundStyle(
+          isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
+        )
+        .lineLimit(1)
+        .frame(width: 56, alignment: .leading)
 
       Image(systemName: rowSymbol)
         .font(.system(size: 28))
@@ -197,23 +160,19 @@ struct DailyRow: View {
       )
       .frame(maxWidth: .infinity)
 
-      VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
+      Group {
         if forecast.precipChance > 0 {
-          Text("\(forecast.precipChance)% \(precipLabel)")
-            .font(.caption2.weight(.medium))
+          Text("\(forecast.precipChance)%")
+            .font(.caption.weight(.semibold))
             .foregroundStyle(DesignTokens.Palette.accentCool)
-            .lineLimit(1)
-        }
-        let liq = (forecast.rainSum ?? 0) + (forecast.showersSum ?? 0)
-        let sn = forecast.snowfallSum ?? 0
-        if let amt = precipAmountText(liquid: liq, snow: sn) {
-          Text(amt)
-            .font(.caption2)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-            .lineLimit(1)
+            .monospacedDigit()
+        } else {
+          Text("—")
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       }
-      .frame(minWidth: 52, alignment: .trailing)
+      .frame(minWidth: 40, alignment: .trailing)
     }
     .padding(.vertical, DesignTokens.Spacing.space20)
     .padding(.horizontal, DesignTokens.Spacing.space20)

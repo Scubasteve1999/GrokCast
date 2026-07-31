@@ -17,6 +17,9 @@ enum AnalyticsEvent: String, CaseIterable, Sendable {
   case subscribeTap = "subscribe_tap"
   case subscribeSuccess = "subscribe_success"
   case restoreSuccess = "restore_success"
+  case feedCardTap = "feed_card_tap"
+  case fireLayerToggle = "fire_layer_toggle"
+  case fireProximityNotify = "fire_proximity_notify"
 
   static func tabEvent(for tab: WeatherStore.Tab) -> AnalyticsEvent {
     switch tab {

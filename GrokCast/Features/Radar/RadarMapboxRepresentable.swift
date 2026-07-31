@@ -9,6 +9,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
   var defaultMapCenter: CLLocationCoordinate2D
   var recenterDefaultTrigger: UUID?
   var recenterUserCoordinate: CLLocationCoordinate2D?
+  /// Fire overlay payload (independent refresh from precip tiles).
+  var fireSnapshot: FireSnapshot = FireSnapshot()
 
   func makeUIView(context: Context) -> MapView {
     if let token = DeveloperAPIKey.mapbox, !token.isEmpty {
@@ -38,7 +40,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       opacity: opacity,
       defaultMapCenter: defaultMapCenter,
       recenterDefaultTrigger: recenterDefaultTrigger,
-      recenterUserCoordinate: recenterUserCoordinate
+      recenterUserCoordinate: recenterUserCoordinate,
+      fireSnapshot: fireSnapshot
     )
   }
 
@@ -171,9 +174,16 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       mapView.mapboxMap.onStyleLoaded.observe { [weak self, weak mapView] _ in
         guard let self, let mapView else { return }
         MapViewHostingSanitizer.sanitize(mapView)
+        self.layersInstalled = false
+        self.lastAppliedFireSignature = nil
         self.flushPendingDesiredState(on: mapView)
       }.store(in: &cancelables)
     }
+
+    private var lastAppliedFireSignature: String?
+    private var lastShowFireLayer: Bool?
+    private var pendingFireSnapshot = FireSnapshot()
+    private var pendingShowFireLayer = false
 
     func update(
       mapView: MapView,
@@ -181,9 +191,12 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       opacity: Double,
       defaultMapCenter: CLLocationCoordinate2D,
       recenterDefaultTrigger: UUID?,
-      recenterUserCoordinate: CLLocationCoordinate2D?
+      recenterUserCoordinate: CLLocationCoordinate2D?,
+      fireSnapshot: FireSnapshot
     ) {
       MapViewHostingSanitizer.sanitize(mapView)
+      pendingFireSnapshot = fireSnapshot
+      pendingShowFireLayer = radarState.showFireLayer
 
       if !hasAppliedInitialCenter {
         hasAppliedInitialCenter = true
@@ -224,6 +237,30 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
       MapViewHostingSanitizer.sanitize(mapView)
       reconcile(mapView: mapView, desired: desired)
+      reconcileFireOverlay(
+        mapView: mapView,
+        snapshot: pendingFireSnapshot,
+        showFireLayer: pendingShowFireLayer
+      )
+    }
+
+    private func reconcileFireOverlay(
+      mapView: MapView,
+      snapshot: FireSnapshot,
+      showFireLayer: Bool
+    ) {
+      guard mapView.mapboxMap.isStyleLoaded else { return }
+      let signature =
+        "\(snapshot.hotspots.count)|\(snapshot.perimeters.count)|\(snapshot.lastUpdated?.timeIntervalSince1970 ?? 0)"
+      if lastAppliedFireSignature != signature || lastShowFireLayer != showFireLayer {
+        FireRadarOverlay.apply(snapshot: snapshot, visible: showFireLayer, on: mapView)
+        lastAppliedFireSignature = signature
+        lastShowFireLayer = showFireLayer
+      } else if showFireLayer {
+        // Style reloads clear layers — re-ensure when visible.
+        FireRadarOverlay.ensureLayers(on: mapView)
+        FireRadarOverlay.setVisible(true, on: mapView)
+      }
     }
 
     private func resolveDesiredState(from radarState: RadarState, opacity: Double) -> DesiredRasterState {
@@ -313,9 +350,16 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     }
 
     private func flushPendingDesiredState(on mapView: MapView) {
-      guard mapView.mapboxMap.isStyleLoaded, let desired = pendingDesiredState else { return }
+      guard mapView.mapboxMap.isStyleLoaded else { return }
       MapViewHostingSanitizer.sanitize(mapView)
-      reconcile(mapView: mapView, desired: desired)
+      if let desired = pendingDesiredState {
+        reconcile(mapView: mapView, desired: desired)
+      }
+      reconcileFireOverlay(
+        mapView: mapView,
+        snapshot: pendingFireSnapshot,
+        showFireLayer: pendingShowFireLayer
+      )
     }
 
     private func reconcile(mapView: MapView, desired: DesiredRasterState) {

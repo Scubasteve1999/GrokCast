@@ -79,8 +79,8 @@ struct CompactTabBar: View {
     namespace: Namespace.ID,
     pillCornerRadius: CGFloat = 12,
     animation: Animation = .spring(response: 0.35, dampingFraction: 0.75),
-    activeColor: Color = .black,
-    inactiveColor: Color = .white.opacity(0.6),
+    activeColor: Color = .white,
+    inactiveColor: Color = DesignTokens.Palette.textSecondary,
     backgroundMaterial: Material = .ultraThinMaterial
   ) {
     _selection = selection
@@ -132,20 +132,18 @@ struct CompactTabBar: View {
       ZStack {
         if active {
           RoundedRectangle(cornerRadius: pillCornerRadius)
-            .fill(Color.white)
+            .fill(DesignTokens.Palette.accent)
             .matchedGeometryEffect(id: "pill", in: namespace)
             .frame(width: 40, height: 28)
         }
         Image(systemName: tab.icon)
           .font(.system(size: 20))
           .foregroundStyle(active ? activeColor : inactiveColor)
-          .animation(nil, value: selection)
       }
       .frame(height: 28)
       Text(tab.title)
         .font(.system(size: 10, weight: .medium))
-        .foregroundStyle(active ? .white : inactiveColor)
-        .animation(nil, value: selection)
+        .foregroundStyle(active ? DesignTokens.Palette.textPrimary : inactiveColor)
     }
     .padding(.vertical, 4)
   }

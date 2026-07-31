@@ -52,9 +52,8 @@ struct RadarPreviewCard: View {
         .frame(height: 40)
       }
 
-      Text("LIVE RADAR")
-        .font(.caption2.weight(.heavy))
-        .tracking(1.2)
+      Text("Live Radar")
+        .font(.caption2.weight(.semibold))
         .foregroundStyle(.white)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

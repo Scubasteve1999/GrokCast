@@ -61,6 +61,8 @@ final class RadarState {
   var baseMapStyle: RadarBaseMapStyle = .satelliteStreets
   /// When false, hides the precipitation radar raster layer so only the base map shows.
   var showRadarOverlay: Bool = true
+  /// Independent Fire overlay (FIRMS hotspots + NIFC perimeters). Does not affect precip rasters.
+  var showFireLayer: Bool = false
   /// Nearest NEXRAD site (resolved from the load coordinate; nil outside the US).
   private(set) var nearestSite: IEMRadarService.Site?
 

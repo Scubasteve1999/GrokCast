@@ -57,7 +57,7 @@ struct MinutecastStrip: View {
     }
     .padding(.vertical, DesignTokens.Spacing.space12)
     .padding(.horizontal, DesignTokens.Spacing.space12)
-    .glassCardStyle(cornerRadius: DesignTokens.Radius.small)
+    .cardStyle(cornerRadius: DesignTokens.Radius.small)
     .accessibilityElement(children: .combine)
     .accessibilityLabel(
       disagreementCaption.map { "Minutecast. \(summary.message). \($0)" }

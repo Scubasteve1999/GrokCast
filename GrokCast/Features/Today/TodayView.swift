@@ -44,20 +44,11 @@ struct TodayView: View {
         } else if weather == nil && (store.isLoadingWeather || store.locationService.isLoading) {
           TodaySkeleton()
         } else if let w = weather {
-          ScrollView {
-            TodayWeatherPanel(
-              weather: w,
-              isGeneratingImage: isGeneratingImage,
-              generateImageAction: generateImageForToday
-            )
-            .padding(.horizontal, DesignTokens.Spacing.space20)
-            .padding(.top, todayContentTopPadding)
-            .padding(.bottom, bottomTabClearance)
-            .adaptiveContainerWidth(AdaptiveLayout.contentCap)
-          }
-          .refreshable {
-            await store.refreshWeather()
-          }
+          TodayFeedView(
+            weather: w,
+            isGeneratingImage: isGeneratingImage,
+            generateImageAction: generateImageForToday
+          )
         } else {
           ContentUnavailableView {
             Label("Welcome to SpotterCast", systemImage: "sun.max")
@@ -257,565 +248,6 @@ struct TodayView: View {
 
 }
 
-private struct TodayWeatherPanel: View {
-  @Environment(WeatherStore.self) private var store
-  @Environment(SevereWeatherStore.self) private var severeStore
-  @Environment(ShortTermPrecipStore.self) private var shortTermStore
-  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-  @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
-  @State private var selectedAlert: NWSAlert?
-
-  let weather: GrokCastWeather
-  let isGeneratingImage: Bool
-  let generateImageAction: () -> Void
-
-  private var currentScore: GrokCastScore {
-    GrokCastScoreCalculator.score(
-      for: weather, alerts: store.displayableActiveAlerts, units: store.temperatureUnit)
-  }
-
-  private var hrrrContextForLocation: ShortTermPrecipContext? {
-    guard let locID = store.currentLocation?.id.uuidString,
-      shortTermStore.context.locationID == locID,
-      shortTermStore.context.hasHRRRSlots
-    else { return nil }
-    return shortTermStore.context
-  }
-
-  private var currentMinutecast: MinutecastSummary {
-    if let hrrr = hrrrContextForLocation {
-      return hrrr.summary
-        ?? MinutecastEngine.summary(from: hrrr.slots, units: store.temperatureUnit)
-    }
-    return MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
-  }
-
-  private var minutecastSourceLabel: String? {
-    hrrrContextForLocation != nil ? "HRRR" : nil
-  }
-
-  private var minutecastAgreement: MinutecastAgreement.Result {
-    guard let hrrr = hrrrContextForLocation else { return .agree }
-    return MinutecastAgreement.compare(
-      hrrr: hrrr.slots,
-      openMeteo: weather.minutely15,
-      units: store.temperatureUnit
-    )
-  }
-
-  private var minutecastDisagreementCaption: String? {
-    MinutecastAgreement.caption(for: minutecastAgreement)
-  }
-
-  private var todaySevereContext: SevereWeatherContext? {
-    guard let locID = store.currentLocation?.id.uuidString,
-      severeStore.context.locationID == locID,
-      severeStore.context.shouldShowTodayCard
-    else { return nil }
-    return severeStore.context
-  }
-
-  private var awaitsWidthMeasurement: Bool {
-    AdaptiveLayout.awaitingWidthMeasurement(
-      width: adaptiveContainerWidth,
-      horizontalSizeClass: horizontalSizeClass
-    )
-  }
-
-  private var prefersTwoColumnLayout: Bool {
-    AdaptiveLayout.prefersTwoColumn(
-      width: adaptiveContainerWidth,
-      horizontalSizeClass: horizontalSizeClass
-    )
-  }
-
-  var body: some View {
-    Group {
-      if !awaitsWidthMeasurement && prefersTwoColumnLayout {
-        wideTodayLayout
-      } else {
-        compactFigmaTodayLayout
-      }
-    }
-    .navigationDestination(item: $selectedAlert) { alert in
-      AlertDetailView(alert: alert)
-    }
-  }
-
-  private var compactFigmaTodayLayout: some View {
-    VStack(spacing: DesignTokens.Spacing.space16) {
-      centeredHeroSection
-
-      GrokCastScoreCard(
-        score: currentScore,
-        locationName: store.currentLocation?.name ?? weather.location.name,
-        layout: .figma
-      )
-
-      MinutecastStrip(
-        summary: currentMinutecast,
-        sourceLabel: minutecastSourceLabel,
-        disagreementCaption: minutecastDisagreementCaption
-      )
-
-      if let severe = todaySevereContext {
-        SevereContextCard(context: severe)
-      }
-
-      if !store.displayableActiveAlerts.isEmpty {
-        alertsSection
-      }
-
-      GrokBriefCard(presentation: .figma)
-
-      RadarPreviewCard()
-
-      extendedTodayDetails
-    }
-  }
-
-  private var wideTodayLayout: some View {
-    VStack(spacing: DesignTokens.Spacing.space48) {
-      header
-
-      GrokCastScoreCard(
-        score: currentScore,
-        locationName: store.currentLocation?.name ?? weather.location.name,
-        layout: .ring
-      )
-
-      MinutecastStrip(
-        summary: currentMinutecast,
-        sourceLabel: minutecastSourceLabel,
-        disagreementCaption: minutecastDisagreementCaption
-      )
-
-      if let severe = todaySevereContext {
-        SevereContextCard(context: severe)
-      }
-
-      GrokBriefCard()
-
-      if !store.displayableActiveAlerts.isEmpty {
-        alertsSection
-      }
-
-      HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
-        VStack(spacing: DesignTokens.Spacing.space16) {
-          heroCard
-          tonightSection
-          RadarPreviewCard()
-        }
-        .frame(maxWidth: .infinity)
-
-        VStack(spacing: DesignTokens.Spacing.space24) {
-          tacticalDetailsGrid
-          GrokImagineButton(
-            weather: weather,
-            isGenerating: isGeneratingImage,
-            action: generateImageAction
-          )
-        }
-        .frame(maxWidth: .infinity)
-      }
-
-      errorBanner
-
-      refreshButton
-    }
-  }
-
-  private var centeredHeroSection: some View {
-    VStack(spacing: DesignTokens.Spacing.space4) {
-      Text(store.currentLocation?.name ?? weather.location.name)
-        .font(.title2.weight(.semibold))
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .accessibilityIdentifier(SpotterCastAccessibility.Today.location)
-
-      Image(systemName: weather.symbolName)
-        .font(.system(size: 42))
-        .symbolRenderingMode(.multicolor)
-        .padding(.top, DesignTokens.Spacing.space4)
-
-      Text(store.formatTemperatureShort(weather.currentTemp))
-        .font(DesignTokens.Typography.heroTemperature())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .monospacedDigit()
-        .lineLimit(1)
-        .minimumScaleFactor(0.5)
-        .accessibilityIdentifier(SpotterCastAccessibility.Today.temperature)
-
-      Text(weather.conditionText)
-        .font(.title3.weight(.medium))
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-
-      HStack(spacing: DesignTokens.Spacing.space12) {
-        Text(feelsLikeSubtitle)
-        Text("H:\(Int(round(weather.high)))°  L:\(Int(round(weather.low)))°")
-      }
-      .font(.subheadline)
-      .foregroundStyle(DesignTokens.Palette.textSecondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.top, DesignTokens.Spacing.space8)
-  }
-
-  private var feelsLikeSubtitle: String {
-    "Feels like \(store.formatTemperatureShort(weather.feelsLike))"
-  }
-
-  @ViewBuilder
-  private var extendedTodayDetails: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
-      tonightSection
-      tacticalDetailsGrid
-      sunriseSunsetSection
-      hourlyPrecipSection
-      tripPlannerCard
-      GrokImagineButton(
-        weather: weather,
-        isGenerating: isGeneratingImage,
-        action: generateImageAction
-      )
-      errorBanner
-      refreshButton
-    }
-    .padding(.top, DesignTokens.Spacing.space8)
-  }
-
-  private var tripPlannerCard: some View {
-    NavigationLink {
-      TripPlannerView()
-    } label: {
-      HStack(spacing: DesignTokens.Spacing.space12) {
-        Image(systemName: "airplane.departure")
-          .font(.title2)
-          .foregroundStyle(DesignTokens.Palette.accent)
-
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-          Text("Trip Weather Planner")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-          Text("Check forecast, packing list & AI advice for your trip")
-            .font(.caption)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-        }
-
-        Spacer()
-
-        Image(systemName: "chevron.right")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-      .padding(DesignTokens.Spacing.space16)
-      .glassCardStyle()
-    }
-  }
-
-  @ViewBuilder
-  private var sunriseSunsetSection: some View {
-    if let today = weather.daily.first, today.sunrise != nil || today.sunset != nil {
-      SunriseSunsetCard(
-        sunrise: today.sunrise,
-        sunset: today.sunset,
-        timeZone: weather.locationTimeZone
-      )
-    }
-  }
-
-  @ViewBuilder
-  private var hourlyPrecipSection: some View {
-    if !weather.hourly.isEmpty {
-      HourlyPrecipCard(hourly: weather.hourly, timeZone: weather.locationTimeZone)
-    }
-  }
-
-  private var refreshButton: some View {
-    Button {
-      Haptic.impact(.medium)
-      Task { await store.refreshWeather() }
-    } label: {
-      Label("REFRESH DATA", systemImage: "arrow.clockwise")
-        .font(.footnote.weight(.semibold))
-        .tracking(1.5)
-    }
-    .buttonStyle(.bordered)
-    .tint(DesignTokens.Palette.textSecondary)
-    .padding(.top, DesignTokens.Spacing.space8)
-  }
-
-  private var header: some View {
-    HStack {
-      Text("SpotterCast")
-        .font(.largeTitle.bold())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-      Spacer()
-      VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
-        Text((store.currentLocation?.name ?? "—").uppercased())
-          .font(.system(size: DesignTokens.Spacing.space16, weight: .heavy, design: .rounded))
-          .tracking(DesignTokens.Typography.headerTracking)
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-        Text(Date.now, format: .dateTime.weekday(.wide).month(.abbreviated).day())
-          .font(.caption.weight(.medium))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-      Spacer()
-      Text("\(weather.fetchedAt, format: .dateTime.hour().minute())")
-        .font(.caption2.monospaced())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-    }
-  }
-
-  private var heroCard: some View {
-    VStack(spacing: DesignTokens.Spacing.space4) {
-      HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
-        // Icon + dominant temp: temp gets priority and can scale down before other elements clip it.
-        HStack(alignment: .center, spacing: DesignTokens.Spacing.space8) {
-          Image(systemName: weather.symbolName)
-            .font(.system(size: 42))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .symbolRenderingMode(.hierarchical)
-
-          Text(store.formatTemperatureShort(weather.currentTemp))
-            .font(DesignTokens.Typography.heroTemperature())
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .monospacedDigit()
-            .lineLimit(1)
-            .allowsTightening(true)
-            .minimumScaleFactor(0.5)
-        }
-        .layoutPriority(1)
-        .minimumScaleFactor(0.5)
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-
-        Spacer(minLength: DesignTokens.Spacing.space8)
-
-        VStack(alignment: .trailing, spacing: DesignTokens.Spacing.space2) {
-          Text("RealFeel")
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-          Text(store.formatTemperatureShort(weather.feelsLike))
-            .font(.system(size: DesignTokens.Spacing.space20, weight: .bold))
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-        }
-      }
-
-      Text(weather.conditionText.uppercased())
-        .font(.system(size: DesignTokens.Spacing.space20, weight: .semibold))
-        .tracking(DesignTokens.Typography.headerTracking)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .padding(.top, DesignTokens.Spacing.space4)
-        .lineLimit(1)
-    }
-    .padding(.vertical, DesignTokens.Spacing.space20)
-    .padding(.horizontal, DesignTokens.Spacing.space20)
-    .frame(maxWidth: .infinity)
-    .glassCardStyle(cornerRadius: DesignTokens.Card.cornerRadiusLarge)
-  }
-
-  private var tonightSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("TONIGHT'S WEATHER")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-
-      HStack(spacing: DesignTokens.Spacing.space20) {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: "moon.stars.fill")
-              .font(.title3)
-              .foregroundStyle(DesignTokens.Palette.accentCool)
-            Text("Low \(Int(round(weather.low)))°")
-              .font(.title2.weight(.bold))
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-          }
-          Text(tonightDescription)
-            .font(.caption)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-        }
-
-        Spacer()
-
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: "sun.max.fill")
-              .font(.title3)
-              .foregroundStyle(DesignTokens.Palette.accentWarm)
-            Text("High \(Int(round(tomorrowHigh)))°")
-              .font(.title2.weight(.bold))
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-          }
-          Text("Tomorrow")
-            .font(.caption)
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-        }
-      }
-    }
-    .padding(.vertical, DesignTokens.Spacing.space20)
-    .padding(.horizontal, DesignTokens.Spacing.space20)
-    .frame(maxWidth: .infinity)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadius
-    )
-  }
-
-  private var tomorrowHigh: Double {
-    guard weather.daily.count > 1 else { return weather.high }
-    return weather.daily[1].high
-  }
-
-  private var tonightDescription: String {
-    let p = weather.precipitationChance
-    if p >= 50 { return "Rain or showers likely" }
-    if p >= 20 { return "Slight chance of precip" }
-    let c = weather.conditionText.lowercased()
-    if c.contains("clear") || c.contains("sun") { return "Clear skies" }
-    if c.contains("cloud") { return "Mostly cloudy" }
-    if c.contains("rain") || c.contains("storm") || c.contains("drizzle") {
-      return "Wet conditions"
-    }
-    return "Clearing overnight"
-  }
-
-  private var tacticalDetailsGrid: some View {
-    let precipValue: String = {
-      let c = weather.precipitationChance
-      if let d0 = weather.daily.first {
-        let liq = (d0.rainSum ?? 0) + (d0.showersSum ?? 0)
-        let sn = d0.snowfallSum ?? 0
-        if let amtLabel = precipAmountLabel(liquid: liq, snow: sn) {
-          return "\(c)% \(amtLabel)"
-        }
-      }
-      return "\(c)%"
-    }()
-
-    return LazyVGrid(
-      columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DesignTokens.Spacing.space20
-    ) {
-      TacticalCard(label: "HUMIDITY", value: "\(weather.humidity)%", icon: "humidity")
-        .elevatedShadow()
-      TacticalCard(label: "WIND", value: "\(Int(weather.windSpeed)) MPH", icon: "wind")
-        .elevatedShadow()
-      TacticalCard(label: "UV INDEX", value: "\(Int(weather.uvIndex))", icon: "sun.max")
-        .elevatedShadow()
-      TacticalCard(label: "PRECIP", value: precipValue, icon: weather.symbolName)
-        .elevatedShadow()
-      if let aqi = weather.airQualityIndex {
-        TacticalCard(label: "AQI", value: "\(aqi)", icon: "aqi.medium")
-          .elevatedShadow()
-      }
-      if let pollen = weather.pollenLevel {
-        TacticalCard(label: "POLLEN", value: pollen, icon: "leaf")
-          .elevatedShadow()
-      }
-      if let obs = store.currentNWSObservation {
-        let tempStr = obs.temperatureF.map { "\(Int(round($0)))°" } ?? "—"
-        TacticalCard(
-          label: "NWS", value: "\(obs.stationId) \(tempStr)",
-          icon: "antenna.radiowaves.left.and.right"
-        )
-        .elevatedShadow()
-      }
-      if let owm = store.currentOpenWeatherMapWeather {
-        TacticalCard(
-          label: "OWM",
-          value: "\(Int(round(owm.temperatureF)))°",
-          icon: "cloud.sun.fill"
-        )
-        .elevatedShadow()
-      }
-    }
-  }
-
-  private var alertsSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      ForEach(store.displayableActiveAlerts.prefix(3)) { alert in
-        Button {
-          Haptic.impact(.light)
-          selectedAlert = alert
-        } label: {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: NWSAlertStyle.iconName(for: alert))
-              .font(.title3)
-              .foregroundStyle(NWSAlertStyle.tint(for: alert))
-
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-              Text(alert.event.uppercased())
-                .font(.caption.weight(.bold))
-                .foregroundStyle(DesignTokens.Palette.textPrimary)
-                .multilineTextAlignment(.leading)
-
-              if let headline = alert.headline, !headline.isEmpty {
-                Text(headline)
-                  .font(.caption2)
-                  .foregroundStyle(DesignTokens.Palette.textSecondary)
-                  .lineLimit(3)
-                  .multilineTextAlignment(.leading)
-              } else if let area = alert.areaDesc, !area.isEmpty {
-                Text(area)
-                  .font(.caption2)
-                  .foregroundStyle(DesignTokens.Palette.textTertiary)
-                  .lineLimit(2)
-                  .multilineTextAlignment(.leading)
-              }
-
-              Text("Tap for details")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(DesignTokens.Palette.accent)
-            }
-
-            Spacer(minLength: 0)
-
-            Image(systemName: "chevron.right")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(DesignTokens.Spacing.space16)
-          .elevatedCardStyle(
-            background: DesignTokens.Palette.cardBackground,
-            stroke: NWSAlertStyle.tint(for: alert).opacity(0.4),
-            cornerRadius: DesignTokens.Card.cornerRadiusMedium
-          )
-        }
-        .buttonStyle(.plain)
-      }
-    }
-  }
-
-  @ViewBuilder
-  private var errorBanner: some View {
-    if let error = store.weatherError, !error.isEmpty {
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        Image(
-          systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill"
-        )
-        .foregroundStyle(DesignTokens.Palette.danger)
-        Text(error)
-          .font(.caption)
-          .foregroundStyle(DesignTokens.Palette.danger)
-          .lineLimit(2)
-        Spacer(minLength: DesignTokens.Spacing.space8)
-        Button("Retry") {
-          Haptic.impact(.medium)
-          Task { await store.refreshWeather() }
-        }
-        .font(.caption.bold())
-        .buttonStyle(.bordered)
-        .tint(DesignTokens.Palette.danger)
-        .controlSize(.small)
-      }
-      .padding(DesignTokens.Spacing.space8)
-      .background(DesignTokens.Palette.danger.opacity(0.15))
-      .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
-    }
-  }
-}
-
 struct GrokImagineButton: View {
   let weather: GrokCastWeather
   let isGenerating: Bool
@@ -827,17 +259,15 @@ struct GrokImagineButton: View {
         if isGenerating {
           ProgressView()
             .tint(.white)
-          Text("GENERATING IMAGE...")
-            .font(.footnote.weight(.semibold))
-            .tracking(DesignTokens.Typography.cardLabelTracking)
+          Text("Generating…")
+            .font(.subheadline.weight(.semibold))
         } else {
-          Label("GENERATE WHAT TODAY LOOKS LIKE", systemImage: "sparkles.rectangle.stack")
-            .font(.footnote.weight(.semibold))
-            .tracking(DesignTokens.Typography.cardLabelTracking)
+          Label("Imagine today", systemImage: "sparkles.rectangle.stack")
+            .font(.subheadline.weight(.semibold))
         }
       }
       .frame(maxWidth: .infinity)
-      .padding(.vertical, DesignTokens.Spacing.space8)
+      .padding(.vertical, DesignTokens.Spacing.space12)
     }
     .buttonStyle(.borderedProminent)
     .tint(DesignTokens.Palette.accent)
@@ -1046,6 +476,7 @@ struct TacticalCardSkeleton: View {
     .environment(WeatherStore())
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
 }
 
 #Preview("Today — 500pt regular") {
@@ -1053,6 +484,7 @@ struct TacticalCardSkeleton: View {
     .environment(WeatherStore())
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
     .frame(width: 500, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1062,6 +494,7 @@ struct TacticalCardSkeleton: View {
     .environment(WeatherStore())
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
     .frame(width: 650, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1071,6 +504,7 @@ struct TacticalCardSkeleton: View {
     .environment(WeatherStore())
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
     .frame(width: 700, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1080,6 +514,7 @@ struct TacticalCardSkeleton: View {
     .environment(WeatherStore())
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
     .frame(width: 1024, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -1089,4 +524,5 @@ struct TacticalCardSkeleton: View {
     .environment(WeatherStore())
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
 }

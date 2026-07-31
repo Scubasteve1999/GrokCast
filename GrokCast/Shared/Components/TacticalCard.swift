@@ -24,8 +24,7 @@ struct TacticalCard: View {
           .font(.system(size: 13, weight: .semibold))
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         Text(label)
-          .font(.system(size: 10, weight: .semibold))
-          .tracking(DesignTokens.Typography.cardLabelTracking)
+          .font(.system(size: 11, weight: .semibold))
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
 

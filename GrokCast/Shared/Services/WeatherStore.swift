@@ -139,9 +139,60 @@ final class WeatherStore {
   }
 
   private static let rainAlertsEnabledKey = "grokcast_rain_alerts_enabled"
+  nonisolated static let fireProximityNotificationsEnabledKey =
+    "grokcast_fire_proximity_notifications_enabled"
+  nonisolated static let fireProximityRadiusMilesKey = "grokcast_fire_proximity_radius_miles"
 
   private var _rainAlertsEnabled: Bool = UserDefaults.standard.bool(
     forKey: WeatherStore.rainAlertsEnabledKey)
+
+  /// Opt-in local notifications for new nearby wildfire activity (default off).
+  nonisolated static var persistedFireProximityNotificationsEnabled: Bool {
+    UserDefaults.standard.bool(forKey: fireProximityNotificationsEnabledKey)
+  }
+
+  nonisolated static var persistedFireProximityRadiusMiles: Double {
+    let value = UserDefaults.standard.double(forKey: fireProximityRadiusMilesKey)
+    if value >= 5 { return value }
+    return FireNotifyConfig.default.radiusMiles
+  }
+
+  private var _fireProximityNotificationsEnabled = UserDefaults.standard.bool(
+    forKey: WeatherStore.fireProximityNotificationsEnabledKey)
+  private var _fireProximityRadiusMiles: Double = {
+    let value = UserDefaults.standard.double(forKey: WeatherStore.fireProximityRadiusMilesKey)
+    return value >= 5 ? value : FireNotifyConfig.default.radiusMiles
+  }()
+
+  var fireProximityNotificationsEnabled: Bool {
+    get { _fireProximityNotificationsEnabled }
+    set {
+      guard newValue != _fireProximityNotificationsEnabled else { return }
+      _fireProximityNotificationsEnabled = newValue
+      UserDefaults.standard.set(newValue, forKey: Self.fireProximityNotificationsEnabledKey)
+      if newValue {
+        Task { await scheduleBackgroundAlertRefreshIfEnabled() }
+      } else {
+        BackgroundAlertRefreshService.scheduleAlertRefreshTask()
+      }
+    }
+  }
+
+  /// Miles from selected / background location for fire proximity notifies (10 / 25 / 50).
+  var fireProximityRadiusMiles: Double {
+    get { _fireProximityRadiusMiles }
+    set {
+      let clamped: Double
+      switch newValue {
+      case ...15: clamped = 10
+      case ...35: clamped = 25
+      default: clamped = 50
+      }
+      guard clamped != _fireProximityRadiusMiles else { return }
+      _fireProximityRadiusMiles = clamped
+      UserDefaults.standard.set(clamped, forKey: Self.fireProximityRadiusMilesKey)
+    }
+  }
 
   var rainAlertsEnabled: Bool {
     get { _rainAlertsEnabled }
@@ -1020,6 +1071,18 @@ final class WeatherStore {
     Task {
       await ShortTermPrecipStore.shared.refresh(for: loc, force: force)
     }
+    // Fire data is independent — never await on the weather/alerts path.
+    Task {
+      await FireStore.shared.refreshNow(around: loc.coordinate, force: force)
+      if fireProximityNotificationsEnabled {
+        await FireNotificationService.notifyIfNeeded(
+          snapshot: FireStore.shared.snapshot,
+          origin: loc.coordinate,
+          enabled: true,
+          radiusMiles: fireProximityRadiusMiles
+        )
+      }
+    }
   }
 
   /// Non-expired alerts for UI display. Falls back to persisted history only when the last
@@ -1058,11 +1121,12 @@ final class WeatherStore {
   @discardableResult
   func performBackgroundRefresh(taskStart: CFAbsoluteTime? = nil) async -> Bool {
     let needsAlerts = alertNotificationsEnabled
+    let needsFire = fireProximityNotificationsEnabled
     let needsLiveActivity =
       liveActivityEnabled
       && EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared)
 
-    guard needsAlerts || needsLiveActivity else {
+    guard needsAlerts || needsLiveActivity || needsFire else {
       return true
     }
     if Self.isBackgroundBudgetExhausted(taskStart) { return false }
@@ -1100,6 +1164,19 @@ final class WeatherStore {
           lastAlertsFetchSucceeded = false
         }
         alertOK = false
+      }
+    }
+
+    if needsFire, !Self.isBackgroundBudgetExhausted(taskStart) {
+      await FireStore.shared.refreshNow(around: loc.coordinate, force: false)
+      if !Self.isBackgroundBudgetExhausted(taskStart) {
+        await FireNotificationService.notifyIfNeeded(
+          snapshot: FireStore.shared.snapshot,
+          origin: loc.coordinate,
+          enabled: true,
+          radiusMiles: fireProximityRadiusMiles,
+          taskStart: taskStart
+        )
       }
     }
 
@@ -1178,7 +1255,7 @@ final class WeatherStore {
   /// Requests notification permission (if needed) then schedules BG refresh for alerts and/or Live Activity.
   @MainActor
   func scheduleBackgroundAlertRefreshIfEnabled() async {
-    if alertNotificationsEnabled {
+    if alertNotificationsEnabled || fireProximityNotificationsEnabled {
       await requestAlertNotificationPermissionIfNeeded()
     }
     BackgroundAlertRefreshService.scheduleAlertRefreshTask()

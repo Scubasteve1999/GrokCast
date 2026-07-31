@@ -42,7 +42,7 @@ struct HourlyPrecipCard: View {
       }
     }
     .padding(DesignTokens.Spacing.space16)
-    .glassCardStyle()
+    .cardStyle()
   }
 
   private var precipChart: some View {

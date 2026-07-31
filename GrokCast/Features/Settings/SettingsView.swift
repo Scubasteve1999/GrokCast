@@ -279,6 +279,42 @@ struct SettingsView: View {
         }
 
         Section {
+          Toggle(
+            "Nearby Fire Alerts",
+            isOn: Binding(
+              get: { store.fireProximityNotificationsEnabled },
+              set: { store.fireProximityNotificationsEnabled = $0 }
+            )
+          )
+          .onChange(of: store.fireProximityNotificationsEnabled) { _, enabled in
+            Haptic.impact(.light)
+            if enabled {
+              Task { await store.requestAlertNotificationPermissionIfNeeded() }
+            }
+          }
+
+          if store.fireProximityNotificationsEnabled {
+            Picker(
+              "Notify within",
+              selection: Binding(
+                get: { Int(store.fireProximityRadiusMiles) },
+                set: { store.fireProximityRadiusMiles = Double($0) }
+              )
+            ) {
+              Text("10 miles").tag(10)
+              Text("25 miles").tag(25)
+              Text("50 miles").tag(50)
+            }
+          }
+        } header: {
+          Text("FIRE ALERTS")
+        } footer: {
+          Text(
+            "Opt-in notifications when a new wildfire or heat detection appears near your location. Red Flag and Fire Weather Watches still use Severe Weather Alerts."
+          )
+        }
+
+        Section {
           Picker(
             "Temperature",
             selection: Binding(
@@ -504,6 +540,17 @@ struct SettingsView: View {
               .padding(.horizontal, DesignTokens.Spacing.space16)
               .padding(.vertical, DesignTokens.Spacing.space8)
           }
+          SettingsDivider()
+          figmaToggleRow(
+            title: "Nearby Fire Alerts",
+            subtitle: store.fireProximityNotificationsEnabled
+              ? "Within \(Int(store.fireProximityRadiusMiles)) mi" : "Off",
+            icon: "flame.fill",
+            isOn: Binding(
+              get: { store.fireProximityNotificationsEnabled },
+              set: { store.fireProximityNotificationsEnabled = $0 }
+            )
+          )
         }
 
         FigmaSectionLabel(title: "DISPLAY")

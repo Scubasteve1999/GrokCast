@@ -412,6 +412,13 @@ private struct RadarDisplayOptionsSheet: View {
 
         Section("Map") {
           Toggle("Radar overlay", isOn: $radarState.showRadarOverlay)
+          Toggle("Fire layer", isOn: Binding(
+            get: { radarState.showFireLayer },
+            set: { newValue in
+              radarState.showFireLayer = newValue
+              Analytics.track(.fireLayerToggle, parameters: ["on": newValue ? "1" : "0"])
+            }
+          ))
           Picker("Base map", selection: $radarState.baseMapStyle) {
             ForEach(RadarBaseMapStyle.allCases) { style in
               Label(style.displayName, systemImage: style.systemImage).tag(style)

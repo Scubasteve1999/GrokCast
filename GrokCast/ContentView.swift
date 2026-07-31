@@ -54,7 +54,6 @@ struct MainTabView: View {
     // would duplicate chrome and risk regressing the tab-based model on iPad.
     .tabViewStyle(.sidebarAdaptable)
     .toolbar(.hidden, for: .tabBar)
-    .animation(nil, value: store.selectedTab)
     .onPreferenceChange(TabBarSuppressionPreferenceKey.self) { suppressTabBar = $0 }
     .safeAreaInset(edge: .bottom, spacing: 0) {
       Group {
@@ -113,4 +112,5 @@ struct MainTabView: View {
     .environment(WeatherStore.shared)
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(FireStore.shared)
 }

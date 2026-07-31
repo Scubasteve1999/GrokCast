@@ -105,7 +105,7 @@ struct GrokCastScoreCard: View {
       Spacer(minLength: 0)
     }
     .padding(DesignTokens.Spacing.space16)
-    .glassCardStyle()
+    .cardStyle()
     .accessibilityElement(children: .combine)
     .accessibilityLabel("SpotterCast score \(score.value). \(score.label). \(score.subtitle)")
   }

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RadarView: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(FireStore.self) private var fireStore
 
   @State private var radarOpacity: Double = 0.85
   @State private var radarState = RadarState()
@@ -39,8 +40,17 @@ struct RadarView: View {
       .preferredColorScheme(.dark)
       .task {
         await store.refreshAlerts()
+        fireStore.refresh(around: selectedMapCenter)
         if store.selectedTab == .radar, radarState.showContent {
           radarState.start()
+        }
+      }
+      .task(id: store.currentLocation?.id) {
+        fireStore.refresh(around: selectedMapCenter)
+      }
+      .onChange(of: radarState.showFireLayer) { _, isOn in
+        if isOn {
+          fireStore.refresh(around: selectedMapCenter, force: false)
         }
       }
       .task(id: store.selectedTab) {
@@ -102,7 +112,8 @@ struct RadarView: View {
                 opacity: radarOpacity,
                 defaultMapCenter: selectedMapCenter,
                 recenterDefaultTrigger: recenterDefaultTrigger,
-                recenterUserCoordinate: recenterUserCoordinate
+                recenterUserCoordinate: recenterUserCoordinate,
+                fireSnapshot: fireStore.snapshot
               )
               .frame(width: geo.size.width, height: geo.size.height)
               .frame(minWidth: 400, minHeight: 400)
@@ -231,4 +242,5 @@ struct RadarView: View {
 #Preview {
   RadarView()
     .environment(WeatherStore())
+    .environment(FireStore.shared)
 }

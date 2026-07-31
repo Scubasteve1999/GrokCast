@@ -35,6 +35,12 @@ enum DeveloperAPIKey {
 
   /// Optional override for the hosted Grok proxy (Pro subscribers).
   static let grokProxyBaseURL: String? = nil
+
+  /// NASA FIRMS MAP_KEY (area CSV). Free signup: https://firms.modaps.eosdis.nasa.gov/api/map_key/
+  static let firmsMapKey: String? = nil  // "YOUR_FIRMS_MAP_KEY"
+
+  /// Optional AirNow key for fire-detail smoke line only (home AQI uses Open-Meteo).
+  static let airNow: String? = nil  // "YOUR_AIRNOW_API_KEY"
 }
 
 // OpenWeatherMap API key lives in OpenWeatherMapKeys.swift (committed).

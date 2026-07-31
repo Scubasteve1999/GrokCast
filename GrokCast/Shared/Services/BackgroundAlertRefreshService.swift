@@ -27,11 +27,12 @@ enum BackgroundAlertRefreshService {
     BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: taskIdentifier)
   }
 
-  /// Submits the next BGAppRefresh when alert notifications and/or Live Activity need background sync.
+  /// Submits the next BGAppRefresh when alerts, fire proximity, and/or Live Activity need sync.
   static func scheduleAlertRefreshTask() {
     let needsAlerts = WeatherStore.persistedAlertNotificationsEnabled
+    let needsFire = WeatherStore.persistedFireProximityNotificationsEnabled
     let needsLiveActivity = WeatherStore.persistedLiveActivityEnabled
-    guard needsAlerts || needsLiveActivity else {
+    guard needsAlerts || needsLiveActivity || needsFire else {
       cancelAlertRefreshTask()
       return
     }

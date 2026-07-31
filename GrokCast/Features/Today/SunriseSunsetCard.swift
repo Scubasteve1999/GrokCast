@@ -50,7 +50,7 @@ struct SunriseSunsetCard: View {
       }
     }
     .padding(DesignTokens.Spacing.space16)
-    .glassCardStyle()
+    .cardStyle()
   }
 
   private var sunArcView: some View {

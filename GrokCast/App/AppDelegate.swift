@@ -143,8 +143,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       options: []
     )
 
+    let fireAlert = UNNotificationCategory(
+      identifier: FireNotificationService.categoryIdentifier,
+      actions: [viewRadar, viewToday],
+      intentIdentifiers: [],
+      options: []
+    )
+
     UNUserNotificationCenter.current().setNotificationCategories([
-      severeAlert, criticalAlert, morningBrief, rainAlert,
+      severeAlert, criticalAlert, morningBrief, rainAlert, fireAlert,
     ])
   }
 }

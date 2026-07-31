@@ -38,6 +38,7 @@ private struct ForecastAdaptiveBody: View {
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
   @State private var selectedDay: DailyForecast?
+  @State private var showOpenWeatherMapCompare = false
 
   private var awaitsWidthMeasurement: Bool {
     AdaptiveLayout.awaitingWidthMeasurement(
@@ -128,21 +129,22 @@ private struct ForecastAdaptiveBody: View {
 
   private var neutralForecastSkeleton: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space32) {
-        forecastSectionHeader("Hourly — Next 24H")
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        FigmaScreenTitle(title: "Forecast")
+        FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space24) {
+          HStack(spacing: DesignTokens.Spacing.space12) {
             ForEach(0..<8, id: \.self) { index in
-              HourlyRowSkeleton(isNow: index == 0)
+              HourlyRowSkeleton(isNow: index == 0, layout: .figma)
             }
           }
-          .padding(.vertical, DesignTokens.Spacing.space8)
         }
+        .frame(height: hourlyStripHeight)
 
-        forecastSectionHeader("10-Day Outlook")
+        FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
           ForEach(0..<6, id: \.self) { index in
-            DailyRowSkeleton(isToday: index == 0)
+            DailyRowSkeleton(layout: .figma, isToday: index == 0)
           }
         }
       }
@@ -190,31 +192,34 @@ private struct ForecastAdaptiveBody: View {
 
   private var wideForecastSkeleton: some View {
     ScrollView {
-      HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          forecastSectionHeader("Hourly — Next 24H")
-          LazyVGrid(
-            columns: Array(
-              repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
-            spacing: DesignTokens.Spacing.space16
-          ) {
-            ForEach(0..<24, id: \.self) { index in
-              HourlyRowSkeleton(isNow: index == 0)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        FigmaScreenTitle(title: "Forecast")
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+            FigmaSubsectionLabel(title: "Hourly")
+            LazyVGrid(
+              columns: Array(
+                repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
+              spacing: DesignTokens.Spacing.space16
+            ) {
+              ForEach(0..<24, id: \.self) { index in
+                HourlyRowSkeleton(isNow: index == 0, layout: .figma)
+              }
             }
           }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+          .frame(maxWidth: .infinity, alignment: .leading)
 
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-          forecastSectionHeader("10-Day Outlook")
-          ForEach(0..<6, id: \.self) { _ in
-            DailyRowSkeleton()
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+            FigmaSubsectionLabel(title: "10-Day")
+            ForEach(0..<6, id: \.self) { _ in
+              DailyRowSkeleton(layout: .figma)
+            }
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .refreshable {
@@ -224,36 +229,40 @@ private struct ForecastAdaptiveBody: View {
 
   private func neutralForecastContent(for weather: GrokCastWeather) -> some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space32) {
-        let hourly24 = Self.nextHourlyForecasts(from: weather)
-        let calendar = weather.locationCalendar
-        let timeZone = weather.locationTimeZone
-        let now = Date()
-        let nowHourIndex = hourly24.firstIndex(where: { h in
-          calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
-        }) ?? 0
+      let hourly24 = Self.nextHourlyForecasts(from: weather)
+      let calendar = weather.locationCalendar
+      let timeZone = weather.locationTimeZone
+      let now = Date()
+      let nowHourIndex = hourly24.firstIndex(where: { h in
+        calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
+      }) ?? 0
 
-        forecastSectionHeader("Hourly — Next 24H")
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        FigmaScreenTitle(title: "Forecast")
+
+        FigmaSubsectionLabel(title: "Hourly")
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space24) {
+          HStack(spacing: DesignTokens.Spacing.space12) {
             ForEach(Array(hourly24.enumerated()), id: \.element.time) {
               index, hour in
               hourlyRow(
-                forecast: hour, isNow: index == nowHourIndex, timeZone: timeZone)
+                forecast: hour, isNow: index == nowHourIndex, layout: .figma,
+                timeZone: timeZone)
             }
           }
-          .padding(.vertical, DesignTokens.Spacing.space8)
         }
+        .frame(height: hourlyStripHeight)
 
-        figmaOpenWeatherMapSection(timeZone: timeZone)
+        openWeatherMapCompareSection(timeZone: timeZone)
 
-        forecastSectionHeader("10-Day Outlook")
+        FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
           let periodLow = weather.daily.map(\.low).min()
           let periodHigh = weather.daily.map(\.high).max()
           ForEach(weather.daily) { day in
             DailyRow(
               forecast: day,
+              layout: .figma,
               periodLow: periodLow,
               periodHigh: periodHigh,
               calendar: calendar,
@@ -264,7 +273,7 @@ private struct ForecastAdaptiveBody: View {
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.top, forecastContentTopPadding)
       .padding(.bottom, bottomTabClearance)
     }
     .safeAreaInset(edge: .top) {
@@ -301,7 +310,7 @@ private struct ForecastAdaptiveBody: View {
         }
         .frame(height: hourlyStripHeight)
 
-        figmaOpenWeatherMapSection(timeZone: timeZone)
+        openWeatherMapCompareSection(timeZone: timeZone)
 
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -343,13 +352,12 @@ private struct ForecastAdaptiveBody: View {
         calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
       }) ?? 0
 
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Forecast")
-          .padding(.bottom, DesignTokens.Spacing.space8)
 
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            forecastSectionHeader("Hourly — Next 24H")
+            FigmaSubsectionLabel(title: "Hourly")
             LazyVGrid(
               columns: Array(
                 repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
@@ -358,20 +366,22 @@ private struct ForecastAdaptiveBody: View {
               ForEach(Array(hourly24.enumerated()), id: \.element.time) {
                 index, hour in
                 hourlyRow(
-                  forecast: hour, isNow: index == nowHourIndex, timeZone: timeZone)
+                  forecast: hour, isNow: index == nowHourIndex, layout: .figma,
+                  timeZone: timeZone)
               }
             }
+            openWeatherMapCompareSection(timeZone: timeZone)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            figmaOpenWeatherMapSection(timeZone: timeZone)
-            forecastSectionHeader("10-Day Outlook")
+            FigmaSubsectionLabel(title: "10-Day")
             let periodLow = weather.daily.map(\.low).min()
             let periodHigh = weather.daily.map(\.high).max()
             ForEach(weather.daily) { day in
               DailyRow(
                 forecast: day,
+                layout: .figma,
                 periodLow: periodLow,
                 periodHigh: periodHigh,
                 calendar: calendar,
@@ -412,40 +422,35 @@ private struct ForecastAdaptiveBody: View {
     )
   }
 
-  private func figmaSectionHeader(_ title: String) -> some View {
-    FigmaSubsectionLabel(title: title)
-  }
-
   @ViewBuilder
-  private func figmaOpenWeatherMapSection(timeZone: TimeZone = .current) -> some View {
+  private func openWeatherMapCompareSection(timeZone: TimeZone = .current) -> some View {
     if let owm = store.openWeatherMapForecast, !owm.entries.isEmpty {
-      FigmaSubsectionLabel(title: openWeatherMapCompactTitle)
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: DesignTokens.Spacing.space8) {
-          ForEach(Array(owm.entries.prefix(8))) { entry in
-            OpenWeatherMapForecastChip(
-              entry: entry, layout: .figma, timeZone: timeZone)
+      DisclosureGroup(isExpanded: $showOpenWeatherMapCompare) {
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: DesignTokens.Spacing.space8) {
+            ForEach(Array(owm.entries.prefix(8))) { entry in
+              OpenWeatherMapForecastChip(
+                entry: entry, layout: .figma, timeZone: timeZone)
+            }
           }
+          .padding(.top, DesignTokens.Spacing.space8)
         }
+      } label: {
+        Text("Compare \(openWeatherMapCompactTitle)")
+          .font(DesignTokens.Figma.Typography.rowSubtitle)
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
+      .tint(DesignTokens.Palette.textTertiary)
     }
   }
 
   private var openWeatherMapCompactTitle: String {
     switch store.openWeatherMapService.lastDataSource {
     case .oneCall4:
-      return "OpenWeatherMap Hourly"
+      return "OpenWeatherMap"
     case .legacy25, .none:
       return "OpenWeatherMap"
     }
-  }
-
-  private func forecastSectionHeader(_ title: String) -> some View {
-    Text(title)
-      .font(.system(size: 20, weight: .semibold))
-      .tracking(DesignTokens.Typography.headerTracking)
-      .foregroundStyle(DesignTokens.Palette.textPrimary)
-      .padding(.bottom, DesignTokens.Spacing.space8)
   }
 
   private func forecastUnavailableState(
