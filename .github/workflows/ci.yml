@@ -23,6 +23,25 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # Real key files are gitignored by design, so CI has to synthesize
+      # placeholder versions from the committed templates or the build can't
+      # resolve DeveloperAPIKey / OpenWeatherMapKeys. Templates carry nil/
+      # placeholder values — this never puts a real secret on a runner.
+      # Must run before XcodeGen so the generated project picks the files up.
+      - name: Stub gitignored config files from templates
+        run: |
+          set -euo pipefail
+          for template in GrokCast/Config/*.example; do
+            [ -e "$template" ] || continue
+            target="${template%.example}"
+            if [ -f "$target" ]; then
+              echo "↷ $target already present — leaving it alone"
+            else
+              cp "$template" "$target"
+              echo "✅ Created $target from $(basename "$template")"
+            fi
+          done
+
       - name: Make grok-build executable
         run: chmod +x ./grok-build || true
 
