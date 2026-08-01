@@ -16,7 +16,8 @@ GLOBAL_DAILY_LIMIT = "5000"
 # Kill switch: `wrangler deploy --var DISABLED:1` stops all AI without an app release.
 DISABLED = "0"
 
-# Create with: wrangler kv namespace create USAGE
+# Namespace title is SPOTTERCAST_USAGE — the account already has an unrelated
+# USAGE namespace. The binding stays USAGE, which is what the worker references.
 [[kv_namespaces]]
 binding = "USAGE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "cf48dd7853ca419db9d4224a43e58c1b"
