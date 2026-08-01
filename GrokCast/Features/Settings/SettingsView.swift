@@ -70,7 +70,7 @@ struct SettingsView: View {
           } else {
             VStack(alignment: .leading, spacing: 8) {
               Text(
-                "Unlock forecast radar, Live Activity, and unlimited locations. AI still uses an xAI key in Settings."
+                "Unlock AI features, forecast radar, Live Activity, and unlimited locations."
               )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -97,7 +97,7 @@ struct SettingsView: View {
           Text("SPOTTERCAST PRO")
         } footer: {
           Text(
-            "Pro unlocks forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when SpotterCast refreshes weather. AI chat / Today's Take need an xAI developer key in Settings — Pro does not replace that until a hosted proxy ships."
+            "Pro unlocks AI chat, Today's Take, Storm Spotter, forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when SpotterCast refreshes weather. AI has a daily limit that resets at midnight UTC. Bringing your own xAI developer key below also works and is not limited."
           )
         }
 
@@ -136,9 +136,9 @@ struct SettingsView: View {
                   } else {
                     Text("No developer key configured")
                       .foregroundStyle(.secondary)
-                    Text("Required for all AI features (chat, vision, image generation)")
+                    Text("Optional — SpotterCast Pro already includes AI. Add your own key to skip the daily limit.")
                       .font(.caption)
-                      .foregroundStyle(.orange)
+                      .foregroundStyle(.secondary)
                   }
                 }
                 Spacer()
@@ -351,9 +351,28 @@ struct SettingsView: View {
             "Morning AI Brief",
             isOn: Binding(
               get: { store.morningBriefEnabled },
-              set: { store.morningBriefEnabled = $0 }
+              set: { newValue in
+                // Previously ungated: a free user could switch this on and then
+                // get silence every morning, since the brief is a Grok call.
+                if newValue,
+                  !EntitlementChecker.canUseMorningBrief(
+                    subscription: subscription,
+                    hasDeveloperKey: hasKey
+                  )
+                {
+                  PaywallCoordinator.shared.present(.grokAI)
+                  return
+                }
+                store.morningBriefEnabled = newValue
+              }
             )
           )
+
+          if !subscription.isPro, !hasKey {
+            Text("Morning AI Brief requires SpotterCast Pro.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
 
           if store.morningBriefEnabled {
             Picker(
@@ -691,7 +710,7 @@ struct SettingsView: View {
           .padding(.horizontal, DesignTokens.Spacing.space16)
         } else {
           Text(
-            "Unlock forecast radar, Live Activity, and unlimited locations. AI still uses an xAI key in Settings."
+            "Unlock AI features, forecast radar, Live Activity, and unlimited locations."
           )
             .font(.system(size: 14))
             .foregroundStyle(DesignTokens.Palette.textSecondary)

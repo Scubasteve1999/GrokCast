@@ -257,12 +257,10 @@ final class WeatherStore {
   /// Secure Grok/xAI API configuration (developer key mode)
   let grokConfig = GrokAPIConfiguration(mode: .developerKey)
   let xaiService: XAIService
-  /// Grok Build service (powers Grok AI chat via grok-3-mini + key fallback; named for historical multi-key support).
-  /// Uses its own Keychain slot (.grokBuild) via the multi-key support added in KeychainService.
-  /// It creates its own dedicated URLSession (not .shared) tuned for long-lived SSE streaming;
-  /// this reduces certain low-level nw_connection diagnostic logs and avoids affecting the
-  /// shared session used by weather/radar/NWS fetches.
-  let grokBuildService = GrokBuildService()
+  // A long-lived `GrokBuildService` used to live here, built from an embedded key
+  // against a hardcoded api.x.ai. Callers now resolve credentials per request via
+  // `GrokAuthResolver` and construct the service from that, so there is no path to
+  // Grok that skips the entitlement check and the daily cap.
   let openWeatherMapService = OpenWeatherMapService()
   private let keychain = KeychainService.shared
 

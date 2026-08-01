@@ -68,6 +68,11 @@ struct PaywallView: View {
   private var featureList: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       paywallRow(
+        "AI weather intelligence",
+        "sparkles",
+        "Chat, Today's Take, Explain Radar, morning brief, and Storm Spotter photo analysis"
+      )
+      paywallRow(
         "Forecast radar (FUTURE)",
         "cloud.rain.fill",
         "Animated precipitation outlook you can scrub ahead"
@@ -80,7 +85,7 @@ struct PaywallView: View {
       paywallRow(
         "Home Screen widgets",
         "rectangle.3.group.fill",
-        "Score + Minutecast on widgets (AI one-liner needs an xAI key)"
+        "Score, Minutecast, and the AI one-liner on widgets"
       )
       paywallRow(
         "Unlimited saved locations",
@@ -89,7 +94,7 @@ struct PaywallView: View {
       )
 
       Text(
-        "AI chat, Today's Take, and Storm Spotter use an xAI developer key in Settings — not unlocked by Pro until a hosted proxy ships."
+        "AI features have a generous daily limit that resets at midnight UTC. Weather, radar, and NWS alerts stay free for everyone."
       )
       .font(.caption2)
       .foregroundStyle(DesignTokens.Palette.textTertiary)

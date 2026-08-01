@@ -1,0 +1,20 @@
+{
+  "name": "spottercast-grok-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker that forwards xAI requests for verified SpotterCast Pro subscribers.",
+  "scripts": {
+    "fixtures": "./test/fixtures/generate.sh",
+    "test": "node --test 'test/**/*.test.js'",
+    "pretest": "test -f test/fixtures/fixtures.json || ./test/fixtures/generate.sh",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

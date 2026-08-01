@@ -1,9 +1,17 @@
 import Foundation
 
 /// Production configuration for SpotterCast Pro hosted services.
-/// Set `grokProxyBaseURL` only after the proxy worker is deployed (see `docs/GrokCast-Pro-Setup.md`).
-/// While `nil`, Grok calls use a developer/Keychain xAI key against `api.x.ai` directly.
+///
+/// Secrets-free by design, like `GrokAPIConfiguration`: both values live in the
+/// gitignored `DeveloperAPIKey.swift` and are forwarded here so the rest of the
+/// app has one place to read them from.
+///
+/// While `grokProxyBaseURL` is nil, Pro cannot unlock AI and only users with
+/// their own Keychain xAI key can reach Grok. Setup: `server/grok-proxy/README.md`.
 enum GrokCastProConfig {
-  /// e.g. `"https://YOUR-WORKER.workers.dev/v1"` — must be a live host, not a placeholder.
-  static let grokProxyBaseURL: String? = nil
+  /// The deployed worker, including the `/v1` suffix.
+  static let grokProxyBaseURL: String? = DeveloperAPIKey.grokProxyBaseURL
+
+  /// Must match the worker's `PROXY_SECRET`.
+  static let grokProxySharedSecret: String? = DeveloperAPIKey.grokProxySharedSecret
 }

@@ -39,8 +39,15 @@ enum DeveloperAPIKey {
     return "\(id)_\(secret)"
   }
 
-  /// Optional override for the hosted Grok proxy (Pro subscribers).
+  /// Hosted Grok proxy for Pro subscribers — see `server/grok-proxy/README.md`.
+  /// Include the `/v1` suffix: `"https://<worker>.workers.dev/v1"`.
+  /// While nil, Pro cannot unlock AI and only a Keychain key reaches Grok.
   static let grokProxyBaseURL: String? = nil
+
+  /// Must match the worker's `PROXY_SECRET`. This ships inside the binary, so it
+  /// is public by necessity — real entitlement is the StoreKit transaction the
+  /// proxy verifies against Apple. Kept out of tracked source anyway.
+  static let grokProxySharedSecret: String? = nil
 
   /// NASA FIRMS MAP_KEY (area CSV). Free signup: https://firms.modaps.eosdis.nasa.gov/api/map_key/
   static let firmsMapKey: String? = nil  // "YOUR_FIRMS_MAP_KEY"

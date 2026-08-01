@@ -1,10 +1,11 @@
 import Foundation
 
-/// Hosted Grok proxy — Pro subscribers route xAI calls through your server (key stays server-side).
+/// Hosted Grok proxy — Pro subscribers route xAI calls through the worker in
+/// `server/grok-proxy`, so the xAI key never ships in the app.
 enum GrokProxyConfiguration {
-  /// Base URL for the proxy (must expose xAI-compatible `/v1/chat/completions`, etc.).
-  /// Only set when the worker is actually deployed — see `docs/GrokCast-Pro-Setup.md`.
-  /// Returning `nil` keeps Pro + BYOK/embedded-key builds on direct `api.x.ai`.
+  /// Base URL for the proxy, including the `/v1` suffix — callers append
+  /// `chat/completions` to it. `nil` until the worker is deployed, which leaves
+  /// Grok available only to users with their own Keychain key.
   static var baseURL: URL? {
     guard let custom = GrokCastProConfig.grokProxyBaseURL, !custom.isEmpty,
       let url = URL(string: custom)
@@ -15,4 +16,13 @@ enum GrokProxyConfiguration {
   }
 
   static var isConfigured: Bool { baseURL != nil }
+
+  /// Coarse bearer token the proxy checks before doing real work.
+  ///
+  /// This ships inside the binary, so treat it as public: it deters idle scanning
+  /// and nothing more. Entitlement comes from the StoreKit transaction the proxy
+  /// verifies against Apple's root, which only Apple can mint.
+  static var sharedSecret: String {
+    GrokCastProConfig.grokProxySharedSecret ?? "spottercast-pro"
+  }
 }

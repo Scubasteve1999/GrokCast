@@ -9,7 +9,9 @@ final class SubscriptionManager {
 
   private(set) var products: [Product] = []
   private(set) var isPro = false
-  private(set) var proAuthToken: String?
+  /// Apple-signed proof of entitlement, sent to the Grok proxy on every AI call.
+  /// The proxy verifies it against Apple's root, so nothing else here is trusted.
+  private(set) var proTransactionJWS: String?
   private(set) var isLoadingProducts = false
   private(set) var purchaseInFlight = false
   private(set) var lastErrorMessage: String?
@@ -57,20 +59,22 @@ final class SubscriptionManager {
 
   func refreshEntitlements() async {
     var active = false
-    var token: String?
+    var signedTransaction: String?
 
     for await result in Transaction.currentEntitlements {
       guard case .verified(let transaction) = result else { continue }
       guard GrokCastProProducts.all.contains(transaction.productID) else { continue }
       if transaction.revocationDate == nil {
         active = true
-        token = String(transaction.originalID)
+        // The JWS, not the transaction id: the proxy needs something only Apple
+        // can produce, and `originalID` is a guessable integer.
+        signedTransaction = result.jwsRepresentation
         break
       }
     }
 
     isPro = active
-    proAuthToken = token
+    proTransactionJWS = signedTransaction
     syncProFlagToAppGroup(active)
   }
 

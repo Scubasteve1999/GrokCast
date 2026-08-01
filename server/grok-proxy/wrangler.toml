@@ -1,0 +1,23 @@
+name = "spottercast-grok-proxy"
+main = "src/worker.js"
+compatibility_date = "2026-08-01"
+
+# Secrets (never in this file — `wrangler secret put <NAME>`):
+#   XAI_API_KEY    the spottercast-proxy-prod key
+#   PROXY_SECRET   shared string the app sends; public by necessity
+
+[vars]
+BUNDLE_ID = "com.scubasteve1999.GrokCast"
+PRO_PRODUCT_IDS = "com.scubasteve1999.GrokCast.pro.monthly,com.scubasteve1999.GrokCast.pro.yearly"
+ALLOWED_ENVIRONMENTS = "Production,Sandbox"
+DAILY_CHAT_LIMIT = "150"
+DAILY_IMAGE_LIMIT = "10"
+GLOBAL_DAILY_LIMIT = "5000"
+# Kill switch: `wrangler deploy --var DISABLED:1` stops all AI without an app release.
+DISABLED = "0"
+
+# Namespace title is SPOTTERCAST_USAGE — the account already has an unrelated
+# USAGE namespace. The binding stays USAGE, which is what the worker references.
+[[kv_namespaces]]
+binding = "USAGE"
+id = "cf48dd7853ca419db9d4224a43e58c1b"

@@ -1,16 +1,21 @@
 import Foundation
 
-/// Resolves whether Grok API calls go direct (BYOK) or through the hosted Pro proxy.
+/// Resolves whether Grok API calls go through the hosted Pro proxy or direct on a
+/// user-supplied key, and meters the calls we pay for.
 struct GrokAuthContext {
   let baseURL: URL
   let authorizationHeader: String
-  /// Sent to the proxy as `X-GrokCast-Subscription-Id` for rate limiting / validation.
-  let subscriptionTransactionID: String?
+  let tier: GrokAccessTier
+  /// StoreKit 2 signed transaction. The proxy verifies this against Apple's root —
+  /// it is the actual credential, not the shared bearer token.
+  let transactionJWS: String?
+
+  static let transactionHeader = "X-SpotterCast-Transaction"
 
   func applying(to request: inout URLRequest) {
     request.setValue(authorizationHeader, forHTTPHeaderField: "Authorization")
-    if let subscriptionTransactionID {
-      request.setValue(subscriptionTransactionID, forHTTPHeaderField: "X-GrokCast-Subscription-Id")
+    if let transactionJWS {
+      request.setValue(transactionJWS, forHTTPHeaderField: Self.transactionHeader)
     }
   }
 }
@@ -27,31 +32,62 @@ enum GrokAuthResolver {
     )
   }
 
+  /// Resolves credentials for one call and consumes its daily allowance.
+  ///
+  /// Metering happens here because this is the single point every AI path passes
+  /// through, so a new caller cannot accidentally skip the cap. Only calls billed
+  /// to us are metered — a user on their own key is not.
   static func resolve(
+    for bucket: GrokUsageBucket = .chat,
     configuration: GrokAPIConfiguration = GrokAPIConfiguration(),
-    subscription: SubscriptionManager
+    subscription: SubscriptionManager,
+    limiter: GrokUsageLimiter = .shared
   ) throws -> GrokAuthContext {
-    // Prefer a real xAI key whenever available. The Pro proxy is optional and only
-    // used when explicitly configured — an undeployed default host must never win
-    // over a working embedded/Keychain key (that was breaking all Grok fetches).
-    if configuration.hasValidDeveloperKey {
+    let tier = GrokAccessRules.tier(
+      isPro: subscription.isPro,
+      proxyConfigured: GrokProxyConfiguration.isConfigured,
+      hasDeveloperKey: configuration.hasValidDeveloperKey
+    )
+
+    switch tier {
+    case .pro:
+      guard let proxyBase = GrokProxyConfiguration.baseURL else { throw GrokAPIError.proRequired }
+      guard let transactionJWS = subscription.proTransactionJWS else {
+        // Entitled, but the signed transaction hasn't loaded yet. Refusing beats
+        // sending a request the proxy is certain to reject.
+        throw GrokAPIError.entitlementUnavailable
+      }
+      guard limiter.consume(bucket) else {
+        throw GrokAPIError.dailyLimitReached(resetsAt: limiter.resetDate())
+      }
+      return GrokAuthContext(
+        baseURL: proxyBase,
+        authorizationHeader: "Bearer \(GrokProxyConfiguration.sharedSecret)",
+        tier: .pro,
+        transactionJWS: transactionJWS
+      )
+
+    case .developerKey:
       return GrokAuthContext(
         baseURL: configuration.baseURL,
         authorizationHeader: try configuration.authHeader(),
-        subscriptionTransactionID: nil
+        tier: .developerKey,
+        transactionJWS: nil
       )
-    }
 
-    if subscription.isPro, let transactionID = subscription.proAuthToken,
-      let proxyBase = GrokProxyConfiguration.baseURL
-    {
-      return GrokAuthContext(
-        baseURL: proxyBase,
-        authorizationHeader: "Bearer grokcast-pro",
-        subscriptionTransactionID: transactionID
-      )
+    case .free, .none:
+      throw GrokAPIError.proRequired
     }
+  }
 
-    throw GrokAPIError.missingAPIKey
+  /// Returns an allowance after a request that never reached the model, so a
+  /// network failure doesn't cost part of the user's day.
+  static func refund(
+    _ bucket: GrokUsageBucket,
+    tier: GrokAccessTier,
+    limiter: GrokUsageLimiter = .shared
+  ) {
+    guard tier == .pro else { return }
+    limiter.refund(bucket)
   }
 }

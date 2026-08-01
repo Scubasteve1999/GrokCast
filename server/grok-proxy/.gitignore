@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+# Throwaway test chain — regenerate with `npm run fixtures`. Never tracked, so
+# no private key of any kind lands in the repo.
+test/fixtures/fixtures.json
+package-lock.json
