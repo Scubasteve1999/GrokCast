@@ -2,39 +2,18 @@ import Foundation
 
 // MARK: - Configuration
 struct GrokBuildConfiguration {
-  let apiKey: String
   let baseURL: URL
   let model: String
 
-  init(apiKey: String, baseURL: URL, model: String) {
-    self.apiKey = apiKey
-    self.baseURL = baseURL
-    self.model = model
-  }
-
+  /// The only way to build one. There used to be a `make()` that read the
+  /// embedded key and hardcoded `api.x.ai`, which let Trip Planner bypass the
+  /// resolver entirely — every caller now has to come through `GrokAuthResolver`.
   @MainActor
   init(auth: GrokAuthContext) {
-    self.apiKey = ""
     self.baseURL = auth.baseURL
+    // grok-3-mini keeps quick prompts and free text compatible with standard
+    // xAI developer keys.
     self.model = "grok-3-mini"
-  }
-
-  static func make() -> GrokBuildConfiguration {
-    // Prefer dedicated grokBuild key if present; fall back to the main xAI key.
-    // Regular Grok AI chat (quick prompts + free text) uses grok-3-mini for broad compatibility
-    // with standard xAI developer keys. A separate .grokBuild key can be used for special models.
-    let apiKey =
-      KeychainService.shared.getAPIKey(for: .grokBuild)
-      ?? KeychainService.shared.getAPIKey(for: .xai)
-      ?? DeveloperAPIKey.grokBuild
-      ?? DeveloperAPIKey.xai
-      ?? ""
-
-    return GrokBuildConfiguration(
-      apiKey: apiKey,
-      baseURL: URL(string: "https://api.x.ai/v1")!,
-      model: "grok-3-mini"
-    )
   }
 }
 
@@ -44,7 +23,7 @@ final class GrokBuildService {
   private let session: URLSession
 
   init(
-    configuration: GrokBuildConfiguration = .make(),
+    configuration: GrokBuildConfiguration,
     session: URLSession? = nil
   ) {
     self.configuration = configuration
@@ -68,7 +47,7 @@ final class GrokBuildService {
   // MARK: - Streaming
   func streamChat(
     messages: [GrokBuildMessage],
-    auth: GrokAuthContext? = nil,
+    auth: GrokAuthContext,
     temperature: Double = 0.7,
     maxTokens: Int? = nil
   ) -> AsyncThrowingStream<String, Error> {
@@ -76,21 +55,12 @@ final class GrokBuildService {
     return AsyncThrowingStream { continuation in
       Task {
         do {
-          if auth == nil, configuration.apiKey.isEmpty {
-            continuation.finish(throwing: GrokBuildError.missingAPIKey)
-            return
-          }
-
           let url = configuration.baseURL.appendingPathComponent("chat/completions")
 
           var request = URLRequest(url: url)
           request.httpMethod = "POST"
           request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-          if let auth {
-            auth.applying(to: &request)
-          } else {
-            request.setValue("Bearer \(configuration.apiKey)", forHTTPHeaderField: "Authorization")
-          }
+          auth.applying(to: &request)
 
           let body = GrokBuildRequest(
             model: configuration.model,
@@ -227,7 +197,7 @@ enum GrokBuildError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "Add an xAI developer key in Settings to use AI features."
+      return "SpotterCast Pro unlocks AI features."
     case .invalidResponse(let code):
       if let c = code {
         return "Invalid response from AI service (HTTP \(c)). Check your API key and try again."
@@ -235,13 +205,20 @@ enum GrokBuildError: Error, LocalizedError {
       return "Invalid response from AI service"
     case .apiError(let code, let msg):
       let lower = msg.lowercased()
+      // Responses from our own proxy, which speaks the same error shape as xAI.
+      if lower.contains("spottercast pro") {
+        return "SpotterCast Pro unlocks AI features."
+      }
+      if lower.contains("limit reached") || code == 429 {
+        return "AI limit reached for today. Resets at midnight UTC."
+      }
+      if lower.contains("temporarily unavailable") {
+        return "AI is temporarily unavailable. Please try again later."
+      }
       if lower.contains("incorrect api key") || lower.contains("invalid api key")
         || code == 401 || code == 403
       {
         return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
-      }
-      if code == 429 {
-        return "Too many requests. Please wait and try again."
       }
       if (500...599).contains(code) {
         return "AI service temporarily unavailable. Please try again later."

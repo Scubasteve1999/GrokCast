@@ -73,7 +73,8 @@ enum TripForecastService {
     let decoded = try JSONDecoder().decode(TripOpenMeteoResponse.self, from: data)
 
     let days = buildDays(from: decoded)
-    let dateRange = "\(dayFormatter.string(from: startDate)) – \(dayFormatter.string(from: endDate))"
+    let dateRange =
+      "\(dayFormatter.string(from: startDate)) – \(dayFormatter.string(from: endDate))"
 
     let isCelsius = store.temperatureUnit == .celsius
     let avgHigh = days.map(\.high).reduce(0, +) / Double(max(days.count, 1))
@@ -101,7 +102,9 @@ enum TripForecastService {
     )
   }
 
-  private static func geocode(_ query: String) async throws -> (lat: Double, lon: Double, name: String) {
+  private static func geocode(_ query: String) async throws -> (
+    lat: Double, lon: Double, name: String
+  ) {
     var components = URLComponents(string: geocodeURL)!
     components.queryItems = [
       URLQueryItem(name: "name", value: query),
@@ -151,13 +154,17 @@ enum TripForecastService {
     let cold: Double = isCelsius ? 4 : 40
     let cool: Double = isCelsius ? 13 : 55
 
-    if avgHigh > extremeHot { score -= 20 }
-    else if avgHigh > hot { score -= 10 }
-    else if avgHigh < cold { score -= 15 }
-    else if avgHigh < cool { score -= 5 }
+    if avgHigh > extremeHot {
+      score -= 20
+    } else if avgHigh > hot {
+      score -= 10
+    } else if avgHigh < cold {
+      score -= 15
+    } else if avgHigh < cool {
+      score -= 5
+    }
 
-    if avgPrecip > 60 { score -= 25 }
-    else if avgPrecip > 30 { score -= 10 }
+    if avgPrecip > 60 { score -= 25 } else if avgPrecip > 30 { score -= 10 }
 
     return max(10, min(100, score))
   }
@@ -176,12 +183,27 @@ enum TripForecastService {
     let coldThreshold: Double = isCelsius ? 2 : 35
     let swingThreshold: Double = isCelsius ? 14 : 25
 
-    if maxHigh > hotThreshold { items.insert("Sunscreen"); items.insert("Sunglasses") }
-    if maxHigh > veryHotThreshold { items.insert("Hat"); items.insert("Water bottle") }
+    if maxHigh > hotThreshold {
+      items.insert("Sunscreen")
+      items.insert("Sunglasses")
+    }
+    if maxHigh > veryHotThreshold {
+      items.insert("Hat")
+      items.insert("Water bottle")
+    }
     if minLow < coolThreshold { items.insert("Light jacket") }
-    if minLow < coldThreshold { items.insert("Warm coat"); items.insert("Gloves") }
-    if anyRain { items.insert("Umbrella"); items.insert("Rain jacket") }
-    if anySnow { items.insert("Warm boots"); items.insert("Heavy coat") }
+    if minLow < coldThreshold {
+      items.insert("Warm coat")
+      items.insert("Gloves")
+    }
+    if anyRain {
+      items.insert("Umbrella")
+      items.insert("Rain jacket")
+    }
+    if anySnow {
+      items.insert("Warm boots")
+      items.insert("Heavy coat")
+    }
     if maxHigh - minLow > swingThreshold { items.insert("Layers") }
 
     return items.sorted()
@@ -193,8 +215,10 @@ enum TripForecastService {
     days: [TripDayForecast],
     store: WeatherStore
   ) async -> String? {
-    let summary = days.map { "\($0.dayLabel): \($0.condition), \(Int($0.high))°/\(Int($0.low))°, \($0.precipChance)% precip" }
-      .joined(separator: "\n")
+    let summary = days.map {
+      "\($0.dayLabel): \($0.condition), \(Int($0.high))°/\(Int($0.low))°, \($0.precipChance)% precip"
+    }
+    .joined(separator: "\n")
 
     let prompt = """
       I'm traveling to \(destination). Here's the forecast:
@@ -203,13 +227,23 @@ enum TripForecastService {
       Give me a 2-3 sentence travel weather tip — what to expect and any scheduling advice. Be conversational and specific.
       """
 
+    // Trip advice is a Grok call like any other: it needs an entitlement and it
+    // draws on the same daily allowance. `resolve` enforces both — an unentitled
+    // caller throws and we fall through to returning nil.
     do {
+      let auth = try GrokAuthResolver.resolve(for: .chat, subscription: SubscriptionManager.shared)
+      let service = GrokBuildService(configuration: GrokBuildConfiguration(auth: auth))
+
       var response = ""
-      for try await chunk in store.grokBuildService.streamChat(messages: [.init(role: "user", content: prompt)]) {
+      for try await chunk in service.streamChat(
+        messages: [.init(role: "user", content: prompt)],
+        auth: auth
+      ) {
         response += chunk
       }
       return response.trimmingCharacters(in: .whitespacesAndNewlines)
     } catch {
+      // The forecast itself still renders; only the AI tip is dropped.
       return nil
     }
   }

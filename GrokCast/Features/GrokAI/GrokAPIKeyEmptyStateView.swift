@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Shown when Grok AI needs an xAI developer key (Pro does not unlock hosted AI yet).
+/// Shown when Grok AI is locked — Pro is the way in, with BYOK as a secondary path.
 struct GrokAPIKeyEmptyStateView: View {
   @Bindable var store: WeatherStore
   @Bindable var subscription: SubscriptionManager
@@ -17,26 +17,33 @@ struct GrokAPIKeyEmptyStateView: View {
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(
-        "Weather, live radar, and alerts are free. AI chat needs an xAI developer key in Settings. SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations."
+        "Weather, live radar, and alerts are free. SpotterCast Pro unlocks AI chat, Today's Take, Explain Radar, and Storm Spotter — or bring your own xAI key in Settings."
       )
       .font(.subheadline)
       .foregroundStyle(DesignTokens.Palette.textSecondary)
       .fixedSize(horizontal: false, vertical: true)
 
       HStack(spacing: 12) {
-        Button("Add Key in Settings") {
+        if !subscription.isPro {
+          Button("Unlock with Pro") {
+            Haptic.impact(.light)
+            PaywallCoordinator.shared.present(.grokAI)
+          }
+          .buttonStyle(.borderedProminent)
+          .tint(DesignTokens.Palette.accent)
+        }
+
+        let useOwnKey = Button("Use my own key") {
           Haptic.impact(.light)
           store.selectedTab = .settings
         }
-        .buttonStyle(.borderedProminent)
-        .tint(DesignTokens.Palette.accent)
 
-        if !subscription.isPro {
-          Button("View Pro") {
-            Haptic.impact(.light)
-            PaywallCoordinator.shared.present(.locations)
-          }
-          .buttonStyle(.bordered)
+        // Pro subscribers seeing this card have no Pro button to press, so the
+        // BYOK path becomes the primary action.
+        if subscription.isPro {
+          useOwnKey.buttonStyle(.borderedProminent).tint(DesignTokens.Palette.accent)
+        } else {
+          useOwnKey.buttonStyle(.bordered)
         }
       }
     }

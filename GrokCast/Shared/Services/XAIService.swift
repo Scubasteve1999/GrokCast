@@ -10,21 +10,31 @@ final class XAIService {
   }
 
   func hasAPIKey() -> Bool {
-    GrokAuthResolver.canAccessGrok(configuration: configuration, subscription: SubscriptionManager.shared)
+    GrokAuthResolver.canAccessGrok(
+      configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
   var hasValidKey: Bool {
-    GrokAuthResolver.canAccessGrok(configuration: configuration, subscription: SubscriptionManager.shared)
+    GrokAuthResolver.canAccessGrok(
+      configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
-  /// True when the active key is the embedded TestFlight key (no Keychain override).
+  /// True when the active key is the embedded development key.
+  ///
+  /// Always false outside DEBUG, and the reference itself is compiled out so the
+  /// key literal is not linked into shipping binaries at all — an unused constant
+  /// still ends up in the binary, where anyone can read it.
   var isUsingEmbeddedDeveloperKey: Bool {
-    guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }
-    guard let active = configuration.developerAPIKey else { return false }
-    return active == embedded
+    #if DEBUG
+      guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }
+      guard let active = configuration.developerAPIKey else { return false }
+      return active == embedded
+    #else
+      return false
+    #endif
   }
 
-  /// True when a real xAI developer key is available (Keychain or embedded).
+  /// True when a real xAI developer key is available (Keychain, or embedded in DEBUG).
   var hasDeveloperAPIKey: Bool {
     configuration.hasValidDeveloperKey
   }
@@ -56,7 +66,8 @@ final class XAIService {
   }
 
   func sendMessage(messages: [ChatMessage], context: String?) async throws -> String {
-    let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
+    let auth = try GrokAuthResolver.resolve(
+      configuration: configuration, subscription: SubscriptionManager.shared)
 
     var apiMessages: [[String: String]] = []
     if let context {
@@ -81,7 +92,8 @@ final class XAIService {
     shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) async throws -> String {
-    let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
+    let auth = try GrokAuthResolver.resolve(
+      configuration: configuration, subscription: SubscriptionManager.shared)
     let body = try buildStormAnalysisBody(
       imageData: imageData, weather: weather, alerts: alerts,
       severeContext: severeContext,
@@ -100,7 +112,8 @@ final class XAIService {
     AsyncThrowingStream { continuation in
       Task { @MainActor in
         do {
-          let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
+          let auth = try GrokAuthResolver.resolve(
+            configuration: configuration, subscription: SubscriptionManager.shared)
           let body = try buildStormAnalysisBody(
             imageData: imageData, weather: weather, alerts: alerts,
             severeContext: severeContext,
@@ -131,7 +144,8 @@ final class XAIService {
               let error = json["error"] as? [String: Any],
               let message = error["message"] as? String
             {
-              continuation.finish(throwing: GrokAPIError.apiError(statusCode: http.statusCode, message: message))
+              continuation.finish(
+                throwing: GrokAPIError.apiError(statusCode: http.statusCode, message: message))
             } else {
               let bodyString = String(data: errorData, encoding: .utf8) ?? ""
               continuation.finish(
@@ -221,7 +235,10 @@ final class XAIService {
   }
 
   func generateDayImage(prompt: String) async throws -> URL {
-    let auth = try GrokAuthResolver.resolve(configuration: configuration, subscription: SubscriptionManager.shared)
+    // Image generation is the most expensive call we make, so it draws on its own
+    // much smaller daily budget rather than sharing the chat allowance.
+    let auth = try GrokAuthResolver.resolve(
+      for: .image, configuration: configuration, subscription: SubscriptionManager.shared)
 
     let body: [String: Any] = [
       "model": configuration.imageModel,
@@ -266,7 +283,8 @@ final class XAIService {
     return url
   }
 
-  private func performChatRequest(body: [String: Any], auth: GrokAuthContext) async throws -> String {
+  private func performChatRequest(body: [String: Any], auth: GrokAuthContext) async throws -> String
+  {
     var request = URLRequest(url: auth.baseURL.appendingPathComponent("chat/completions"))
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")

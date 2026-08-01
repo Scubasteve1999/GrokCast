@@ -1,9 +1,18 @@
 import Foundation
 
 /// Production configuration for SpotterCast Pro hosted services.
-/// Set `grokProxyBaseURL` only after the proxy worker is deployed (see `docs/GrokCast-Pro-Setup.md`).
-/// While `nil`, Grok calls use a developer/Keychain xAI key against `api.x.ai` directly.
+///
+/// Both values are set once, at deploy time — see `server/grok-proxy/README.md`.
+/// While `grokProxyBaseURL` is `nil`, Pro cannot unlock AI and only users with
+/// their own Keychain xAI key can reach Grok.
 enum GrokCastProConfig {
-  /// e.g. `"https://YOUR-WORKER.workers.dev/v1"` — must be a live host, not a placeholder.
+  /// The deployed worker, **including the `/v1` suffix**:
+  /// `"https://spottercast-grok-proxy.<subdomain>.workers.dev/v1"`.
+  /// Must be a live host, never a placeholder.
   static let grokProxyBaseURL: String? = nil
+
+  /// Must match the worker's `PROXY_SECRET`. Not a secret in any meaningful
+  /// sense — it ships in the binary — so it is fine to keep in tracked source.
+  /// Real entitlement is the StoreKit transaction the proxy verifies.
+  static let grokProxySharedSecret: String? = nil
 }

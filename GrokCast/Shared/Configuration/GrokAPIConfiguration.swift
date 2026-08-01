@@ -44,9 +44,10 @@ struct GrokAPIConfiguration {
 
   /// Returns the current developer API key.
   ///
-  /// Priority:
-  /// 1. Key stored in iOS Keychain (user-entered via Settings) — wins so Settings saves take effect
-  /// 2. Embedded developer key from `Config/DeveloperAPIKey.swift` (TestFlight / internal builds)
+  /// In Release this is **only** the user's own Keychain key. The embedded key is
+  /// compiled out entirely: shipping it meant every App Store user's AI calls were
+  /// billed to us, ungated and uncapped. Pro users reach Grok through the hosted
+  /// proxy instead, where the key stays server-side and every call is metered.
   var developerAPIKey: String? {
     guard mode == .developerKey else { return nil }
 
@@ -54,9 +55,12 @@ struct GrokAPIConfiguration {
       return keychainKey
     }
 
-    if let embeddedKey = DeveloperAPIKey.xai, !embeddedKey.isEmpty {
-      return embeddedKey
-    }
+    #if DEBUG
+      // Local development only — never in TestFlight or App Store builds.
+      if let embeddedKey = DeveloperAPIKey.xai, !embeddedKey.isEmpty {
+        return embeddedKey
+      }
+    #endif
 
     return nil
   }
@@ -106,6 +110,9 @@ struct GrokAPIConfiguration {
 
 enum GrokAPIError: Error, LocalizedError {
   case missingAPIKey
+  case proRequired
+  case entitlementUnavailable
+  case dailyLimitReached(resetsAt: Date?)
   case invalidKeyFormat
   case invalidMode(String)
   case networkError(Error)
@@ -116,6 +123,16 @@ enum GrokAPIError: Error, LocalizedError {
     switch self {
     case .missingAPIKey:
       return "Add an xAI developer key in Settings to use AI features."
+    case .proRequired:
+      return "SpotterCast Pro unlocks AI features."
+    case .entitlementUnavailable:
+      return "Verifying your subscription — try again in a moment."
+    case .dailyLimitReached(let resetsAt):
+      guard let resetsAt else { return "AI limit reached for today." }
+      let formatter = DateFormatter()
+      formatter.timeStyle = .short
+      formatter.dateStyle = .none
+      return "AI limit reached for today. Resets at \(formatter.string(from: resetsAt))."
     case .invalidKeyFormat:
       return "Invalid xAI API key format. Keys must start with 'xai-'."
     case .invalidMode(let message):
@@ -134,16 +151,28 @@ enum GrokAPIError: Error, LocalizedError {
       return "Network error: \(error.localizedDescription)"
     case .apiError(let statusCode, let message):
       let lower = message.lowercased()
+      // Responses from our own proxy, which speaks the same error shape as xAI.
+      if lower.contains("spottercast pro") {
+        return "SpotterCast Pro unlocks AI features."
+      }
+      if lower.contains("limit reached") {
+        return "AI limit reached for today. Resets at midnight UTC."
+      }
+      if lower.contains("temporarily unavailable") {
+        return "AI is temporarily unavailable. Please try again later."
+      }
       if lower.contains("incorrect api key") || lower.contains("invalid api key")
         || lower.contains("unauthorized")
       {
         return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
       }
       switch statusCode {
-      case 401, 403:
+      case 401:
         return "AI key isn’t authorized. Verify it in Settings."
+      case 403:
+        return "AI isn’t available on this account. Check SpotterCast Pro in Settings."
       case 429:
-        return "Too many requests. Please wait and try again."
+        return "AI limit reached for today. Resets at midnight UTC."
       case 400, 422:
         // Never surface raw JSON bodies to users / App Review.
         return "AI request couldn’t be completed. Check your key in Settings, then try again."
