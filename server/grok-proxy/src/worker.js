@@ -123,6 +123,9 @@ async function handle(request, env, options = {}) {
     });
   } catch (error) {
     if (error instanceof TransactionError) {
+      // Surfaced in `wrangler tail`. A rejection returns before metering, so
+      // without this a refused call is indistinguishable from a served one.
+      console.log(`entitlement rejected: ${error.message}`);
       return errorResponse(403, `SpotterCast Pro required: ${error.message}`, "entitlement_error");
     }
     throw error;
@@ -196,7 +199,11 @@ async function handle(request, env, options = {}) {
 export default {
   async fetch(request, env) {
     try {
-      return await handle(request, env);
+      const response = await handle(request, env);
+      // `wrangler tail` reports "Ok" for anything that didn't throw, so a 401 and
+      // a served request look identical without this.
+      console.log(`${request.method} ${new URL(request.url).pathname} -> ${response.status}`);
+      return response;
     } catch (error) {
       console.error("proxy error", error);
       return errorResponse(500, "AI is temporarily unavailable.", "internal_error");

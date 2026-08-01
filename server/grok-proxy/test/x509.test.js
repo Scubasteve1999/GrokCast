@@ -64,10 +64,25 @@ test("a chain is rejected when it terminates at the wrong root", async () => {
   const chain = [fixtures.leaf, fixtures.intermediate, fixtures.root].map((certificate) =>
     parseCertificate(base64ToBytes(certificate))
   );
-  await assert.rejects(
-    () => verifyChain(chain, ROGUE_ROOT, Date.now()),
-    /does not terminate at the pinned root/
+  await assert.rejects(() => verifyChain(chain, ROGUE_ROOT, Date.now()), /x509:/);
+});
+
+test("a chain that omits the root still verifies against the pinned copy", async () => {
+  // Senders are not obliged to include the root in x5c. Requiring it rejected
+  // otherwise-valid transactions, which no synthetic fixture caught because the
+  // fixtures always supplied one.
+  const chain = [fixtures.leaf, fixtures.intermediate].map((certificate) =>
+    parseCertificate(base64ToBytes(certificate))
   );
+  const leaf = await verifyChain(chain, TEST_ROOT, Date.now());
+  assert.equal(leaf.curve.name, "P-256");
+});
+
+test("a root-less chain is still rejected when it does not chain to the pinned root", async () => {
+  const chain = [fixtures.rogueLeaf, fixtures.rogueRoot].map((certificate) =>
+    parseCertificate(base64ToBytes(certificate))
+  );
+  await assert.rejects(() => verifyChain(chain, TEST_ROOT, Date.now()), /x509:/);
 });
 
 test("a chain is rejected when an intermediate is swapped out", async () => {

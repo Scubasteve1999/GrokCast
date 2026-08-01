@@ -151,15 +151,18 @@ export function bytesEqual(a, b) {
  * chaining, key usage, and revocation are not checked: the chain is pinned to a
  * single self-signed root we ship, so there is no path-building to constrain.
  */
-export async function verifyChain(chain, trustedRootDER, now) {
-  if (chain.length < 2) throw new Error("x509: chain too short");
+export async function verifyChain(presented, trustedRootDER, now) {
+  if (presented.length < 2) throw new Error("x509: chain too short");
 
   const trustedRoot = parseCertificate(trustedRootDER);
-  const last = chain[chain.length - 1];
+  const presentedRoot = presented[presented.length - 1];
 
-  if (!bytesEqual(last.raw, trustedRoot.raw)) {
-    throw new Error("x509: chain does not terminate at the pinned root");
-  }
+  // Senders may or may not include the root in x5c. Appending our pinned copy
+  // when it is absent keeps both shapes working; trust still comes only from
+  // the pinned bytes, since every link is signature-checked up to them.
+  const chain = bytesEqual(presentedRoot.raw, trustedRoot.raw)
+    ? presented
+    : [...presented, trustedRoot];
 
   for (const certificate of chain) {
     if (now < certificate.notBefore) throw new Error("x509: certificate not yet valid");
@@ -173,7 +176,8 @@ export async function verifyChain(chain, trustedRootDER, now) {
   }
 
   // The root is self-signed; verifying it catches a corrupted pinned copy.
-  if (!(await verifyCertificateSignature(last, last))) {
+  const root = chain[chain.length - 1];
+  if (!(await verifyCertificateSignature(root, root))) {
     throw new Error("x509: root self-signature failed");
   }
 
