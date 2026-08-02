@@ -1,1 +1,1 @@
-weather,forecast,radar,ai,alerts,storm,precipitation,local,insights,nws
+spotter,chaser,chasing,nexrad,velocity,srv,supercell,mesocyclone,hail,severe,tornado,outlook,nws

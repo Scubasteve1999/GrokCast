@@ -1,1 +1,1 @@
-Beautiful AI-powered forecasts. Real-time radar, severe alerts, and smart weather insights.
+NEXRAD velocity, correlation coefficient, SPC outlooks and mesoscale discussions, NWS warnings, and a plain-language read of the frame.
