@@ -23,14 +23,25 @@ final class ShareAttributionTests: XCTestCase {
     XCTAssertEqual(tokens.count, surfaces.count, "campaign tokens must not collide")
   }
 
-  func testProviderTokenIsOmittedWhenUnset() {
-    // The link has to work before the provider token is configured, otherwise
-    // shipping without it would break sharing rather than just attribution.
+  func testProviderTokenIsIncludedWhenSet() {
     let url = ShareAttribution.appStoreURL(for: .stormReport)
-    if ShareAttribution.providerToken == nil {
+    if let token = ShareAttribution.providerToken {
+      XCTAssertTrue(url.absoluteString.contains("pt=\(token)"))
+    } else {
+      // The link must still work before the token is configured — otherwise
+      // shipping without it would break sharing, not just attribution.
       XCTAssertFalse(url.absoluteString.contains("pt="))
     }
-    XCTAssertTrue(url.absoluteString.hasPrefix("https://apps.apple.com/app/id"))
+  }
+
+  func testURLMatchesTheLinkAppStoreConnectGeneratedByteForByte() {
+    // Copied verbatim from App Store Connect → Analytics → Campaigns for the
+    // "share_today" campaign. If our builder ever drifts from Apple's format,
+    // attribution could fail silently — this is the check that catches it.
+    let fromAppStoreConnect =
+      "https://apps.apple.com/app/apple-store/id6780682022?pt=128792554&ct=share_today&mt=8"
+
+    XCTAssertEqual(ShareAttribution.appStoreURL(for: .todayCard).absoluteString, fromAppStoreConnect)
   }
 
   func testFooterEmbedsAnOpenableLink() {

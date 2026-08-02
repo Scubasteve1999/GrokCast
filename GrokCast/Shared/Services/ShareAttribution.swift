@@ -11,10 +11,10 @@ import Foundation
 enum ShareAttribution {
   static let appStoreID = "6780682022"
 
-  /// Provider token from App Store Connect (Analytics → Campaigns → "Provider
-  /// Token"). Campaign attribution reports only populate once this is set; the
-  /// link works regardless, so shipping without it costs reach nothing.
-  static let providerToken: String? = nil
+  /// Provider token from App Store Connect (Analytics → Acquisition → Campaigns).
+  /// Not a secret — it appears in every public campaign link — so it belongs in
+  /// tracked source. Attribution reports do not populate without it.
+  static let providerToken: String? = "128792554"
 
   /// Where a share originated. Raw values become campaign tokens, so keep them
   /// stable — renaming one splits its history in App Store Connect.
@@ -27,11 +27,17 @@ enum ShareAttribution {
   }
 
   static func appStoreURL(for surface: Surface) -> URL {
-    var components = URLComponents(string: "https://apps.apple.com/app/id\(appStoreID)")!
-    var items = [URLQueryItem(name: "ct", value: surface.rawValue)]
+    // `/app/apple-store/id…` is the path App Store Connect itself generates for
+    // campaign links. Matching it exactly avoids betting attribution on the
+    // assumption that only the query parameters matter.
+    var components = URLComponents(
+      string: "https://apps.apple.com/app/apple-store/id\(appStoreID)")!
+    // Ordered pt, ct, mt to mirror App Store Connect's own output exactly.
+    var items: [URLQueryItem] = []
     if let providerToken, !providerToken.isEmpty {
       items.append(URLQueryItem(name: "pt", value: providerToken))
     }
+    items.append(URLQueryItem(name: "ct", value: surface.rawValue))
     items.append(URLQueryItem(name: "mt", value: "8"))
     components.queryItems = items
     return components.url!
