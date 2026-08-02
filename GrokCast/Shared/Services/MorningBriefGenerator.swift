@@ -90,7 +90,8 @@ enum MorningBriefGenerator {
       """
 
     do {
-      let auth = try GrokAuthResolver.resolve(subscription: SubscriptionManager.shared)
+      let auth = try GrokAuthResolver.resolve(
+        for: .chat, feature: .morningBrief, subscription: SubscriptionManager.shared)
       let config = GrokBuildConfiguration(auth: auth)
       let messages = [
         GrokBuildMessage(role: "system", content: system),

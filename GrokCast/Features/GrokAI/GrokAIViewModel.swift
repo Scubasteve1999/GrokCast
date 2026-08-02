@@ -105,7 +105,9 @@ final class GrokAIViewModel {
       var tokenCount = 0
       do {
         // Use streaming for progressive token display
-        for try await token in self.grokAIService.streamResponse(messages: apiMessages) {
+        for try await token in self.grokAIService.streamResponse(
+          messages: apiMessages, feature: .chat)
+        {
           if Task.isCancelled || !self.isStreaming { break }
           tokenCount += 1
           self.responseText += token
@@ -564,6 +566,7 @@ final class GrokAIViewModel {
         GrokBuildMessage(role: "system", content: system),
         GrokBuildMessage(role: "user", content: "Give me today's weather take."),
       ],
+      feature: .todaysTake,
       maxTokens: 280
     )
   }
@@ -583,6 +586,7 @@ final class GrokAIViewModel {
         GrokBuildMessage(role: "system", content: system),
         GrokBuildMessage(role: "user", content: "Explain this radar view in plain English."),
       ],
+      feature: .explainRadar,
       maxTokens: 320
     )
   }
@@ -608,17 +612,20 @@ final class GrokAIViewModel {
         GrokBuildMessage(role: "system", content: system),
         GrokBuildMessage(role: "user", content: "Summarize these alerts for a regular person."),
       ],
+      feature: .alertsSummary,
       maxTokens: 360
     )
   }
 
-  private func completeChat(messages: [GrokBuildMessage], maxTokens: Int) async throws -> String {
+  private func completeChat(
+    messages: [GrokBuildMessage], feature: GrokFeature, maxTokens: Int
+  ) async throws -> String {
     guard grokAIService.hasValidKey else {
       throw GrokBuildError.missingAPIKey
     }
 
     var result = ""
-    for try await token in grokAIService.streamResponse(messages: messages) {
+    for try await token in grokAIService.streamResponse(messages: messages, feature: feature) {
       result += token
     }
 

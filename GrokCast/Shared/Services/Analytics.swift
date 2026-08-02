@@ -13,6 +13,10 @@ enum AnalyticsEvent: String, CaseIterable, Sendable {
   case tabLocations = "tab_locations"
   case tabSettings = "tab_settings"
   case shareStarted = "share_started"
+  /// Fired only when the user actually completed a share. `share_started` counts
+  /// intent; without this pair there is no way to tell a real share from an
+  /// opened-and-dismissed sheet, which is the difference the loop turns on.
+  case shareCompleted = "share_completed"
   case paywallView = "paywall_view"
   case subscribeTap = "subscribe_tap"
   case subscribeSuccess = "subscribe_success"
@@ -20,6 +24,11 @@ enum AnalyticsEvent: String, CaseIterable, Sendable {
   case feedCardTap = "feed_card_tap"
   case fireLayerToggle = "fire_layer_toggle"
   case fireProximityNotify = "fire_proximity_notify"
+  /// One per outbound Grok call, tagged by feature and tier. This is the number
+  /// that says whether Pro is priced right.
+  case aiRequest = "ai_request"
+  case aiLimitReached = "ai_limit_reached"
+  case firstOpen = "first_open"
 
   static func tabEvent(for tab: WeatherStore.Tab) -> AnalyticsEvent {
     switch tab {
@@ -66,6 +75,23 @@ enum Analytics {
 
   static func count(for event: AnalyticsEvent) -> Int {
     UserDefaults.standard.integer(forKey: countKey(for: event))
+  }
+
+  private static let firstOpenKey = prefix + "first_open_recorded"
+
+  /// Fires `first_open` once per install, with the version it landed on.
+  ///
+  /// Install *source* is deliberately not collected here — that lives in App
+  /// Store Connect → Analytics → Acquisition, which already breaks installs down
+  /// by search, browse, referrer, and campaign token without an SDK. This event
+  /// exists to date the cohort, not to identify anyone.
+  static func trackFirstOpenIfNeeded() {
+    let defaults = UserDefaults.standard
+    guard !defaults.bool(forKey: firstOpenKey) else { return }
+    defaults.set(true, forKey: firstOpenKey)
+
+    let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+    track(.firstOpen, parameters: ["version": version ?? "unknown"])
   }
 
   static func resetAllCounts() {

@@ -65,9 +65,12 @@ final class XAIService {
       """
   }
 
-  func sendMessage(messages: [ChatMessage], context: String?) async throws -> String {
+  func sendMessage(
+    messages: [ChatMessage], context: String?, feature: GrokFeature = .chat
+  ) async throws -> String {
     let auth = try GrokAuthResolver.resolve(
-      configuration: configuration, subscription: SubscriptionManager.shared)
+      for: .chat, feature: feature, configuration: configuration,
+      subscription: SubscriptionManager.shared)
 
     var apiMessages: [[String: String]] = []
     if let context {
@@ -93,7 +96,8 @@ final class XAIService {
     nearestStationObservation: NWSObservation? = nil, userNotes: String?
   ) async throws -> String {
     let auth = try GrokAuthResolver.resolve(
-      configuration: configuration, subscription: SubscriptionManager.shared)
+      for: .chat, feature: .stormPhoto, configuration: configuration,
+      subscription: SubscriptionManager.shared)
     let body = try buildStormAnalysisBody(
       imageData: imageData, weather: weather, alerts: alerts,
       severeContext: severeContext,
@@ -113,7 +117,8 @@ final class XAIService {
       Task { @MainActor in
         do {
           let auth = try GrokAuthResolver.resolve(
-            configuration: configuration, subscription: SubscriptionManager.shared)
+            for: .chat, feature: .stormPhoto, configuration: configuration,
+            subscription: SubscriptionManager.shared)
           let body = try buildStormAnalysisBody(
             imageData: imageData, weather: weather, alerts: alerts,
             severeContext: severeContext,
@@ -238,7 +243,8 @@ final class XAIService {
     // Image generation is the most expensive call we make, so it draws on its own
     // much smaller daily budget rather than sharing the chat allowance.
     let auth = try GrokAuthResolver.resolve(
-      for: .image, configuration: configuration, subscription: SubscriptionManager.shared)
+      for: .image, feature: .imagine, configuration: configuration,
+      subscription: SubscriptionManager.shared)
 
     let body: [String: Any] = [
       "model": configuration.imageModel,

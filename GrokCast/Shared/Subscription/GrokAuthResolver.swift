@@ -39,6 +39,7 @@ enum GrokAuthResolver {
   /// to us are metered — a user on their own key is not.
   static func resolve(
     for bucket: GrokUsageBucket = .chat,
+    feature: GrokFeature = .chat,
     configuration: GrokAPIConfiguration = GrokAPIConfiguration(),
     subscription: SubscriptionManager,
     limiter: GrokUsageLimiter = .shared
@@ -58,8 +59,14 @@ enum GrokAuthResolver {
         throw GrokAPIError.entitlementUnavailable
       }
       guard limiter.consume(bucket) else {
+        Analytics.track(
+          .aiLimitReached,
+          parameters: ["bucket": bucket.rawValue, "feature": feature.rawValue])
         throw GrokAPIError.dailyLimitReached(resetsAt: limiter.resetDate())
       }
+      Analytics.track(
+        .aiRequest,
+        parameters: ["bucket": bucket.rawValue, "feature": feature.rawValue, "tier": "pro"])
       return GrokAuthContext(
         baseURL: proxyBase,
         authorizationHeader: "Bearer \(GrokProxyConfiguration.sharedSecret)",
@@ -68,6 +75,13 @@ enum GrokAuthResolver {
       )
 
     case .developerKey:
+      // Tracked too, so per-feature AI demand reflects everyone using it — but
+      // tagged separately, since these calls cost us nothing.
+      Analytics.track(
+        .aiRequest,
+        parameters: [
+          "bucket": bucket.rawValue, "feature": feature.rawValue, "tier": "developer_key",
+        ])
       return GrokAuthContext(
         baseURL: configuration.baseURL,
         authorizationHeader: try configuration.authHeader(),

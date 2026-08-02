@@ -9,11 +9,14 @@ final class GrokAIService {
   }
 
   // MARK: - Regular chat (quick prompts + free text)
-  func streamResponse(messages: [GrokBuildMessage]) -> AsyncThrowingStream<String, Error> {
+  func streamResponse(
+    messages: [GrokBuildMessage], feature: GrokFeature = .chat
+  ) -> AsyncThrowingStream<String, Error> {
     AsyncThrowingStream { continuation in
       Task { @MainActor in
         do {
-          let auth = try GrokAuthResolver.resolve(subscription: SubscriptionManager.shared)
+          let auth = try GrokAuthResolver.resolve(
+            for: .chat, feature: feature, subscription: SubscriptionManager.shared)
           let config = GrokBuildConfiguration(auth: auth)
           let stream = GrokBuildService(configuration: config).streamChat(
             messages: messages,

@@ -14,7 +14,7 @@ enum ShareableBriefText {
     lines.append("")
     lines.append(brief)
     lines.append("")
-    lines.append("Shared from SpotterCast")
+    lines.append(ShareAttribution.footer(for: .todayCard))
     return lines.joined(separator: "\n")
   }
 
@@ -26,7 +26,7 @@ enum ShareableBriefText {
     lines.append("")
     lines.append(summary)
     lines.append("")
-    lines.append("Shared from SpotterCast")
+    lines.append(ShareAttribution.footer(for: .alertsSummary))
     return lines.joined(separator: "\n")
   }
 
@@ -37,7 +37,7 @@ enum ShareableBriefText {
       "",
       body,
       "",
-      "Shared from SpotterCast",
+      ShareAttribution.footer(for: .radarExplanation),
     ]
     return lines.joined(separator: "\n")
   }
@@ -58,7 +58,7 @@ enum ShareableBriefText {
     }
     lines.append(analysis)
     lines.append("")
-    lines.append("Shared from SpotterCast · Storm Spotter")
+    lines.append(ShareAttribution.footer(for: .stormReport))
     return lines.joined(separator: "\n")
   }
 }

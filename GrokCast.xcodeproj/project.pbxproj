@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		00A41778C463F68EFC00C507 /* FeedSnapshotBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BD750FAECFAA487AA664E06 /* FeedSnapshotBuilder.swift */; };
 		00AC6E992D5B3251CE2FC61D /* GrokStormSpotterButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4AAB620197217D747FE6F4 /* GrokStormSpotterButton.swift */; };
+		016739C3DA0D8D6E03A8BC93 /* ShareAttributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA5FAB54B541E1379CED628 /* ShareAttributionTests.swift */; };
 		0221B41903C84C0C4587A3D4 /* TodayFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BF74239CE3820926DA5E99E /* TodayFeedView.swift */; };
 		055F6E3A8207EA8359F2A3CD /* RadarTimelineScrubber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6994536D73EB5255AAF02026 /* RadarTimelineScrubber.swift */; };
 		0575A0154384FCAC624C52E7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A160A4C38A25303E381CF134 /* WidgetKit.framework */; };
@@ -60,6 +61,7 @@
 		2FDCD90E5AE6BE5F0ADFA3F2 /* RadarPreviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86F7A507CB35DBB333AE6DE3 /* RadarPreviewCard.swift */; };
 		31B5856BDCD902AAA97EEC67 /* HourlyPrecipCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5022614B4E8A1272BC5AB943 /* HourlyPrecipCard.swift */; };
 		3243DEB2988C7850C56CA7D5 /* RadarState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 467892BF56F27E98DEA2E515 /* RadarState.swift */; };
+		3323B71EE0FB48EF61BC9833 /* ShareAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F1B4E092CBC57FE8A3AE84 /* ShareAttribution.swift */; };
 		359A32765089F957122817FF /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 334F43C43821F602DA1BC600 /* AppIntents.framework */; };
 		37CF015288F0DBFD3C2FE3F3 /* WidgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D08A58D32AD99EB4F158B2B /* WidgetEmptyStateView.swift */; };
 		37D6BEFA5F6AF42F8A9F36DE /* HourlyFeedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71C47BBD98A52BB05B3EABF /* HourlyFeedCard.swift */; };
@@ -418,6 +420,7 @@
 		87D329BDCC363E6229345319 /* LocationChipBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationChipBar.swift; sourceTree = "<group>"; };
 		89970C4552FF166D5A6810EB /* Location.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
 		89CFD6A08678B268A316DA1B /* GrokAPIKeyEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIKeyEmptyStateView.swift; sourceTree = "<group>"; };
+		89F1B4E092CBC57FE8A3AE84 /* ShareAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareAttribution.swift; sourceTree = "<group>"; };
 		8A2525FF7B455462AEF19148 /* AlertsFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsFeedCard.swift; sourceTree = "<group>"; };
 		8AA87C438AFCCFA6AF9BB05B /* FireRadarOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireRadarOverlay.swift; sourceTree = "<group>"; };
 		8B2998A734EB9407A057E04A /* WidgetRelativeTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetRelativeTime.swift; sourceTree = "<group>"; };
@@ -505,6 +508,7 @@
 		F9E002DEF8584FB3E2402F13 /* SunMoonFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunMoonFeedCard.swift; sourceTree = "<group>"; };
 		FC4187B014ED170D0415154D /* RadarMapboxRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapboxRepresentable.swift; sourceTree = "<group>"; };
 		FD0FD6B80DC6637D28B934B3 /* GrokCast-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "GrokCast-Debug.entitlements"; sourceTree = "<group>"; };
+		FDA5FAB54B541E1379CED628 /* ShareAttributionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareAttributionTests.swift; sourceTree = "<group>"; };
 		FDE9772F416DFEF9A57448E5 /* DebugFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugFlags.swift; sourceTree = "<group>"; };
 		FE3FE3FE7366628D4E9509D4 /* AlertsGrokSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsGrokSummaryCard.swift; sourceTree = "<group>"; };
 		FEC21CCCF030BDD862409B91 /* LargeWeatherWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeWeatherWidgetView.swift; sourceTree = "<group>"; };
@@ -607,6 +611,7 @@
 				42F52F9E545B0F18FF67A3E2 /* PushNotificationService.swift */,
 				619346A32D301716B431978A /* RainAlertService.swift */,
 				2E01657B19958943C47402F4 /* SevereWeatherStore.swift */,
+				89F1B4E092CBC57FE8A3AE84 /* ShareAttribution.swift */,
 				9443E87B9E223BAC6BD4927E /* ShortTermPrecipStore.swift */,
 				FF0AF4FA8D965B83D7A7FB2F /* SPCSevereService.swift */,
 				AA42FF15F258D415820F4A34 /* WeatherLiveActivityManager.swift */,
@@ -726,6 +731,7 @@
 				F2E0671B7BB3AC83CDAD05F0 /* GrokAccessRulesTests.swift */,
 				7F6D1A28679433B99E9C25CF /* GrokUsageLimiterTests.swift */,
 				3A09165ECF25C38DCFA0D03B /* NIFCDecodingTests.swift */,
+				FDA5FAB54B541E1379CED628 /* ShareAttributionTests.swift */,
 			);
 			path = GrokCastTests;
 			sourceTree = "<group>";
@@ -1443,6 +1449,7 @@
 				E409F72C5DC5FB96D99565DB /* SevereProductsSections.swift in Sources */,
 				8FD6AE61ABB10901379026CE /* SevereWeatherModels.swift in Sources */,
 				717D3910AB7E0FEE489BE430 /* SevereWeatherStore.swift in Sources */,
+				3323B71EE0FB48EF61BC9833 /* ShareAttribution.swift in Sources */,
 				B14258EB66107494AD57515A /* ShareableBriefText.swift in Sources */,
 				DC7D1D52C497E6E9088C9EB4 /* Shimmer.swift in Sources */,
 				B4C5717F30CCADD61F5162D3 /* ShortTermPrecipModels.swift in Sources */,
@@ -1491,6 +1498,7 @@
 				9361B4C65FDBFF2FC8A08D3C /* GrokAccessRulesTests.swift in Sources */,
 				8E54753B21B9EA6F88277744 /* GrokUsageLimiterTests.swift in Sources */,
 				B0D0811799829601E50FC804 /* NIFCDecodingTests.swift in Sources */,
+				016739C3DA0D8D6E03A8BC93 /* ShareAttributionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

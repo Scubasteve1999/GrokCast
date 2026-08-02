@@ -1036,7 +1036,8 @@ struct SettingsView: View {
       do {
         // Lightweight test: ask Grok for a very short response
         let testMessages = [ChatMessage.user("Reply with exactly: 'SpotterCast connection OK'")]
-        let response = try await store.xaiService.sendMessage(messages: testMessages, context: nil)
+        let response = try await store.xaiService.sendMessage(
+          messages: testMessages, context: nil, feature: .connectionTest)
 
         Task { @MainActor in
           isTestingConnection = false

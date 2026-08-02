@@ -142,8 +142,9 @@ struct TodayView: View {
             locationName: store.currentLocation?.name ?? w.location.name,
             grokBrief: nil
           )
-          ActivityViewRepresentable(items: items)
+          ActivityViewRepresentable(items: items, surface: .todayCard)
             .presentationDetents([.medium, .large])
+            .onAppear { Analytics.track(.shareStarted, parameters: ["surface": "share_today"]) }
         }
       }
       .sheet(isPresented: $showImagineResult) {

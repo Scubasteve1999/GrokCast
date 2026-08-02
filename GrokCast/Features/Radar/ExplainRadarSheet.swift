@@ -66,7 +66,14 @@ struct ExplainRadarSheet: View {
         }
         if explanation != nil {
           ToolbarItem(placement: .primaryAction) {
-            ShareLink(item: ShareableBriefText.radarExplanation(context: context, body: explanation ?? ""))
+            ShareLink(
+              item: ShareableBriefText.radarExplanation(context: context, body: explanation ?? "")
+            )
+            .simultaneousGesture(
+              TapGesture().onEnded {
+                Analytics.track(.shareStarted, parameters: ["surface": "share_radar"])
+              }
+            )
           }
         }
       }

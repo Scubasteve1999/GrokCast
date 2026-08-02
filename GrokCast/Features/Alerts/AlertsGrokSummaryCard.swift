@@ -118,6 +118,13 @@ struct AlertsGrokSummaryCard: View {
             .font(.caption.weight(.semibold))
         }
         .foregroundStyle(DesignTokens.Palette.accent)
+        // ShareLink reports no completion, so intent is all this surface can
+        // measure. The campaign token in the shared link covers the rest.
+        .simultaneousGesture(
+          TapGesture().onEnded {
+            Analytics.track(.shareStarted, parameters: ["surface": "share_alerts"])
+          }
+        )
       } else if let errorMessage {
         Text(errorMessage)
           .font(.caption)

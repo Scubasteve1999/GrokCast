@@ -231,7 +231,8 @@ enum TripForecastService {
     // draws on the same daily allowance. `resolve` enforces both — an unentitled
     // caller throws and we fall through to returning nil.
     do {
-      let auth = try GrokAuthResolver.resolve(for: .chat, subscription: SubscriptionManager.shared)
+      let auth = try GrokAuthResolver.resolve(
+        for: .chat, feature: .tripPlanner, subscription: SubscriptionManager.shared)
       let service = GrokBuildService(configuration: GrokBuildConfiguration(auth: auth))
 
       var response = ""

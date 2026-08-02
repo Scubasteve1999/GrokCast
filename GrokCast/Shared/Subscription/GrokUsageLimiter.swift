@@ -1,5 +1,20 @@
 import Foundation
 
+/// Which product surface triggered a Grok call. Reported with `ai_request` so
+/// AI spend can be attributed to a feature rather than a lump total — the
+/// difference between knowing AI costs money and knowing what to change.
+enum GrokFeature: String {
+  case chat
+  case todaysTake = "todays_take"
+  case explainRadar = "explain_radar"
+  case alertsSummary = "alerts_summary"
+  case stormPhoto = "storm_photo"
+  case morningBrief = "morning_brief"
+  case imagine
+  case tripPlanner = "trip_planner"
+  case connectionTest = "connection_test"
+}
+
 /// Which daily budget a Grok call draws from. Image generation costs far more
 /// per request, so it gets its own allowance and cannot drain chat.
 enum GrokUsageBucket: String, CaseIterable {

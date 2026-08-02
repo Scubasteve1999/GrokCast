@@ -78,6 +78,7 @@ struct MainTabView: View {
     }
     .appReviewPrompting()
     .onAppear {
+      Analytics.trackFirstOpenIfNeeded()
       Analytics.track(.appOpen)
       Analytics.track(AnalyticsEvent.tabEvent(for: store.selectedTab))
     }
