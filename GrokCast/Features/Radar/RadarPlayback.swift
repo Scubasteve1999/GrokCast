@@ -12,6 +12,19 @@ final class RadarPlayback {
 
   private var timer: Timer?
 
+  /// Loops completed since playback last started. Reset in `start()`, which every
+  /// resume path funnels through (play button, scrub auto-resume, tab entry, mode switch).
+  private var completedLoops = 0
+
+  /// Playback stops after this many loops rather than animating forever.
+  ///
+  /// Each frame transition pulls a viewport of tiles, so a Radar tab left open was an
+  /// unbounded draw on provider quota — Xweather's is metered and has been exhausted
+  /// before. At ~1.4s per frame and 12 live frames this is roughly four minutes:
+  /// long enough not to interrupt someone watching a storm, short enough to bound a
+  /// tab nobody is looking at.
+  private static let maxLoops = 15
+
   private static let baselineScreenInterval: TimeInterval = 2.8
   private static let referenceDataGap: TimeInterval = 5 * 60
   /// Minimum time a frame stays on screen during playback so tiles can crossfade in.
@@ -30,6 +43,7 @@ final class RadarPlayback {
     // Stay on the current frame (usually newest after load). Looping wraps in
     // `advance()` — do not jump to the oldest frame when opening / resuming Live.
     timer?.invalidate()
+    completedLoops = 0
     isAnimating = true
     scheduleNextTick()
   }
@@ -51,7 +65,21 @@ final class RadarPlayback {
   func advance() {
     let count = frameCount()
     guard isAnimating, count > 1 else { return }
-    currentIndex = (currentIndex + 1) % count
+
+    guard currentIndex >= count - 1 else {
+      currentIndex += 1
+      return
+    }
+
+    completedLoops += 1
+    guard completedLoops < Self.maxLoops else {
+      // Stop without wrapping, so playback rests on the final frame. In Live that
+      // is the newest scan — the same place a manual pause lands — so the map is
+      // left showing current conditions rather than the oldest frame in the loop.
+      stop()
+      return
+    }
+    currentIndex = 0
   }
 
   func setPlaybackSpeed(_ speedMultiplier: Double) {
