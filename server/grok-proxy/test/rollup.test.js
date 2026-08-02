@@ -142,9 +142,14 @@ test("alert is unauthenticated but reveals no usage figures", async () => {
   const body = await response.json();
   assert.equal(body.over, true);
   assert.equal(body.day, DAY);
+
   // The point of this endpoint: an external checker needs no credential, so it
-  // must not hand out the numbers a credential would buy.
-  assert.deepEqual(Object.keys(body).sort(), ["day", "over"]);
+  // must not hand out the numbers a credential would buy. Asserting the absence
+  // of usage figures rather than an exact key list, so adding a non-sensitive
+  // field like lastRollup doesn't fail while a leak still would.
+  for (const leaked of ["global", "chat", "image", "subscribers", "threshold"]) {
+    assert.equal(body[leaked], undefined, `/v1/alert must not expose ${leaked}`);
+  }
 });
 
 test("alert stays false below the threshold", async () => {
@@ -157,4 +162,48 @@ test("alert stays false below the threshold", async () => {
     { now: NOON }
   );
   assert.equal((await response.json()).over, false);
+});
+
+test("alert reports the last rollup day so a dead cron is visible", async () => {
+  const env = testEnv({
+    USAGE: usageKV({
+      "report:v1:2026-07-31": "{}",
+      "report:v1:2026-08-01": "{}",
+      [`usage:v1:global:__global__:${DAY}`]: "3",
+    }),
+  });
+
+  const response = await handle(
+    proxyRequest({ path: "/v1/alert", method: "GET", secret: null }),
+    env,
+    { now: NOON }
+  );
+
+  const body = await response.json();
+  assert.equal(body.lastRollup, "2026-08-01", "the most recent report wins, not the first listed");
+});
+
+test("alert reports a null rollup when none has ever run", async () => {
+  const env = testEnv({ USAGE: usageKV({}) });
+  const response = await handle(
+    proxyRequest({ path: "/v1/alert", method: "GET", secret: null }),
+    env,
+    { now: NOON }
+  );
+  assert.equal((await response.json()).lastRollup, null);
+});
+
+test("a rollup writes a report the alert endpoint then reports back", async () => {
+  const env = testEnv({
+    USAGE: usageKV({ [`usage:v1:global:__global__:${DAY}`]: "2" }),
+  });
+
+  await runDailyRollup(env, NOON);
+
+  const response = await handle(
+    proxyRequest({ path: "/v1/alert", method: "GET", secret: null }),
+    env,
+    { now: NOON }
+  );
+  assert.equal((await response.json()).lastRollup, DAY);
 });

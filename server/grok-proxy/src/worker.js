@@ -17,7 +17,15 @@
  */
 
 import { TransactionError, verifyTransaction } from "./appleTransaction.js";
-import { GLOBAL_SUBJECT, consume, refund, resetsAt, snapshot } from "./usage.js";
+import {
+  GLOBAL_SUBJECT,
+  consume,
+  lastReportDay,
+  refund,
+  reportKey,
+  resetsAt,
+  snapshot,
+} from "./usage.js";
 
 const XAI_BASE = "https://api.x.ai/v1";
 const TRANSACTION_HEADER = "X-SpotterCast-Transaction";
@@ -101,7 +109,13 @@ async function handle(request, env, options = {}) {
       now,
       alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
     });
-    return jsonResponse(200, { over: usage.over, day: usage.day });
+    // `lastRollup` lets the checker verify the cron trigger is still alive. A
+    // date is not usage data, so it stays on the unauthenticated endpoint.
+    return jsonResponse(200, {
+      over: usage.over,
+      day: usage.day,
+      lastRollup: await lastReportDay(env.USAGE),
+    });
   }
 
   if (url.pathname === "/v1/status") {
@@ -251,7 +265,7 @@ async function runDailyRollup(env, now = Date.now()) {
   });
 
   // Kept for 30 days so a week of history survives the counters' own 48h TTL.
-  await env.USAGE.put(`report:v1:${usage.day}`, JSON.stringify(usage), {
+  await env.USAGE.put(reportKey(usage.day), JSON.stringify(usage), {
     expirationTtl: 30 * 24 * 60 * 60,
   });
 

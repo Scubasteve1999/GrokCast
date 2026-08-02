@@ -36,6 +36,35 @@ async function readCount(kv, key) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+const REPORT_PREFIX = "report:v1";
+
+export function reportKey(day) {
+  return `${REPORT_PREFIX}:${day}`;
+}
+
+/**
+ * The most recent day a rollup was stored for, or null if none exist.
+ *
+ * Exposed so an external checker can tell whether the cron trigger is still
+ * firing. Without it a silently dead cron looks identical to a healthy one:
+ * the reports simply stop and nobody notices.
+ */
+export async function lastReportDay(kv) {
+  let latest = null;
+  let cursor;
+
+  do {
+    const page = await kv.list({ prefix: `${REPORT_PREFIX}:`, cursor });
+    for (const { name } of page.keys ?? []) {
+      const day = name.slice(REPORT_PREFIX.length + 1);
+      if (!latest || day > latest) latest = day;
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+
+  return latest;
+}
+
 /**
  * Consumes one unit from a counter.
  * @returns {Promise<{ok: boolean, used: number, limit: number, remaining: number, resetsAt: number}>}
