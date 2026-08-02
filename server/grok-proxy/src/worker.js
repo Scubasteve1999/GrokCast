@@ -13,10 +13,13 @@
  * Vars:
  *   BUNDLE_ID, PRO_PRODUCT_IDS, ALLOWED_ENVIRONMENTS,
  *   DAILY_CHAT_LIMIT, DAILY_IMAGE_LIMIT, GLOBAL_DAILY_LIMIT,
- *   ALERT_THRESHOLD, DISABLED
+ *   ALERT_THRESHOLD, DISABLED, OWM_DAILY_LIMIT, OWM_CACHE_TTL, OWM_DISABLED
+ * Secrets, continued:
+ *   OWM_API_KEY           OpenWeatherMap key; One Call 4.0 is billed per request
  */
 
 import { TransactionError, verifyTransaction } from "./appleTransaction.js";
+import { handleOpenWeather } from "./openweather.js";
 import {
   GLOBAL_SUBJECT,
   consume,
@@ -116,6 +119,49 @@ async function handle(request, env, options = {}) {
       day: usage.day,
       lastRollup: await lastReportDay(env.USAGE),
     });
+  }
+
+
+  if (url.pathname.startsWith("/v1/owm/")) {
+    // No StoreKit check here on purpose: weather is free in the app, so requiring
+    // an entitlement would break it for every non-subscriber. See openweather.js.
+    if (!authorized(request, env)) {
+      return errorResponse(401, "Unauthorized", "authentication_error");
+    }
+    if (env.OWM_DISABLED === "1") {
+      return errorResponse(503, "Weather data temporarily unavailable.", "service_disabled");
+    }
+    if (request.method !== "GET") {
+      return errorResponse(405, "Method not allowed", "invalid_request_error");
+    }
+
+    const cache = options.cache ?? (typeof caches !== "undefined" ? caches.default : null);
+    const result = await handleOpenWeather(url, env, {
+      fetchImpl,
+      cacheMatch: (key) => (cache ? cache.match(key) : Promise.resolve(undefined)),
+      cachePut: (key, response) => (cache ? cache.put(key, response) : Promise.resolve()),
+      consumeQuota: async () => {
+        if (!env.USAGE) return true;
+        const quota = await consume(env.USAGE, {
+          bucket: "owm",
+          subject: GLOBAL_SUBJECT,
+          limit: numberVar(env, "OWM_DAILY_LIMIT", 5000),
+          now,
+        });
+        return quota.ok;
+      },
+    });
+
+    const headers = { "X-SpotterCast-Cache": result.cache ?? "MISS" };
+    if (result.response) {
+      const passthrough = new Headers(result.response.headers);
+      passthrough.set("X-SpotterCast-Cache", result.cache ?? "MISS");
+      return new Response(result.response.body, {
+        status: result.response.status,
+        headers: passthrough,
+      });
+    }
+    return jsonResponse(result.status, result.body, headers);
   }
 
   if (url.pathname === "/v1/status") {
