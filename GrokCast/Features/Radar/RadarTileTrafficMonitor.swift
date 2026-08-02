@@ -2,7 +2,7 @@
 import Foundation
 
 /// DEBUG-only estimates of radar tile fetch pressure during playback.
-/// Logs when frame transitions exceed a threshold so you can spot RainViewer/OWM overuse.
+/// Logs when frame transitions exceed a threshold so you can spot tile overuse.
 enum RadarTileTrafficMonitor {
   private static var frameTransitions = 0
   private static var uniqueTileKeys = Set<String>()

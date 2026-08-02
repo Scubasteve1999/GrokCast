@@ -466,7 +466,6 @@ struct RadarControlPanel: View {
     case .iem: return "CONUS mosaic"
     case .xweather: return "Xweather"
     case .rainViewer: return "RainViewer"
-    case .openWeatherMap: return "OpenWeatherMap"
     case .none: return "No source"
     }
   }

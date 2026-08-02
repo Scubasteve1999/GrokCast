@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum HourlyRowLayout {
-  /// Full row with precip bar and OWM hybrid line.
+  /// Full row with precip bar.
   case standard
   /// Figma Forecast screen: compact elevated chip.
   case figma
@@ -11,8 +11,6 @@ struct HourlyRow: View {
   let forecast: HourlyForecast
   var isNow: Bool = false
   var layout: HourlyRowLayout = .standard
-  var openWeatherMapTempF: Int? = nil
-  var openWeatherMapPrecipChance: Int? = nil
   /// Location timezone for hour labels (defaults to device).
   var timeZone: TimeZone = .current
   @State private var appeared = false
@@ -171,14 +169,6 @@ struct HourlyRow: View {
             .lineLimit(1)
         }
 
-        if let owmTemp = openWeatherMapTempF {
-          let precipSuffix =
-            openWeatherMapPrecipChance.map { " · \($0)%" } ?? ""
-          Text("OWM \(owmTemp)°\(precipSuffix)")
-            .font(.caption2)
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-            .lineLimit(1)
-        }
 
         if forecast.precipChance > 0 {
           ZStack(alignment: .leading) {

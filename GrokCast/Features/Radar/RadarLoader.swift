@@ -56,7 +56,7 @@ struct RadarDatasetResult: Equatable {
 final class RadarLoader {
   private(set) var isLoading = false
 
-  /// Prefer OWM only when real scans are this old (OWM timestamps are synthesized).
+  /// Age at which a real scan counts as stale.
   private static let realSourceStaleThreshold: TimeInterval = 25 * 60
 
   func loadAll(
@@ -115,37 +115,7 @@ final class RadarLoader {
         return .timelineOnly(message: message)
       }
       return .timelineOnly(message: "Xweather keys not configured for forecast.")
-    case .openWeatherMap:
-      guard OpenWeatherMapRadarService.apiKeyConfigured else {
-        return .timelineOnly(message: "OpenWeatherMap API key not configured.")
-      }
-
-      let probeOK = await OpenWeatherMapRadarService.probeForecastAvailability()
-      if probeOK {
-        return .available
-      }
-
-      let message =
-        OpenWeatherMapRadarService.userFacingUnavailableMessage
-        ?? "OpenWeatherMap FUTURE tiles require a Maps-enabled key (see OpenWeatherMapKeys.swift)."
-      print("[OpenWeatherMap] FUTURE probe failed — using timeline-only")
-      return .timelineOnly(message: message)
     }
-  }
-
-  /// Loads OpenWeatherMap PR0 forecast frames when the probe succeeds.
-  func loadOpenWeatherMapForecastIfAvailable() async -> (
-    frames: [RadarFrame], availability: RadarTileAvailability
-  )? {
-    guard OpenWeatherMapRadarService.apiKeyConfigured else { return nil }
-    let probeOK = await OpenWeatherMapRadarService.probeForecastAvailability()
-    guard probeOK else { return nil }
-
-    let frames = OpenWeatherMapRadarService.loadForecastFrames()
-    guard !frames.isEmpty else { return nil }
-
-    print("[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0")
-    return (frames, .available)
   }
 
   private struct LoadOutcome: Equatable {
@@ -178,7 +148,7 @@ final class RadarLoader {
     }
 
     // Collect real-scan candidates (IEM / RainViewer), then pick freshest last frame.
-    // OWM timestamps are synthesized — only use when reals are missing or stale.
+    // Rank real scans by freshness.
     var realCandidates: [(provider: RadarTileProvider, frames: [RadarFrame], label: String)] = []
 
     // Default Reflectivity uses the CONUS composite (N0Q). Single-site N0B/N0S load
@@ -220,19 +190,12 @@ final class RadarLoader {
           availability: .available
         )
       }
-      print(
-        "[RadarLoader] Freshest real source stale (\(Int(age / 60))m) — trying OpenWeatherMap"
-      )
-    }
-
-    if let openWeatherMap = await loadOpenWeatherMapLive() {
-      print("[RadarLoader] Live: OpenWeatherMap (\(openWeatherMap.frames.count) frames)")
-      return openWeatherMap
+      print("[RadarLoader] Freshest real source stale (\(Int(age / 60))m)")
     }
 
     // Last resort: stale real source still better than nothing.
     if let bestReal = Self.freshestRealCandidate(realCandidates) {
-      print("[RadarLoader] Live: \(bestReal.label) (stale real, OWM unavailable)")
+      print("[RadarLoader] Live: \(bestReal.label) (stale)")
       return LoadOutcome(
         frames: bestReal.frames,
         provider: bestReal.provider,
@@ -241,7 +204,7 @@ final class RadarLoader {
     }
 
     print(
-      "[RadarLoader] Live radar unavailable — Xweather, IEM, OpenWeatherMap, and RainViewer failed"
+      "[RadarLoader] Live radar unavailable — Xweather, IEM, and RainViewer failed"
     )
     return LoadOutcome(
       frames: [],
@@ -276,7 +239,7 @@ final class RadarLoader {
           )
         }
 
-        print("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast / OWM")
+        print("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast")
         if let fallback = await firstWorkingForecastFallback(rainViewerNowcast: rainViewerNowcast) {
           return fallback
         }
@@ -314,7 +277,6 @@ final class RadarLoader {
 
     let message =
       XweatherRadarService.userFacingUnavailableMessage
-      ?? OpenWeatherMapRadarService.userFacingUnavailableMessage
       ?? "Forecast radar unavailable."
     print("[RadarLoader] Forecast timeline unavailable (no valid provider)")
     return LoadOutcome(
@@ -324,7 +286,7 @@ final class RadarLoader {
     )
   }
 
-  /// RainViewer nowcast, then OpenWeatherMap PR0 — used when Xweather Maps is down.
+  /// RainViewer nowcast — used when Xweather Maps is down.
   private func firstWorkingForecastFallback(
     rainViewerNowcast: [RadarFrame]
   ) async -> LoadOutcome? {
@@ -338,46 +300,7 @@ final class RadarLoader {
         availability: .available
       )
     }
-    if let owmOutcome = await loadOpenWeatherMapForecastIfAvailable() {
-      return LoadOutcome(
-        frames: owmOutcome.frames,
-        provider: .openWeatherMap,
-        availability: owmOutcome.availability
-      )
-    }
     return nil
   }
 
-  private static func openWeatherMapUnavailableMessage() -> String {
-    if !OpenWeatherMapRadarService.apiKeyConfigured {
-      return "OpenWeatherMap API key not configured."
-    }
-    return OpenWeatherMapRadarService.userFacingUnavailableMessage
-      ?? "OpenWeatherMap radar unavailable. Check connection or API key."
-  }
-
-  private func loadOpenWeatherMapLive() async -> LoadOutcome? {
-    guard OpenWeatherMapRadarService.apiKeyConfigured else {
-      print("[OpenWeatherMap] No API key configured — skipping live fallback")
-      return nil
-    }
-
-    let frames = OpenWeatherMapRadarService.loadRecentFrames()
-    guard !frames.isEmpty else { return nil }
-
-    let probeOK = await OpenWeatherMapRadarService.probeAvailability()
-    let availability: RadarTileAvailability
-    if probeOK {
-      availability = .available
-    } else {
-      availability = .timelineOnly(message: Self.openWeatherMapUnavailableMessage())
-      print("[OpenWeatherMap] Live probe failed — serving timeline optimistically")
-    }
-
-    return LoadOutcome(
-      frames: frames,
-      provider: .openWeatherMap,
-      availability: availability
-    )
-  }
 }

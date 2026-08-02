@@ -261,7 +261,6 @@ final class WeatherStore {
   // against a hardcoded api.x.ai. Callers now resolve credentials per request via
   // `GrokAuthResolver` and construct the service from that, so there is no path to
   // Grok that skips the entitlement check and the daily cap.
-  let openWeatherMapService = OpenWeatherMapService()
   private let keychain = KeychainService.shared
 
   private let savedLocationsKey = "grokcast_saved_locations"
@@ -309,11 +308,6 @@ final class WeatherStore {
   private var lastObservationFetch: Date?
   private var observationForLocation: UUID?
 
-  /// Additive hybrid layer from OpenWeatherMap (current + 3-hour forecast). Open-Meteo remains primary.
-  var currentOpenWeatherMapWeather: OpenWeatherMapCurrentWeather?
-  var openWeatherMapForecast: OpenWeatherMapForecast?
-  private var lastOpenWeatherMapFetch: Date?
-  private var openWeatherMapForLocation: UUID?
 
   /// Used to debounce full refreshes triggered by significant location updates
   /// (the system often delivers an initial update shortly after starting monitoring,
@@ -699,8 +693,7 @@ final class WeatherStore {
       async let w = refreshWeather()
       async let a = refreshAlerts()
       async let o = refreshNWSObservation()
-      async let owm = refreshOpenWeatherMap()
-      _ = await (w, a, o, owm)
+      _ = await (w, a, o)
     }
   }
 
@@ -772,7 +765,6 @@ final class WeatherStore {
       async let _ = refreshWeather()
       async let _ = refreshAlerts()
       async let _ = refreshNWSObservation()
-      async let _ = refreshOpenWeatherMap()
     }
   }
 
@@ -880,13 +872,12 @@ final class WeatherStore {
       syncScoreSurfacesFromCurrentWeather()
       // TODO: Cache to SwiftData here
 
-      // Fire-and-forget NWS + OpenWeatherMap hybrid refresh (additive, non-fatal).
+      // Fire-and-forget NWS hybrid refresh (additive, non-fatal).
       Task {
         async let alerts = refreshAlerts()
         async let nws = refreshNWSObservation()
-        async let owm = refreshOpenWeatherMap()
         async let brief: () = MorningBriefGenerator.generateIfStale(weatherStore: self)
-        _ = await (alerts, nws, owm, brief)
+        _ = await (alerts, nws, brief)
       }
 
       if rainAlertsEnabled {
@@ -918,8 +909,7 @@ final class WeatherStore {
     async let w = refreshWeather()
     async let a = refreshAlerts()
     async let o = refreshNWSObservation()
-    async let owm = refreshOpenWeatherMap()
-    _ = await (w, a, o, owm)
+    _ = await (w, a, o)
   }
 
   /// Explicitly updates (or creates) the "Current Location" entry using the device's
@@ -955,8 +945,7 @@ final class WeatherStore {
       async let w = refreshWeather()
       async let a = refreshAlerts()
       async let o = refreshNWSObservation()
-      async let owm = refreshOpenWeatherMap()
-      _ = await (w, a, o, owm)
+      _ = await (w, a, o)
 
       lastSignificantRefreshDate = Date()  // mark fresh so a near-term sig delivery doesn't re-fetch
     } catch {
@@ -1016,8 +1005,7 @@ final class WeatherStore {
     // Parallel for additive hybrid calls (recovery path).
     async let a = refreshAlerts()
     async let o = refreshNWSObservation()
-    async let owm = refreshOpenWeatherMap()
-    _ = await (a, o, owm)
+    _ = await (a, o)
   }
 
   // MARK: - NWS Alerts + Observations (hybrid, additive to Open-Meteo)
@@ -1306,47 +1294,6 @@ final class WeatherStore {
       // NWS observation fetch failed (non-fatal, log removed for release)
       currentNWSObservation = nil
     }
-  }
-
-  @MainActor
-  func refreshOpenWeatherMap() async {
-    guard let loc = currentLocation else { return }
-    guard OpenWeatherMapRadarService.apiKeyConfigured else { return }
-
-    if let last = lastOpenWeatherMapFetch,
-      let cachedLocId = openWeatherMapForLocation,
-      cachedLocId == loc.id,
-      Date().timeIntervalSince(last) < 300
-    {
-      return
-    }
-
-    do {
-      let (current, forecast) = try await openWeatherMapService.fetchHybrid(for: loc)
-      currentOpenWeatherMapWeather = current
-      openWeatherMapForecast = forecast
-      lastOpenWeatherMapFetch = Date()
-      openWeatherMapForLocation = loc.id
-    } catch {
-      // Non-fatal: preserve last-known-good hybrid data on failure.
-    }
-  }
-
-  /// Nearest OpenWeatherMap 3-hour forecast entry within `toleranceMinutes` of `date`.
-  func openWeatherMapEntry(closestTo date: Date, toleranceMinutes: Int = 60)
-    -> OpenWeatherMapForecastEntry?
-  {
-    guard let forecast = openWeatherMapForecast else { return nil }
-    let tolerance = TimeInterval(toleranceMinutes * 60)
-    var best: OpenWeatherMapForecastEntry?
-    var bestDelta = TimeInterval.greatestFiniteMagnitude
-    for entry in forecast.entries {
-      let delta = abs(entry.time.timeIntervalSince(date))
-      guard delta <= tolerance, delta < bestDelta else { continue }
-      bestDelta = delta
-      best = entry
-    }
-    return best
   }
 
   func addLocation(_ location: SavedLocation) -> Bool {

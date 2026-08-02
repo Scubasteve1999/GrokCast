@@ -40,10 +40,6 @@ struct RadarFrame: Equatable {
       return "xw:radar:\(tileEpoch)"
     case (.xweather, .forecastPrecipitation):
       return "xw:fradar:\(tileEpoch)"
-    case (.openWeatherMap, .livePrecipitation):
-      return "owm:radar:\(tileEpoch)"
-    case (.openWeatherMap, .forecastPrecipitation):
-      return "owm:pr0:\(tileEpoch)"
     case (.iem, .livePrecipitation), (.iem, .forecastPrecipitation):
       // Fingerprint carries site + product + scan time from the ridge layer path.
       return "iem:\(tileEpoch):\(templateFingerprint)"

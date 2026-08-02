@@ -174,7 +174,7 @@ final class RadarState {
     if showsFuture, let provider = activeForecastProvider {
       return RadarStatusFooter(
         text: provider.forecastFooterLabel,
-        style: provider == .openWeatherMap ? .warning : .secondary
+        style: .secondary
       )
     }
     // Outranks the provider label — a failed product tap needs an explanation more
@@ -288,13 +288,6 @@ final class RadarState {
     if availability.showsTiles {
       forecastTileAvailability = availability
       return true
-    }
-
-    if provider == .xweather, let fallback = await loader.loadOpenWeatherMapForecastIfAvailable() {
-      timeline.forecast = fallback.frames
-      forecastTileAvailability = fallback.availability
-      print("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
-      return fallback.availability.hasFrames
     }
 
     forecastTileAvailability = availability

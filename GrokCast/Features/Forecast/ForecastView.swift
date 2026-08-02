@@ -38,7 +38,6 @@ private struct ForecastAdaptiveBody: View {
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.adaptiveContainerWidth) private var adaptiveContainerWidth
   @State private var selectedDay: DailyForecast?
-  @State private var showOpenWeatherMapCompare = false
 
   private var awaitsWidthMeasurement: Bool {
     AdaptiveLayout.awaitingWidthMeasurement(
@@ -253,7 +252,6 @@ private struct ForecastAdaptiveBody: View {
         }
         .frame(height: hourlyStripHeight)
 
-        openWeatherMapCompareSection(timeZone: timeZone)
 
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -310,7 +308,6 @@ private struct ForecastAdaptiveBody: View {
         }
         .frame(height: hourlyStripHeight)
 
-        openWeatherMapCompareSection(timeZone: timeZone)
 
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -370,8 +367,7 @@ private struct ForecastAdaptiveBody: View {
                   timeZone: timeZone)
               }
             }
-            openWeatherMapCompareSection(timeZone: timeZone)
-          }
+              }
           .frame(maxWidth: .infinity, alignment: .leading)
 
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -411,46 +407,12 @@ private struct ForecastAdaptiveBody: View {
     layout: HourlyRowLayout = .standard,
     timeZone: TimeZone = .current
   ) -> some View {
-    let hybrid = store.openWeatherMapEntry(closestTo: forecast.time)
-    return HourlyRow(
+    HourlyRow(
       forecast: forecast,
       isNow: isNow,
       layout: layout,
-      openWeatherMapTempF: hybrid.map { Int(round($0.temperatureF)) },
-      openWeatherMapPrecipChance: hybrid?.precipitationChance,
       timeZone: timeZone
     )
-  }
-
-  @ViewBuilder
-  private func openWeatherMapCompareSection(timeZone: TimeZone = .current) -> some View {
-    if let owm = store.openWeatherMapForecast, !owm.entries.isEmpty {
-      DisclosureGroup(isExpanded: $showOpenWeatherMapCompare) {
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            ForEach(Array(owm.entries.prefix(8))) { entry in
-              OpenWeatherMapForecastChip(
-                entry: entry, layout: .figma, timeZone: timeZone)
-            }
-          }
-          .padding(.top, DesignTokens.Spacing.space8)
-        }
-      } label: {
-        Text("Compare \(openWeatherMapCompactTitle)")
-          .font(DesignTokens.Figma.Typography.rowSubtitle)
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-      .tint(DesignTokens.Palette.textTertiary)
-    }
-  }
-
-  private var openWeatherMapCompactTitle: String {
-    switch store.openWeatherMapService.lastDataSource {
-    case .oneCall4:
-      return "OpenWeatherMap"
-    case .legacy25, .none:
-      return "OpenWeatherMap"
-    }
   }
 
   private func forecastUnavailableState(

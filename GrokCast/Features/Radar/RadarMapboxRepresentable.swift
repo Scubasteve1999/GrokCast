@@ -321,7 +321,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       switch provider {
       case .iem:
         return isAnimating ? 1 : 0
-      case .rainViewer, .openWeatherMap, .xweather:
+      case .rainViewer, .xweather:
         return isAnimating ? 2 : 1
       }
     }

@@ -1,12 +1,12 @@
 import Foundation
 
 enum RadarTimelineConfig {
-  /// OpenWeatherMap radar `tm` requires 10-minute steps.
+  /// Live radar steps.
   static let liveMaxFrames = 18
   static let liveIntervalMinutes = 10
 
   static let forecastMaxFrames = 12
-  /// OpenWeatherMap weather maps 2.0 PR0 uses 1-hour forecast steps.
+  /// Forecast steps.
   static let forecastIntervalMinutes = 60
   static let forecastStepDescription = "+1h"
 
