@@ -38,7 +38,18 @@ fi
 
 echo "   IPA: $IPA"
 
-if [[ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" && -n "${APP_STORE_CONNECT_ISSUER_ID:-}" && -n "${APP_STORE_CONNECT_API_KEY_PATH:-}" ]]; then
+# Fall back to fastlane/asc_api_key.json so a release does not fail on unset env
+# vars when the credentials are already sitting in the repo (gitignored).
+ASC_KEY_JSON="$PROJECT_DIR/fastlane/asc_api_key.json"
+if [[ -z "${APP_STORE_CONNECT_API_KEY_ID:-}" && -f "$ASC_KEY_JSON" ]]; then
+  APP_STORE_CONNECT_API_KEY_ID=$(/usr/bin/python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['key_id'])" "$ASC_KEY_JSON")
+  APP_STORE_CONNECT_ISSUER_ID=$(/usr/bin/python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['issuer_id'])" "$ASC_KEY_JSON")
+  echo "   Using API credentials from fastlane/asc_api_key.json"
+fi
+
+# altool finds the .p8 itself in ~/.appstoreconnect/private_keys/, so only the
+# id and issuer are required here.
+if [[ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" && -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ]]; then
   echo "🚀 Uploading via App Store Connect API..."
   xcrun altool --upload-app \
     --type ios \

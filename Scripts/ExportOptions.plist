@@ -4,8 +4,11 @@
 <dict>
 	<key>method</key>
 	<string>app-store-connect</string>
+	<!-- export, not upload: upload_testflight.sh needs an IPA on disk to hand to
+	     altool. With destination=upload, xcodebuild uploads during export and
+	     writes no IPA, so the script fails with "no IPA found". -->
 	<key>destination</key>
-	<string>upload</string>
+	<string>export</string>
 	<key>signingStyle</key>
 	<string>automatic</string>
 	<key>uploadSymbols</key>
