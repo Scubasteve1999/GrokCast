@@ -196,3 +196,75 @@ user count and a cost-per-user to reason from.
 [BBC Science Focus — unprepared for storm season](https://www.sciencefocus.com/planet-earth/us-unprepared-deadly-storm-season) ·
 [Star Tribune — cuts and Midwest storm forecasting](https://www.startribune.com/national-weather-service-cuts-could-make-predicting-storms-this-summer-more-difficult/601856101) ·
 [2026 SKYWARN training schedules (NWS Hastings)](https://kgfw.com/2026/02/19/nws-hastings-announces-2026-skywarn-storm-spotter-training-schedule/)
+
+---
+
+# Outcome — recorded 2026-08-02
+
+All four steps executed in one day. This section records what shipped, what the pass got wrong,
+and what has to be true before the next pass is worth running.
+
+## What shipped
+
+| Step | State |
+|---|---|
+| 1 — Cap/gate the AI key | Done. xAI key rotated and removed from the binary; AI behind Pro via a metered Cloudflare Worker that verifies an Apple-signed StoreKit transaction per request. Per-subscriber and global daily caps, a kill switch, and a nightly usage rollup. Verified end to end on a real sandbox subscription and a TestFlight install. |
+| 2 — Ship 1.0.5 | Submitted 2026-08-01 as build 78. In review. |
+| 3 — Instrumentation | Done, on `main`, rides with 1.0.6. `share_completed`, `ai_request` (tagged per feature), `ai_limit_reached`, `first_open`. |
+| 4 — Reposition | Copy approved. Promotional text live now; subtitle, keywords, description wait for 1.0.6. |
+
+## What the pass got wrong
+
+**The share loop did not exist.** §6 treated share cards as existing machinery needing a new
+subject. In fact shared text ended at "Shared from SpotterCast" with no link — a recipient had no
+route to the app. Instrumenting `share_completed` alone would have measured a loop that could not
+close. Fixed by adding campaign-tagged App Store links.
+
+**OpenWeatherMap was dead, not dangerous.** A follow-up sweep flagged OWM as a live pay-per-call
+billing exposure. Testing the credential showed every OWM endpoint returning 401 and no One Call
+subscription behind it. The app had been shipping a dead dependency that failed silently because
+Open-Meteo is primary. Removed entirely (branch `drop-owm`, 1,567 deletions) rather than fixed.
+
+**The lesson is procedural.** Three separate wrong conclusions in one day — OWM's risk, a phantom
+Mapbox scope problem, and empty KV counters — all came from reading code or a status code instead
+of testing the thing. A non-empty string is not a working credential; a 200 is not the endpoint you
+assumed. Test the credential, not the config.
+
+## What is now measurable that was not
+
+The measurement gap named in §3 is closed on the cost side and open on the acquisition side.
+
+- **Cost per subscriber is a KV read.** ~15 AI calls/day for one heavy user against a 150 cap.
+  Per-feature attribution ships with 1.0.6.
+- **Acquisition baseline captured** before the reposition: 113 impressions, 27 product page views,
+  5 first-time downloads, 2 ratings. See [`baseline-2026-08-01.md`](baseline-2026-08-01.md).
+- **The funnel's constraint is impressions, not conversion.** Roughly a quarter of impressions
+  become page views and a fifth of those convert. The listing converts acceptably for the few who
+  see it; almost nobody sees it. That is direct evidence for the reposition being the right bet.
+
+## The next decision, and what gates it
+
+The pass deferred **Spotter Network / mPING reporting** — the one thing RadarScope has that
+SpotterCast does not. That remains the leading product bet, and it is still deferred for the same
+reason: it is a large build justified only by an audience that has not arrived yet.
+
+**Do not run another pass until at least one of these is true:**
+
+1. **30 days of post-reposition data.** Specifically: does sustained non-zero App Store *Search*
+   traffic appear where there is none today? That is binary and it is the whole question. Browse and
+   Referrer are not moved by keywords.
+2. **Ten or more subscribers.** Below that, cost-per-user and conversion are single-install noise.
+3. **The reposition demonstrably fails** — no search traffic after 30 days — in which case the
+   question changes from "which feature next" to "is the niche reachable through App Store search at
+   all", and the answer might be community distribution rather than product.
+
+Running a pass before then would be picking features for an app whose distribution question is still
+open, which is exactly what this pass argued against.
+
+## Carried forward
+
+- Forecast radar now has two providers, not three, and Xweather is quota-limited. No regression —
+  the third was the dead OWM leg — but "Chase Radar" is in the new subtitle, so a real third
+  forecast source may deserve attention if Xweather quota becomes a visible failure.
+- `fastlane/metadata/en-US/` holds stale listing copy behind `skip_metadata(true)`. Inert today,
+  but it would overwrite the new listing if that flag were ever flipped.
