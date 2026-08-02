@@ -13,6 +13,9 @@ ALLOWED_ENVIRONMENTS = "Production,Sandbox"
 DAILY_CHAT_LIMIT = "150"
 DAILY_IMAGE_LIMIT = "10"
 GLOBAL_DAILY_LIMIT = "5000"
+# Daily global call count that flags `over` on /v1/status. Not a cap — the cap is
+# GLOBAL_DAILY_LIMIT. This is the "something changed, go look" line.
+ALERT_THRESHOLD = "500"
 # Kill switch: `wrangler deploy --var DISABLED:1` stops all AI without an app release.
 DISABLED = "0"
 

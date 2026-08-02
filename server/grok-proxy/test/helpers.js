@@ -106,6 +106,19 @@ export function memoryKV(initial = {}) {
     async delete(key) {
       store.delete(key);
     },
+    async list({ prefix = "", cursor } = {}) {
+      // Workers KV pages results; tests page at 2 keys so pagination is exercised
+      // rather than assumed.
+      const all = [...store.keys()].filter((k) => k.startsWith(prefix)).sort();
+      const start = cursor ? Number.parseInt(cursor, 10) : 0;
+      const page = all.slice(start, start + 2);
+      const next = start + page.length;
+      return {
+        keys: page.map((name) => ({ name })),
+        list_complete: next >= all.length,
+        cursor: next >= all.length ? undefined : String(next),
+      };
+    },
   };
 }
 

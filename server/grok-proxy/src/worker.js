@@ -12,15 +12,15 @@
  *   PROXY_SECRET          shared string the app sends; public by necessity
  * Vars:
  *   BUNDLE_ID, PRO_PRODUCT_IDS, ALLOWED_ENVIRONMENTS,
- *   DAILY_CHAT_LIMIT, DAILY_IMAGE_LIMIT, GLOBAL_DAILY_LIMIT, DISABLED
+ *   DAILY_CHAT_LIMIT, DAILY_IMAGE_LIMIT, GLOBAL_DAILY_LIMIT,
+ *   ALERT_THRESHOLD, DISABLED
  */
 
 import { TransactionError, verifyTransaction } from "./appleTransaction.js";
-import { consume, refund, resetsAt } from "./usage.js";
+import { GLOBAL_SUBJECT, consume, refund, resetsAt, snapshot } from "./usage.js";
 
 const XAI_BASE = "https://api.x.ai/v1";
 const TRANSACTION_HEADER = "X-SpotterCast-Transaction";
-const GLOBAL_SUBJECT = "__global__";
 
 /** Only these paths reach xAI. Without this, a leaked secret would expose the whole API. */
 const ROUTES = {
@@ -65,6 +65,12 @@ function secretsMatch(a, b) {
   return diff === 0;
 }
 
+function authorized(request, env) {
+  const authorization = request.headers.get("Authorization") ?? "";
+  const presented = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  return Boolean(env.PROXY_SECRET) && secretsMatch(presented, env.PROXY_SECRET);
+}
+
 function usageHeaders(result) {
   return {
     "X-SpotterCast-Limit": String(result.limit),
@@ -85,6 +91,39 @@ async function handle(request, env, options = {}) {
     return jsonResponse(200, { ok: true, disabled: env.DISABLED === "1" });
   }
 
+  if (url.pathname === "/v1/alert") {
+    // Deliberately unauthenticated and deliberately contentless: a single boolean
+    // saying whether today crossed the threshold. That lets an external checker
+    // watch it without holding any credential, and leaks no usage figures.
+    // Numbers live behind /v1/status.
+    if (!env.USAGE) return jsonResponse(200, { over: false, unavailable: true });
+    const usage = await snapshot(env.USAGE, {
+      now,
+      alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
+    });
+    return jsonResponse(200, { over: usage.over, day: usage.day });
+  }
+
+  if (url.pathname === "/v1/status") {
+    // Same bearer as the proxy itself. That string ships in the app binary and is
+    // public by necessity, so gating here adds no new secret — it just keeps
+    // usage figures off an open endpoint.
+    if (!authorized(request, env)) {
+      return errorResponse(401, "Unauthorized", "authentication_error");
+    }
+    if (!env.USAGE) {
+      return errorResponse(503, "Usage store is not bound.", "service_disabled");
+    }
+    return jsonResponse(200, {
+      ok: true,
+      disabled: env.DISABLED === "1",
+      usage: await snapshot(env.USAGE, {
+        now,
+        alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
+      }),
+    });
+  }
+
   const route = ROUTES[url.pathname];
   if (!route) return errorResponse(404, "Not found", "invalid_request_error");
   if (request.method !== "POST") {
@@ -103,9 +142,7 @@ async function handle(request, env, options = {}) {
     return errorResponse(503, "Usage store is not bound.", "service_disabled");
   }
 
-  const authorization = request.headers.get("Authorization") ?? "";
-  const presented = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
-  if (!env.PROXY_SECRET || !secretsMatch(presented, env.PROXY_SECRET)) {
+  if (!authorized(request, env)) {
     return errorResponse(401, "Unauthorized", "authentication_error");
   }
 
@@ -196,7 +233,41 @@ async function handle(request, env, options = {}) {
   return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
 }
 
+/**
+ * Daily rollup, run by the cron trigger just before UTC midnight so it sees the
+ * day's finished totals rather than a partial one.
+ *
+ * There is no notification channel here on purpose: sending email needs a domain
+ * onboarded to Cloudflare, and this account has none. The rollup is written to
+ * KV and exposed on `/v1/status`, which a scheduled check reads. `console.log`
+ * puts it in `wrangler tail` too.
+ */
+async function runDailyRollup(env, now = Date.now()) {
+  if (!env.USAGE) return null;
+
+  const usage = await snapshot(env.USAGE, {
+    now,
+    alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
+  });
+
+  // Kept for 30 days so a week of history survives the counters' own 48h TTL.
+  await env.USAGE.put(`report:v1:${usage.day}`, JSON.stringify(usage), {
+    expirationTtl: 30 * 24 * 60 * 60,
+  });
+
+  console.log(
+    `daily rollup ${usage.day}: global=${usage.global} chat=${usage.chat} ` +
+      `image=${usage.image} subscribers=${usage.subscribers} over=${usage.over}`
+  );
+
+  return usage;
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runDailyRollup(env));
+  },
+
   async fetch(request, env) {
     try {
       const response = await handle(request, env);
@@ -211,4 +282,4 @@ export default {
   },
 };
 
-export { handle };
+export { handle, runDailyRollup };

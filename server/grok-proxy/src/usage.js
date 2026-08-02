@@ -13,6 +13,9 @@
 const KEY_PREFIX = "usage:v1";
 const TTL_SECONDS = 48 * 60 * 60;
 
+/** Subject used for the account-wide counter, distinct from any transaction id. */
+export const GLOBAL_SUBJECT = "__global__";
+
 export function dayKey(now) {
   return new Date(now).toISOString().slice(0, 10);
 }
@@ -50,6 +53,48 @@ export async function consume(kv, { bucket, subject, limit, now = Date.now() }) 
   await kv.put(key, String(next), { expirationTtl: TTL_SECONDS });
 
   return { ok: true, used: next, limit, remaining: limit - next, resetsAt: resetsAt(now) };
+}
+
+/**
+ * Reads a day's usage without consuming anything.
+ *
+ * Counts subscribers by listing per-bucket keys rather than storing a separate
+ * total, so the number cannot drift out of step with the counters it describes.
+ */
+export async function snapshot(kv, { now = Date.now(), alertThreshold }) {
+  const day = dayKey(now);
+  const global = await readCount(kv, counterKey("global", GLOBAL_SUBJECT, day));
+
+  // Only the global counter is stored as an aggregate; chat and image totals are
+  // summed from the per-subscriber keys that actually exist.
+  const subjects = new Set();
+  let chat = 0;
+  let image = 0;
+  let cursor;
+
+  do {
+    const page = await kv.list({ prefix: `${KEY_PREFIX}:`, cursor });
+    for (const { name } of page.keys ?? []) {
+      const [, , bucket, subject, keyDay] = name.split(":");
+      if (keyDay !== day || bucket === "global" || subject === GLOBAL_SUBJECT) continue;
+
+      const count = await readCount(kv, name);
+      if (bucket === "chat") chat += count;
+      if (bucket === "image") image += count;
+      subjects.add(subject);
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+
+  return {
+    day,
+    global,
+    chat,
+    image,
+    subscribers: subjects.size,
+    threshold: alertThreshold ?? null,
+    over: alertThreshold != null && global >= alertThreshold,
+  };
 }
 
 /** Returns a consumed unit after an upstream failure, so errors are not billed to the user. */
