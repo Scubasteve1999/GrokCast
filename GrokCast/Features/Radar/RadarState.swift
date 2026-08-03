@@ -95,6 +95,14 @@ final class RadarState {
   var playback = RadarPlayback()
   private var manualIsLoading = false
 
+  /// The load in flight, if any, with the coordinate it was started for. Concurrent
+  /// callers join it rather than returning early: a dropped call still completed its
+  /// `await`, so the caller could not tell a refresh from a no-op — which is how a
+  /// foreground reload could silently leave stale frames on screen.
+  private var inFlightLoad:
+    (task: Task<Void, Never>, coordinate: CLLocationCoordinate2D, id: UInt64)?
+  private var nextLoadID: UInt64 = 0
+
   var isLoading: Bool {
     get { manualIsLoading || loader.isLoading }
     set { manualIsLoading = newValue }
@@ -465,13 +473,8 @@ extension RadarState {
   /// Cheap no-op on quick tab switches; refreshes after a short idle, when the
   /// newest live frame ages out, or when the selected location moved.
   func reloadIfStale(for coordinate: CLLocationCoordinate2D) async {
-    let coordinateUnchanged: Bool = {
-      guard let lastLoadedCoordinate else { return false }
-      return abs(lastLoadedCoordinate.latitude - coordinate.latitude)
-        < Self.staleReloadDistanceDegrees
-        && abs(lastLoadedCoordinate.longitude - coordinate.longitude)
-          < Self.staleReloadDistanceDegrees
-    }()
+    let coordinateUnchanged =
+      lastLoadedCoordinate.map { Self.coordinate($0, matches: coordinate) } ?? false
 
     if let lastLoadedAt, coordinateUnchanged,
       Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold
@@ -485,8 +488,34 @@ extension RadarState {
     await loadDefaultRadar(for: coordinate)
   }
 
+  /// Provider selection is per-coordinate, so two loads for materially different
+  /// places are two different results — only same-place callers can share one.
+  private static func coordinate(
+    _ lhs: CLLocationCoordinate2D, matches rhs: CLLocationCoordinate2D
+  ) -> Bool {
+    abs(lhs.latitude - rhs.latitude) < staleReloadDistanceDegrees
+      && abs(lhs.longitude - rhs.longitude) < staleReloadDistanceDegrees
+  }
+
   func loadDefaultRadar(for coordinate: CLLocationCoordinate2D) async {
-    guard !isLoading else { return }
+    if let inFlight = inFlightLoad {
+      await inFlight.task.value
+      // That load's frames are this caller's answer too. A different coordinate
+      // still needs its own load, but only once the first one is off the wire.
+      if Self.coordinate(inFlight.coordinate, matches: coordinate) { return }
+    }
+
+    nextLoadID += 1
+    let id = nextLoadID
+    let task = Task { await performDefaultRadarLoad(for: coordinate) }
+    inFlightLoad = (task, coordinate, id)
+    await task.value
+    // A later caller may have superseded us while we were suspended; only the
+    // owner of the current entry may clear it.
+    if inFlightLoad?.id == id { inFlightLoad = nil }
+  }
+
+  private func performDefaultRadarLoad(for coordinate: CLLocationCoordinate2D) async {
     isLoading = true
 
     await updateNearestSite(for: coordinate)
