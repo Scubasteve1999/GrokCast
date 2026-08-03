@@ -28,13 +28,6 @@ xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
 ```
 
-Clean build when needed:
-
-```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' clean build
-```
-
 ### Test
 
 Always run tests after non-trivial changes:
@@ -44,41 +37,7 @@ xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' test
 ```
 
-Targets: `GrokCast`, `GrokCastWidgets`, `GrokCastTests`, `GrokCastUITests`.
-Scheme: `GrokCast` (also `GrokCastWidgets` for widget-only work).
-
-### Archive / TestFlight
-
-Preferred:
-
-```bash
-./Scripts/archive_for_testflight.sh              # archive only
-./Scripts/archive_for_testflight.sh --increment  # bump CURRENT_PROJECT_VERSION in project.yml, then archive
-# optional upload after a successful archive:
-./Scripts/upload_testflight.sh
-```
-
-Manual equivalent:
-
-```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
-  -configuration Release \
-  -destination 'generic/platform=iOS' \
-  -archivePath build/GrokCast.xcarchive \
-  archive
-```
-
-Build number lives in `project.yml` (`CURRENT_PROJECT_VERSION`). Prefer `./Scripts/increment_build.sh` or `./Scripts/archive_for_testflight.sh --increment` over `agvtool` (xcodegen regenerates wipe agvtool-only bumps).
-
-### Project regeneration & utilities
-
-```bash
-xcodegen generate          # after project.yml or add/remove source files
-./grok-build regenerate    # wrapper (preferred when available)
-./grok-build clean         # or --deep for stubborn issues
-rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
-xed .                      # open in Xcode
-```
+Archive/TestFlight and project-regeneration commands: see `AGENTS.md`.
 
 **Default simulator:** `iPhone 17 Pro Max`. Also available: iPhone 17 Pro, 17, 17e, Air.
 
@@ -97,11 +56,5 @@ xed .                      # open in Xcode
 
 ## Architecture
 
-- Single `@Observable WeatherStore` (Shared/Services/) injected via `.environment()`; all business logic/API calls in `Shared/Services/`, views in `Features/<Feature>/`.
-- 7 tabs (ContentView.swift MainTabView): Today, Forecast, Radar, Alerts, Grok AI, Locations, Settings. System tab bar hidden; custom `CompactTabBar` via safeAreaInset.
-- Radar: Mapbox-based (`RadarMapboxRepresentable.swift`), decomposed into RadarState/RadarLoader/RadarTimeline/RadarPlayback/etc. Tile providers: RainViewer (live primary) → OpenWeatherMap fallback; Xweather primary for forecast frames.
-- Grok/xAI: `XAIService` (chat/vision), `GrokBuildService` (SSE streaming), `GrokAIService` + `GrokAIConversationStore`; prompts centralized in `Shared/Grok/GrokPrompts.swift`.
-- Widgets (`GrokCastWidgets` target) read App Group `group.com.scubasteve1999.GrokCast` snapshots only — never call APIs from the widget.
-- SPM already in use: MapboxMaps, Firebase Messaging, PostHog — do not add more without asking.
 - Dark-first UI; reuse DesignTokens / TacticalCard / Haptic / ultraThinMaterial patterns — see `DesignSystem.md`.
 - Lint with `swift-format` when touching formatting-sensitive files.
