@@ -112,6 +112,7 @@ struct CompactTabBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(tab.title)
+        .accessibilityIdentifier(SpotterCastAccessibility.Tabs.item(tab))
         .frame(maxWidth: .infinity)
       }
     }

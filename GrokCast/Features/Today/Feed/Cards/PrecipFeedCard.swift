@@ -49,6 +49,9 @@ struct PrecipFeedCard: View {
           )
         }
       }
+      // This card has no background of its own, so without an explicit shape
+      // only the text and icons are hittable.
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .accessibilityElement(children: .ignore)

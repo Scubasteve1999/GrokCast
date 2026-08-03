@@ -13,49 +13,125 @@ class SpotterCastUITestCase: XCTestCase {
       "-AppleLanguages", "(en)",
       "-AppleLocale", "en_US",
     ]
-    // Skip first-run friction when possible; system alerts still need springboard handling.
     app.launch()
-    dismissSystemAlertsIfNeeded()
+    grantLocationPermissionIfPrompted()
+    completeOnboardingIfNeeded()
   }
 
   override func tearDownWithError() throws {
     app = nil
   }
 
-  /// Dismiss iOS permission sheets that can block the first screen.
-  func dismissSystemAlertsIfNeeded() {
+  // MARK: - First run
+
+  /// Grant the iOS location prompt. Never taps a "Don't Allow" variant — a denial
+  /// leaves `TodayView` on `LocationPermissionView` for the rest of the run.
+  func grantLocationPermissionIfPrompted(timeout: TimeInterval = 3) {
     let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-    let buttons = ["Allow While Using App", "Allow", "OK", "Don’t Allow", "Don't Allow"]
-    for title in buttons {
+    for title in ["Allow While Using App", "Allow Once", "Allow", "OK"] {
       let button = springboard.buttons[title]
-      if button.waitForExistence(timeout: 1.5) {
+      if button.waitForExistence(timeout: timeout) {
         button.tap()
         return
       }
     }
   }
 
+  /// Walk the first-launch welcome card → pre-permission sheet → system prompt so
+  /// Today can reach real content. `WeatherStore` already defaults `currentLocation`
+  /// to Olive Branch, MS, so no GPS fix is required once permission is granted.
+  func completeOnboardingIfNeeded() {
+    let getStarted = app.buttons["Get Started"]
+    if getStarted.waitForExistence(timeout: 5) {
+      getStarted.tap()
+
+      let cont = app.buttons["Continue"]
+      if cont.waitForExistence(timeout: 5) {
+        cont.tap()
+        grantLocationPermissionIfPrompted(timeout: 5)
+      }
+    }
+
+    // Reached when the welcome card was already dismissed but permission is still
+    // .notDetermined (e.g. a previous test in the same run tapped through).
+    let enable = app.buttons["ENABLE LOCATION"]
+    if enable.waitForExistence(timeout: 2) {
+      enable.tap()
+      grantLocationPermissionIfPrompted(timeout: 5)
+    }
+  }
+
+  // MARK: - Tab bar
+
+  /// Mirrors `SpotterCastAccessibility.Tabs` / `.MoreHub` in the app target.
+  /// The app hides the system tab bar (`.toolbar(.hidden, for: .tabBar)`) but it
+  /// stays in the accessibility tree, so plain label queries such as
+  /// `app.buttons["Radar"]` match both it and our `CompactTabBar` and fail to tap.
+  enum Tab: String {
+    case today, forecast, radar, alerts, more
+
+    var identifier: String { "spottercast.tab.\(rawValue)" }
+  }
+
+  /// Raw values are `WeatherStore.Tab.rawValue` — note Storm Spotter's is "AI".
+  enum MoreHubDestination: String {
+    case grok = "AI"
+    case locations = "Locations"
+    case settings = "Settings"
+
+    var identifier: String { "spottercast.moreHub.\(rawValue)" }
+  }
+
   @discardableResult
   func waitForTabBar(timeout: TimeInterval = 12) -> Bool {
-    app.buttons["Today"].waitForExistence(timeout: timeout)
+    app.buttons[Tab.today.identifier].waitForExistence(timeout: timeout)
   }
 
-  func openTab(_ title: String) {
-    let tab = app.buttons[title]
-    XCTAssertTrue(tab.waitForExistence(timeout: 8), "Missing tab: \(title)")
-    tab.tap()
+  func openTab(_ tab: Tab) {
+    let element = app.buttons[tab.identifier]
+    XCTAssertTrue(element.waitForExistence(timeout: 8), "Missing tab: \(tab.rawValue)")
+    element.tap()
   }
 
-  func openMoreHubThen(_ destination: String) {
-    openTab("More")
-    let row = app.buttons[destination]
-    if row.waitForExistence(timeout: 3) {
+  func openMoreHubThen(_ destination: MoreHubDestination) {
+    openTab(.more)
+    let row = app.buttons[destination.identifier]
+    XCTAssertTrue(
+      row.waitForExistence(timeout: 5),
+      "Missing More hub row: \(destination.rawValue)"
+    )
+
+    // The hub is a `.medium` detent sheet. A tap issued while it is still
+    // animating in resolves against stale coordinates and silently misses,
+    // leaving the hub open — so wait for the row to settle and retry.
+    for _ in 0..<3 {
+      guard waitForHittable(row) else { break }
       row.tap()
-      return
+      if waitForDisappearance(row) { return }
     }
-    // Fallback: static text row inside SettingsNavigationRow
-    let text = app.staticTexts[destination]
-    XCTAssertTrue(text.waitForExistence(timeout: 5), "Missing More hub row: \(destination)")
-    text.tap()
+
+    XCTFail("More hub row \(destination.rawValue) did not dismiss the hub")
+  }
+
+  // MARK: - Waiting
+
+  func waitForHittable(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+    XCTWaiter.wait(
+      for: [
+        XCTNSPredicateExpectation(
+          predicate: NSPredicate(format: "isHittable == true"), object: element)
+      ],
+      timeout: timeout
+    ) == .completed
+  }
+
+  func waitForDisappearance(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+    XCTWaiter.wait(
+      for: [
+        XCTNSPredicateExpectation(
+          predicate: NSPredicate(format: "exists == false"), object: element)
+      ],
+      timeout: timeout
+    ) == .completed
   }
 }
