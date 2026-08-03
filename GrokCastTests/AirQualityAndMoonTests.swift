@@ -37,4 +37,75 @@ final class AirQualityAndMoonTests: XCTestCase {
     XCTAssertTrue(PrecipFeedVisibility.hasContent(summary: wet))
     XCTAssertEqual(PrecipFeedVisibility.timingSentence(for: wet), "Rain in about 30 min")
   }
+
+  func testLocalWeatherBriefFindsDriestDaylightWindow() {
+    let now = Date(timeIntervalSince1970: 1_767_268_800)  // 2026-01-01 12:00 UTC
+    let hourly = [80, 70, 60, 15, 10, 20].enumerated().map { index, chance in
+      HourlyForecast(
+        time: now.addingTimeInterval(Double(index) * 3_600),
+        temp: 72,
+        precipChance: chance,
+        weatherCode: 2,
+        symbolName: "cloud.sun",
+        rain: nil,
+        showers: nil,
+        snowfall: nil,
+        isDay: true
+      )
+    }
+    let weather = makeWeather(hourly: hourly)
+
+    let brief = LocalWeatherBrief.make(
+      weather: weather,
+      unit: .fahrenheit,
+      locationName: "Testville",
+      activeAlerts: [],
+      now: now
+    )
+
+    XCTAssertTrue(brief.hasPrefix("Forecast-only take:"))
+    XCTAssertTrue(brief.contains("rain odds staying at 20% or lower"))
+    XCTAssertTrue(brief.contains("Dress light and bring water."))
+    XCTAssertTrue(brief.contains("Add sun protection."))
+  }
+
+  func testLocalWeatherBriefPrioritizesActiveAlerts() {
+    let weather = makeWeather(hourly: [])
+
+    let brief = LocalWeatherBrief.make(
+      weather: weather,
+      unit: .fahrenheit,
+      locationName: "Testville",
+      activeAlerts: ["Tornado Warning", "Flood Watch"]
+    )
+
+    XCTAssertTrue(brief.contains("Active alerts include Tornado Warning and Flood Watch"))
+    XCTAssertTrue(brief.contains("follow local guidance"))
+    XCTAssertFalse(brief.contains("driest outdoor window"))
+  }
+
+  private func makeWeather(hourly: [HourlyForecast]) -> GrokCastWeather {
+    GrokCastWeather(
+      location: SavedLocation(name: "Testville", latitude: 0, longitude: 0),
+      currentTemp: 86,
+      feelsLike: 90,
+      conditionCode: 1,
+      conditionText: "Mainly clear",
+      humidity: 50,
+      windSpeed: 8,
+      uvIndex: 7,
+      precipitationChance: 10,
+      high: 90,
+      low: 68,
+      symbolName: "sun.max",
+      fetchedAt: Date(),
+      timezoneIdentifier: "UTC",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: hourly,
+      daily: [],
+      minutely15: []
+    )
+  }
 }
