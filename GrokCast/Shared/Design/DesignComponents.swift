@@ -143,6 +143,7 @@ struct SettingsLinkRow: View {
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
       .padding(.vertical, DesignTokens.Spacing.space12)
+      .contentShape(Rectangle())
     }
   }
 }
@@ -178,6 +179,9 @@ struct SettingsNavigationRow: View {
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
       .padding(.vertical, DesignTokens.Spacing.space12)
+      // Without this the Spacer between the title and the chevron is dead to
+      // taps, so only the text and icons themselves are hittable.
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
   }
@@ -216,6 +220,7 @@ struct MoreHubSheet: View {
                 store.selectedTab = tab
                 dismiss()
               }
+              .accessibilityIdentifier(SpotterCastAccessibility.MoreHub.row(tab))
             }
           }
         }

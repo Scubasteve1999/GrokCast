@@ -16,6 +16,18 @@ enum AppLinks {
 
 /// Stable accessibility identifiers for XCUITest and VoiceOver.
 enum SpotterCastAccessibility {
+  /// The custom `CompactTabBar` items. The hidden system tab bar under
+  /// `.tabViewStyle(.sidebarAdaptable)` still publishes buttons with the same
+  /// labels ("Radar", "More", …), so tests must match on these instead.
+  enum Tabs {
+    static func item(_ tab: CompactTab) -> String { "spottercast.tab.\(tab.rawValue)" }
+  }
+
+  /// Rows inside `MoreHubSheet`, keyed by the destination tab.
+  enum MoreHub {
+    static func row(_ tab: WeatherStore.Tab) -> String { "spottercast.moreHub.\(tab.rawValue)" }
+  }
+
   enum Today {
     static let location = "spottercast.today.location"
     static let temperature = "spottercast.today.temperature"

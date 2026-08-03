@@ -39,7 +39,7 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
 
   func testRadarTabShowsLiveControls() throws {
     XCTAssertTrue(waitForTabBar())
-    openTab("Radar")
+    openTab(.radar)
 
     let live = app.staticTexts["LIVE"]
     let reflectivity = app.staticTexts.matching(
@@ -62,12 +62,8 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
   func testStormSpotterCTAExistsInBriefingStudio() throws {
     XCTAssertTrue(waitForTabBar())
 
-    // Deep link is the most stable path into the Grok hub.
-    app.activate()
-    // XCUITest cannot openurl via simctl; use More hub when available, else tab selection via deep link helper.
-    if app.buttons["More"].waitForExistence(timeout: 3) {
-      openMoreHubThen("AI")
-    }
+    // The More hub is the only in-app path into the Grok tab (it has no CompactTabBar item).
+    openMoreHubThen(.grok)
 
     let analyze = app.buttons["Analyze Storm Photo"]
     let stormHeader = app.staticTexts.matching(
@@ -98,14 +94,14 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
     XCTAssertTrue(
       app.staticTexts["FORECAST"].waitForExistence(timeout: 8)
         || app.staticTexts["Forecast"].waitForExistence(timeout: 2)
-        || app.buttons["Forecast"].isSelected,
+        || app.buttons[Tab.forecast.identifier].isSelected,
       "Forecast deep link did not land on Forecast"
     )
 
     openDeepLink("grokcast://alerts")
     XCTAssertTrue(
       app.staticTexts["Alerts"].waitForExistence(timeout: 8)
-        || app.buttons["Alerts"].isSelected
+        || app.buttons[Tab.alerts.identifier].isSelected
         || app.staticTexts["No Alerts"].waitForExistence(timeout: 4),
       "Alerts deep link did not land on Alerts"
     )
@@ -115,22 +111,24 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
 
   func testPaywallCanPresentFromSettings() throws {
     XCTAssertTrue(waitForTabBar())
-    openMoreHubThen("Settings")
+    openMoreHubThen(.settings)
 
-    // Prefer explicit Pro entry points.
+    // Prefer the stable identifier; fall back to the label for older builds.
     let candidates = [
+      app.buttons["spottercast.settings.pro"],
       app.buttons["View SpotterCast Pro"],
-      app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "SpotterCast Pro")).firstMatch,
-      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "SpotterCast Pro")).firstMatch,
+      app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "SpotterCast Pro"))
+        .firstMatch,
     ]
 
     var opened = false
-    for element in candidates {
-      if element.waitForExistence(timeout: 4) {
-        element.tap()
-        opened = true
-        break
+    for element in candidates where element.waitForExistence(timeout: 4) {
+      if !element.isHittable {
+        app.scrollViews.firstMatch.swipeUp()
       }
+      element.tap()
+      opened = true
+      break
     }
 
     XCTAssertTrue(opened, "Could not find SpotterCast Pro entry in Settings")
