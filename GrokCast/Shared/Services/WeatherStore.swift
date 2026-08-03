@@ -34,7 +34,16 @@ final class NetworkMonitor {
 final class WeatherStore {
   public static let shared = WeatherStore()
 
-  var currentLocation: SavedLocation?
+  /// `didSet` rather than a call at each assignment site: the location is set from
+  /// ten places (startup, GPS, picker, defaults), and the push agent needs to know
+  /// about all of them. `scheduleSync()` is debounced and skips unchanged payloads,
+  /// so the churn during a refresh costs nothing.
+  var currentLocation: SavedLocation? {
+    didSet {
+      guard currentLocation != oldValue else { return }
+      PushRegistrationService.shared.scheduleSync()
+    }
+  }
   var currentWeather: GrokCastWeather?
   var savedLocations: [SavedLocation] = []
   var isLoadingWeather = false
@@ -78,6 +87,7 @@ final class WeatherStore {
       guard newValue != _temperatureUnit else { return }
       _temperatureUnit = newValue
       UserDefaults.standard.set(newValue.rawValue, forKey: temperatureUnitKey)
+      PushRegistrationService.shared.scheduleSync()
       Task { await refreshWeather() }
     }
   }
@@ -116,6 +126,7 @@ final class WeatherStore {
       guard newValue != _morningBriefEnabled else { return }
       _morningBriefEnabled = newValue
       UserDefaults.standard.set(newValue, forKey: MorningBriefNotificationService.enabledKey)
+      PushRegistrationService.shared.scheduleSync()
       if newValue {
         Task {
           await MorningBriefGenerator.generateIfStale(weatherStore: self)
@@ -134,6 +145,7 @@ final class WeatherStore {
       guard clamped != _morningBriefHour else { return }
       _morningBriefHour = clamped
       UserDefaults.standard.set(clamped, forKey: MorningBriefNotificationService.hourKey)
+      PushRegistrationService.shared.scheduleSync()
       Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
     }
   }
@@ -211,6 +223,9 @@ final class WeatherStore {
       guard newValue != _notificationSoundsEnabled else { return }
       _notificationSoundsEnabled = newValue
       UserDefaults.standard.set(newValue, forKey: GrokCastNotificationSounds.enabledKey)
+      // Sound is a device-local default the worker cannot read, so it has to be
+      // re-reported or server pushes drift from the in-app setting.
+      PushRegistrationService.shared.scheduleSync()
       Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
     }
   }
@@ -294,6 +309,7 @@ final class WeatherStore {
       guard newValue != _alertNotificationsEnabled else { return }
       _alertNotificationsEnabled = newValue
       UserDefaults.standard.set(newValue, forKey: Self.alertNotificationsEnabledKey)
+      PushRegistrationService.shared.scheduleSync()
       if newValue {
         Task { await scheduleBackgroundAlertRefreshIfEnabled() }
       } else {

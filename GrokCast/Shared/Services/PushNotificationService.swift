@@ -23,13 +23,16 @@ final class PushNotificationService {
     self.deviceToken = deviceToken
     Messaging.messaging().apnsToken = deviceToken
 
-    // Tokens stay on-device until a push-register backend is configured.
     // Do not log token material in Release.
     let tokenString = deviceToken.map { String(format: "%02x", $0) }.joined()
     UserDefaults.standard.set(tokenString, forKey: apnsTokenKey)
     #if DEBUG
       print("[Push] APNs device token registered (\(tokenString.prefix(12))…)")
     #endif
+
+    // Upload immediately rather than debounced: the token is the one thing the
+    // push agent cannot proceed without. No-ops when the agent is unconfigured.
+    Task { await PushRegistrationService.shared.sync() }
   }
 
   func didFailToRegisterForRemoteNotifications(error: Error) {
@@ -39,7 +42,8 @@ final class PushNotificationService {
   }
 
   func didReceiveFCMToken(_ token: String) {
-    // Local persistence only — no upload endpoint is configured in this binary.
+    // Persisted for Firebase console sends only. Server-side delivery goes through
+    // APNs directly (`PushRegistrationService`), so nothing uploads this.
     fcmToken = token
     UserDefaults.standard.set(token, forKey: fcmTokenKey)
   }

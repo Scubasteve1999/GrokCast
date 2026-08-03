@@ -32,6 +32,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     BackgroundAlertRefreshService.scheduleAlertRefreshTask()
   }
 
+  func applicationWillEnterForeground(_ application: UIApplication) {
+    // Catches the changes no setter sees: notification permission revoked in
+    // Settings, or a new time zone after travel (which moves the morning brief).
+    Task { @MainActor in
+      await AlertNotificationService.shared.refreshAuthorizationStatus()
+      await PushRegistrationService.shared.sync()
+    }
+  }
+
   // MARK: - APNs
 
   func application(

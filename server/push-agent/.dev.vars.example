@@ -1,0 +1,10 @@
+# Copy to `.dev.vars` for `wrangler dev`. Never commit the real file — it is gitignored.
+# In production these are `wrangler secret put <NAME>` instead.
+
+PUSH_SECRET=local-dev-push-secret
+ADMIN_SECRET=local-dev-admin-secret
+
+APNS_KEY_ID=ABCDE12345
+APNS_TEAM_ID=TEAM123456
+# Paste the AuthKey_XXXXXXXXXX.p8 contents. Newlines may be literal or escaped \n.
+APNS_KEY_P8="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"

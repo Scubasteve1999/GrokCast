@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spottercast-push-agent",
+  "main": "src/server.ts",
+  "compatibility_date": "2026-08-01",
+  // The Agents SDK depends on Node built-ins (crypto, streams).
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Secrets (never in this file — `wrangler secret put <NAME>`):
+  //   APNS_KEY_P8      contents of the AuthKey_XXXX.p8 (PKCS#8 PEM, newlines intact)
+  //   APNS_KEY_ID      the 10-char Key ID for that .p8
+  //   APNS_TEAM_ID     the 10-char Apple Developer Team ID
+  //   PUSH_SECRET      shared string the app sends; shipped in the binary, so public
+  //   ADMIN_SECRET     operator-only; gates the manual send / silent-refresh routes
+  "vars": {
+    "APNS_BUNDLE_ID": "com.scubasteve1999.GrokCast",
+    // "production" targets api.push.apple.com. Devices may override per-registration
+    // so a debug build on a sandbox APNs token still works.
+    "APNS_DEFAULT_ENVIRONMENT": "production",
+    // How often each registered device polls NWS for new alerts, in seconds.
+    // 300 = 5 min. Each device is its own Durable Object, so this is per-device.
+    "ALERT_POLL_SECONDS": "300",
+    // Kill switch: `wrangler deploy --var DISABLED:1` stops all delivery without an
+    // App Store release. Registration still succeeds so devices stay enrolled.
+    "DISABLED": "0"
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DEVICE_AGENT",
+        "class_name": "DeviceAgent"
+      }
+    ]
+  },
+
+  "exports": {
+    "DeviceAgent": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}
