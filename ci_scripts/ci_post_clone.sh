@@ -1,8 +1,8 @@
 #!/bin/sh
 #
 # Xcode Cloud runs this automatically after cloning, before resolving packages
-# and building. It is the Xcode Cloud counterpart to the "Stub gitignored config
-# files from templates" step in .github/workflows/ci.yml — keep the two in sync.
+# and building. `.github/workflows/ci.yml` invokes this same script, so there is
+# one implementation rather than two copies to keep in sync.
 #
 # The real key files are gitignored by design, so a fresh clone does not have
 # them and the build cannot resolve DeveloperAPIKey / OpenWeatherMapKeys.
@@ -10,10 +10,7 @@
 # Two sources fill them, in order:
 #
 #   1. A secret environment variable holding the base64 of the real file. This is
-#      what a TestFlight archive needs — the committed templates are all `nil`,
-#      so a build stubbed from them compiles and ships with no Mapbox token, no
-#      Xweather credentials and no xAI key. That failure is silent at build time
-#      and only shows up on device (a black Radar map, AI features unavailable).
+#      what a TestFlight archive needs.
 #   2. The committed template, which is correct for PR validation builds: those
 #      only need to compile and run tests, and should not carry real secrets.
 #
@@ -21,124 +18,195 @@
 #   base64 -i GrokCast/Config/DeveloperAPIKey.swift | pbcopy
 #   base64 -i GrokCast/Config/OpenWeatherMapKeys.swift | pbcopy
 #
+# A file that ends up holding placeholder values is fatal for an archive and
+# fine for a PR build, so the outcome depends on CI_XCODEBUILD_ACTION rather
+# than on a warning nobody reads: builds 104-110 shipped placeholder keys to
+# TestFlight green, which is what this gate exists to make impossible.
+#
 # Config/Secrets.xcconfig deliberately has no stub: Config/Shared.xcconfig pulls
 # it in with `#include?`, which tolerates the file being absent.
 
 set -eu
 
-# Xcode Cloud starts this script in ci_scripts/; the templates are addressed
+# Xcode Cloud starts this script in ci_scripts/; everything below is addressed
 # from the repo root.
 cd "$(dirname "$0")/.."
 
-# Writes $2 (base64) to $1, then checks the result declares $3 so a truncated or
-# mis-pasted secret fails here rather than as an opaque compile error later.
-# The value is only ever piped, never echoed, so it stays out of the build log.
-restore_swift_config() {
-  target="$1"
-  encoded="$2"
-  expected_symbol="$3"
+# Xcode Cloud sets this to `archive` for the runs that upload to TestFlight.
+# Absent on GitHub Actions and on local runs, which is the safe default: those
+# are the builds that legitimately use placeholders.
+is_archive_build() {
+  [ "${CI_XCODEBUILD_ACTION:-}" = "archive" ]
+}
 
-  # Guarded rather than bare: a value that is not valid base64 makes this pipeline
-  # exit non-zero, and under `set -e` that would kill the script before the
-  # diagnostic below ever runs.
-  if ! printf '%s' "$encoded" | base64 --decode > "$target" 2>/dev/null; then
-    echo "❌ Secret for $target is not valid base64" >&2
-    echo "   encoded chars: $(printf '%s' "$encoded" | wc -c | tr -d ' ')" >&2
-    echo "   A re-saved variable can come back as its own '**********' mask." >&2
-    rm -f "$target"
-    exit 1
+# Xcode Cloud builds the committed project.pbxproj; GitHub Actions regenerates it
+# with XcodeGen from project.yml, which globs the Config directory rather than
+# naming files. So a file that is a hard build input on Xcode Cloud can be
+# legitimately absent on GitHub Actions.
+is_xcode_cloud() {
+  [ -n "${CI_XCODE_CLOUD:-}${CI_XCODEBUILD_ACTION:-}${CI_WORKFLOW:-}" ]
+}
+
+# Files that came from a template, or from a secret that turned out to hold the
+# template's own placeholder values. Space-separated; paths here never contain
+# spaces.
+placeholder_files=""
+
+# Every variable is `_cfg_`-prefixed. POSIX sh has no `local`, so a plain name
+# like `target` would be a global shared with any caller's loop variable.
+#
+# $1 target path, $2 env var name, $3 validator function, $4 required|optional
+restore_config() {
+  _cfg_target="$1"
+  _cfg_var="$2"
+  _cfg_validate="$3"
+  _cfg_requirement="$4"
+  _cfg_template="$_cfg_target.example"
+
+  if [ -f "$_cfg_target" ]; then
+    # Only reachable outside CI — the file is gitignored, so a fresh clone never
+    # has it. Still validated: a stale local file is exactly how a placeholder
+    # gets past everything else.
+    echo "↷ $_cfg_target already present — leaving it alone"
+  else
+    _cfg_encoded=$(printenv "$_cfg_var" 2>/dev/null || true)
+
+    if [ -n "$_cfg_encoded" ]; then
+      # Guarded rather than bare: invalid base64 makes this pipeline exit
+      # non-zero, and under `set -e` that would kill the script before the
+      # diagnostic runs.
+      if ! printf '%s' "$_cfg_encoded" | base64 --decode > "$_cfg_target" 2>/dev/null; then
+        echo "❌ $_cfg_var is not valid base64" >&2
+        echo "   encoded chars: ${#_cfg_encoded}" >&2
+        echo "   A re-saved variable can come back as its own '**********' mask." >&2
+        echo "   Re-add it: base64 -i $_cfg_target | pbcopy" >&2
+        rm -f "$_cfg_target"
+        exit 1
+      fi
+
+      if ! "$_cfg_validate" "$_cfg_target"; then
+        echo "❌ $_cfg_var did not decode to a usable $_cfg_target" >&2
+        echo "   encoded chars: ${#_cfg_encoded}" >&2
+        echo "   decoded bytes: $(wc -c < "$_cfg_target" | tr -d ' ')" >&2
+        echo "   Re-add it: base64 -i $_cfg_target | pbcopy" >&2
+        rm -f "$_cfg_target"
+        exit 1
+      fi
+
+      echo "✅ Created $_cfg_target from $_cfg_var"
+    elif [ -f "$_cfg_template" ]; then
+      cp "$_cfg_template" "$_cfg_target"
+      echo "⚠️  Created $_cfg_target from $(basename "$_cfg_template") — PLACEHOLDER KEYS"
+      placeholder_files="$placeholder_files $_cfg_target"
+    elif [ "$_cfg_requirement" = "xcode-cloud" ] && ! is_xcode_cloud; then
+      # Not a build input here, and there is no template to stub from. Say so
+      # rather than failing: this is the normal GitHub Actions state.
+      echo "↷ $_cfg_target absent and not required outside Xcode Cloud"
+      return 0
+    else
+      echo "❌ $_cfg_target is missing: $_cfg_var is unset or empty, and" >&2
+      echo "   $_cfg_template does not exist to stub from." >&2
+      exit 1
+    fi
   fi
 
-  if grep -q "$expected_symbol" "$target"; then
-    echo "✅ Created $target from secret environment variable"
-  else
-    echo "❌ Secret for $target did not decode to Swift declaring $expected_symbol" >&2
-    rm -f "$target"
-    exit 1
+  # A secret can decode to valid, correctly-named, fully-parsing Swift and still
+  # be the placeholder template — that is how build 110 shipped with no
+  # OpenWeatherMap key while the log showed a green checkmark. Compared here
+  # rather than inside the validator so it also catches a stale local file.
+  if [ -f "$_cfg_template" ] && cmp -s "$_cfg_target" "$_cfg_template"; then
+    case " $placeholder_files " in
+      *" $_cfg_target "*) ;;
+      *)
+        echo "⚠️  $_cfg_target is byte-identical to its template — PLACEHOLDER KEYS" >&2
+        placeholder_files="$placeholder_files $_cfg_target"
+        ;;
+    esac
+  fi
+
+  if [ "$_cfg_requirement" = "required" ] && is_archive_build; then
+    case " $placeholder_files " in
+      *" $_cfg_target "*)
+        echo "❌ $_cfg_target holds placeholder keys and this is an archive build." >&2
+        echo "   Distributing it would ship no Mapbox token (Radar renders black)," >&2
+        echo "   no Xweather credentials and no xAI key." >&2
+        echo "   Set $_cfg_var on the workflow: base64 -i $_cfg_target | pbcopy" >&2
+        exit 1
+        ;;
+    esac
   fi
 }
 
-if [ -f GrokCast/Config/DeveloperAPIKey.swift ]; then
-  echo "↷ GrokCast/Config/DeveloperAPIKey.swift already present — leaving it alone"
-elif [ -n "${DEVELOPER_API_KEY_SWIFT_BASE64:-}" ]; then
-  restore_swift_config \
-    GrokCast/Config/DeveloperAPIKey.swift \
-    "$DEVELOPER_API_KEY_SWIFT_BASE64" \
-    "enum DeveloperAPIKey"
-fi
+# Truncation is the likeliest way a secret goes wrong, and it is invisible to a
+# symbol grep: `enum DeveloperAPIKey` sits near the top of the file, so any
+# prefix-truncated paste still matches. base64 does not help either — it decodes
+# a truncated stream and exits 0. Parsing is what actually catches it.
+validate_swift() {
+  _v_target="$1"
+  _v_symbol="enum $(basename "$_v_target" .swift)"
 
-if [ -f GrokCast/Config/OpenWeatherMapKeys.swift ]; then
-  echo "↷ GrokCast/Config/OpenWeatherMapKeys.swift already present — leaving it alone"
-elif [ -n "${OPENWEATHERMAP_KEYS_SWIFT_BASE64:-}" ]; then
-  restore_swift_config \
-    GrokCast/Config/OpenWeatherMapKeys.swift \
-    "$OPENWEATHERMAP_KEYS_SWIFT_BASE64" \
-    "enum OpenWeatherMapKeys"
-fi
+  if ! grep -q "$_v_symbol" "$_v_target"; then
+    echo "   (does not declare $_v_symbol — wrong file?)" >&2
+    return 1
+  fi
+  if ! xcrun swiftc -parse "$_v_target" >/dev/null 2>&1; then
+    echo "   (does not parse as Swift — truncated paste?)" >&2
+    return 1
+  fi
+}
 
-# Anything still missing falls back to its template. Whether that is fine depends
-# entirely on where the build is going, so say so loudly rather than silently.
-stubbed_from_template=""
-for template in GrokCast/Config/*.example; do
-  [ -e "$template" ] || continue
-  target="${template%.example}"
-  if [ -f "$target" ]; then
-    echo "↷ $target already present — leaving it alone"
+# `plutil -lint` alone is not enough: a bare string is a valid OpenStep plist, so
+# garbage that decodes to plain text passes it. BUNDLE_ID is checked too, because
+# a plist from another Firebase project parses perfectly and then silently
+# registers push against the wrong app.
+validate_google_plist() {
+  _v_target="$1"
+  _v_expected_bundle="com.scubasteve1999.GrokCast"
+
+  if ! plutil -extract GOOGLE_APP_ID raw -o - "$_v_target" >/dev/null 2>&1; then
+    echo "   (no GOOGLE_APP_ID — not a Firebase plist)" >&2
+    return 1
+  fi
+
+  _v_bundle=$(plutil -extract BUNDLE_ID raw -o - "$_v_target" 2>/dev/null || true)
+  if [ "$_v_bundle" != "$_v_expected_bundle" ]; then
+    echo "   (BUNDLE_ID is '$_v_bundle', expected '$_v_expected_bundle')" >&2
+    return 1
+  fi
+}
+
+# GoogleService-Info.plist is required because the committed project.pbxproj
+# lists it as a bundled resource, so its absence is a hard build error. It has no
+# template on purpose — a stub would ship broken Firebase Messaging rather than
+# failing loudly — which `restore_config` reports as the missing-template case.
+restore_config \
+  GrokCast/Config/GoogleService-Info.plist \
+  GOOGLE_SERVICE_INFO_PLIST_BASE64 \
+  validate_google_plist \
+  xcode-cloud
+
+# Holds the Mapbox token, Xweather credentials and the xAI key: the file whose
+# absence produced the black Radar map.
+restore_config \
+  GrokCast/Config/DeveloperAPIKey.swift \
+  DEVELOPER_API_KEY_SWIFT_BASE64 \
+  validate_swift \
+  required
+
+# Optional: no real OpenWeatherMap key exists yet, so the committed placeholder
+# is the current state of the world rather than a misconfiguration. Promote this
+# to `required` once a real key is issued.
+restore_config \
+  GrokCast/Config/OpenWeatherMapKeys.swift \
+  OPENWEATHERMAP_KEYS_SWIFT_BASE64 \
+  validate_swift \
+  optional
+
+if [ -n "$placeholder_files" ]; then
+  echo "⚠️  Building with placeholder keys for:$placeholder_files" >&2
+  if is_archive_build; then
+    echo "   These are the optional ones; the required files are real." >&2
   else
-    cp "$template" "$target"
-    stubbed_from_template="$stubbed_from_template $target"
-    echo "⚠️  Created $target from $(basename "$template") — PLACEHOLDER KEYS"
+    echo "   Expected for PR validation — this build is not being distributed." >&2
   fi
-done
-
-if [ -n "$stubbed_from_template" ]; then
-  echo "⚠️  Building with placeholder keys for:$stubbed_from_template" >&2
-  echo "   Fine for PR validation. A build distributed to TestFlight this way has" >&2
-  echo "   no Mapbox token (Radar renders black), no Xweather credentials and no" >&2
-  echo "   xAI key. Set the secret environment variables above to ship real keys." >&2
-fi
-
-# GoogleService-Info.plist is gitignored but IS referenced by the committed
-# project.pbxproj as a bundled resource, so its absence is a hard build error —
-# this is what "Build input file cannot be found" was. It gets no placeholder
-# template on purpose: this archive ships to TestFlight, and a stub plist would
-# ship broken Firebase Messaging rather than failing loudly.
-#
-# Supply it as a secret Xcode Cloud environment variable holding the base64 of
-# the real file:
-#   base64 -i GrokCast/Config/GoogleService-Info.plist | pbcopy
-GOOGLE_PLIST="GrokCast/Config/GoogleService-Info.plist"
-if [ -f "$GOOGLE_PLIST" ]; then
-  echo "↷ $GOOGLE_PLIST already present — leaving it alone"
-elif [ -n "${GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ]; then
-  if ! printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > "$GOOGLE_PLIST" 2>/dev/null
-  then
-    echo "❌ GOOGLE_SERVICE_INFO_PLIST_BASE64 is not valid base64" >&2
-    echo "   encoded chars: $(printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | wc -c | tr -d ' ')" >&2
-    echo "   A re-saved variable can come back as its own '**********' mask." >&2
-    echo "   Re-add it: base64 -i $GOOGLE_PLIST | pbcopy" >&2
-    rm -f "$GOOGLE_PLIST"
-    exit 1
-  fi
-  # A truncated or mis-pasted secret yields a file that is present but wrong,
-  # which fails much later and far less clearly than a missing one. `plutil -lint`
-  # alone is not enough: a bare string is a valid OpenStep plist, so garbage that
-  # decodes to plain text passes it. Require a key Firebase actually reads.
-  if plutil -extract GOOGLE_APP_ID raw -o - "$GOOGLE_PLIST" >/dev/null 2>&1; then
-    echo "✅ Created $GOOGLE_PLIST from GOOGLE_SERVICE_INFO_PLIST_BASE64"
-  else
-    # Sizes only — enough to tell a truncated paste from a re-saved mask from a
-    # wholly different file, without putting any of the value in the build log.
-    echo "❌ GOOGLE_SERVICE_INFO_PLIST_BASE64 did not decode to a valid plist" >&2
-    echo "   encoded chars: $(printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | wc -c | tr -d ' ')" >&2
-    echo "   decoded bytes: $(wc -c < "$GOOGLE_PLIST" | tr -d ' ')" >&2
-    echo "   Re-add the variable: base64 -i $GOOGLE_PLIST | pbcopy" >&2
-    rm -f "$GOOGLE_PLIST"
-    exit 1
-  fi
-else
-  echo "❌ $GOOGLE_PLIST is missing and GOOGLE_SERVICE_INFO_PLIST_BASE64 is not set." >&2
-  echo "   Add it as a secret environment variable on the Xcode Cloud workflow:" >&2
-  echo "   base64 -i $GOOGLE_PLIST | pbcopy" >&2
-  exit 1
 fi
