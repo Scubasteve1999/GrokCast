@@ -20,10 +20,14 @@ final class RadarPlayback {
   ///
   /// Each frame transition pulls a viewport of tiles, so a Radar tab left open was an
   /// unbounded draw on provider quota — Xweather's is metered and has been exhausted
-  /// before. At ~1.4s per frame and 12 live frames this is roughly four minutes:
-  /// long enough not to interrupt someone watching a storm, short enough to bound a
-  /// tab nobody is looking at.
-  private static let maxLoops = 15
+  /// before. Sized for roughly four minutes of continuous animation: long enough not
+  /// to interrupt someone watching a storm, short enough to bound a tab nobody is
+  /// looking at.
+  ///
+  /// Measured against Xweather Live, which serves ~18 frames at the clamped 3.0s
+  /// interval and default 2.0x speed — a ~27s loop. Providers with fewer frames run
+  /// shorter, so this is a ceiling on the wall-clock cap, not a fixed duration.
+  private static let maxLoops = 9
 
   private static let baselineScreenInterval: TimeInterval = 2.8
   private static let referenceDataGap: TimeInterval = 5 * 60

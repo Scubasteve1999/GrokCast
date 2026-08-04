@@ -51,8 +51,8 @@ final class RadarPlaybackTests: XCTestCase {
     let steps = runUntilStopped(playback)
 
     XCTAssertFalse(playback.isAnimating, "playback must not animate indefinitely")
-    // 15 loops of 4 frames: the final advance stops instead of wrapping.
-    XCTAssertEqual(steps, 15 * frames)
+    // 9 loops of 4 frames: the final advance stops instead of wrapping.
+    XCTAssertEqual(steps, 9 * frames)
   }
 
   func testPlaybackRestsOnTheFinalFrameWhenCapped() {
@@ -82,7 +82,7 @@ final class RadarPlaybackTests: XCTestCase {
 
     // Tapping play again must give a full allowance, not immediately re-stop.
     let steps = runUntilStopped(playback)
-    XCTAssertEqual(steps, 15 * frames)
+    XCTAssertEqual(steps, 9 * frames)
   }
 
   func testResumingAtTheEndOfALoopDoesNotGrantAnExtraPass() {
@@ -92,12 +92,12 @@ final class RadarPlaybackTests: XCTestCase {
     runUntilStopped(playback)
 
     // Resuming where the cap left off (the final frame) means the next advance
-    // immediately completes a loop, so the fresh allowance is 15 loops from there —
-    // not 15 full passes plus the partial one already on screen.
+    // immediately completes a loop, so the fresh allowance is 9 loops from there —
+    // not 9 full passes plus the partial one already on screen.
     playback.start()
     let steps = runUntilStopped(playback)
 
-    XCTAssertEqual(steps, 1 + (14 * frames))
+    XCTAssertEqual(steps, 1 + (8 * frames))
   }
 
   func testStopLeavesTheIndexAlone() {
