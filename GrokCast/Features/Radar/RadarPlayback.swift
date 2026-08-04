@@ -3,17 +3,23 @@ import Foundation
 @MainActor
 @Observable
 final class RadarPlayback {
-  /// `nonisolated` on both: the class is `@MainActor`, so its statics inherit that
-  /// isolation, and `RadarPreferences` reads them from a nonisolated context. They
-  /// are immutable `Sendable` values, so opting them out is safe — without it this
-  /// is a warning today and an error under the Swift 6 language mode.
+  /// `nonisolated` because the class is `@MainActor`, so its statics inherit that
+  /// isolation, and `RadarPreferences` — which is not main-actor bound — reads
+  /// `defaultPlaybackSpeed` and calls `clampedPlaybackSpeed`. Both are immutable
+  /// `Sendable` values, so opting them out is safe.
   nonisolated static let defaultPlaybackSpeed: Double = 2.0
   nonisolated private static let playbackSpeedRange: ClosedRange<Double> = 0.25...4.0
 
   /// Single definition of the supported speed range, shared with `RadarPreferences`
   /// so a restored value can't land outside what the controls can produce.
+  ///
+  /// NaN is mapped to the default rather than passed through: `min`/`max`
+  /// propagate it, and a NaN speed divides into a NaN frame interval, which gives
+  /// `Timer` a fire date that never arrives — playback wedges with `isAnimating`
+  /// still true.
   nonisolated static func clampedPlaybackSpeed(_ speedMultiplier: Double) -> Double {
-    min(max(speedMultiplier, playbackSpeedRange.lowerBound), playbackSpeedRange.upperBound)
+    guard speedMultiplier.isFinite else { return defaultPlaybackSpeed }
+    return min(max(speedMultiplier, playbackSpeedRange.lowerBound), playbackSpeedRange.upperBound)
   }
 
   var currentIndex: Int = 0
@@ -81,7 +87,15 @@ final class RadarPlayback {
 
   func advance() {
     let count = frameCount()
-    guard isAnimating, count > 1 else { return }
+    guard isAnimating else { return }
+
+    // A refresh can empty the timeline mid-playback. Returning without stopping
+    // left `scheduleNextTick` re-arming forever against a frozen map, with the
+    // control still showing "playing".
+    guard count > 1 else {
+      stop()
+      return
+    }
 
     guard currentIndex >= count - 1 else {
       currentIndex += 1
@@ -174,6 +188,9 @@ final class RadarPlayback {
     } else {
       floor = 0.15
     }
-    return min(ceiling, max(floor, scaled))
+    // Floor applied last: `min(ceiling, ...)` on the outside let a ceiling below
+    // the floor win, which is how a high speed produced a 30ms tick — far under
+    // the crossfade duration this floor exists to protect.
+    return max(floor, min(ceiling, scaled))
   }
 }

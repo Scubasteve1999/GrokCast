@@ -128,11 +128,16 @@ final class RadarState {
 
   var isAnimating: Bool { playback.isAnimating }
 
+  /// Clamped on the way in, because `RadarPreferences` clamps on write and
+  /// `RadarPlayback.playbackSpeed` is a plain `var` that does not. Assigning raw
+  /// left the two disagreeing: an out-of-range value animated at full speed for
+  /// the session and then silently changed on the next launch.
   var playbackSpeed: Double {
     get { playback.playbackSpeed }
     set {
-      playback.playbackSpeed = newValue
-      RadarPreferences.playbackSpeed = newValue
+      let clamped = RadarPlayback.clampedPlaybackSpeed(newValue)
+      playback.playbackSpeed = clamped
+      RadarPreferences.playbackSpeed = clamped
     }
   }
 
