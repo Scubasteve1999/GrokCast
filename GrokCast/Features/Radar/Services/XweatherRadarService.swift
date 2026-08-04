@@ -276,14 +276,14 @@ final class XweatherRadarService {
       }
 
       lastProbeFailure = failureFromResponse(statusCode: http.statusCode, data: data)
-      print(
+      radarLog(
         "[Xweather] Probe failed for \(layer.rawValue)/\(offset): HTTP \(http.statusCode)"
           + (lastProbeFailure.map { " — \($0)" } ?? "")
       )
       return false
     } catch {
       lastProbeFailure = .other(error.localizedDescription)
-      print("[Xweather] Probe failed for \(layer.rawValue)/\(offset): \(error)")
+      radarLog("[Xweather] Probe failed for \(layer.rawValue)/\(offset): \(error)")
       return false
     }
   }

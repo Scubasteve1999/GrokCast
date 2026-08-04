@@ -120,6 +120,7 @@
 		7014B4A7E73730A518B9A9A7 /* RadarLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA62C744129F745BB5F2BAE /* RadarLoader.swift */; };
 		717D3910AB7E0FEE489BE430 /* SevereWeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E01657B19958943C47402F4 /* SevereWeatherStore.swift */; };
 		72FA7104E9F28119724C6650 /* GrokUsageLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED9A08813E4854336066F11 /* GrokUsageLimiter.swift */; };
+		7321E862C3EC5C7F6456CCA9 /* RadarLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A472DF7C0FE7EAB59F6C7B /* RadarLog.swift */; };
 		7885E2FCA60C19924A803B3E /* TripPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D97BFAAA740BDD403D4603 /* TripPlannerView.swift */; };
 		795C30E1D4C75C2C9CC764D9 /* GrokCastWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 173F8E2E1E52A13ED9EF7932 /* GrokCastWidgets.swift */; };
 		7B1E1BD1E410558E9DF79084 /* FeedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FE60B7949EDE082C9146A8 /* FeedItem.swift */; };
@@ -402,6 +403,7 @@
 		6DA2EF1B07EAA29CD57243EE /* ShortTermPrecipModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortTermPrecipModels.swift; sourceTree = "<group>"; };
 		6DB181234A17FE9C40CEBA17 /* RadarTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarTimeline.swift; sourceTree = "<group>"; };
 		6F553C464AA8B9C7DD0FFAD5 /* ChaseRadarHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaseRadarHUD.swift; sourceTree = "<group>"; };
+		72A472DF7C0FE7EAB59F6C7B /* RadarLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarLog.swift; sourceTree = "<group>"; };
 		74941DAE6DEC3AE2D84B819F /* GrokAIConversationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAIConversationStore.swift; sourceTree = "<group>"; };
 		7541B90E1EF0EF01C29726C6 /* AirQualityAndMoonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirQualityAndMoonTests.swift; sourceTree = "<group>"; };
 		75E733BE6650A28E6113B048 /* StormSpotterPhotoShare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormSpotterPhotoShare.swift; sourceTree = "<group>"; };
@@ -1068,6 +1070,7 @@
 				A92A111C733E4349C17C4DA7 /* RadarControlPanel.swift */,
 				54DAA10B5AF53B9B047056CB /* RadarDataset.swift */,
 				AFA62C744129F745BB5F2BAE /* RadarLoader.swift */,
+				72A472DF7C0FE7EAB59F6C7B /* RadarLog.swift */,
 				FC4187B014ED170D0415154D /* RadarMapboxRepresentable.swift */,
 				54BF5133FF4F68BDE40ADAAB /* RadarMapStyle.swift */,
 				5BD08C2100DC5E5B51E8A913 /* RadarModeTransition.swift */,
@@ -1437,6 +1440,7 @@
 				FEE7747861531AB1C03D34DA /* RadarFeedCard.swift in Sources */,
 				A5E5D5B58047740E76544016 /* RadarFrame.swift in Sources */,
 				7014B4A7E73730A518B9A9A7 /* RadarLoader.swift in Sources */,
+				7321E862C3EC5C7F6456CCA9 /* RadarLog.swift in Sources */,
 				3F68EB5D8DD7D61C8E5672EF /* RadarMapStyle.swift in Sources */,
 				A4B16C6E8A03BFC8BA547920 /* RadarMapboxRepresentable.swift in Sources */,
 				E1909FCA55B8553C314B2CC3 /* RadarModeTransition.swift in Sources */,

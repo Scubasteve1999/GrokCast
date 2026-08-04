@@ -301,7 +301,7 @@ final class RadarState {
     if provider == .xweather, let fallback = await loader.loadOpenWeatherMapForecastIfAvailable() {
       timeline.forecast = fallback.frames
       forecastTileAvailability = fallback.availability
-      print("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
+      radarLog("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
       return fallback.availability.hasFrames
     }
 
@@ -389,7 +389,7 @@ extension RadarState {
     guard selectedProduct == product else { return }
 
     if !refreshed {
-      print(
+      radarLog(
         "[RadarState] \(product.displayName) unavailable for \(nearestSite?.id ?? "?") — keeping current view"
       )
       siteProductUnavailableMessage = unavailableMessage(for: product)
@@ -432,7 +432,7 @@ extension RadarState {
     liveTileAvailability = .available
     siteProductUnavailableMessage = nil
     playback.currentIndex = max(0, frames.count - 1)
-    print("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
+    radarLog("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
     return true
   }
 
@@ -448,7 +448,7 @@ extension RadarState {
 
     nearestSite = site
     if let site {
-      print("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
+      radarLog("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
     }
 
     // The active site product belongs to the old site — reload it for the new one.
@@ -520,7 +520,7 @@ extension RadarState {
 
     await updateNearestSite(for: coordinate)
 
-    print(
+    radarLog(
       "[RadarState] Loading radar → \(RadarTileProvider.preferredLive.displayName) (NOW)"
         + " + \(RadarTileProvider.preferredForecast.displayName) (FUTURE)"
     )
@@ -536,10 +536,10 @@ extension RadarState {
     // but do refresh those frames so Super-Res/SRV don't sit on a stale hour-old scan
     // while composite reloads keep running underneath.
     if selectedProduct.isSiteProduct {
-      print("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
+      radarLog("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
       let refreshed = await refreshActiveSiteProduct()
       if !refreshed {
-        print(
+        radarLog(
           "[RadarState] \(selectedProduct.displayName) refresh failed — restoring composite reflectivity"
         )
         siteProductUnavailableMessage = unavailableMessage(for: selectedProduct)
@@ -556,29 +556,29 @@ extension RadarState {
     }
 
     if let provider = result.liveProvider, !result.live.isEmpty {
-      print("[RadarState] \(provider.displayName) loaded (\(result.live.count) frames)")
+      radarLog("[RadarState] \(provider.displayName) loaded (\(result.live.count) frames)")
     } else if let message = result.liveUnavailableMessage {
-      print("[RadarState] Live radar unavailable — \(message)")
+      radarLog("[RadarState] Live radar unavailable — \(message)")
     }
 
     if let provider = result.forecastProvider, !result.forecast.isEmpty {
       if result.forecastAvailability.showsTiles {
-        print(
+        radarLog(
           "[RadarState] Forecast ready (\(result.forecast.count) frames) — \(provider.displayName)")
       } else if let message = result.futureUnavailableMessage {
-        print(
+        radarLog(
           "[RadarState] Forecast timeline-only (\(result.forecast.count) frames) — \(provider.displayName): \(message)"
         )
       } else {
-        print(
+        radarLog(
           "[RadarState] Forecast timeline-only (\(result.forecast.count) frames) — \(provider.displayName)"
         )
       }
     } else if result.forecast.isEmpty {
       if let message = result.futureUnavailableMessage {
-        print("[RadarState] Forecast unavailable — \(message)")
+        radarLog("[RadarState] Forecast unavailable — \(message)")
       } else {
-        print("[RadarState] Forecast timeline unavailable")
+        radarLog("[RadarState] Forecast timeline unavailable")
       }
     }
 

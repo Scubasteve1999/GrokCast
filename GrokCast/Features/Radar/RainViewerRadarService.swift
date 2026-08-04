@@ -56,11 +56,11 @@ final class RainViewerRadarService {
           return payload
         }
       } catch {
-        print("[RADAR] RainViewer fetch failed for \(urlString): \(error)")
+        radarLog("[RADAR] RainViewer fetch failed for \(urlString): \(error)")
       }
     }
 
-    print("[RADAR] RainViewer fetch failed: all endpoints exhausted")
+    radarLog("[RADAR] RainViewer fetch failed: all endpoints exhausted")
     return .empty
   }
 

@@ -111,7 +111,7 @@ final class RadarLoader {
         let message =
           XweatherRadarService.userFacingUnavailableMessage
           ?? "Xweather forecast radar unavailable."
-        print("[Xweather] FUTURE probe failed — timeline-only")
+        radarLog("[Xweather] FUTURE probe failed — timeline-only")
         return .timelineOnly(message: message)
       }
       return .timelineOnly(message: "Xweather keys not configured for forecast.")
@@ -128,7 +128,7 @@ final class RadarLoader {
       let message =
         OpenWeatherMapRadarService.userFacingUnavailableMessage
         ?? "OpenWeatherMap FUTURE tiles require a Maps-enabled key (see OpenWeatherMapKeys.swift)."
-      print("[OpenWeatherMap] FUTURE probe failed — using timeline-only")
+      radarLog("[OpenWeatherMap] FUTURE probe failed — using timeline-only")
       return .timelineOnly(message: message)
     }
   }
@@ -144,7 +144,7 @@ final class RadarLoader {
     let frames = OpenWeatherMapRadarService.loadForecastFrames()
     guard !frames.isEmpty else { return nil }
 
-    print("[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0")
+    radarLog("[RadarLoader] Forecast timeline ready (\(frames.count) frames) — OpenWeatherMap PR0")
     return (frames, .available)
   }
 
@@ -166,7 +166,7 @@ final class RadarLoader {
       let xwFrames = XweatherRadarService.loadLiveRadarFrames()
       if !xwFrames.isEmpty {
         let age = Date().timeIntervalSince(xwFrames.last?.timestamp ?? .distantPast)
-        print(
+        radarLog(
           "[RadarLoader] Live: Xweather radar-global (\(xwFrames.count) frames, age \(Int(age / 60))m)"
         )
         return LoadOutcome(
@@ -213,26 +213,26 @@ final class RadarLoader {
     if let bestReal = Self.freshestRealCandidate(realCandidates) {
       let age = Date().timeIntervalSince(bestReal.frames.last?.timestamp ?? .distantPast)
       if age <= Self.realSourceStaleThreshold {
-        print("[RadarLoader] Live: \(bestReal.label) (freshest real, age \(Int(age / 60))m)")
+        radarLog("[RadarLoader] Live: \(bestReal.label) (freshest real, age \(Int(age / 60))m)")
         return LoadOutcome(
           frames: bestReal.frames,
           provider: bestReal.provider,
           availability: .available
         )
       }
-      print(
+      radarLog(
         "[RadarLoader] Freshest real source stale (\(Int(age / 60))m) — trying OpenWeatherMap"
       )
     }
 
     if let openWeatherMap = await loadOpenWeatherMapLive() {
-      print("[RadarLoader] Live: OpenWeatherMap (\(openWeatherMap.frames.count) frames)")
+      radarLog("[RadarLoader] Live: OpenWeatherMap (\(openWeatherMap.frames.count) frames)")
       return openWeatherMap
     }
 
     // Last resort: stale real source still better than nothing.
     if let bestReal = Self.freshestRealCandidate(realCandidates) {
-      print("[RadarLoader] Live: \(bestReal.label) (stale real, OWM unavailable)")
+      radarLog("[RadarLoader] Live: \(bestReal.label) (stale real, OWM unavailable)")
       return LoadOutcome(
         frames: bestReal.frames,
         provider: bestReal.provider,
@@ -240,7 +240,7 @@ final class RadarLoader {
       )
     }
 
-    print(
+    radarLog(
       "[RadarLoader] Live radar unavailable — Xweather, IEM, OpenWeatherMap, and RainViewer failed"
     )
     return LoadOutcome(
@@ -268,7 +268,7 @@ final class RadarLoader {
       if !xwFrames.isEmpty {
         let probeOK = await XweatherRadarService.probeForecastAvailability()
         if probeOK {
-          print("[RadarLoader] Forecast timeline ready (\(xwFrames.count) frames) — Xweather radar")
+          radarLog("[RadarLoader] Forecast timeline ready (\(xwFrames.count) frames) — Xweather radar")
           return LoadOutcome(
             frames: xwFrames,
             provider: .xweather,
@@ -276,7 +276,7 @@ final class RadarLoader {
           )
         }
 
-        print("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast / OWM")
+        radarLog("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast / OWM")
         if let fallback = await firstWorkingForecastFallback(rainViewerNowcast: rainViewerNowcast) {
           return fallback
         }
@@ -286,7 +286,7 @@ final class RadarLoader {
           let message =
             XweatherRadarService.userFacingUnavailableMessage
             ?? "Xweather Maps keys invalid or lack Maps access."
-          print("[RadarLoader] Forecast unavailable — Xweather auth failed, no fallback")
+          radarLog("[RadarLoader] Forecast unavailable — Xweather auth failed, no fallback")
           return LoadOutcome(
             frames: [],
             provider: nil,
@@ -297,7 +297,7 @@ final class RadarLoader {
         let message =
           XweatherRadarService.userFacingUnavailableMessage
           ?? "Xweather forecast radar unavailable."
-        print(
+        radarLog(
           "[RadarLoader] Forecast timeline-only (\(xwFrames.count) frames) — \(message)"
         )
         return LoadOutcome(
@@ -316,7 +316,7 @@ final class RadarLoader {
       XweatherRadarService.userFacingUnavailableMessage
       ?? OpenWeatherMapRadarService.userFacingUnavailableMessage
       ?? "Forecast radar unavailable."
-    print("[RadarLoader] Forecast timeline unavailable (no valid provider)")
+    radarLog("[RadarLoader] Forecast timeline unavailable (no valid provider)")
     return LoadOutcome(
       frames: [],
       provider: nil,
@@ -329,7 +329,7 @@ final class RadarLoader {
     rainViewerNowcast: [RadarFrame]
   ) async -> LoadOutcome? {
     if !rainViewerNowcast.isEmpty {
-      print(
+      radarLog(
         "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"
       )
       return LoadOutcome(
@@ -358,7 +358,7 @@ final class RadarLoader {
 
   private func loadOpenWeatherMapLive() async -> LoadOutcome? {
     guard OpenWeatherMapRadarService.apiKeyConfigured else {
-      print("[OpenWeatherMap] No API key configured — skipping live fallback")
+      radarLog("[OpenWeatherMap] No API key configured — skipping live fallback")
       return nil
     }
 
@@ -371,7 +371,7 @@ final class RadarLoader {
       availability = .available
     } else {
       availability = .timelineOnly(message: Self.openWeatherMapUnavailableMessage())
-      print("[OpenWeatherMap] Live probe failed — serving timeline optimistically")
+      radarLog("[OpenWeatherMap] Live probe failed — serving timeline optimistically")
     }
 
     return LoadOutcome(

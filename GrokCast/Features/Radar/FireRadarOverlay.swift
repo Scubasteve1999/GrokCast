@@ -83,7 +83,7 @@ enum FireRadarOverlay {
         try style.addLayer(line)
       }
     } catch {
-      print("[FireRadar] ensureLayers failed: \(error)")
+      radarLog("[FireRadar] ensureLayers failed: \(error)")
     }
   }
 
