@@ -60,13 +60,23 @@ final class RadarState {
   /// Composite reflectivity vs single-site NEXRAD products (Velocity/SRV).
   private(set) var selectedProduct: RadarProduct = .reflectivity
   /// Client-side raster color treatment (applied in the Mapbox layer).
-  var colorScheme: RadarColorScheme = .vibrant
-  /// Underlying Mapbox base map style (session-only).
-  var baseMapStyle: RadarBaseMapStyle = .satelliteStreets
+  /// These four persist via `RadarPreferences`; the controls bind to them directly,
+  /// so `didSet` is the one hook that catches every path that can change them.
+  var colorScheme: RadarColorScheme = RadarPreferences.colorScheme {
+    didSet { RadarPreferences.colorScheme = colorScheme }
+  }
+  /// Underlying Mapbox base map style.
+  var baseMapStyle: RadarBaseMapStyle = RadarPreferences.baseMapStyle {
+    didSet { RadarPreferences.baseMapStyle = baseMapStyle }
+  }
   /// When false, hides the precipitation radar raster layer so only the base map shows.
-  var showRadarOverlay: Bool = true
+  var showRadarOverlay: Bool = RadarPreferences.showRadarOverlay {
+    didSet { RadarPreferences.showRadarOverlay = showRadarOverlay }
+  }
   /// Independent Fire overlay (FIRMS hotspots + NIFC perimeters). Does not affect precip rasters.
-  var showFireLayer: Bool = false
+  var showFireLayer: Bool = RadarPreferences.showFireLayer {
+    didSet { RadarPreferences.showFireLayer = showFireLayer }
+  }
   /// Nearest NEXRAD site (resolved from the load coordinate; nil outside the US).
   private(set) var nearestSite: IEMRadarService.Site?
 
@@ -120,7 +130,10 @@ final class RadarState {
 
   var playbackSpeed: Double {
     get { playback.playbackSpeed }
-    set { playback.playbackSpeed = newValue }
+    set {
+      playback.playbackSpeed = newValue
+      RadarPreferences.playbackSpeed = newValue
+    }
   }
 
   var activeFrames: [RadarFrame] {
@@ -213,6 +226,7 @@ final class RadarState {
   init() {
     playback.frameCount = { [weak self] in self?.activeFrameCount ?? 0 }
     playback.frameTimestamps = { [weak self] in self?.activeTimestamps ?? [] }
+    playback.playbackSpeed = RadarPreferences.playbackSpeed
   }
 
   func start() { playback.start() }
@@ -221,6 +235,9 @@ final class RadarState {
 
   func setPlaybackSpeed(_ speedMultiplier: Double) {
     playback.setPlaybackSpeed(speedMultiplier)
+    // Persist what playback actually adopted, not the raw request — the two differ
+    // when the multiplier is out of range.
+    RadarPreferences.playbackSpeed = playback.playbackSpeed
   }
 
   func requestModeChange(toFuture: Bool) {

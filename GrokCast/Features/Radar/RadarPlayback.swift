@@ -3,9 +3,20 @@ import Foundation
 @MainActor
 @Observable
 final class RadarPlayback {
+  static let defaultPlaybackSpeed: Double = 2.0
+  private static let playbackSpeedRange: ClosedRange<Double> = 0.25...4.0
+
+  /// Single definition of the supported speed range, shared with `RadarPreferences`
+  /// so a restored value can't land outside what the controls can produce.
+  /// `nonisolated` because it is pure arithmetic and the preference store that
+  /// needs it is not main-actor bound.
+  nonisolated static func clampedPlaybackSpeed(_ speedMultiplier: Double) -> Double {
+    min(max(speedMultiplier, playbackSpeedRange.lowerBound), playbackSpeedRange.upperBound)
+  }
+
   var currentIndex: Int = 0
   var isAnimating = false
-  var playbackSpeed: Double = 2.0
+  var playbackSpeed: Double = RadarPlayback.defaultPlaybackSpeed
 
   var frameCount: () -> Int = { 0 }
   var frameTimestamps: () -> [Date] = { [] }
@@ -87,7 +98,7 @@ final class RadarPlayback {
   }
 
   func setPlaybackSpeed(_ speedMultiplier: Double) {
-    playbackSpeed = max(0.25, min(speedMultiplier, 4.0))
+    playbackSpeed = Self.clampedPlaybackSpeed(speedMultiplier)
     if isAnimating {
       stop()
       start()
