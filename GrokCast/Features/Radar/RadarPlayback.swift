@@ -3,13 +3,15 @@ import Foundation
 @MainActor
 @Observable
 final class RadarPlayback {
-  static let defaultPlaybackSpeed: Double = 2.0
-  private static let playbackSpeedRange: ClosedRange<Double> = 0.25...4.0
+  /// `nonisolated` on both: the class is `@MainActor`, so its statics inherit that
+  /// isolation, and `RadarPreferences` reads them from a nonisolated context. They
+  /// are immutable `Sendable` values, so opting them out is safe — without it this
+  /// is a warning today and an error under the Swift 6 language mode.
+  nonisolated static let defaultPlaybackSpeed: Double = 2.0
+  nonisolated private static let playbackSpeedRange: ClosedRange<Double> = 0.25...4.0
 
   /// Single definition of the supported speed range, shared with `RadarPreferences`
   /// so a restored value can't land outside what the controls can produce.
-  /// `nonisolated` because it is pure arithmetic and the preference store that
-  /// needs it is not main-actor bound.
   nonisolated static func clampedPlaybackSpeed(_ speedMultiplier: Double) -> Double {
     min(max(speedMultiplier, playbackSpeedRange.lowerBound), playbackSpeedRange.upperBound)
   }
