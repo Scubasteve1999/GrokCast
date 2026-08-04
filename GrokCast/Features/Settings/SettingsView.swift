@@ -641,6 +641,7 @@ struct SettingsView: View {
             }
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.vertical, DesignTokens.Spacing.space12)
+            .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           SettingsDivider()
@@ -655,6 +656,7 @@ struct SettingsView: View {
             }
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.vertical, DesignTokens.Spacing.space12)
+            .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
         }
@@ -778,6 +780,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, DesignTokens.Spacing.space16)
         .padding(.vertical, DesignTokens.Spacing.space12)
+        .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
 
@@ -825,6 +828,7 @@ struct SettingsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
           .padding(.vertical, DesignTokens.Spacing.space12)
+          .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(isTestingConnection)
@@ -916,6 +920,7 @@ struct SettingsView: View {
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
       .padding(.vertical, DesignTokens.Spacing.space12)
+      .contentShape(Rectangle())
     }
   }
 

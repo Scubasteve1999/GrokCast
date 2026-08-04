@@ -150,6 +150,7 @@ struct LocationsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
           .padding(.vertical, DesignTokens.Spacing.space12)
+          .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
       }

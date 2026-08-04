@@ -561,14 +561,23 @@ final class GrokAIViewModel {
       Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
       """
 
-    return try await completeChat(
-      messages: [
-        GrokBuildMessage(role: "system", content: system),
-        GrokBuildMessage(role: "user", content: "Give me today's weather take."),
-      ],
-      feature: .todaysTake,
-      maxTokens: 280
-    )
+    do {
+      return try await completeChat(
+        messages: [
+          GrokBuildMessage(role: "system", content: system),
+          GrokBuildMessage(role: "user", content: "Give me today's weather take."),
+        ],
+        feature: .todaysTake,
+        maxTokens: 280
+      )
+    } catch StructuredFetchError.emptyResponse {
+      return LocalWeatherBrief.make(
+        weather: weather,
+        unit: unit,
+        locationName: location,
+        activeAlerts: weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+      )
+    }
   }
 
   func fetchRadarExplanation(context: RadarExplainContext) async throws -> String {

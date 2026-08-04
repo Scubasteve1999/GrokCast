@@ -4,6 +4,7 @@ import SwiftUI
 struct RadarView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(FireStore.self) private var fireStore
+  @Environment(\.scenePhase) private var scenePhase
 
   @State private var radarOpacity: Double = 0.85
   @State private var radarState = RadarState()
@@ -89,6 +90,30 @@ struct RadarView: View {
       .onChange(of: radarState.committedIsFuture) { _, _ in
         if radarState.isAnimating {
           radarState.start()
+        }
+      }
+      // Returning from the background is the one way onto Radar that no `.task(id:)`
+      // covers — neither the tab nor the location changed — so without this the app
+      // resumes animating however old the frames were when it was suspended.
+      .onChange(of: scenePhase) { _, newPhase in
+        switch newPhase {
+        case .active:
+          guard store.selectedTab == .radar else { return }
+          Task {
+            // reloadIfStale carries its own thresholds, so a brief trip to the app
+            // switcher costs nothing while a long absence rebuilds.
+            await radarState.reloadIfStale(for: selectedMapCenter)
+            if radarState.showContent {
+              radarState.start()
+            }
+          }
+        case .background:
+          // A non-repeating Timer whose fire date passed during suspension fires
+          // immediately on resume; stopping first keeps playback from advancing
+          // through stale frames and fetching their tiles before the reload lands.
+          radarState.stop()
+        default:
+          break
         }
       }
       .onDisappear {

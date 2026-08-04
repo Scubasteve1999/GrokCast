@@ -49,6 +49,15 @@ enum DeveloperAPIKey {
   /// proxy verifies against Apple. Kept out of tracked source anyway.
   static let grokProxySharedSecret: String? = nil
 
+  /// Hosted push agent for server-side alerts — see `server/push-agent/README.md`.
+  /// Include the `/v1/push` suffix: `"https://<worker>.workers.dev/v1/push"`.
+  /// While nil, notifications stay local-only and nothing is uploaded.
+  static let pushAgentBaseURL: String? = nil
+
+  /// Must match the push agent's `PUSH_SECRET`. Ships inside the binary, so it is
+  /// public by necessity — the Keychain device id is what protects a registration.
+  static let pushAgentSharedSecret: String? = nil
+
   /// NASA FIRMS MAP_KEY (area CSV). Free signup: https://firms.modaps.eosdis.nasa.gov/api/map_key/
   static let firmsMapKey: String? = nil  // "YOUR_FIRMS_MAP_KEY"
 

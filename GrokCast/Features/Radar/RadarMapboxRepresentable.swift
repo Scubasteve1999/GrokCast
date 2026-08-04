@@ -344,7 +344,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       resetRasterTracking()
       mapView.mapboxMap.loadStyle(style.styleURI) { error in
         if let error {
-          print("[Mapbox] Style load failed: \(error)")
+          radarLog("[Mapbox] Style load failed: \(error)")
         }
       }
     }
@@ -439,7 +439,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         appliedSaturation = desired.saturation
         appliedContrast = desired.contrast
       } catch {
-        print("[Mapbox] Dual layer setup failed: \(error)")
+        radarLog("[Mapbox] Dual layer setup failed: \(error)")
         resetRasterTracking()
       }
     }
@@ -546,7 +546,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           value: desired.minimumTileUpdateInterval
         )
       } catch {
-        print("[Mapbox] Failed to update \(slot.sourceId): \(error)")
+        radarLog("[Mapbox] Failed to update \(slot.sourceId): \(error)")
       }
     }
 

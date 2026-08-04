@@ -60,13 +60,23 @@ final class RadarState {
   /// Composite reflectivity vs single-site NEXRAD products (Velocity/SRV).
   private(set) var selectedProduct: RadarProduct = .reflectivity
   /// Client-side raster color treatment (applied in the Mapbox layer).
-  var colorScheme: RadarColorScheme = .vibrant
-  /// Underlying Mapbox base map style (session-only).
-  var baseMapStyle: RadarBaseMapStyle = .satelliteStreets
+  /// These four persist via `RadarPreferences`; the controls bind to them directly,
+  /// so `didSet` is the one hook that catches every path that can change them.
+  var colorScheme: RadarColorScheme = RadarPreferences.colorScheme {
+    didSet { RadarPreferences.colorScheme = colorScheme }
+  }
+  /// Underlying Mapbox base map style.
+  var baseMapStyle: RadarBaseMapStyle = RadarPreferences.baseMapStyle {
+    didSet { RadarPreferences.baseMapStyle = baseMapStyle }
+  }
   /// When false, hides the precipitation radar raster layer so only the base map shows.
-  var showRadarOverlay: Bool = true
+  var showRadarOverlay: Bool = RadarPreferences.showRadarOverlay {
+    didSet { RadarPreferences.showRadarOverlay = showRadarOverlay }
+  }
   /// Independent Fire overlay (FIRMS hotspots + NIFC perimeters). Does not affect precip rasters.
-  var showFireLayer: Bool = false
+  var showFireLayer: Bool = RadarPreferences.showFireLayer {
+    didSet { RadarPreferences.showFireLayer = showFireLayer }
+  }
   /// Nearest NEXRAD site (resolved from the load coordinate; nil outside the US).
   private(set) var nearestSite: IEMRadarService.Site?
 
@@ -95,6 +105,14 @@ final class RadarState {
   var playback = RadarPlayback()
   private var manualIsLoading = false
 
+  /// The load in flight, if any, with the coordinate it was started for. Concurrent
+  /// callers join it rather than returning early: a dropped call still completed its
+  /// `await`, so the caller could not tell a refresh from a no-op — which is how a
+  /// foreground reload could silently leave stale frames on screen.
+  private var inFlightLoad:
+    (task: Task<Void, Never>, coordinate: CLLocationCoordinate2D, id: UInt64)?
+  private var nextLoadID: UInt64 = 0
+
   var isLoading: Bool {
     get { manualIsLoading || loader.isLoading }
     set { manualIsLoading = newValue }
@@ -112,7 +130,10 @@ final class RadarState {
 
   var playbackSpeed: Double {
     get { playback.playbackSpeed }
-    set { playback.playbackSpeed = newValue }
+    set {
+      playback.playbackSpeed = newValue
+      RadarPreferences.playbackSpeed = newValue
+    }
   }
 
   var activeFrames: [RadarFrame] {
@@ -205,6 +226,7 @@ final class RadarState {
   init() {
     playback.frameCount = { [weak self] in self?.activeFrameCount ?? 0 }
     playback.frameTimestamps = { [weak self] in self?.activeTimestamps ?? [] }
+    playback.playbackSpeed = RadarPreferences.playbackSpeed
   }
 
   func start() { playback.start() }
@@ -213,6 +235,9 @@ final class RadarState {
 
   func setPlaybackSpeed(_ speedMultiplier: Double) {
     playback.setPlaybackSpeed(speedMultiplier)
+    // Persist what playback actually adopted, not the raw request — the two differ
+    // when the multiplier is out of range.
+    RadarPreferences.playbackSpeed = playback.playbackSpeed
   }
 
   func requestModeChange(toFuture: Bool) {
@@ -293,7 +318,7 @@ final class RadarState {
     if provider == .xweather, let fallback = await loader.loadOpenWeatherMapForecastIfAvailable() {
       timeline.forecast = fallback.frames
       forecastTileAvailability = fallback.availability
-      print("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
+      radarLog("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
       return fallback.availability.hasFrames
     }
 
@@ -381,7 +406,7 @@ extension RadarState {
     guard selectedProduct == product else { return }
 
     if !refreshed {
-      print(
+      radarLog(
         "[RadarState] \(product.displayName) unavailable for \(nearestSite?.id ?? "?") — keeping current view"
       )
       siteProductUnavailableMessage = unavailableMessage(for: product)
@@ -424,7 +449,7 @@ extension RadarState {
     liveTileAvailability = .available
     siteProductUnavailableMessage = nil
     playback.currentIndex = max(0, frames.count - 1)
-    print("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
+    radarLog("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
     return true
   }
 
@@ -440,7 +465,7 @@ extension RadarState {
 
     nearestSite = site
     if let site {
-      print("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
+      radarLog("[RadarState] Nearest NEXRAD site: \(site.id) (\(site.name))")
     }
 
     // The active site product belongs to the old site — reload it for the new one.
@@ -465,13 +490,8 @@ extension RadarState {
   /// Cheap no-op on quick tab switches; refreshes after a short idle, when the
   /// newest live frame ages out, or when the selected location moved.
   func reloadIfStale(for coordinate: CLLocationCoordinate2D) async {
-    let coordinateUnchanged: Bool = {
-      guard let lastLoadedCoordinate else { return false }
-      return abs(lastLoadedCoordinate.latitude - coordinate.latitude)
-        < Self.staleReloadDistanceDegrees
-        && abs(lastLoadedCoordinate.longitude - coordinate.longitude)
-          < Self.staleReloadDistanceDegrees
-    }()
+    let coordinateUnchanged =
+      lastLoadedCoordinate.map { Self.coordinate($0, matches: coordinate) } ?? false
 
     if let lastLoadedAt, coordinateUnchanged,
       Date().timeIntervalSince(lastLoadedAt) < Self.staleReloadThreshold
@@ -485,13 +505,39 @@ extension RadarState {
     await loadDefaultRadar(for: coordinate)
   }
 
+  /// Provider selection is per-coordinate, so two loads for materially different
+  /// places are two different results — only same-place callers can share one.
+  private static func coordinate(
+    _ lhs: CLLocationCoordinate2D, matches rhs: CLLocationCoordinate2D
+  ) -> Bool {
+    abs(lhs.latitude - rhs.latitude) < staleReloadDistanceDegrees
+      && abs(lhs.longitude - rhs.longitude) < staleReloadDistanceDegrees
+  }
+
   func loadDefaultRadar(for coordinate: CLLocationCoordinate2D) async {
-    guard !isLoading else { return }
+    if let inFlight = inFlightLoad {
+      await inFlight.task.value
+      // That load's frames are this caller's answer too. A different coordinate
+      // still needs its own load, but only once the first one is off the wire.
+      if Self.coordinate(inFlight.coordinate, matches: coordinate) { return }
+    }
+
+    nextLoadID += 1
+    let id = nextLoadID
+    let task = Task { await performDefaultRadarLoad(for: coordinate) }
+    inFlightLoad = (task, coordinate, id)
+    await task.value
+    // A later caller may have superseded us while we were suspended; only the
+    // owner of the current entry may clear it.
+    if inFlightLoad?.id == id { inFlightLoad = nil }
+  }
+
+  private func performDefaultRadarLoad(for coordinate: CLLocationCoordinate2D) async {
     isLoading = true
 
     await updateNearestSite(for: coordinate)
 
-    print(
+    radarLog(
       "[RadarState] Loading radar → \(RadarTileProvider.preferredLive.displayName) (NOW)"
         + " + \(RadarTileProvider.preferredForecast.displayName) (FUTURE)"
     )
@@ -507,10 +553,10 @@ extension RadarState {
     // but do refresh those frames so Super-Res/SRV don't sit on a stale hour-old scan
     // while composite reloads keep running underneath.
     if selectedProduct.isSiteProduct {
-      print("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
+      radarLog("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
       let refreshed = await refreshActiveSiteProduct()
       if !refreshed {
-        print(
+        radarLog(
           "[RadarState] \(selectedProduct.displayName) refresh failed — restoring composite reflectivity"
         )
         siteProductUnavailableMessage = unavailableMessage(for: selectedProduct)
@@ -527,29 +573,29 @@ extension RadarState {
     }
 
     if let provider = result.liveProvider, !result.live.isEmpty {
-      print("[RadarState] \(provider.displayName) loaded (\(result.live.count) frames)")
+      radarLog("[RadarState] \(provider.displayName) loaded (\(result.live.count) frames)")
     } else if let message = result.liveUnavailableMessage {
-      print("[RadarState] Live radar unavailable — \(message)")
+      radarLog("[RadarState] Live radar unavailable — \(message)")
     }
 
     if let provider = result.forecastProvider, !result.forecast.isEmpty {
       if result.forecastAvailability.showsTiles {
-        print(
+        radarLog(
           "[RadarState] Forecast ready (\(result.forecast.count) frames) — \(provider.displayName)")
       } else if let message = result.futureUnavailableMessage {
-        print(
+        radarLog(
           "[RadarState] Forecast timeline-only (\(result.forecast.count) frames) — \(provider.displayName): \(message)"
         )
       } else {
-        print(
+        radarLog(
           "[RadarState] Forecast timeline-only (\(result.forecast.count) frames) — \(provider.displayName)"
         )
       }
     } else if result.forecast.isEmpty {
       if let message = result.futureUnavailableMessage {
-        print("[RadarState] Forecast unavailable — \(message)")
+        radarLog("[RadarState] Forecast unavailable — \(message)")
       } else {
-        print("[RadarState] Forecast timeline unavailable")
+        radarLog("[RadarState] Forecast timeline unavailable")
       }
     }
 

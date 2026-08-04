@@ -14,4 +14,13 @@ enum GrokCastProConfig {
 
   /// Must match the worker's `PROXY_SECRET`.
   static let grokProxySharedSecret: String? = DeveloperAPIKey.grokProxySharedSecret
+
+  /// The deployed push agent, including the `/v1/push` suffix.
+  ///
+  /// While nil, `PushRegistrationService` stays inert and notifications remain
+  /// local-only. Setup: `server/push-agent/README.md`.
+  static let pushAgentBaseURL: String? = DeveloperAPIKey.pushAgentBaseURL
+
+  /// Must match the push agent's `PUSH_SECRET`.
+  static let pushAgentSharedSecret: String? = DeveloperAPIKey.pushAgentSharedSecret
 }

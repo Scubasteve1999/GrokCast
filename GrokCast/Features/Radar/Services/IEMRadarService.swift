@@ -153,7 +153,7 @@ final class IEMRadarService {
       }
       return try JSONDecoder().decode(T.self, from: data)
     } catch {
-      print("[IEM] Request failed (non-fatal) for \(url.lastPathComponent): \(error)")
+      radarLog("[IEM] Request failed (non-fatal) for \(url.lastPathComponent): \(error)")
       return nil
     }
   }

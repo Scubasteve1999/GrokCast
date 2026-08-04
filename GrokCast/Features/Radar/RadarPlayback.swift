@@ -3,14 +3,42 @@ import Foundation
 @MainActor
 @Observable
 final class RadarPlayback {
+  static let defaultPlaybackSpeed: Double = 2.0
+  private static let playbackSpeedRange: ClosedRange<Double> = 0.25...4.0
+
+  /// Single definition of the supported speed range, shared with `RadarPreferences`
+  /// so a restored value can't land outside what the controls can produce.
+  /// `nonisolated` because it is pure arithmetic and the preference store that
+  /// needs it is not main-actor bound.
+  nonisolated static func clampedPlaybackSpeed(_ speedMultiplier: Double) -> Double {
+    min(max(speedMultiplier, playbackSpeedRange.lowerBound), playbackSpeedRange.upperBound)
+  }
+
   var currentIndex: Int = 0
   var isAnimating = false
-  var playbackSpeed: Double = 2.0
+  var playbackSpeed: Double = RadarPlayback.defaultPlaybackSpeed
 
   var frameCount: () -> Int = { 0 }
   var frameTimestamps: () -> [Date] = { [] }
 
   private var timer: Timer?
+
+  /// Loops completed since playback last started. Reset in `start()`, which every
+  /// resume path funnels through (play button, scrub auto-resume, tab entry, mode switch).
+  private var completedLoops = 0
+
+  /// Playback stops after this many loops rather than animating forever.
+  ///
+  /// Each frame transition pulls a viewport of tiles, so a Radar tab left open was an
+  /// unbounded draw on provider quota — Xweather's is metered and has been exhausted
+  /// before. Sized for roughly four minutes of continuous animation: long enough not
+  /// to interrupt someone watching a storm, short enough to bound a tab nobody is
+  /// looking at.
+  ///
+  /// Measured against Xweather Live, which serves ~18 frames at the clamped 3.0s
+  /// interval and default 2.0x speed — a ~27s loop. Providers with fewer frames run
+  /// shorter, so this is a ceiling on the wall-clock cap, not a fixed duration.
+  private static let maxLoops = 9
 
   private static let baselineScreenInterval: TimeInterval = 2.8
   private static let referenceDataGap: TimeInterval = 5 * 60
@@ -30,6 +58,7 @@ final class RadarPlayback {
     // Stay on the current frame (usually newest after load). Looping wraps in
     // `advance()` — do not jump to the oldest frame when opening / resuming Live.
     timer?.invalidate()
+    completedLoops = 0
     isAnimating = true
     scheduleNextTick()
   }
@@ -51,11 +80,25 @@ final class RadarPlayback {
   func advance() {
     let count = frameCount()
     guard isAnimating, count > 1 else { return }
-    currentIndex = (currentIndex + 1) % count
+
+    guard currentIndex >= count - 1 else {
+      currentIndex += 1
+      return
+    }
+
+    completedLoops += 1
+    guard completedLoops < Self.maxLoops else {
+      // Stop without wrapping, so playback rests on the final frame. In Live that
+      // is the newest scan — the same place a manual pause lands — so the map is
+      // left showing current conditions rather than the oldest frame in the loop.
+      stop()
+      return
+    }
+    currentIndex = 0
   }
 
   func setPlaybackSpeed(_ speedMultiplier: Double) {
-    playbackSpeed = max(0.25, min(speedMultiplier, 4.0))
+    playbackSpeed = Self.clampedPlaybackSpeed(speedMultiplier)
     if isAnimating {
       stop()
       start()

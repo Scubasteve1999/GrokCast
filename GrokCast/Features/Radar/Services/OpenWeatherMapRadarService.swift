@@ -180,14 +180,14 @@ final class OpenWeatherMapRadarService {
       }
 
       lastProbeFailure = failureFromResponse(statusCode: http.statusCode, data: data)
-      print(
+      radarLog(
         "[OpenWeatherMap] Probe failed for \(kind) tm=\(tileEpoch): HTTP \(http.statusCode)"
           + (lastProbeFailure.map { " — \($0)" } ?? "")
       )
       return false
     } catch {
       lastProbeFailure = .other(error.localizedDescription)
-      print("[OpenWeatherMap] Probe failed for \(kind) tm=\(tileEpoch): \(error)")
+      radarLog("[OpenWeatherMap] Probe failed for \(kind) tm=\(tileEpoch): \(error)")
       return false
     }
   }

@@ -1,99 +1,169 @@
-# AGENTS.md — GrokCast
+# AGENTS.md — SpotterCast / GrokCast
 
-This document governs all AI agent (Grok) work on the GrokCast iOS project.
+This document governs all AI agent work on this iOS project.
 
-## Project Overview
+## Identity & paths
 
-**GrokCast** is a premium-feeling native SwiftUI iOS weather app that pairs Open-Meteo (primary) + NWS hybrid with xAI's Grok models for delightful, contextual AI weather experiences ("Grok's Take", outfit advice, activity suggestions, free chat).
+| Name | Role |
+|------|------|
+| **SpotterCast** | App Store / product name |
+| **GrokCast** | Xcode project, scheme, and codebase name |
+| Bundle ID | `com.scubasteve1999.GrokCast` |
 
-Core pillars:
-- Beautiful, dark, typographic-heavy weather UI (Today hero + forecasts)
-- First-class xAI integration (quick prompts + conversational chat with live weather context)
-- Simple, clean architecture using modern Observation + async/await
-- Zero third-party dependencies for core functionality
+**Always work from the app repo root** (not the marketing site):
 
-**Status (May 2026)**: Freshly scaffolded via `grok build new swiftui-ios-app GrokCast --template weather-forecast --integrate xai-api`. Ready for first-run polish, real device testing, and feature expansion.
+```bash
+cd ~/Projects/GrokCast
+# real path (prefer this if xcodebuild hangs on Desktop/iCloud):
+cd /Users/bigstevedev/Documents/GrokCast
+```
 
-## Repository Layout (follow this)
+| Path | What it is |
+|------|------------|
+| `~/Projects/GrokCast` → `Documents/GrokCast` | **iOS app** (this repo) |
+| `~/Projects/SpotterCast` → `Documents/SpotterCast` | Marketing site only (HTML) — not the app |
+
+## Stack
+
+- SwiftUI + Xcode (iOS 18+)
+- XcodeGen (`project.yml` → `GrokCast.xcodeproj`)
+- Observation (`@Observable`), async/await, plain `URLSession`
+- SPM: MapboxMaps, Firebase Messaging, PostHog (do not add more without asking)
+- WidgetKit + ActivityKit; App Group `group.com.scubasteve1999.GrokCast`
+- Weather: Open-Meteo (primary) + NWS hybrid (US alerts/observations, additive only)
+- AI: xAI Grok via Keychain / optional gitignored developer embed
+
+Prefer existing patterns in the codebase. Do not introduce new dependencies without asking.
+
+## Commands
+
+Run all commands from the app repo root above.
+
+### Build
+
+```bash
+xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
+```
+
+Clean build when needed:
+
+```bash
+xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' clean build
+```
+
+### Test
+
+Always run tests after non-trivial changes:
+
+```bash
+xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' test
+```
+
+Targets: `GrokCast`, `GrokCastWidgets`, `GrokCastTests`, `GrokCastUITests`.
+Scheme: `GrokCast` (also `GrokCastWidgets` for widget-only work).
+
+### Archive / TestFlight
+
+Preferred:
+
+```bash
+./Scripts/archive_for_testflight.sh              # archive only
+./Scripts/archive_for_testflight.sh --increment  # bump CURRENT_PROJECT_VERSION in project.yml, then archive
+# optional upload after a successful archive:
+./Scripts/upload_testflight.sh
+```
+
+Manual equivalent:
+
+```bash
+xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+  -configuration Release \
+  -destination 'generic/platform=iOS' \
+  -archivePath build/GrokCast.xcarchive \
+  archive
+```
+
+Build number lives in `project.yml` (`CURRENT_PROJECT_VERSION`). Prefer `./Scripts/increment_build.sh` or `./Scripts/archive_for_testflight.sh --increment` over `agvtool` (xcodegen regenerates wipe agvtool-only bumps).
+
+### Project regeneration & utilities
+
+```bash
+xcodegen generate          # after project.yml or add/remove source files
+./grok-build regenerate    # wrapper (preferred when available)
+./grok-build clean         # or --deep for stubborn issues
+rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
+xed .                      # open in Xcode
+```
+
+**Default simulator:** `iPhone 17 Pro Max`. Also available: iPhone 17 Pro, 17, 17e, Air.
+
+## Hard rules
+
+1. **Never commit secrets or API keys.** Keys live in the iOS Keychain (`KeychainService`) and gitignored `GrokCast/Config/DeveloperAPIKey.swift` (TestFlight embed only). `GrokAPIConfiguration.swift` stays secrets-free. Stub templates live as `*.example` under `GrokCast/Config/`.
+2. **Never change entitlement / paywall / StoreKit Pro logic without explicit approval.**
+3. Prefer **small, reviewable diffs**. Match existing code style exactly; clarity over cleverness.
+4. **Do not introduce new dependencies** without asking.
+5. **Always run tests** after non-trivial changes (see Test command).
+6. **NWS is strictly additive.** Non-US locations or NWS failures must stay silent (no errors surfaced). Open-Meteo remains source of truth for primary forecast numbers.
+7. Prefer plain `URLSession` + async/await; no new networking libraries.
+8. `Identifiable` in Codable forecast models must use **stable Date-based IDs** (`var id: Date { time }`), never `UUID()`.
+9. Widgets read App Group snapshots only — **never call weather/AI APIs from the widget extension**.
+10. Build/archive from the **Documents** tree when `xcodebuild` hangs on Desktop/iCloud-synced paths.
+
+## Style & architecture
+
+- **SwiftUI + Observation**: `@Observable`, `@State`, `@Environment(WeatherStore.self)`
+- Central state: single `@Observable WeatherStore` in `Shared/Services/`, injected via `.environment()`
+- Business logic and API calls: `Shared/Services/`
+- Views: `Features/<Feature>/` (e.g. `TodayView.swift`)
+- Design: dark-first; reuse DesignTokens / TacticalCard / Haptic / `ultraThinMaterial` — see `DesignSystem.md`
+- Naming: `*Service.swift` (managers), `*Store.swift` (observable state), feature views end in `View.swift`
+- Grok prompts centralized in `Shared/Grok/GrokPrompts.swift`
+- Radar subsystem under `Features/Radar/` (Mapbox representable + loader/timeline/playback)
+
+### Layout (high level)
 
 ```
 GrokCast/
 ├── GrokCast.xcodeproj/
 ├── GrokCast/
 │   ├── App/
-│   │   └── GrokCastApp.swift
-│   ├── Features/
-│   │   ├── Today/
-│   │   ├── Forecast/
-│   │   ├── GrokAI/
-│   │   └── Locations/
+│   ├── Features/          # Today, Forecast, Radar, Alerts, GrokAI, Locations, Settings, …
 │   ├── Shared/
 │   │   ├── Models/
-│   │   ├── Services/   # LocationService, WeatherService, XAIService, WeatherStore
+│   │   ├── Services/      # WeatherStore, Location, OpenMeteo, NWS, XAI, …
+│   │   ├── Grok/
 │   │   └── Components/
-│   └── Resources/Assets.xcassets/
+│   └── Resources/
+├── GrokCastWidgets/
+├── GrokCastTests/
+├── GrokCastUITests/
+├── Scripts/               # archive_for_testflight, increment_build, upload_testflight, …
 ├── project.yml
-├── README.md
+├── CLAUDE.md
 └── AGENTS.md
 ```
 
-## Development Commands
+## Common gotchas
 
-```bash
-# Open project
-xed .
+1. After adding/removing files or editing `project.yml`, run `xcodegen generate` (or `./grok-build regenerate`) before building.
+2. Location + Open-Meteo work in Simulator without paid accounts; grant location when prompted.
+3. CI stubs gitignored config from `*.example` templates — local builds need those files present if missing.
+4. Structural churn → `clean build` or wipe DerivedData (see utilities above).
+5. When touching XAI/Grok paths, exercise happy path and missing/invalid key error states.
 
-# Regenerate Xcode project after changing project.yml
-xcodegen generate
+## Related docs
 
-# Clean build (from project root)
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build
-
-# Full clean (when things get weird)
-rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
-```
-
-## Coding Conventions
-
-- **SwiftUI + Observation** (`@Observable`, `@State`, `@Environment`)
-- All business logic and API calls live in `Shared/Services/`
-- Views live in `Features/<Feature>/<Feature>View.swift`
-- Weather models are GrokCastWeather (from OpenMeteo/NWS) 
-- xAI integration is deliberately simple URLSession — do not introduce heavy networking libs unless justified
-- Dark mode first. Gradients, large numbers, SF Symbols, and subtle materials.
-- Haptics via the tiny `Haptic` helper when actions succeed
-- No SwiftData until we need persistence beyond UserDefaults (start simple)
-
-**Naming**:
-- `*Service.swift` for single-responsibility managers (Location, Weather, XAI)
-- `*Store.swift` for the central observable state holder
-- Feature views end in `View.swift`
-
-## xAI + Data Specifics
-
-- xAI endpoint: `https://api.x.ai/v1/chat/completions` (OpenAI compatible)
-- Default model: `grok-3-mini` (fast). Upgrade to `grok-3` when responses need more depth.
-- Always inject current weather as a strong system prompt for best results.
-- API key handling: Currently UserDefaults (fine for prototype). Production → Keychain + SecureField.
-- No WeatherKit; uses OpenMeteo + NWS.
-
-## Common Gotchas
-
-1. **Simulator testing**: Location + Open-Meteo works without paid account.
-2. **Location permission**: Both "When In Use" descriptions are in Info.plist.
-3. **After adding files**: If Xcode complains about missing files, regenerate with xcodegen or add manually in the navigator.
-4. **API key not persisting?** Check UserDefaults in the simulator.
-5. **Build errors after structural changes**: `xcodebuild clean` + delete DerivedData.
-
-## Working With Grok Here
-
-- Always `cd /Users/stephenmoore/Desktop/GrokCast` (or the exact worktree) before running `grok`
-- Prefer small, reviewable diffs when iterating on the AI chat experience or UI polish
-- When touching XAIService, test both happy path and the "missing/invalid key" error states
-- Keep the "Grok personality" fun but useful — the system prompt in XAIService is the source of truth
+- `CLAUDE.md` — short agent bootstrap (build + hard rules)
+- `DesignSystem.md` — color/typography/spacing tokens
+- `.grok/skills/grokcast/SKILL.md` — feature history and radar/Grok patterns
+- `docs/` — handoffs, App Store notes, roadmaps
 
 ---
 
-**Last updated**: May 2026 (scaffolded by Grok)
+**Last updated:** 2026-08-02
 
-Update this file when architecture, key integrations, or team practices evolve.
+Update this file when architecture, commands, or team practices change.
