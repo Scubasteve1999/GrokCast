@@ -39,6 +39,14 @@ is_archive_build() {
   [ "${CI_XCODEBUILD_ACTION:-}" = "archive" ]
 }
 
+# The gate above is only as good as this variable being populated this early —
+# post-clone runs before xcodebuild, so if Xcode Cloud sets it later the gate is
+# silently inert and a placeholder archive sails through exactly as before.
+# Printed rather than assumed: these are names and modes, never secrets.
+echo "ℹ️  CI_XCODE_CLOUD=${CI_XCODE_CLOUD:-<unset>}" \
+  "CI_XCODEBUILD_ACTION=${CI_XCODEBUILD_ACTION:-<unset>}" \
+  "CI_WORKFLOW=${CI_WORKFLOW:-<unset>}"
+
 # Xcode Cloud builds the committed project.pbxproj; GitHub Actions regenerates it
 # with XcodeGen from project.yml, which globs the Config directory rather than
 # naming files. So a file that is a hard build input on Xcode Cloud can be
