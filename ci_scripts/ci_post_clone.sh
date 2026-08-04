@@ -38,7 +38,17 @@ restore_swift_config() {
   encoded="$2"
   expected_symbol="$3"
 
-  printf '%s' "$encoded" | base64 --decode > "$target"
+  # Guarded rather than bare: a value that is not valid base64 makes this pipeline
+  # exit non-zero, and under `set -e` that would kill the script before the
+  # diagnostic below ever runs.
+  if ! printf '%s' "$encoded" | base64 --decode > "$target" 2>/dev/null; then
+    echo "❌ Secret for $target is not valid base64" >&2
+    echo "   encoded chars: $(printf '%s' "$encoded" | wc -c | tr -d ' ')" >&2
+    echo "   A re-saved variable can come back as its own '**********' mask." >&2
+    rm -f "$target"
+    exit 1
+  fi
+
   if grep -q "$expected_symbol" "$target"; then
     echo "✅ Created $target from secret environment variable"
   else
@@ -101,7 +111,15 @@ GOOGLE_PLIST="GrokCast/Config/GoogleService-Info.plist"
 if [ -f "$GOOGLE_PLIST" ]; then
   echo "↷ $GOOGLE_PLIST already present — leaving it alone"
 elif [ -n "${GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ]; then
-  printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > "$GOOGLE_PLIST"
+  if ! printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > "$GOOGLE_PLIST" 2>/dev/null
+  then
+    echo "❌ GOOGLE_SERVICE_INFO_PLIST_BASE64 is not valid base64" >&2
+    echo "   encoded chars: $(printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | wc -c | tr -d ' ')" >&2
+    echo "   A re-saved variable can come back as its own '**********' mask." >&2
+    echo "   Re-add it: base64 -i $GOOGLE_PLIST | pbcopy" >&2
+    rm -f "$GOOGLE_PLIST"
+    exit 1
+  fi
   # A truncated or mis-pasted secret yields a file that is present but wrong,
   # which fails much later and far less clearly than a missing one. `plutil -lint`
   # alone is not enough: a bare string is a valid OpenStep plist, so garbage that
@@ -109,7 +127,12 @@ elif [ -n "${GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ]; then
   if plutil -extract GOOGLE_APP_ID raw -o - "$GOOGLE_PLIST" >/dev/null 2>&1; then
     echo "✅ Created $GOOGLE_PLIST from GOOGLE_SERVICE_INFO_PLIST_BASE64"
   else
+    # Sizes only — enough to tell a truncated paste from a re-saved mask from a
+    # wholly different file, without putting any of the value in the build log.
     echo "❌ GOOGLE_SERVICE_INFO_PLIST_BASE64 did not decode to a valid plist" >&2
+    echo "   encoded chars: $(printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | wc -c | tr -d ' ')" >&2
+    echo "   decoded bytes: $(wc -c < "$GOOGLE_PLIST" | tr -d ' ')" >&2
+    echo "   Re-add the variable: base64 -i $GOOGLE_PLIST | pbcopy" >&2
     rm -f "$GOOGLE_PLIST"
     exit 1
   fi
