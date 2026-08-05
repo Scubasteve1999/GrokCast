@@ -24,7 +24,7 @@ struct RadarPlaybackControls: View {
 
       Spacer(minLength: 0)
 
-      playbackSpeedPicker
+      RadarPlaybackSpeedPicker(radarState: radarState)
       recenterButtons
     }
     .padding(.horizontal, DesignTokens.Spacing.space12)
@@ -38,38 +38,6 @@ struct RadarPlaybackControls: View {
       .font(.caption)
       .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
       .monospacedDigit()
-  }
-
-  @ViewBuilder
-  private var playbackSpeedPicker: some View {
-    HStack(spacing: 0) {
-      ForEach([3.0, 2.0, 1.0], id: \.self) { speed in
-        let label = speed == 3.0 ? "3x" : (speed == 2.0 ? "2x" : "1x")
-        let isSelected = abs(radarState.playbackSpeed - speed) < 0.05
-        Text(label)
-          .font(.caption2.weight(isSelected ? .semibold : .regular))
-          .foregroundStyle(
-            isSelected
-              ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
-          )
-          .padding(.horizontal, DesignTokens.Spacing.space8)
-          .padding(.vertical, DesignTokens.Spacing.space4)
-          .background(
-            isSelected
-              ? DesignTokens.Palette.radarAccent.opacity(0.25)
-              : DesignTokens.Palette.radarTrack
-          )
-          .overlay(
-            Capsule()
-              .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
-              .opacity(isSelected ? 1 : 0)
-          )
-          .clipShape(Capsule())
-          .onTapGesture { radarState.setPlaybackSpeed(speed) }
-      }
-    }
-    .background(DesignTokens.Palette.radarTrack)
-    .clipShape(Capsule())
   }
 
   @ViewBuilder
@@ -128,5 +96,49 @@ struct RadarPlaybackControls: View {
 
   private func toggleAnimation() {
     radarState.togglePlayback()
+  }
+}
+
+/// Shared 1x / 2x / 3x chips for phone compact row and iPad playback bar.
+struct RadarPlaybackSpeedPicker: View {
+  @Bindable var radarState: RadarState
+
+  var body: some View {
+    HStack(spacing: 0) {
+      ForEach([1.0, 2.0, 3.0], id: \.self) { speed in
+        let label = speed == 3.0 ? "3x" : (speed == 2.0 ? "2x" : "1x")
+        let isSelected = abs(radarState.playbackSpeed - speed) < 0.05
+        Button {
+          Haptic.impact(.light)
+          radarState.setPlaybackSpeed(speed)
+        } label: {
+          Text(label)
+            .font(.caption2.weight(isSelected ? .semibold : .regular))
+            .foregroundStyle(
+              isSelected
+                ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+            )
+            .padding(.horizontal, DesignTokens.Spacing.space8)
+            .padding(.vertical, DesignTokens.Spacing.space4)
+            .background(
+              isSelected
+                ? DesignTokens.Palette.radarAccent.opacity(0.25)
+                : DesignTokens.Palette.radarTrack
+            )
+            .overlay(
+              Capsule()
+                .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
+                .opacity(isSelected ? 1 : 0)
+            )
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Playback speed \(label)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+      }
+    }
+    .background(DesignTokens.Palette.radarTrack)
+    .clipShape(Capsule())
+    .accessibilityElement(children: .contain)
   }
 }

@@ -21,6 +21,17 @@ enum RadarPreferences {
   private static let showRadarOverlayKey = "radar.pref.showRadarOverlay"
   private static let showFireLayerKey = "radar.pref.showFireLayer"
   private static let playbackSpeedKey = "radar.pref.playbackSpeed"
+  private static let radarOpacityKey = "radar.pref.radarOpacity"
+
+  /// Matches the Display sheet / panel slider. Out-of-range values would either
+  /// wash the layer out or make it opaque enough to hide the base map.
+  static let radarOpacityRange: ClosedRange<Double> = 0.4...1.0
+  static let defaultRadarOpacity: Double = 0.85
+
+  static func clampedRadarOpacity(_ value: Double) -> Double {
+    guard value.isFinite else { return defaultRadarOpacity }
+    return min(max(value, radarOpacityRange.lowerBound), radarOpacityRange.upperBound)
+  }
 
   static var colorScheme: RadarColorScheme {
     get {
@@ -59,5 +70,17 @@ enum RadarPreferences {
       return RadarPlayback.clampedPlaybackSpeed(stored)
     }
     set { store.set(RadarPlayback.clampedPlaybackSpeed(newValue), forKey: playbackSpeedKey) }
+  }
+
+  /// Raster layer alpha. Clamped both ways so a bad stored value cannot hide the
+  /// map or vanish the radar on restore.
+  static var radarOpacity: Double {
+    get {
+      guard let stored = store.object(forKey: radarOpacityKey) as? Double else {
+        return defaultRadarOpacity
+      }
+      return clampedRadarOpacity(stored)
+    }
+    set { store.set(clampedRadarOpacity(newValue), forKey: radarOpacityKey) }
   }
 }

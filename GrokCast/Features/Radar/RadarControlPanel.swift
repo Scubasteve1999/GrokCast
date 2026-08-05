@@ -45,6 +45,13 @@ struct RadarControlPanel: View {
       if prefersFigmaHUD {
         RadarTimelineScrubber(radarState: radarState, layout: .figma)
         compactPlaybackRow
+        compactOpacityRow
+        if radarState.showRadarOverlay {
+          RadarMiniLegend(
+            showsVelocity: radarState.selectedProduct.isVelocityProduct
+              && !radarState.showsFuture
+          )
+        }
         // Phone layout previously had no product chips — SRV from the chase HUD was one-way.
         productChips
         compactStatusFooter
@@ -60,6 +67,12 @@ struct RadarControlPanel: View {
         if !isCollapsed {
           liveForecastPicker
           productChips
+          if radarState.showRadarOverlay {
+            RadarMiniLegend(
+              showsVelocity: radarState.selectedProduct.isVelocityProduct
+                && !radarState.showsFuture
+            )
+          }
           compactStatusFooter
         }
       }
@@ -151,34 +164,70 @@ struct RadarControlPanel: View {
   }
 
   private var compactPlaybackRow: some View {
-    HStack(spacing: DesignTokens.Spacing.space12) {
+    HStack(spacing: DesignTokens.Spacing.space8) {
       Button {
         radarState.togglePlayback()
       } label: {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
           .font(.body.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.radarAccent)
+          .frame(minWidth: 28, minHeight: 28)
       }
       .buttonStyle(.plain)
+      .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
 
       Text(radarState.currentFrameDisplayTime)
         .font(.caption.monospacedDigit())
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        .lineLimit(1)
 
-      Spacer(minLength: 0)
+      Spacer(minLength: 4)
+
+      RadarPlaybackSpeedPicker(radarState: radarState)
 
       Button {
         Haptic.impact(.light)
-        // Prefer selected weather location over a prior GPS recenter.
+        // Selected weather location — same as iPad house button (not device GPS).
         recenterUserCoordinate = nil
         recenterDefaultTrigger = UUID()
       } label: {
-        Image(systemName: "location")
+        Image(systemName: "house.fill")
           .font(.caption.weight(.semibold))
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+          .foregroundStyle(DesignTokens.Palette.radarAccent)
+          .frame(width: 28, height: 28)
+          .background(DesignTokens.Palette.radarTrack)
+          .clipShape(Capsule())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("Recenter map")
+      .accessibilityLabel("Recenter to selected location")
+    }
+  }
+
+  /// Opacity used to live only in the Display sheet — on phone that buried the
+  /// control people tweak every session. Dim when the overlay is off.
+  private var compactOpacityRow: some View {
+    HStack(spacing: DesignTokens.Spacing.space8) {
+      Image(systemName: "circle.lefthalf.filled")
+        .font(.caption2)
+        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        .accessibilityHidden(true)
+
+      Slider(
+        value: $opacity,
+        in: RadarPreferences.radarOpacityRange,
+        step: 0.05
+      )
+      .tint(DesignTokens.Palette.radarAccent)
+      .disabled(!radarState.showRadarOverlay)
+      .opacity(radarState.showRadarOverlay ? 1 : 0.4)
+      .accessibilityLabel("Radar opacity")
+      .accessibilityValue("\(Int((opacity * 100).rounded())) percent")
+
+      Text(String(format: "%.0f%%", opacity * 100))
+        .font(.caption2.monospacedDigit())
+        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        .frame(width: 36, alignment: .trailing)
+        .accessibilityHidden(true)
     }
   }
 
@@ -505,11 +554,10 @@ private struct RadarDisplayOptionsSheet: View {
         }
 
         Section("Legend") {
-          if showsVelocityLegend {
-            velocityLegend
-          } else {
-            reflectivityLegend
-          }
+          RadarMiniLegend(
+            showsVelocity: showsVelocityLegend,
+            style: .sheet
+          )
         }
 
         Section("Map") {
@@ -530,12 +578,18 @@ private struct RadarDisplayOptionsSheet: View {
 
         Section("Opacity") {
           HStack {
-            Slider(value: $opacity, in: 0.4...1.0, step: 0.05)
+            Slider(
+              value: $opacity,
+              in: RadarPreferences.radarOpacityRange,
+              step: 0.05
+            )
             Text(String(format: "%.0f%%", opacity * 100))
               .font(.caption.monospacedDigit())
               .foregroundStyle(.secondary)
               .frame(width: 40)
           }
+          .disabled(!radarState.showRadarOverlay)
+          .opacity(radarState.showRadarOverlay ? 1 : 0.4)
         }
       }
       .navigationTitle("Display")
@@ -552,6 +606,28 @@ private struct RadarDisplayOptionsSheet: View {
   private var showsVelocityLegend: Bool {
     radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
   }
+}
+
+// MARK: - Mini legend (panel + Display sheet)
+
+/// Compact intensity / velocity key. Panel uses a tight strip; the sheet adds
+/// the range-fold note for SRV.
+struct RadarMiniLegend: View {
+  enum Style {
+    case panel
+    case sheet
+  }
+
+  var showsVelocity: Bool
+  var style: Style = .panel
+
+  var body: some View {
+    if showsVelocity {
+      velocityLegend
+    } else {
+      reflectivityLegend
+    }
+  }
 
   private var velocityLegend: some View {
     VStack(alignment: .leading, spacing: 4) {
@@ -562,26 +638,34 @@ private struct RadarDisplayOptionsSheet: View {
         ],
         startPoint: .leading, endPoint: .trailing
       )
-      .frame(height: 8)
+      .frame(height: style == .panel ? 6 : 8)
       .clipShape(RoundedRectangle(cornerRadius: 2))
       .accessibilityLabel("Velocity legend: green toward radar, red away from radar")
 
       HStack {
-        Text("Toward radar").font(.caption2).foregroundStyle(.secondary)
+        Text("Toward").font(.caption2).foregroundStyle(
+          style == .panel
+            ? DesignTokens.Palette.radarTextSecondary : .secondary
+        )
         Spacer()
-        Text("Away from radar").font(.caption2).foregroundStyle(.secondary)
+        Text("Away").font(.caption2).foregroundStyle(
+          style == .panel
+            ? DesignTokens.Palette.radarTextSecondary : .secondary
+        )
       }
 
-      // NWS SRV palettes paint range-folded / edge returns purple-magenta.
-      HStack(spacing: 6) {
-        Circle()
-          .fill(Color(red: 0.72, green: 0.28, blue: 0.85))
-          .frame(width: 8, height: 8)
-        Text("Purple at scan edge = range fold (unreliable)")
-          .font(.caption2)
-          .foregroundStyle(.secondary)
+      if style == .sheet {
+        // NWS SRV palettes paint range-folded / edge returns purple-magenta.
+        HStack(spacing: 6) {
+          Circle()
+            .fill(Color(red: 0.72, green: 0.28, blue: 0.85))
+            .frame(width: 8, height: 8)
+          Text("Purple at scan edge = range fold (unreliable)")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+        .accessibilityLabel("Purple at scan edge means range fold and is unreliable")
       }
-      .accessibilityLabel("Purple at scan edge means range fold and is unreliable")
     }
   }
 
@@ -600,18 +684,22 @@ private struct RadarDisplayOptionsSheet: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 2))
       }
-      .frame(height: 8)
+      .frame(height: style == .panel ? 6 : 8)
       .accessibilityLabel("Reflectivity legend: light to extreme precipitation intensity")
 
       HStack {
-        Text("Light").font(.caption2).foregroundStyle(.secondary)
+        Text("Light").font(.caption2).foregroundStyle(legendCaptionColor)
         Spacer()
-        Text("Moderate").font(.caption2).foregroundStyle(.secondary)
+        Text("Mod").font(.caption2).foregroundStyle(legendCaptionColor)
         Spacer()
-        Text("Heavy").font(.caption2).foregroundStyle(.secondary)
+        Text("Heavy").font(.caption2).foregroundStyle(legendCaptionColor)
         Spacer()
-        Text("Extreme").font(.caption2).foregroundStyle(.secondary)
+        Text("Extreme").font(.caption2).foregroundStyle(legendCaptionColor)
       }
     }
+  }
+
+  private var legendCaptionColor: Color {
+    style == .panel ? DesignTokens.Palette.radarTextSecondary : .secondary
   }
 }
