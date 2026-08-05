@@ -1,0 +1,70 @@
+//
+//  DeveloperAPIKey.swift.example
+//
+//  Copy this file to DeveloperAPIKey.swift (which is gitignored)
+//  and paste your xAI developer key below.
+//
+//  This is ONLY for internal/TestFlight builds so that users don't have to
+//  manually enter the key.
+//
+//  DO NOT commit the real DeveloperAPIKey.swift file.
+//
+
+import Foundation
+
+enum DeveloperAPIKey {
+  // Replace with your actual key for TestFlight builds
+  static let xai: String? = nil  // "YOUR_XAI_API_KEY"
+
+  /// Grok Build (SSE streaming) key; falls back to `xai` when unset.
+  static let grokBuild: String? = nil  // "YOUR_GROK_BUILD_API_KEY"
+
+  /// Mapbox public access token for the Radar tab.
+  static let mapbox: String? = nil  // "YOUR_MAPBOX_ACCESS_TOKEN"
+
+  // Xweather (primary radar / Raster Maps provider)
+  // Create a Maps-enabled app in the Xweather dashboard with namespace
+  // `com.scubasteve1999.DayCast`. Weather-API-only keys return 403 on maps.
+  static let xweatherClientID: String? = nil  // "YOUR_XWEATHER_CLIENT_ID"
+  // Secret only — NOT the full `{id}_{secret}` access key (unless id is set separately above).
+  static let xweatherClientSecret: String? = nil  // "YOUR_XWEATHER_CLIENT_SECRET"
+
+  static var xweatherMapsAuth: String? {
+    guard let id = xweatherClientID, let secret = xweatherClientSecret, !id.isEmpty, !secret.isEmpty
+    else {
+      return nil
+    }
+    // Dashboard shows one combined access key: `{client_id}_{client_secret}`.
+    if secret.hasPrefix("\(id)_") { return secret }
+    return "\(id)_\(secret)"
+  }
+
+  /// Hosted Grok proxy for Pro subscribers — see `server/grok-proxy/README.md`.
+  /// Include the `/v1` suffix: `"https://<worker>.workers.dev/v1"`.
+  /// While nil, Pro cannot unlock AI and only a Keychain key reaches Grok.
+  static let grokProxyBaseURL: String? = nil
+
+  /// Must match the worker's `PROXY_SECRET`. This ships inside the binary, so it
+  /// is public by necessity — real entitlement is the StoreKit transaction the
+  /// proxy verifies against Apple. Kept out of tracked source anyway.
+  static let grokProxySharedSecret: String? = nil
+
+  /// Hosted push agent for server-side alerts — see `server/push-agent/README.md`.
+  /// Include the `/v1/push` suffix: `"https://<worker>.workers.dev/v1/push"`.
+  /// While nil, notifications stay local-only and nothing is uploaded.
+  static let pushAgentBaseURL: String? = nil
+
+  /// Must match the push agent's `PUSH_SECRET`. Ships inside the binary, so it is
+  /// public by necessity — the Keychain device id is what protects a registration.
+  static let pushAgentSharedSecret: String? = nil
+
+  /// NASA FIRMS MAP_KEY (area CSV). Free signup: https://firms.modaps.eosdis.nasa.gov/api/map_key/
+  static let firmsMapKey: String? = nil  // "YOUR_FIRMS_MAP_KEY"
+
+  /// Optional AirNow key for fire-detail smoke line only (home AQI uses Open-Meteo).
+  static let airNow: String? = nil  // "YOUR_AIRNOW_API_KEY"
+}
+
+// The OpenWeatherMap key lives in OpenWeatherMapKeys.swift (see its own .example).
+// Nothing is declared for it here: CI synthesizes this file from the template, so any
+// type declared only here would exist on the runner and on no developer machine.

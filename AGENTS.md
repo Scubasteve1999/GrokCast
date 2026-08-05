@@ -108,7 +108,7 @@ secret environment variables on the **Build and Testflight** workflow
 
 | Variable | Restores | Required for |
 |---|---|---|
-| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | `DayCast/Config/GoogleService-Info.plist` | every Xcode Cloud build (hard build input) |
+| *(none)* | `DayCast/Config/GoogleService-Info.plist` is **committed** | every Xcode Cloud build (hard build input). Optional fallback: `GOOGLE_SERVICE_INFO_PLIST_BASE64` |
 | `DEVELOPER_API_KEY_SWIFT_BASE64` | `DayCast/Config/DeveloperAPIKey.swift` | archive builds (Mapbox, Xweather, xAI) |
 | `OPENWEATHERMAP_KEYS_SWIFT_BASE64` | `DayCast/Config/OpenWeatherMapKeys.swift` | optional — no real key is issued yet |
 

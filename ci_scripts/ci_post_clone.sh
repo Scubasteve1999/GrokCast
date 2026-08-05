@@ -97,9 +97,12 @@ restore_config() {
     if [ -n "$_cfg_encoded" ]; then
       # ASC / paste can introduce newlines or spaces; strip them. Also reject the
       # UI mask if someone re-saved a secret without re-pasting the real value.
+      # NOTE: shell `case` treats bare `*` as a glob wildcard. A pattern like
+      # `*********` matches *every* string (nine wildcards), which made every
+      # secret look "masked" and fail post-clone. Only match a literal asterisk.
       _cfg_encoded=$(printf '%s' "$_cfg_encoded" | tr -d ' \n\r\t')
       case "$_cfg_encoded" in
-        *\**|*********)
+        *\**)
           echo "❌ $_cfg_var looks like a masked secret (contains '*'), not base64." >&2
           echo "   Delete the variable and create it again with a fresh paste." >&2
           echo "   Mac: base64 -i DayCast/Config/GoogleService-Info.plist | tr -d '\\n' | pbcopy" >&2
@@ -220,10 +223,10 @@ validate_google_plist() {
   fi
 }
 
-# GoogleService-Info.plist is required because the committed project.pbxproj
-# lists it as a bundled resource, so its absence is a hard build error. It has no
-# template on purpose — a stub would ship broken Firebase Messaging rather than
-# failing loudly — which `restore_config` reports as the missing-template case.
+# GoogleService-Info.plist is a hard build input (project.pbxproj bundles it).
+# Preferred path: the file is committed (Firebase client config, not a server
+# secret). GOOGLE_SERVICE_INFO_PLIST_BASE64 remains a fallback for forks or
+# if the file is ever gitignored again.
 restore_config \
   DayCast/Config/GoogleService-Info.plist \
   GOOGLE_SERVICE_INFO_PLIST_BASE64 \

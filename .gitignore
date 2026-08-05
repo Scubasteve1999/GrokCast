@@ -82,18 +82,19 @@ Secrets.swift
 DayCast/Config/Secrets.swift
 DayCast/Config/DeveloperAPIKey.swift
 DayCast/Config/OpenWeatherMapKeys.swift
-DayCast/Config/GoogleService-Info.plist
-# Defense in depth — never commit secrets under a DayCast path either
-DayCast/Config/DeveloperAPIKey.swift
-DayCast/Config/OpenWeatherMapKeys.swift
-DayCast/Config/GoogleService-Info.plist
-DayCast/Config/
+DayCast/Config/DayCastUtilitiesDeveloperAPIKey.swift
+# Do NOT ignore DayCast/Config/ wholesale — that prevents re-including
+# *.example templates and the Firebase client plist (see below).
 *.key
 *.pem
 *.p8
 .env
 .env.local
 .env.*.local
+
+# GoogleService-Info.plist is Firebase *client* config. It ships inside the app
+# binary and is not a server secret. Committing it removes the fragile
+# GOOGLE_SERVICE_INFO_PLIST_BASE64 Xcode Cloud env var (ASC paste/mask bugs).
 
 # Do NOT ignore our safe public configuration file
 !GrokAPIConfiguration.swift
