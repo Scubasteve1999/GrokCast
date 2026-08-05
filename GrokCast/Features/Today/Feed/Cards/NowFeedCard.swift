@@ -79,7 +79,7 @@ struct NowFeedCard: View {
     let temp = store.formatTemperatureShort(weather.currentTemp)
     let feels = store.formatTemperatureShort(weather.feelsLike)
     return
-      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low))). SpotterCast score \(score.value), \(score.label)."
+      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low))). DayCast score \(score.value), \(score.label)."
   }
 }
 

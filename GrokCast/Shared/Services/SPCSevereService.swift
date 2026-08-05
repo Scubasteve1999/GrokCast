@@ -12,7 +12,7 @@ final class SPCSevereService: Sendable {
     "https://mapservices.weather.noaa.gov/vector/rest/services/obs/nws_local_storm_reports/MapServer"
 
   private let userAgent =
-    "SpotterCast/1.0.2 (https://scubasteve1999.github.io/SpotterCast/support/; stephenmoorecm1357@gmail.com)"
+    "DayCast/1.0.2 (https://scubasteve1999.github.io/SpotterCast/support/; stephenmoorecm1357@gmail.com)"
 
   private let session: URLSession
 

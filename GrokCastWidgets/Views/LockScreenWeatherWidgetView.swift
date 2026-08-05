@@ -32,7 +32,7 @@ struct LockScreenWeatherWidgetView: View {
       Text(inlineEmptyMessage)
     case .accessoryRectangular:
       VStack(alignment: .leading, spacing: 2) {
-        Text("SpotterCast")
+        Text("DayCast")
           .font(.headline)
         Text(rectangularEmptyMessage)
           .font(.caption)
@@ -53,11 +53,11 @@ struct LockScreenWeatherWidgetView: View {
   private var inlineEmptyMessage: String {
     switch entry.emptyReason {
     case .locationMismatch(let name):
-      "Open \(name) in SpotterCast"
+      "Open \(name) in DayCast"
     case .noData:
-      "Open SpotterCast to refresh"
+      "Open DayCast to refresh"
     case .none:
-      "Open SpotterCast"
+      "Open DayCast"
     }
   }
 
@@ -111,7 +111,7 @@ struct LockScreenWeatherWidgetView: View {
           .foregroundStyle(.secondary)
           .lineLimit(1)
       } else {
-        Text("Open SpotterCast to refresh")
+        Text("Open DayCast to refresh")
           .font(.caption2)
           .foregroundStyle(.secondary)
           .lineLimit(1)
@@ -140,7 +140,7 @@ struct GrokCastLockScreenWeatherWidget: Widget {
     ) { entry in
       LockScreenWeatherWidgetView(entry: entry)
     }
-    .configurationDisplayName("SpotterCast Lock Screen")
+    .configurationDisplayName("DayCast Lock Screen")
     .description("Weather and alerts at a glance on your Lock Screen.")
     .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
   }

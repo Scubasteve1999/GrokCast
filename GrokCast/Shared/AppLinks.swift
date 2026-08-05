@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppLinks {
-  // SpotterCast GitHub Pages uses clean paths (privacy/, terms/) — `.html` URLs 404.
+  // DayCast GitHub Pages uses clean paths (privacy/, terms/) — `.html` URLs 404.
   static let privacyPolicy = URL(
     string: "https://scubasteve1999.github.io/SpotterCast/privacy/")!
   static let termsOfUse = URL(

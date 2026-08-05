@@ -50,6 +50,7 @@
 		23B6A225B2D99BA31759A730 /* RadarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 269A2DDE12CDFF95D04E08E8 /* RadarView.swift */; };
 		2472692A2D677AD6AFD441FB /* GrokErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D46535734D7166B9F9189A /* GrokErrorView.swift */; };
 		2653C865253A08CE9E0774E1 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F3FE6A5319338585ED1587 /* WeatherService.swift */; };
+		26DA83106B1EBE701B12B7BA /* ChaseRadarHUDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8357B8DA705375BB80E3160 /* ChaseRadarHUDTests.swift */; };
 		270D8678C5DD7F5306846A12 /* OpenMeteoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24FB7E4175CD6258A98696CC /* OpenMeteoService.swift */; };
 		2772433EAB2BFD07B20389B2 /* ReadableContentWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C31BEEE919910805A68FBD8 /* ReadableContentWidth.swift */; };
 		2826BBB21B6550E51ABE237D /* BackgroundAlertRefreshService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D450AF927C40BCFD71D355 /* BackgroundAlertRefreshService.swift */; };
@@ -107,6 +108,7 @@
 		5DD0A4B1E34E5907625C8AC4 /* OpenWeatherMapService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78EC48DF7471DBEC967CF55F /* OpenWeatherMapService.swift */; };
 		5DF8EFEBA6444EE2C4FEC862 /* TacticalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9504F7B9EA809C7E1B874BA /* TacticalCard.swift */; };
 		5E0E48EDC8AF2B6EDCC7BB44 /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D26619F4BD3BB580990C42 /* WidgetDataStore.swift */; };
+		5FC0119A811BD53E767C8A3C /* IEMRadarSiteFallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7F758BC530E518A7E9794C /* IEMRadarSiteFallbackTests.swift */; };
 		6043FEEBE92330BE872A7F67 /* WeatherLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8083BAA8A5B10D5C25ED161 /* WeatherLiveActivityWidget.swift */; };
 		63D7F15AF0EA0A2A5909C473 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEC24047653D9A5E2BF4C4E /* KeychainService.swift */; };
 		63D83E0857124141B74C4C39 /* GrokCastScoreCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78558067F755190B10CA498A /* GrokCastScoreCard.swift */; };
@@ -447,6 +449,7 @@
 		99058D8233E530046889318F /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		9C285A9A70DE41AC42D6923A /* MinutecastEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinutecastEngine.swift; sourceTree = "<group>"; };
 		9F1842FC56EBD7BD738DE026 /* GrokThinkingIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokThinkingIndicator.swift; sourceTree = "<group>"; };
+		9F7F758BC530E518A7E9794C /* IEMRadarSiteFallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IEMRadarSiteFallbackTests.swift; sourceTree = "<group>"; };
 		A0E9E97CF2B63A2143492440 /* BackgroundTasks.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BackgroundTasks.framework; path = System/Library/Frameworks/BackgroundTasks.framework; sourceTree = SDKROOT; };
 		A160A4C38A25303E381CF134 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A35820A6930E1BF8879F4FB3 /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
@@ -516,6 +519,7 @@
 		F227B63808C14DA92365BBCE /* WidgetLocationIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetLocationIntent.swift; sourceTree = "<group>"; };
 		F2E0671B7BB3AC83CDAD05F0 /* GrokAccessRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAccessRulesTests.swift; sourceTree = "<group>"; };
 		F753EA1D7079F4B2591DE630 /* HourlyRowSkeleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyRowSkeleton.swift; sourceTree = "<group>"; };
+		F8357B8DA705375BB80E3160 /* ChaseRadarHUDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaseRadarHUDTests.swift; sourceTree = "<group>"; };
 		F96CAE115EC8F48F9FFB9069 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
 		F9AFC1FCA6F763FCC7B44977 /* GrokCastAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokCastAppIntents.swift; sourceTree = "<group>"; };
 		F9CE0FC3106C7FAC22F6290D /* GrokProducts.storekit */ = {isa = PBXFileReference; path = GrokProducts.storekit; sourceTree = "<group>"; };
@@ -740,11 +744,13 @@
 			children = (
 				7541B90E1EF0EF01C29726C6 /* AirQualityAndMoonTests.swift */,
 				BFD2C9CFBCD01473A38ED25D /* AnalyticsTests.swift */,
+				F8357B8DA705375BB80E3160 /* ChaseRadarHUDTests.swift */,
 				5E44376460F06FFF0F9065FD /* FeedAssemblerTests.swift */,
 				6236718700FC4F5E119E7405 /* FireProximityDedupeTests.swift */,
 				6A96A9367035089911DE37A4 /* FIRMSDecodingTests.swift */,
 				F2E0671B7BB3AC83CDAD05F0 /* GrokAccessRulesTests.swift */,
 				7F6D1A28679433B99E9C25CF /* GrokUsageLimiterTests.swift */,
+				9F7F758BC530E518A7E9794C /* IEMRadarSiteFallbackTests.swift */,
 				3A09165ECF25C38DCFA0D03B /* NIFCDecodingTests.swift */,
 				5D4D3BAC91832639469F71BD /* PushRegistrationTests.swift */,
 				CF74BF3A334E6CFD97F51AD2 /* RadarPlaybackTests.swift */,
@@ -1516,11 +1522,13 @@
 			files = (
 				DD72081C438A070B3F913C71 /* AirQualityAndMoonTests.swift in Sources */,
 				A06CABA1CD5024760DA1940E /* AnalyticsTests.swift in Sources */,
+				26DA83106B1EBE701B12B7BA /* ChaseRadarHUDTests.swift in Sources */,
 				F0F6E1101F4667C0464C39D0 /* FIRMSDecodingTests.swift in Sources */,
 				A6E67018C1A62ACEDB73747D /* FeedAssemblerTests.swift in Sources */,
 				29269081E862C71F7EC92EE6 /* FireProximityDedupeTests.swift in Sources */,
 				9361B4C65FDBFF2FC8A08D3C /* GrokAccessRulesTests.swift in Sources */,
 				8E54753B21B9EA6F88277744 /* GrokUsageLimiterTests.swift in Sources */,
+				5FC0119A811BD53E767C8A3C /* IEMRadarSiteFallbackTests.swift in Sources */,
 				B0D0811799829601E50FC804 /* NIFCDecodingTests.swift in Sources */,
 				4501A1C75D11E677121B5F30 /* PushRegistrationTests.swift in Sources */,
 				B5DBF0919CB438F26A31E1D0 /* RadarPlaybackTests.swift in Sources */,

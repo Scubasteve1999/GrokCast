@@ -124,7 +124,7 @@ enum GrokAPIError: Error, LocalizedError {
     case .missingAPIKey:
       return "Add an xAI developer key in Settings to use AI features."
     case .proRequired:
-      return "SpotterCast Pro unlocks AI features."
+      return "DayCast Pro unlocks AI features."
     case .entitlementUnavailable:
       return "Verifying your subscription — try again in a moment."
     case .dailyLimitReached(let resetsAt):
@@ -153,7 +153,7 @@ enum GrokAPIError: Error, LocalizedError {
       let lower = message.lowercased()
       // Responses from our own proxy, which speaks the same error shape as xAI.
       if lower.contains("spottercast pro") {
-        return "SpotterCast Pro unlocks AI features."
+        return "DayCast Pro unlocks AI features."
       }
       if lower.contains("limit reached") {
         return "AI limit reached for today. Resets at midnight UTC."
@@ -170,7 +170,7 @@ enum GrokAPIError: Error, LocalizedError {
       case 401:
         return "AI key isn’t authorized. Verify it in Settings."
       case 403:
-        return "AI isn’t available on this account. Check SpotterCast Pro in Settings."
+        return "AI isn’t available on this account. Check DayCast Pro in Settings."
       case 429:
         return "AI limit reached for today. Resets at midnight UTC."
       case 400, 422:

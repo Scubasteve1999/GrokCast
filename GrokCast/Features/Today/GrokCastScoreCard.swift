@@ -59,7 +59,7 @@ struct GrokCastScoreCard: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle()
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("SpotterCast score \(score.value). \(score.label). \(score.subtitle)")
+    .accessibilityLabel("DayCast score \(score.value). \(score.label). \(score.subtitle)")
   }
 
   private var ringLayout: some View {
@@ -107,7 +107,7 @@ struct GrokCastScoreCard: View {
     .padding(DesignTokens.Spacing.space16)
     .cardStyle()
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("SpotterCast score \(score.value). \(score.label). \(score.subtitle)")
+    .accessibilityLabel("DayCast score \(score.value). \(score.label). \(score.subtitle)")
   }
 }
 

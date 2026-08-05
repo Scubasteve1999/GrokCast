@@ -51,7 +51,7 @@ struct TodayView: View {
           )
         } else {
           ContentUnavailableView {
-            Label("Welcome to SpotterCast", systemImage: "sun.max")
+            Label("Welcome to DayCast", systemImage: "sun.max")
           } description: {
             Text(
               "Establish your location to get started with accurate, personalized forecasts and insights."
@@ -190,7 +190,7 @@ struct TodayView: View {
         Image(systemName: "sun.max")
           .font(.system(size: 48))
           .foregroundStyle(DesignTokens.Palette.textTertiary)
-        Text("Welcome to SpotterCast")
+        Text("Welcome to DayCast")
           .font(.title2.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(
@@ -225,7 +225,7 @@ struct TodayView: View {
         .font(.system(size: 48))
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       VStack(spacing: 12) {
-        Text("SpotterCast uses your location to show accurate weather forecasts for where you are.")
+        Text("DayCast uses your location to show accurate weather forecasts for where you are.")
           .font(.body)
           .multilineTextAlignment(.center)
           .foregroundStyle(DesignTokens.Palette.textPrimary)

@@ -92,7 +92,7 @@ struct GrokCastSmallWeatherWidget: Widget {
     ) { entry in
       SmallWeatherWidgetView(entry: entry)
     }
-    .configurationDisplayName("SpotterCast Weather")
+    .configurationDisplayName("DayCast Weather")
     .description("Current conditions at a glance.")
     .supportedFamilies([.systemSmall])
   }

@@ -46,7 +46,7 @@ final class ShareAttributionTests: XCTestCase {
 
   func testFooterEmbedsAnOpenableLink() {
     let footer = ShareAttribution.footer(for: .alertsSummary)
-    XCTAssertTrue(footer.contains("SpotterCast"))
+    XCTAssertTrue(footer.contains("DayCast"))
 
     let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
     let matches = detector.matches(

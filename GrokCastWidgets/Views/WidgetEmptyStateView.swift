@@ -31,9 +31,9 @@ struct WidgetEmptyStateView: View {
 
   private var title: String {
     switch reason {
-    case .locationMismatch: "Open SpotterCast"
-    case .noData: "Open SpotterCast"
-    case .none: "Open SpotterCast"
+    case .locationMismatch: "Open DayCast"
+    case .noData: "Open DayCast"
+    case .none: "Open DayCast"
     }
   }
 

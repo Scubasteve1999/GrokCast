@@ -57,10 +57,10 @@ struct SettingsView: View {
 
   private var settingsForm: some View {
     Form {
-        // MARK: - SpotterCast Pro
+        // MARK: - DayCast Pro
         Section {
           if subscription.isPro {
-            Label("SpotterCast Pro is active", systemImage: "checkmark.seal.fill")
+            Label("DayCast Pro is active", systemImage: "checkmark.seal.fill")
               .foregroundStyle(.green)
             Button("Manage Subscription") {
               if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
@@ -74,7 +74,7 @@ struct SettingsView: View {
               )
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-              Button("View SpotterCast Pro") {
+              Button("View DayCast Pro") {
                 PaywallCoordinator.shared.present(.locations)
               }
               .buttonStyle(.borderedProminent)
@@ -97,7 +97,7 @@ struct SettingsView: View {
           Text("SPOTTERCAST PRO")
         } footer: {
           Text(
-            "Pro unlocks AI chat, Today's Take, Storm Spotter, forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when SpotterCast refreshes weather. AI has a daily limit that resets at midnight UTC. Bringing your own xAI developer key below also works and is not limited."
+            "Pro unlocks AI chat, Today's Take, Storm Spotter, forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when DayCast refreshes weather. AI has a daily limit that resets at midnight UTC. Bringing your own xAI developer key below also works and is not limited."
           )
         }
 
@@ -136,7 +136,7 @@ struct SettingsView: View {
                   } else {
                     Text("No developer key configured")
                       .foregroundStyle(.secondary)
-                    Text("Optional — SpotterCast Pro already includes AI. Add your own key to skip the daily limit.")
+                    Text("Optional — DayCast Pro already includes AI. Add your own key to skip the daily limit.")
                       .font(.caption)
                       .foregroundStyle(.secondary)
                   }
@@ -342,7 +342,7 @@ struct SettingsView: View {
           )
 
           if !subscription.isPro {
-            Text("Live Activity requires SpotterCast Pro.")
+            Text("Live Activity requires DayCast Pro.")
               .font(.caption)
               .foregroundStyle(.secondary)
           }
@@ -369,7 +369,7 @@ struct SettingsView: View {
           )
 
           if !subscription.isPro, !hasKey {
-            Text("Morning AI Brief requires SpotterCast Pro.")
+            Text("Morning AI Brief requires DayCast Pro.")
               .font(.caption)
               .foregroundStyle(.secondary)
           }
@@ -419,7 +419,7 @@ struct SettingsView: View {
           Text("LOCATION UPDATES")
         } footer: {
           Text(
-            "When enabled and Always location access is granted, SpotterCast uses Apple’s low-power Significant Location Changes to refresh weather after you travel a significant distance. This is not continuous GPS tracking. Turn off anytime."
+            "When enabled and Always location access is granted, DayCast uses Apple’s low-power Significant Location Changes to refresh weather after you travel a significant distance. This is not continuous GPS tracking. Turn off anytime."
           )
         }
 
@@ -448,7 +448,7 @@ struct SettingsView: View {
             Haptic.impact(.light)
             AppReviewPrompt.openWriteReview()
           } label: {
-            Label("Rate SpotterCast", systemImage: "star.fill")
+            Label("Rate DayCast", systemImage: "star.fill")
           }
 
           Button {
@@ -469,7 +469,7 @@ struct SettingsView: View {
               Text("Share analytics")
               Text(
                 PostHogAnalytics.isConfigured
-                  ? "Anonymous usage helps improve SpotterCast. On-device counts always stay local."
+                  ? "Anonymous usage helps improve DayCast. On-device counts always stay local."
                   : "Analytics is off until POSTHOG_API_KEY is set in this build."
               )
               .font(.caption)
@@ -514,7 +514,7 @@ struct SettingsView: View {
             Label("Weather Data: Open-Meteo", systemImage: "link")
           }
 
-          Text("SpotterCast uses free Open-Meteo for forecasts and AI models for intelligence.")
+          Text("DayCast uses free Open-Meteo for forecasts and AI models for intelligence.")
             .font(.caption)
             .foregroundStyle(.secondary)
         } header: {
@@ -578,7 +578,7 @@ struct SettingsView: View {
           SettingsDivider()
           figmaToggleRow(
             title: "Live Activity",
-            subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires SpotterCast Pro",
+            subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires DayCast Pro",
             icon: "lock.rectangle.stack.fill",
             isOn: Binding(
               get: { store.liveActivityEnabled },
@@ -632,7 +632,7 @@ struct SettingsView: View {
             AppReviewPrompt.openWriteReview()
           } label: {
             HStack {
-              Label("Rate SpotterCast", systemImage: "star.fill")
+              Label("Rate DayCast", systemImage: "star.fill")
                 .foregroundStyle(DesignTokens.Palette.textPrimary)
               Spacer()
               Image(systemName: "arrow.up.right")
@@ -700,7 +700,7 @@ struct SettingsView: View {
     SettingsGroupCard {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         if subscription.isPro {
-          Label("SpotterCast Pro is active", systemImage: "checkmark.seal.fill")
+          Label("DayCast Pro is active", systemImage: "checkmark.seal.fill")
             .foregroundStyle(DesignTokens.Palette.success)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
@@ -719,7 +719,7 @@ struct SettingsView: View {
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
 
-          Button("View SpotterCast Pro") {
+          Button("View DayCast Pro") {
             PaywallCoordinator.shared.present(.locations)
           }
           .font(.system(size: 15, weight: .semibold))
@@ -1011,7 +1011,7 @@ struct SettingsView: View {
     case .denied:
       return "Enable notifications in iOS Settings to receive severe weather alerts."
     case .notDetermined:
-      return "SpotterCast will ask for permission when you enable alerts."
+      return "DayCast will ask for permission when you enable alerts."
     @unknown default:
       return ""
     }
@@ -1040,7 +1040,7 @@ struct SettingsView: View {
     Task {
       do {
         // Lightweight test: ask Grok for a very short response
-        let testMessages = [ChatMessage.user("Reply with exactly: 'SpotterCast connection OK'")]
+        let testMessages = [ChatMessage.user("Reply with exactly: 'DayCast connection OK'")]
         let response = try await store.xaiService.sendMessage(
           messages: testMessages, context: nil, feature: .connectionTest)
 

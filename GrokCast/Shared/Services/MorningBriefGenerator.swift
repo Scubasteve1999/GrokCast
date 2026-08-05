@@ -192,7 +192,7 @@ enum MorningBriefGenerator {
     }()
 
     let system = """
-      You are a helpful weather assistant inside SpotterCast. Write a practical 2–4 sentence weather brief for \(location).
+      You are a helpful weather assistant inside DayCast. Write a practical 2–4 sentence weather brief for \(location).
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.

@@ -143,7 +143,7 @@ struct GrokCastMediumWeatherWidget: Widget {
     ) { entry in
       MediumWeatherWidgetView(entry: entry)
     }
-    .configurationDisplayName("SpotterCast Forecast")
+    .configurationDisplayName("DayCast Forecast")
     .description("Today's high/low and the next few hours.")
     .supportedFamilies([.systemMedium])
   }

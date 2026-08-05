@@ -1,11 +1,11 @@
-# Thinking pass — SpotterCast, August 2026
+# Thinking pass — DayCast, August 2026
 
 Run 2026-08-01 against `~/Projects/_meta/THINKING-PASS.md`. Same structure as
 `DataCentral/docs/THINKING-PASS-2026-08.md`. **No decision taken yet.**
 
 ## Stage
 
-**Live on the App Store as SpotterCast** (repo: `GrokCast`, bundle `com.scubasteve1999.GrokCast`,
+**Live on the App Store as DayCast** (repo: `GrokCast`, bundle `com.scubasteve1999.GrokCast`,
 App Store ID 6780682022). First release **2026-07-24**; current live version **1.0.4**, updated
 **2026-07-31**. Free, Weather / Utilities, iOS 18+.
 
@@ -21,7 +21,7 @@ strictly-additive NWS/SPC/HRRR layer for US alerts, outlooks and short-term prec
 tab that serves real single-site NEXRAD products (super-res reflectivity, storm-relative velocity,
 correlation coefficient, differential reflectivity) plus RainViewer live and Xweather/OWM forecast
 frames; and Grok as the interpretive voice across briefs, radar explanations and storm-photo vision.
-Monetization is a StoreKit 2 subscription, **SpotterCast Pro** (monthly/yearly).
+Monetization is a StoreKit 2 subscription, **DayCast Pro** (monthly/yearly).
 
 | Does | Does not |
 |---|---|
@@ -35,7 +35,7 @@ Monetization is a StoreKit 2 subscription, **SpotterCast Pro** (monthly/yearly).
 ## 2. Already shipped — do not rebuild
 
 Today hero + data-driven feed (Now/Hourly/Daily/Precip/Alerts/AirQuality/SunMoon/Radar/Fire/AI
-cards), SpotterCast Score, Minutecast (Open-Meteo 15-min + CONUS HRRR with disagreement surfacing),
+cards), DayCast Score, Minutecast (Open-Meteo 15-min + CONUS HRRR with disagreement surfacing),
 Forecast with UV/precip amounts/day-detail sheet, Mapbox radar (live RainViewer → OWM fallback,
 Xweather forecast frames, NEXRAD single-site products, chase HUD, scrubber, playback, Explain
 Radar), NWS alerts + SPC severe products, alert history + background refresh + rich time-sensitive
@@ -57,7 +57,7 @@ intent, radar HUD glow, tab IA). None of them is the constraint.
 | **Unit economics** | **Binding in a way DataCentral's isn't.** Growth costs you money per user. |
 
 The standing rule applies: near-zero users → the answer is distribution, not features. But
-SpotterCast has a second binding ceiling that has to be named, because it makes the usual advice
+DayCast has a second binding ceiling that has to be named, because it makes the usual advice
 *dangerous* here:
 
 **The AI is free to the user and billed to you.** `Config/DeveloperAPIKey.swift` carries a real
@@ -80,7 +80,7 @@ install source, no attribution**, and — notably for the economics above — **
 all**. You cannot currently answer "how many Grok calls per user per day," which is the number that
 decides whether Pro is priced right.
 
-**Identity gap.** The product is named SpotterCast, the system prompts say "field-first weather
+**Identity gap.** The product is named DayCast, the system prompts say "field-first weather
 intelligence for spotters," the radar ships SRV and correlation coefficient — and the App Store
 keywords are `weather, forecast, radar, AI, alerts, tornado, hurricane, widgets, complications,
 live radar, NWS, storm`. That is a generic consumer weather listing competing head-on with Apple
@@ -185,7 +185,7 @@ user count and a cost-per-user to reason from.
 
 ## Sources
 
-[SpotterCast on the App Store](https://apps.apple.com/us/app/spottercast/id6780682022) ·
+[DayCast on the App Store](https://apps.apple.com/us/app/spottercast/id6780682022) ·
 [RadarScope](https://apps.apple.com/US/app/id288419283) ·
 [RadarOmega](https://apps.apple.com/us/app/radaromega/id1439881811) ·
 [CARROT Weather](https://apps.apple.com/us/app/carrot-weather-alerts-radar/id961390574) ·
@@ -216,7 +216,7 @@ and what has to be true before the next pass is worth running.
 ## What the pass got wrong
 
 **The share loop did not exist.** §6 treated share cards as existing machinery needing a new
-subject. In fact shared text ended at "Shared from SpotterCast" with no link — a recipient had no
+subject. In fact shared text ended at "Shared from DayCast" with no link — a recipient had no
 route to the app. Instrumenting `share_completed` alone would have measured a loop that could not
 close. Fixed by adding campaign-tagged App Store links.
 
@@ -245,7 +245,7 @@ The measurement gap named in §3 is closed on the cost side and open on the acqu
 ## The next decision, and what gates it
 
 The pass deferred **Spotter Network / mPING reporting** — the one thing RadarScope has that
-SpotterCast does not. That remains the leading product bet, and it is still deferred for the same
+DayCast does not. That remains the leading product bet, and it is still deferred for the same
 reason: it is a large build justified only by an audience that has not arrived yet.
 
 **Do not run another pass until at least one of these is true:**

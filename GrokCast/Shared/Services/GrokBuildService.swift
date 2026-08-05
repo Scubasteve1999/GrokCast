@@ -197,7 +197,7 @@ enum GrokBuildError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .missingAPIKey:
-      return "SpotterCast Pro unlocks AI features."
+      return "DayCast Pro unlocks AI features."
     case .invalidResponse(let code):
       if let c = code {
         return "Invalid response from AI service (HTTP \(c)). Check your API key and try again."
@@ -207,7 +207,7 @@ enum GrokBuildError: Error, LocalizedError {
       let lower = msg.lowercased()
       // Responses from our own proxy, which speaks the same error shape as xAI.
       if lower.contains("spottercast pro") {
-        return "SpotterCast Pro unlocks AI features."
+        return "DayCast Pro unlocks AI features."
       }
       if lower.contains("limit reached") || code == 429 {
         return "AI limit reached for today. Resets at midnight UTC."

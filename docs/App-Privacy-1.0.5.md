@@ -1,8 +1,8 @@
-# App Store Connect — App Privacy for SpotterCast 1.0.5
+# App Store Connect — App Privacy for DayCast 1.0.5
 
 Apple’s App Privacy questionnaire is **not** available via the App Store Connect API. Apply these answers in the UI (can be edited while 1.0.4 is Waiting for Review):
 
-**Path:** [App Store Connect → SpotterCast → App Privacy](https://appstoreconnect.apple.com/apps/6780682022/appPrivacy)
+**Path:** [App Store Connect → DayCast → App Privacy](https://appstoreconnect.apple.com/apps/6780682022/appPrivacy)
 
 ## Data types to declare
 

@@ -7,7 +7,7 @@ enum ShareableBriefText {
     condition: String?,
     brief: String
   ) -> String {
-    var lines = ["SpotterCast — \(locationName)"]
+    var lines = ["DayCast — \(locationName)"]
     if let temperatureLine, !temperatureLine.isEmpty {
       lines.append(temperatureLine + (condition.map { " · \($0)" } ?? ""))
     }
@@ -19,7 +19,7 @@ enum ShareableBriefText {
   }
 
   static func alertsSummary(locationName: String, summary: String, alertEvents: [String]) -> String {
-    var lines = ["SpotterCast Alert Summary — \(locationName)"]
+    var lines = ["DayCast Alert Summary — \(locationName)"]
     if !alertEvents.isEmpty {
       lines.append(alertEvents.joined(separator: " · "))
     }
@@ -32,7 +32,7 @@ enum ShareableBriefText {
 
   static func radarExplanation(context: RadarExplainContext, body: String) -> String {
     let lines = [
-      "SpotterCast Radar — \(context.locationName)",
+      "DayCast Radar — \(context.locationName)",
       "\(context.modeLabel) · \(context.frameLabel) · \(context.productName)",
       "",
       body,
@@ -48,8 +48,8 @@ enum ShareableBriefText {
     analysis: String
   ) -> String {
     var lines = [
-      "SpotterCast Storm Spotter — \(locationName)",
-      "#SpotterCastStormSpotter",
+      "DayCast Storm Spotter — \(locationName)",
+      "#DayCastStormSpotter",
       "",
     ]
     if let notes = observerNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {

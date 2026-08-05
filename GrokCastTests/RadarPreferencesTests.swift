@@ -30,6 +30,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertFalse(RadarPreferences.showFireLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, RadarPlayback.defaultPlaybackSpeed)
     XCTAssertEqual(RadarPreferences.radarOpacity, RadarPreferences.defaultRadarOpacity)
+    XCTAssertFalse(RadarPreferences.chaseDecluttered)
   }
 
   func testValuesRoundTrip() {
@@ -38,12 +39,14 @@ final class RadarPreferencesTests: XCTestCase {
     RadarPreferences.showFireLayer = true
     RadarPreferences.playbackSpeed = 1.0
     RadarPreferences.radarOpacity = 0.55
+    RadarPreferences.chaseDecluttered = true
 
     XCTAssertEqual(RadarPreferences.colorScheme, .balanced)
     XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
     XCTAssertTrue(RadarPreferences.showFireLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, 1.0)
     XCTAssertEqual(RadarPreferences.radarOpacity, 0.55, accuracy: 0.0001)
+    XCTAssertTrue(RadarPreferences.chaseDecluttered)
   }
 
   /// The default is true, so a stored `false` has to survive — the bug this guards

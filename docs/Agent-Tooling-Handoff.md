@@ -1,6 +1,6 @@
 # Agent tooling handoff — build, run, screenshot, upload
 
-For any coding agent (Cursor, Claude Code, etc.) working on SpotterCast. Everything below is already installed and configured on this Mac (set up 2026-07-11, tooling re-verified 2026-07-30).
+For any coding agent (Cursor, Claude Code, etc.) working on DayCast. Everything below is already installed and configured on this Mac (set up 2026-07-11, tooling re-verified 2026-07-30).
 
 State as of 2026-07-30: **v1.0.5 build 75** on `main`, compiles clean, PostHog product analytics shipped in code. Outstanding before submission — App Privacy labels applied in the App Store Connect UI (`docs/App-Privacy-1.0.5.md`), archive + upload of build 75, and PostHog Live event verification from a real device or TestFlight build.
 
@@ -77,4 +77,4 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 
 ## Branding rule
 
-App displays as **SpotterCast**; internal identifiers stay GrokCast (bundle id `com.scubasteve1999.GrokCast`, type names, widget kinds, `X-GrokCast-Subscription-Id` header). When touching UI, grep string literals for "GrokCast" and rebrand only user-visible text.
+App displays as **DayCast**; internal identifiers stay GrokCast (bundle id `com.scubasteve1999.GrokCast`, type names, widget kinds, `X-GrokCast-Subscription-Id` header). When touching UI, grep string literals for "GrokCast" and rebrand only user-visible text.

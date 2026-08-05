@@ -1,6 +1,6 @@
 import XCTest
 
-/// Shared launch helpers for SpotterCast UI tests.
+/// Shared launch helpers for DayCast UI tests.
 /// Prefer accessibility identifiers (`spottercast.*`) over brittle coordinates.
 class SpotterCastUITestCase: XCTestCase {
   var app: XCUIApplication!

@@ -17,7 +17,7 @@ struct LocationPermissionView: View {
       switch store.locationService.authorizationStatus {
       case .notDetermined:
         Text(
-          "SpotterCast uses your location to show accurate local weather forecasts and AI-powered insights."
+          "DayCast uses your location to show accurate local weather forecasts and AI-powered insights."
         )
         .font(.body)
         .multilineTextAlignment(.center)

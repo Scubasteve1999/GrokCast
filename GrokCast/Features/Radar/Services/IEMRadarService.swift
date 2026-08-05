@@ -11,7 +11,7 @@ final class IEMRadarService {
   private static let scanListBase = "https://mesonet.agron.iastate.edu/json/radar"
   private static let siteListURL = URL(
     string: "https://mesonet.agron.iastate.edu/json/network.py?network=NEXRAD")!
-  private static let userAgent = "SpotterCast/1.0 (https://grokcast.app)"
+  private static let userAgent = "DayCast/1.0 (https://grokcast.app)"
   private static let requestTimeout: TimeInterval = 8
 
   /// Beyond this the site's low-level beam is too high to be useful (and we're likely non-US).
@@ -76,6 +76,32 @@ final class IEMRadarService {
     return best
   }
 
+  /// Result of a site-product load, including whether we had to step to a neighbor
+  /// and whether the newest volume is already stale for field use.
+  struct SiteFrameLoad: Equatable {
+    let frames: [RadarFrame]
+    let site: Site
+    /// Preferred (nearest) site the user would expect — may differ from `site`.
+    let preferredSite: Site
+    let isFallback: Bool
+    /// Newest frame older than `staleScanThreshold` (site likely degraded).
+    let isStale: Bool
+
+    var newestScanAge: TimeInterval {
+      guard let newest = frames.last?.timestamp else { return .infinity }
+      return Date().timeIntervalSince(newest)
+    }
+  }
+
+  /// Scans newer than this are treated as current; older still display with a warning.
+  static let staleScanThreshold: TimeInterval = 15 * 60
+  /// Primary list window. Wider than composite — site outages often last hours.
+  private static let primaryLookback: TimeInterval = 3 * 3600
+  /// Last-ditch window when the 3h list is empty (true multi-hour outage).
+  private static let extendedLookback: TimeInterval = 12 * 3600
+  /// How many NEXRAD sites to try before giving up (nearest first).
+  private static let siteFallbackLimit = 4
+
   /// Recent frames for one site + product using real volume-scan times from the
   /// IEM list API (guessed 5-minute timestamps return 503 — verified 2026-07).
   static func loadSiteFrames(
@@ -87,8 +113,120 @@ final class IEMRadarService {
     return await loadRidgeFrames(
       radar: site,
       productCode: code,
-      maxFrames: maxFrames
+      maxFrames: maxFrames,
+      lookback: primaryLookback
     )
+  }
+
+  /// Prefer a **fresh** volume over a dead home radar.
+  ///
+  /// Two passes (the bug this fixes: extended lookback on NQA returned 12h-old
+  /// frames and short-circuited before OHX could offer minutes-old SRV):
+  /// 1. Primary window (3h), nearest first — first hit wins.
+  /// 2. Only if every candidate is empty in 3h: extended window (12h), pick the
+  ///    site whose newest scan is freshest (not merely nearest).
+  @MainActor
+  static func loadSiteFramesNear(
+    coordinate: CLLocationCoordinate2D,
+    product: RadarProduct,
+    preferredSite: Site? = nil,
+    maxFrames: Int = 12
+  ) async -> SiteFrameLoad? {
+    guard let code = product.iemCode else { return nil }
+
+    var candidates = await nearestSites(to: coordinate, limit: siteFallbackLimit)
+    if let preferredSite, !candidates.contains(where: { $0.id == preferredSite.id }) {
+      candidates.insert(preferredSite, at: 0)
+    }
+    // Deduplicate while keeping order.
+    var seen = Set<String>()
+    candidates = candidates.filter { seen.insert($0.id).inserted }
+    guard let preferred = preferredSite ?? candidates.first else { return nil }
+
+    // Pass 1 — live-enough volumes only. Never mix in 12h archaeology here.
+    for site in candidates {
+      let frames = await loadRidgeFrames(
+        radar: site.id,
+        productCode: code,
+        maxFrames: maxFrames,
+        lookback: primaryLookback
+      )
+      if let load = siteFrameLoad(frames: frames, site: site, preferred: preferred) {
+        return load
+      }
+    }
+
+    // Pass 2 — total outage region: take the least-stale extended set we can find.
+    var best: SiteFrameLoad?
+    for site in candidates {
+      let frames = await loadRidgeFrames(
+        radar: site.id,
+        productCode: code,
+        maxFrames: maxFrames,
+        lookback: extendedLookback
+      )
+      guard let load = siteFrameLoad(frames: frames, site: site, preferred: preferred)
+      else { continue }
+      if best == nil || load.newestScanAge < best!.newestScanAge {
+        best = load
+      }
+    }
+    return best
+  }
+
+  /// Builds a load result when frames exist; nil when the list was empty.
+  static func siteFrameLoad(
+    frames: [RadarFrame],
+    site: Site,
+    preferred: Site
+  ) -> SiteFrameLoad? {
+    guard !frames.isEmpty else { return nil }
+    let newestAge =
+      frames.last.map { Date().timeIntervalSince($0.timestamp) } ?? .infinity
+    return SiteFrameLoad(
+      frames: frames,
+      site: site,
+      preferredSite: preferred,
+      isFallback: site.id != preferred.id,
+      isStale: newestAge > staleScanThreshold
+    )
+  }
+
+  /// Pure selection helper for tests: given candidate loads from pass 1 / pass 2,
+  /// return the winner (first non-nil pass-1, else freshest pass-2).
+  static func pickSiteFrameLoad(
+    primaryHits: [SiteFrameLoad],
+    extendedHits: [SiteFrameLoad]
+  ) -> SiteFrameLoad? {
+    if let first = primaryHits.first { return first }
+    return extendedHits.min(by: { $0.newestScanAge < $1.newestScanAge })
+  }
+
+  /// Ordered nearest NEXRAD sites within `maxSiteDistanceMeters`.
+  @MainActor
+  static func nearestSites(
+    to coordinate: CLLocationCoordinate2D,
+    limit: Int
+  ) async -> [Site] {
+    let sites: [Site]
+    if let cachedSites {
+      sites = cachedSites
+    } else if let fetched = await fetchSites() {
+      cachedSites = fetched
+      sites = fetched
+    } else {
+      return []
+    }
+
+    let here = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+    return sites
+      .map { site in
+        (site, here.distance(from: CLLocation(latitude: site.lat, longitude: site.lon)))
+      }
+      .filter { $0.1 <= maxSiteDistanceMeters }
+      .sorted { $0.1 < $1.1 }
+      .prefix(max(limit, 0))
+      .map(\.0)
   }
 
   /// CONUS-wide composite reflectivity (N0Q) — free NWS mosaic, no RainViewer needed.
@@ -96,17 +234,19 @@ final class IEMRadarService {
     await loadRidgeFrames(
       radar: conusCompositeRadar,
       productCode: conusCompositeProduct,
-      maxFrames: maxFrames
+      maxFrames: maxFrames,
+      lookback: 3600
     )
   }
 
   private static func loadRidgeFrames(
     radar: String,
     productCode: String,
-    maxFrames: Int
+    maxFrames: Int,
+    lookback: TimeInterval
   ) async -> [RadarFrame] {
     let end = Date()
-    let start = end.addingTimeInterval(-3600)
+    let start = end.addingTimeInterval(-lookback)
     var components = URLComponents(string: scanListBase)!
     components.queryItems = [
       URLQueryItem(name: "operation", value: "list"),

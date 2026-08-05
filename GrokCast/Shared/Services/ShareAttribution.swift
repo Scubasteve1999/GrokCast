@@ -3,7 +3,7 @@ import Foundation
 /// App Store links carried by shared content, tagged so installs can be traced
 /// back to the surface that produced them.
 ///
-/// Shares used to end at "Shared from SpotterCast" with no link at all, so a
+/// Shares used to end at "Shared from DayCast" with no link at all, so a
 /// recipient had no route to the app and the share loop could not be measured.
 /// The `ct` campaign token surfaces in App Store Connect → Analytics →
 /// Acquisition, which is where install attribution actually lives; no SDK and
@@ -45,6 +45,6 @@ enum ShareAttribution {
 
   /// Sign-off line appended to shared text.
   static func footer(for surface: Surface) -> String {
-    "Shared from SpotterCast — \(appStoreURL(for: surface).absoluteString)"
+    "Shared from DayCast — \(appStoreURL(for: surface).absoluteString)"
   }
 }

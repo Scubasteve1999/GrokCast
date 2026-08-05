@@ -22,6 +22,7 @@ enum RadarPreferences {
   private static let showFireLayerKey = "radar.pref.showFireLayer"
   private static let playbackSpeedKey = "radar.pref.playbackSpeed"
   private static let radarOpacityKey = "radar.pref.radarOpacity"
+  private static let chaseDeclutteredKey = "radar.pref.chaseDecluttered"
 
   /// Matches the Display sheet / panel slider. Out-of-range values would either
   /// wash the layer out or make it opaque enough to hide the base map.
@@ -82,5 +83,12 @@ enum RadarPreferences {
       return clampedRadarOpacity(stored)
     }
     set { store.set(clampedRadarOpacity(newValue), forKey: radarOpacityKey) }
+  }
+
+  /// Field "MAP" mode: hide the bottom control panel. Defaults off so first launch
+  /// still shows full chrome; chasers who flip it keep it across launches.
+  static var chaseDecluttered: Bool {
+    get { store.bool(forKey: chaseDeclutteredKey) }
+    set { store.set(newValue, forKey: chaseDeclutteredKey) }
   }
 }

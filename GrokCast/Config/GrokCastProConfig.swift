@@ -1,6 +1,6 @@
 import Foundation
 
-/// Production configuration for SpotterCast Pro hosted services.
+/// Production configuration for DayCast Pro hosted services.
 ///
 /// Secrets-free by design, like `GrokAPIConfiguration`: both values live in the
 /// gitignored `DeveloperAPIKey.swift` and are forwarded here so the rest of the

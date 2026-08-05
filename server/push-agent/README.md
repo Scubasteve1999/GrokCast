@@ -1,7 +1,7 @@
-# SpotterCast — push agent
+# DayCast — push agent
 
 Cloudflare Worker, built on the [Agents SDK](https://developers.cloudflare.com/agents/),
-that watches NWS alerts and delivers APNs pushes to SpotterCast devices.
+that watches NWS alerts and delivers APNs pushes to DayCast devices.
 
 It exists because the on-device notification services can only fire when iOS chooses
 to wake the app. `AlertNotificationService` posts a great tornado warning — but only

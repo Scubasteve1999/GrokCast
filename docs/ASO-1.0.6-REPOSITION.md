@@ -46,7 +46,7 @@ Not indexed for search — this converts someone already on the page. Safe to it
 ## 4. Description
 
 ```
-SpotterCast is a field weather app for storm spotters, chasers, and people who
+DayCast is a field weather app for storm spotters, chasers, and people who
 watch the sky themselves.
 
 RADAR
@@ -69,7 +69,7 @@ SHORT TERM
   standard model so you can see when the two disagree
 • Hourly and 10-day forecasts
 
-AI READS (SpotterCast Pro)
+AI READS (DayCast Pro)
 • Explain Radar — a plain-language read of the frame you are looking at
 • Photo analysis — send a photo of the sky and get a read on the structure
 • Morning brief — a short written summary of the day's setup
@@ -82,14 +82,14 @@ ALSO
 
 WHAT'S FREE
 Radar, NWS alerts, SPC products, forecasts, and next-hour precipitation are
-free. SpotterCast Pro adds the AI features, forecast radar, Live Activity, and
+free. DayCast Pro adds the AI features, forecast radar, Live Activity, and
 unlimited saved locations. AI has a daily limit.
 
 DATA SOURCES
 Open-Meteo, the National Weather Service, the Storm Prediction Center, NEXRAD
 Level III via Iowa Environmental Mesonet, RainViewer, and NASA FIRMS.
 
-SpotterCast is not affiliated with NOAA, the National Weather Service, or any
+DayCast is not affiliated with NOAA, the National Weather Service, or any
 government agency. It is an interpretation aid, not a warning source. Always
 follow official warnings and the guidance of local emergency officials.
 ```
@@ -144,7 +144,7 @@ unfalsifiable.
 
 ## Not proposed
 
-- Renaming the app. `SpotterCast` has 19 unused characters and carries the most ASO weight, but
+- Renaming the app. `DayCast` has 19 unused characters and carries the most ASO weight, but
   also the most brand risk, and the existing 5-star ratings are attached to it. Revisit only if the
   reposition works.
 - Keyword-stuffing the name field.

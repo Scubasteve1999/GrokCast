@@ -59,7 +59,7 @@ struct GrokBriefCard: View {
         if !store.xaiService.hasValidKey {
           Button(
             PaywallCoordinator.shared.canUnlockGrokViaPro
-              ? "Upgrade to SpotterCast Pro" : "Add Key in Settings"
+              ? "Upgrade to DayCast Pro" : "Add Key in Settings"
           ) {
             if PaywallCoordinator.shared.canUnlockGrokViaPro {
               PaywallCoordinator.shared.present(.grokAI)
@@ -134,7 +134,7 @@ struct GrokBriefCard: View {
 
       ShareLink(
         item: shareText(for: briefText),
-        subject: Text("SpotterCast Weather Brief"),
+        subject: Text("DayCast Weather Brief"),
         message: Text(shareText(for: briefText))
       ) {
         Image(systemName: "square.and.arrow.up")

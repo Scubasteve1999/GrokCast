@@ -38,7 +38,7 @@ enum PostHogAnalytics {
   static func configure() {
     guard isConfigured else {
       #if DEBUG
-      print("[SpotterCast] PostHog skipped — set POSTHOG_API_KEY in Config/Secrets.xcconfig")
+      print("[DayCast] PostHog skipped — set POSTHOG_API_KEY in Config/Secrets.xcconfig")
       #endif
       return
     }

@@ -17,7 +17,7 @@ struct GrokAPIKeyEmptyStateView: View {
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(
-        "Weather, live radar, and alerts are free. SpotterCast Pro unlocks AI chat, Today's Take, Explain Radar, and Storm Spotter — or bring your own xAI key in Settings."
+        "Weather, live radar, and alerts are free. DayCast Pro unlocks AI chat, Today's Take, Explain Radar, and Storm Spotter — or bring your own xAI key in Settings."
       )
       .font(.subheadline)
       .foregroundStyle(DesignTokens.Palette.textSecondary)

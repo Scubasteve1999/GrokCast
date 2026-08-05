@@ -26,13 +26,13 @@ struct WatchWeatherView: View {
           ContentUnavailableView {
             Label("No Data", systemImage: "cloud")
           } description: {
-            Text("Open SpotterCast on iPhone and refresh weather.")
+            Text("Open DayCast on iPhone and refresh weather.")
           }
         }
       }
       .padding(.horizontal, 4)
     }
-    .navigationTitle(snapshot?.location.name ?? "SpotterCast")
+    .navigationTitle(snapshot?.location.name ?? "DayCast")
     .onAppear(perform: reload)
     .refreshable { reload() }
   }

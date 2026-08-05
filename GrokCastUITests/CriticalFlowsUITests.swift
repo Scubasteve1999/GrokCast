@@ -1,6 +1,6 @@
 import XCTest
 
-/// Highest-value smoke flows for SpotterCast (post–App Store).
+/// Highest-value smoke flows for DayCast (post–App Store).
 /// Run against a Debug simulator build with network + location available.
 final class CriticalFlowsUITests: SpotterCastUITestCase {
 
@@ -116,8 +116,8 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
     // Prefer the stable identifier; fall back to the label for older builds.
     let candidates = [
       app.buttons["spottercast.settings.pro"],
-      app.buttons["View SpotterCast Pro"],
-      app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "SpotterCast Pro"))
+      app.buttons["View DayCast Pro"],
+      app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "DayCast Pro"))
         .firstMatch,
     ]
 
@@ -131,7 +131,7 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
       break
     }
 
-    XCTAssertTrue(opened, "Could not find SpotterCast Pro entry in Settings")
+    XCTAssertTrue(opened, "Could not find DayCast Pro entry in Settings")
 
     let paywallSignal =
       app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Forecast radar")).firstMatch

@@ -10,7 +10,7 @@ struct RadarView: View {
   @State private var radarState = RadarState()
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
-  @State private var chaseDecluttered = false
+  @State private var chaseDecluttered = RadarPreferences.chaseDecluttered
 
   /// Camera / tile center follows the selected weather location (not device GPS).
   private var selectedMapCenter: CLLocationCoordinate2D {
@@ -126,6 +126,9 @@ struct RadarView: View {
       // launch restores the last slider position (speed/overlay already do this).
       .onChange(of: radarOpacity) { _, newValue in
         RadarPreferences.radarOpacity = newValue
+      }
+      .onChange(of: chaseDecluttered) { _, newValue in
+        RadarPreferences.chaseDecluttered = newValue
       }
     }
   }
