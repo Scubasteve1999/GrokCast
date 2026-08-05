@@ -95,14 +95,29 @@ restore_config() {
     _cfg_encoded=$(printenv "$_cfg_var" 2>/dev/null || true)
 
     if [ -n "$_cfg_encoded" ]; then
+      # ASC / paste can introduce newlines or spaces; strip them. Also reject the
+      # UI mask if someone re-saved a secret without re-pasting the real value.
+      _cfg_encoded=$(printf '%s' "$_cfg_encoded" | tr -d ' \n\r\t')
+      case "$_cfg_encoded" in
+        *\**|*********)
+          echo "❌ $_cfg_var looks like a masked secret (contains '*'), not base64." >&2
+          echo "   Delete the variable and create it again with a fresh paste." >&2
+          echo "   Mac: base64 -i DayCast/Config/GoogleService-Info.plist | tr -d '\\n' | pbcopy" >&2
+          exit 1
+          ;;
+      esac
+
       # Guarded rather than bare: invalid base64 makes this pipeline exit
       # non-zero, and under `set -e` that would kill the script before the
-      # diagnostic runs.
-      if ! printf '%s' "$_cfg_encoded" | base64 --decode > "$_cfg_target" 2>/dev/null; then
+      # diagnostic runs. Prefer openssl when available (stricter).
+      if ! printf '%s' "$_cfg_encoded" | base64 --decode > "$_cfg_target" 2>/dev/null \
+        && ! printf '%s' "$_cfg_encoded" | openssl base64 -d -A > "$_cfg_target" 2>/dev/null; then
         echo "❌ $_cfg_var is not valid base64" >&2
         echo "   encoded chars: ${#_cfg_encoded}" >&2
+        echo "   Expected ~1180 for GoogleService-Info.plist (yours may be truncated)." >&2
         echo "   A re-saved variable can come back as its own '**********' mask." >&2
-        echo "   Re-add it: base64 -i $_cfg_target | pbcopy" >&2
+        echo "   Delete + re-add the secret (do not edit an existing masked field)." >&2
+        echo "   Mac: base64 -i DayCast/Config/GoogleService-Info.plist | tr -d '\\n' | pbcopy" >&2
         rm -f "$_cfg_target"
         exit 1
       fi
