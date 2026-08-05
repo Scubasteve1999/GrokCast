@@ -1,5 +1,5 @@
 /**
- * SpotterCast Pro proxy — forwards xAI requests for verified subscribers.
+ * DayCast Pro proxy — forwards xAI requests for verified subscribers.
  *
  * The xAI key lives here and never ships in the app. Access requires a StoreKit 2
  * signed transaction that this worker verifies against Apple's pinned root, so a
@@ -31,7 +31,7 @@ import {
 } from "./usage.js";
 
 const XAI_BASE = "https://api.x.ai/v1";
-const TRANSACTION_HEADER = "X-SpotterCast-Transaction";
+const TRANSACTION_HEADER = "X-DayCast-Transaction";
 
 /** Only these paths reach xAI. Without this, a leaked secret would expose the whole API. */
 const ROUTES = {
@@ -84,9 +84,9 @@ function authorized(request, env) {
 
 function usageHeaders(result) {
   return {
-    "X-SpotterCast-Limit": String(result.limit),
-    "X-SpotterCast-Remaining": String(result.remaining),
-    "X-SpotterCast-Reset": new Date(result.resetsAt).toISOString(),
+    "X-DayCast-Limit": String(result.limit),
+    "X-DayCast-Remaining": String(result.remaining),
+    "X-DayCast-Reset": new Date(result.resetsAt).toISOString(),
   };
 }
 
@@ -152,10 +152,10 @@ async function handle(request, env, options = {}) {
       },
     });
 
-    const headers = { "X-SpotterCast-Cache": result.cache ?? "MISS" };
+    const headers = { "X-DayCast-Cache": result.cache ?? "MISS" };
     if (result.response) {
       const passthrough = new Headers(result.response.headers);
-      passthrough.set("X-SpotterCast-Cache", result.cache ?? "MISS");
+      passthrough.set("X-DayCast-Cache", result.cache ?? "MISS");
       return new Response(result.response.body, {
         status: result.response.status,
         headers: passthrough,
@@ -223,7 +223,7 @@ async function handle(request, env, options = {}) {
       // Surfaced in `wrangler tail`. A rejection returns before metering, so
       // without this a refused call is indistinguishable from a served one.
       console.log(`entitlement rejected: ${error.message}`);
-      return errorResponse(403, `SpotterCast Pro required: ${error.message}`, "entitlement_error");
+      return errorResponse(403, `DayCast Pro required: ${error.message}`, "entitlement_error");
     }
     throw error;
   }
@@ -250,7 +250,7 @@ async function handle(request, env, options = {}) {
   if (!global.ok) {
     await refund(env.USAGE, { bucket: route.bucket, subject, now });
     return errorResponse(503, "AI is temporarily unavailable.", "service_capacity", {
-      "X-SpotterCast-Reset": new Date(resetsAt(now)).toISOString(),
+      "X-DayCast-Reset": new Date(resetsAt(now)).toISOString(),
     });
   }
 

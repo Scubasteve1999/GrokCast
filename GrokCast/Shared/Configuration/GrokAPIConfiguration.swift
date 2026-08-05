@@ -152,7 +152,7 @@ enum GrokAPIError: Error, LocalizedError {
     case .apiError(let statusCode, let message):
       let lower = message.lowercased()
       // Responses from our own proxy, which speaks the same error shape as xAI.
-      if lower.contains("spottercast pro") {
+      if lower.contains("daycast pro") {
         return "DayCast Pro unlocks AI features."
       }
       if lower.contains("limit reached") {

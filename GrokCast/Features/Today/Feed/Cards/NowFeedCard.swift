@@ -18,7 +18,7 @@ struct NowFeedCard: View {
         Text(store.currentLocation?.name ?? weather.location.name)
           .font(.title2.weight(.semibold))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .accessibilityIdentifier(SpotterCastAccessibility.Today.location)
+          .accessibilityIdentifier(DayCastAccessibility.Today.location)
 
         Image(systemName: weather.symbolName)
           .font(.system(size: 42))
@@ -30,7 +30,7 @@ struct NowFeedCard: View {
           .monospacedDigit()
           .lineLimit(1)
           .minimumScaleFactor(0.5)
-          .accessibilityIdentifier(SpotterCastAccessibility.Today.temperature)
+          .accessibilityIdentifier(DayCastAccessibility.Today.temperature)
 
         Text(weather.conditionText)
           .font(.title3.weight(.medium))

@@ -1,8 +1,8 @@
 import XCTest
 
 /// Shared launch helpers for DayCast UI tests.
-/// Prefer accessibility identifiers (`spottercast.*`) over brittle coordinates.
-class SpotterCastUITestCase: XCTestCase {
+/// Prefer accessibility identifiers (`daycast.*`) over brittle coordinates.
+class DayCastUITestCase: XCTestCase {
   var app: XCUIApplication!
 
   override func setUpWithError() throws {
@@ -63,14 +63,14 @@ class SpotterCastUITestCase: XCTestCase {
 
   // MARK: - Tab bar
 
-  /// Mirrors `SpotterCastAccessibility.Tabs` / `.MoreHub` in the app target.
+  /// Mirrors `DayCastAccessibility.Tabs` / `.MoreHub` in the app target.
   /// The app hides the system tab bar (`.toolbar(.hidden, for: .tabBar)`) but it
   /// stays in the accessibility tree, so plain label queries such as
   /// `app.buttons["Radar"]` match both it and our `CompactTabBar` and fail to tap.
   enum Tab: String {
     case today, forecast, radar, alerts, more
 
-    var identifier: String { "spottercast.tab.\(rawValue)" }
+    var identifier: String { "daycast.tab.\(rawValue)" }
   }
 
   /// Raw values are `WeatherStore.Tab.rawValue` — note Storm Spotter's is "AI".
@@ -79,7 +79,7 @@ class SpotterCastUITestCase: XCTestCase {
     case locations = "Locations"
     case settings = "Settings"
 
-    var identifier: String { "spottercast.moreHub.\(rawValue)" }
+    var identifier: String { "daycast.moreHub.\(rawValue)" }
   }
 
   @discardableResult

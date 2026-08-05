@@ -47,7 +47,7 @@ struct GrokUsageLimiter {
     self.now = now
   }
 
-  private static let keyPrefix = "spottercast.grokUsage.v1"
+  private static let keyPrefix = "daycast.grokUsage.v1"
 
   private static let dayFormatter: DateFormatter = {
     let formatter = DateFormatter()

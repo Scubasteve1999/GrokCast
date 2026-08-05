@@ -8,7 +8,7 @@ const BASE_URL = "https://api.weather.gov";
 
 /** NWS asks every client to identify itself; unidentified traffic gets blocked. */
 export const NWS_USER_AGENT =
-  "(SpotterCast/push-agent, https://spottercast.app, support@spottercast.app)";
+  "(DayCast/push-agent, mailto:stephenmoorecm1357@gmail.com)";
 
 export interface NWSAlert {
   id: string;

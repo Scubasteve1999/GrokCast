@@ -78,7 +78,7 @@ struct SettingsView: View {
                 PaywallCoordinator.shared.present(.locations)
               }
               .buttonStyle(.borderedProminent)
-              .accessibilityIdentifier(SpotterCastAccessibility.Settings.proEntry)
+              .accessibilityIdentifier(DayCastAccessibility.Settings.proEntry)
             }
             .padding(.vertical, 4)
           }
@@ -94,7 +94,7 @@ struct SettingsView: View {
               .foregroundStyle(.red)
           }
         } header: {
-          Text("SPOTTERCAST PRO")
+          Text("DAYCAST PRO")
         } footer: {
           Text(
             "Pro unlocks AI chat, Today's Take, Storm Spotter, forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when DayCast refreshes weather. AI has a daily limit that resets at midnight UTC. Bringing your own xAI developer key below also works and is not limited."
@@ -528,7 +528,7 @@ struct SettingsView: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Settings")
 
-        FigmaSectionLabel(title: "SPOTTERCAST PRO")
+        FigmaSectionLabel(title: "DAYCAST PRO")
         figmaProCard
 
         FigmaSectionLabel(title: "NOTIFICATIONS")
@@ -728,7 +728,7 @@ struct SettingsView: View {
           .padding(.vertical, 10)
           .background(DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: 10))
           .padding(.horizontal, DesignTokens.Spacing.space16)
-          .accessibilityIdentifier(SpotterCastAccessibility.Settings.proEntry)
+          .accessibilityIdentifier(DayCastAccessibility.Settings.proEntry)
         }
 
         Button("Restore Purchases") {

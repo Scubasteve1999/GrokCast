@@ -23,6 +23,6 @@ enum GrokProxyConfiguration {
   /// and nothing more. Entitlement comes from the StoreKit transaction the proxy
   /// verifies against Apple's root, which only Apple can mint.
   static var sharedSecret: String {
-    GrokCastProConfig.grokProxySharedSecret ?? "spottercast-pro"
+    GrokCastProConfig.grokProxySharedSecret ?? "daycast-pro"
   }
 }

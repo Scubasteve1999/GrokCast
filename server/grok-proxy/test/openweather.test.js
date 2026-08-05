@@ -84,7 +84,7 @@ test("a request is forwarded with the server key and returns the payload", async
   const { response } = await call("/v1/owm/data/4.0/onecall/current?lat=35&lon=-90", { upstream });
 
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get("X-SpotterCast-Cache"), "MISS");
+  assert.equal(response.headers.get("X-DayCast-Cache"), "MISS");
   assert.equal(upstream.calls.length, 1);
   assert.match(upstream.calls[0], /appid=owm-test-key/);
   assert.match(upstream.calls[0], /^https:\/\/api\.openweathermap\.org\/data\/4\.0\/onecall\/current/);
@@ -102,7 +102,7 @@ test("a second identical request is served from cache and not billed", async () 
     cache,
   });
 
-  assert.equal(second.response.headers.get("X-SpotterCast-Cache"), "HIT");
+  assert.equal(second.response.headers.get("X-DayCast-Cache"), "HIT");
   assert.equal(upstream.calls.length, 1, "the cached request must not reach OpenWeatherMap");
   assert.equal(
     env.USAGE.store.get("usage:v1:owm:__global__:2026-08-02"),

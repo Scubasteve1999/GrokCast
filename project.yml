@@ -115,7 +115,6 @@ targets:
           - CFBundleURLName: com.grokcast.GrokCast
             CFBundleURLSchemes:
               - grokcast
-              - spottercast
               - daycast
     dependencies:
       - target: GrokCastWidgets

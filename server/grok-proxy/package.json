@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker that forwards xAI requests for verified SpotterCast Pro subscribers.",
+  "description": "Cloudflare Worker that forwards xAI requests for verified DayCast Pro subscribers.",
   "scripts": {
     "fixtures": "./test/fixtures/generate.sh",
     "test": "node --test 'test/**/*.test.js'",

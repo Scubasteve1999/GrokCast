@@ -116,6 +116,7 @@
 		651A17047946F6C59AEA4A17 /* NWSAlertStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B25127C7266D0E2E7A66848 /* NWSAlertStyle.swift */; };
 		689A14741559D2D72A46CA02 /* WeatherLiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA42FF15F258D415820F4A34 /* WeatherLiveActivityManager.swift */; };
 		6BF0AE27288C2F0BB95E4CA3 /* GrokCastAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9AFC1FCA6F763FCC7B44977 /* GrokCastAppIntents.swift */; };
+		6C77520D3B894FD7FA36784B /* DayCastUITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4490A0E0F6D1F44C9F7A7849 /* DayCastUITestCase.swift */; };
 		6D070BE4071216B72AF60361 /* AlertDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F94CE8DC695347143BB931 /* AlertDetailView.swift */; };
 		6E039974EFC9B0732CAEDDDE /* GrokBriefSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2913B75C9C13380D57C1E4B8 /* GrokBriefSnapshot.swift */; };
 		6FC711D2528AC726084CB379 /* GrokCastProProducts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 068F02350C20BC6713F0994F /* GrokCastProProducts.swift */; };
@@ -217,7 +218,6 @@
 		DCB0F7B7D44B318702849E52 /* FireRadarOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA87C438AFCCFA6AF9BB05B /* FireRadarOverlay.swift */; };
 		DD6C591E2C681D9F63DF7701 /* ForecastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7D9D2021EDFB7230D029D91 /* ForecastView.swift */; };
 		DD72081C438A070B3F913C71 /* AirQualityAndMoonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7541B90E1EF0EF01C29726C6 /* AirQualityAndMoonTests.swift */; };
-		DDF534EC4BA0C06E8BDB1469 /* SpotterCastUITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A107EB1BAD228A6AAB5F6C1 /* SpotterCastUITestCase.swift */; };
 		DE23BEEA889724517C961C48 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A35820A6930E1BF8879F4FB3 /* Tab.swift */; };
 		E029FED4BC5D33E41AD62D5A /* RadarProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9191C59F9B8E26E0F8585D3 /* RadarProduct.swift */; };
 		E058D5E91459BDFDEF48E0C7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5DBFC2002C435AA001658629 /* PrivacyInfo.xcprivacy */; };
@@ -355,6 +355,7 @@
 		435BDA1BF6252513D2A0E1CC /* OpenWeatherMapRadarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapRadarService.swift; sourceTree = "<group>"; };
 		445DB85C4BAB702F0CEB890B /* AppReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPrompt.swift; sourceTree = "<group>"; };
 		446AB396BCB092986A0C99FC /* MinutecastStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinutecastStrip.swift; sourceTree = "<group>"; };
+		4490A0E0F6D1F44C9F7A7849 /* DayCastUITestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastUITestCase.swift; sourceTree = "<group>"; };
 		451CE837E2D1DAA8B011BE5B /* FeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCard.swift; sourceTree = "<group>"; };
 		467892BF56F27E98DEA2E515 /* RadarState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarState.swift; sourceTree = "<group>"; };
 		47A494C0625A844C39B85530 /* WidgetStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetStyle.swift; sourceTree = "<group>"; };
@@ -383,7 +384,6 @@
 		57AC6F1C9E439A9230B5C8F1 /* OpenMeteoModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoModels.swift; sourceTree = "<group>"; };
 		59452E9EEA36041B781C8BA9 /* CriticalFlowsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriticalFlowsUITests.swift; sourceTree = "<group>"; };
 		59C6D7956FC298B6754D5F4C /* OpenWeatherMapKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapKeys.swift; sourceTree = "<group>"; };
-		5A107EB1BAD228A6AAB5F6C1 /* SpotterCastUITestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotterCastUITestCase.swift; sourceTree = "<group>"; };
 		5B4DAED0A7D4A44604FD047D /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		5BD08C2100DC5E5B51E8A913 /* RadarModeTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarModeTransition.swift; sourceTree = "<group>"; };
 		5D4D3BAC91832639469F71BD /* PushRegistrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationTests.swift; sourceTree = "<group>"; };
@@ -1021,7 +1021,7 @@
 			isa = PBXGroup;
 			children = (
 				59452E9EEA36041B781C8BA9 /* CriticalFlowsUITests.swift */,
-				5A107EB1BAD228A6AAB5F6C1 /* SpotterCastUITestCase.swift */,
+				4490A0E0F6D1F44C9F7A7849 /* DayCastUITestCase.swift */,
 			);
 			path = GrokCastUITests;
 			sourceTree = "<group>";
@@ -1326,7 +1326,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC26E79573D86A3F56766C9A /* CriticalFlowsUITests.swift in Sources */,
-				DDF534EC4BA0C06E8BDB1469 /* SpotterCastUITestCase.swift in Sources */,
+				6C77520D3B894FD7FA36784B /* DayCastUITestCase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

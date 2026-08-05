@@ -51,7 +51,7 @@ export function buildAlertBody(alert: NWSAlert): string {
   if (alert.description && alert.description.length > 0) {
     return alert.description.slice(0, 300);
   }
-  return "Tap to view alert details in SpotterCast.";
+  return "Tap to view alert details in DayCast.";
 }
 
 export function buildAlertPayload(
@@ -119,7 +119,7 @@ export function buildMorningBriefPayload(options: {
           morningBriefSubtitle(options.temperature, options.condition) || undefined,
         body:
           trimmed.length === 0
-            ? "Open SpotterCast for today's weather and AI take."
+            ? "Open DayCast for today's weather and AI take."
             : trimmed.slice(0, 220),
       },
       category: CATEGORY_MORNING_BRIEF,

@@ -75,9 +75,9 @@ test("a verified subscriber is forwarded with the server key and usage headers",
   assert.equal(upstream.calls.length, 1);
   assert.equal(upstream.calls[0].url, "https://api.x.ai/v1/chat/completions");
   assert.equal(upstream.calls[0].init.headers.get("Authorization"), "Bearer xai-test-server-key");
-  assert.equal(response.headers.get("X-SpotterCast-Limit"), "3");
-  assert.equal(response.headers.get("X-SpotterCast-Remaining"), "2");
-  assert.ok(response.headers.get("X-SpotterCast-Reset"));
+  assert.equal(response.headers.get("X-DayCast-Limit"), "3");
+  assert.equal(response.headers.get("X-DayCast-Remaining"), "2");
+  assert.ok(response.headers.get("X-DayCast-Reset"));
 });
 
 test("the proxy secret and transaction are never forwarded upstream", async () => {
@@ -85,7 +85,7 @@ test("the proxy secret and transaction are never forwarded upstream", async () =
   await call(proxyRequest({ transaction: await mintTransaction() }), { upstream });
 
   const forwarded = upstream.calls[0].init.headers;
-  assert.equal(forwarded.get("X-SpotterCast-Transaction"), null);
+  assert.equal(forwarded.get("X-DayCast-Transaction"), null);
   assert.notEqual(forwarded.get("Authorization"), "Bearer test-proxy-secret");
 });
 
@@ -102,7 +102,7 @@ test("the per-subscriber daily cap returns 429 with a reset time", async () => {
   const { response } = await call(proxyRequest({ transaction }), { env, upstream });
   assert.equal(response.status, 429);
   assert.equal((await response.json()).error.type, "daily_limit_exceeded");
-  assert.ok(response.headers.get("X-SpotterCast-Reset"));
+  assert.ok(response.headers.get("X-DayCast-Reset"));
   assert.equal(upstream.calls.length, 3, "the capped request must not reach xAI");
 });
 

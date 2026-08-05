@@ -147,7 +147,7 @@ export function proxyRequest({
 } = {}) {
   const headers = new Headers({ "Content-Type": "application/json" });
   if (secret !== null) headers.set("Authorization", `Bearer ${secret}`);
-  if (transaction) headers.set("X-SpotterCast-Transaction", transaction);
+  if (transaction) headers.set("X-DayCast-Transaction", transaction);
 
   const hasBody = method !== "GET" && method !== "HEAD";
   return new Request(`https://proxy.example.com${path}`, {

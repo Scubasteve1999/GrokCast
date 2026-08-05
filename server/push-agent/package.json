@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Agents SDK worker that watches NWS alerts and delivers APNs pushes to SpotterCast devices.",
+  "description": "Cloudflare Agents SDK worker that watches NWS alerts and delivers APNs pushes to DayCast devices.",
   "scripts": {
     "test": "node --test 'test/**/*.test.ts'",
     "typecheck": "tsc --noEmit",

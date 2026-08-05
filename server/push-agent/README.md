@@ -105,7 +105,7 @@ first launch and kept in the Keychain, never `identifierForVendor`. Anyone holdi
 unguessable — 32 random URL-safe characters or better.
 
 If that ever needs to be stronger, the move is the one grok-proxy already made:
-require `X-SpotterCast-Transaction` and verify the StoreKit JWS. That code is written
+require `X-DayCast-Transaction` and verify the StoreKit JWS. That code is written
 and tested in `../grok-proxy/src/appleTransaction.js`.
 
 `ADMIN_SECRET` is operator-only and never ships in the app.

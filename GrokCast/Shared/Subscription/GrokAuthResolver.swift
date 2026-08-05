@@ -10,7 +10,7 @@ struct GrokAuthContext {
   /// it is the actual credential, not the shared bearer token.
   let transactionJWS: String?
 
-  static let transactionHeader = "X-SpotterCast-Transaction"
+  static let transactionHeader = "X-DayCast-Transaction"
 
   func applying(to request: inout URLRequest) {
     request.setValue(authorizationHeader, forHTTPHeaderField: "Authorization")

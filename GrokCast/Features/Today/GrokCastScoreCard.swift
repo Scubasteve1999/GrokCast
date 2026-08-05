@@ -31,7 +31,7 @@ struct GrokCastScoreCard: View {
 
   private var figmaLayout: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("SPOTTERCAST SCORE")
+      Text("DAYCAST SCORE")
         .font(.caption.weight(.bold))
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)

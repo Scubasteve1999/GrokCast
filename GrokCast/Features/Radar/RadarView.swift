@@ -239,7 +239,7 @@ struct RadarView: View {
       .padding(.horizontal, DesignTokens.Spacing.space12)
       .padding(.vertical, 6)
       .background(DesignTokens.Palette.accent.opacity(0.25), in: Capsule())
-      .accessibilityIdentifier(SpotterCastAccessibility.Radar.liveBadge)
+      .accessibilityIdentifier(DayCastAccessibility.Radar.liveBadge)
   }
 
   private func runModeTransitionIfNeeded() async {

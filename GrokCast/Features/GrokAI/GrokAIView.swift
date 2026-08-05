@@ -291,7 +291,7 @@ private struct GrokAIViewContent: View {
           .buttonStyle(.borderedProminent)
           .tint(DesignTokens.Palette.danger)
           .disabled(aiActionsDisabled)
-          .accessibilityIdentifier(SpotterCastAccessibility.Grok.stormSpotterAnalyze)
+          .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
         }
         .padding(DesignTokens.Spacing.space16)
         .frame(maxWidth: .infinity, alignment: .leading)

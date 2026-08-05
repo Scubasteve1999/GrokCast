@@ -44,7 +44,7 @@ enum AnalyticsEvent: String, CaseIterable, Sendable {
 }
 
 enum Analytics {
-  private static let prefix = "spottercast_analytics_"
+  private static let prefix = "daycast_analytics_"
   private static let logger = Logger(subsystem: "com.scubasteve1999.GrokCast", category: "Analytics")
 
   static func track(_ event: AnalyticsEvent, parameters: [String: String] = [:]) {

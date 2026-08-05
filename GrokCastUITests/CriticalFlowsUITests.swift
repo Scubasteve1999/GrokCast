@@ -2,7 +2,7 @@ import XCTest
 
 /// Highest-value smoke flows for DayCast (post–App Store).
 /// Run against a Debug simulator build with network + location available.
-final class CriticalFlowsUITests: SpotterCastUITestCase {
+final class CriticalFlowsUITests: DayCastUITestCase {
 
   // MARK: - 1. Cold launch → Today shows weather
 
@@ -11,7 +11,7 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
 
     // Hero location or temperature should be visible once weather loads.
     let locationCandidates = [
-      app.staticTexts.matching(NSPredicate(format: "identifier == %@", "spottercast.today.location")),
+      app.staticTexts.matching(NSPredicate(format: "identifier == %@", "daycast.today.location")),
       app.staticTexts.matching(NSPredicate(format: "label MATCHES %@", ".+, [A-Z]{2}")),
     ]
 
@@ -115,7 +115,7 @@ final class CriticalFlowsUITests: SpotterCastUITestCase {
 
     // Prefer the stable identifier; fall back to the label for older builds.
     let candidates = [
-      app.buttons["spottercast.settings.pro"],
+      app.buttons["daycast.settings.pro"],
       app.buttons["View DayCast Pro"],
       app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "DayCast Pro"))
         .firstMatch,
