@@ -32,6 +32,21 @@ set -eu
 # from the repo root.
 cd "$(dirname "$0")/.."
 
+# After the GrokCast → DayCast rename, a workflow still pointed at
+# GrokCast.xcodeproj / scheme GrokCast will fail early. Fail loudly with a
+# pointer rather than a cryptic later xcodebuild error.
+if [ ! -f DayCast.xcodeproj/project.pbxproj ]; then
+  echo "❌ DayCast.xcodeproj is missing from the clone root." >&2
+  echo "   Repo layout after rename expects:" >&2
+  echo "     DayCast.xcodeproj  +  DayCast/  sources" >&2
+  echo "   In App Store Connect → Xcode Cloud → Manage Workflows → this workflow:" >&2
+  echo "     Project / workspace: DayCast.xcodeproj" >&2
+  echo "     Scheme: DayCast" >&2
+  echo "   Top-level listing:" >&2
+  ls -la >&2 || true
+  exit 1
+fi
+
 # Xcode Cloud sets this to `archive` for the runs that upload to TestFlight.
 # Absent on GitHub Actions and on local runs, which is the safe default: those
 # are the builds that legitimately use placeholders.
@@ -179,6 +194,13 @@ validate_google_plist() {
   _v_bundle=$(plutil -extract BUNDLE_ID raw -o - "$_v_target" 2>/dev/null || true)
   if [ "$_v_bundle" != "$_v_expected_bundle" ]; then
     echo "   (BUNDLE_ID is '$_v_bundle', expected '$_v_expected_bundle')" >&2
+    echo "   After the DayCast rename, re-download GoogleService-Info.plist from Firebase" >&2
+    echo "   for com.scubasteve1999.DayCast, then re-set the Xcode Cloud secret:" >&2
+    echo "     base64 -i DayCast/Config/GoogleService-Info.plist | pbcopy" >&2
+    echo "     → GOOGLE_SERVICE_INFO_PLIST_BASE64 on the workflow Environment" >&2
+    if [ "$_v_bundle" = "com.scubasteve1999.GrokCast" ]; then
+      echo "   Your secret still has the old GrokCast bundle id — that is this failure." >&2
+    fi
     return 1
   fi
 }
