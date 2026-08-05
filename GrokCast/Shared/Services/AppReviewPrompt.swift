@@ -7,8 +7,8 @@ import UIKit
 /// Apple limits how often the system dialog appears; we only *ask* StoreKit after meaningful
 /// use and at most once per marketing version. Settings always offers a direct Rate link.
 enum AppReviewPrompt {
-  private static let sessionsKey = "spottercast.review.meaningfulSessions"
-  private static let lastVersionKey = "spottercast.review.lastVersionPrompted"
+  private static let sessionsKey = "daycast.review.meaningfulSessions"
+  private static let lastVersionKey = "daycast.review.lastVersionPrompted"
 
   /// Sessions with a successful weather load before we ask StoreKit.
   private static let minimumSessions = 4

@@ -16,7 +16,7 @@ struct AppStoreScreenshotToday: View {
 
       VStack(spacing: 20) {
         HStack {
-          Text("SpotterCast")
+          Text("DayCast")
             .font(.largeTitle.bold())
           Spacer()
           Text("OLIVE BRANCH")
@@ -184,7 +184,7 @@ struct AppStoreScreenshotWidgets: View {
           Label("APPLE WATCH", systemImage: "applewatch")
             .font(.caption.weight(.heavy))
             .foregroundStyle(DesignTokens.Palette.accentWarm)
-          Text("Temperature range gauge, AI brief, and SpotterCast Score right on your wrist.")
+          Text("Temperature range gauge, AI brief, and DayCast Score right on your wrist.")
             .font(.body)
         }
         .padding(16)

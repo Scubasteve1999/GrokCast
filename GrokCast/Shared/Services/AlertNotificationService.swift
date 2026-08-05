@@ -147,7 +147,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
     if let desc = alert.description, !desc.isEmpty {
       return String(desc.prefix(300))
     }
-    return "Tap to view alert details in SpotterCast."
+    return "Tap to view alert details in DayCast."
   }
 
   // MARK: - UNUserNotificationCenterDelegate

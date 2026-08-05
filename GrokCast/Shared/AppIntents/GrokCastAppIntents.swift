@@ -2,16 +2,16 @@ import AppIntents
 import Foundation
 
 struct GrokCastScoreIntent: AppIntent {
-  static var title: LocalizedStringResource = "SpotterCast Score"
-  static var description = IntentDescription("Get your Go Outside score from SpotterCast.")
+  static var title: LocalizedStringResource = "DayCast Score"
+  static var description = IntentDescription("Get your Go Outside score from DayCast.")
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
-      return .result(value: "Open SpotterCast and refresh weather to get your score.")
+      return .result(value: "Open DayCast and refresh weather to get your score.")
     }
     if let score = snapshot.grokCastScore {
       let label = snapshot.grokCastScoreLabel ?? "Score"
-      return .result(value: "\(snapshot.location.name): SpotterCast score \(score) — \(label).")
+      return .result(value: "\(snapshot.location.name): DayCast score \(score) — \(label).")
     }
     return .result(
       value:
@@ -22,16 +22,16 @@ struct GrokCastScoreIntent: AppIntent {
 
 struct GrokCastMinutecastIntent: AppIntent {
   static var title: LocalizedStringResource = "Minutecast"
-  static var description = IntentDescription("Get the next-hour precipitation outlook from SpotterCast.")
+  static var description = IntentDescription("Get the next-hour precipitation outlook from DayCast.")
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
-      return .result(value: "Open SpotterCast to load Minutecast.")
+      return .result(value: "Open DayCast to load Minutecast.")
     }
     if let message = snapshot.minutecastMessage {
       return .result(value: "\(snapshot.location.name): \(message)")
     }
-    return .result(value: "\(snapshot.location.name): No Minutecast data yet. Refresh in SpotterCast.")
+    return .result(value: "\(snapshot.location.name): No Minutecast data yet. Refresh in DayCast.")
   }
 }
 
@@ -40,11 +40,11 @@ struct GrokCastShortcuts: AppShortcutsProvider {
     AppShortcut(
       intent: GrokCastScoreIntent(),
       phrases: [
-        "What's my SpotterCast score in \(.applicationName)?",
+        "What's my DayCast score in \(.applicationName)?",
         "Go outside score in \(.applicationName)",
-        "SpotterCast score in \(.applicationName)",
+        "DayCast score in \(.applicationName)",
       ],
-      shortTitle: "SpotterCast Score",
+      shortTitle: "DayCast Score",
       systemImageName: "figure.walk"
     )
     AppShortcut(

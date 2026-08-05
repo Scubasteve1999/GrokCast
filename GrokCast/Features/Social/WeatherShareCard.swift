@@ -95,7 +95,7 @@ struct WeatherShareCard: View {
       }
 
       VStack(alignment: .leading, spacing: 2) {
-        Text("SpotterCast Score")
+        Text("DayCast Score")
           .font(.caption2.weight(.medium))
           .foregroundStyle(.white.opacity(0.6))
         Text(score.label)
@@ -110,7 +110,7 @@ struct WeatherShareCard: View {
 
   private var footerSection: some View {
     HStack {
-      Text("SpotterCast")
+      Text("DayCast")
         .font(.footnote.weight(.bold))
         .foregroundStyle(.white.opacity(0.5))
       Spacer()

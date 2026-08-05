@@ -39,6 +39,14 @@ final class RadarState {
   /// view. Without this the chip just un-highlights itself and the tap looks ignored.
   private(set) var siteProductUnavailableMessage: String?
 
+  /// Soft note while a site product is showing: fallback neighbor or aging scans.
+  /// Cleared when returning to composite reflectivity.
+  private(set) var siteProductAdvisory: String?
+
+  /// Site whose tiles are actually on screen for DETAIL/SRV (may differ from nearest
+  /// when the home radar is offline and we fell back to a neighbor).
+  private(set) var activeSiteProductSite: IEMRadarService.Site?
+
   var activeLiveProvider: RadarTileProvider? {
     timeline.live.first?.provider
   }
@@ -208,6 +216,9 @@ final class RadarState {
     if !showsFuture, let message = siteProductUnavailableMessage {
       return RadarStatusFooter(text: message, style: .warning)
     }
+    if !showsFuture, selectedProduct.isSiteProduct, let note = siteProductAdvisory {
+      return RadarStatusFooter(text: note, style: .warning)
+    }
     if let provider = activeLiveProvider {
       return RadarStatusFooter(
         text: provider.liveFooterLabel,
@@ -265,6 +276,7 @@ final class RadarState {
     }
     // A live-mode warning would be stale by the time the user comes back.
     siteProductUnavailableMessage = nil
+    siteProductAdvisory = nil
 
     beginTransition(targetIsFuture: true)
   }
@@ -394,6 +406,7 @@ extension RadarState {
   func setProduct(_ product: RadarProduct) async {
     guard product != selectedProduct else { return }
     siteProductUnavailableMessage = nil
+    siteProductAdvisory = nil
 
     guard product.isSiteProduct else {
       selectedProduct = .reflectivity
@@ -412,22 +425,28 @@ extension RadarState {
 
     if !refreshed {
       radarLog(
-        "[RadarState] \(product.displayName) unavailable for \(nearestSite?.id ?? "?") — keeping current view"
+        "[RadarState] \(product.displayName) offline near \(nearestSite?.id ?? "?") — keeping current view"
       )
       siteProductUnavailableMessage = unavailableMessage(for: product)
+      activeSiteProductSite = nil
       // Revert so the chip and later composite reloads don't think a site product is active.
       selectedProduct = previousProduct
     }
   }
 
-  /// "Detail rain unavailable for NQA" — named site when we have one.
+  /// Home radar offline and no neighbor with scans — plain "unavailable for NQA"
+  /// read as a product bug rather than a site outage.
   private func unavailableMessage(for product: RadarProduct) -> String {
-    guard let site = nearestSite else { return "\(product.displayName) unavailable" }
-    return "\(product.displayName) unavailable for \(site.id)"
+    guard let site = nearestSite else {
+      return "\(product.displayName) offline — no recent scans"
+    }
+    return "\(site.id) offline — no recent \(product.shortCode) scans nearby"
   }
 
   private func restoreCompositeLive() {
     selectedProduct = .reflectivity
+    activeSiteProductSite = nil
+    siteProductAdvisory = nil
     guard let composite = compositeLive else { return }
     timeline.live = composite.frames
     liveTileAvailability = composite.availability
@@ -436,26 +455,67 @@ extension RadarState {
     }
   }
 
-  /// Reloads Super-Res / SRV frames for the current nearest site.
-  /// Returns false when unavailable so callers can keep or revert the current view.
+  /// Reloads Super-Res / SRV frames for the nearest site, walking to neighbors when
+  /// the home radar has no recent volumes (common during NEXRAD outages).
   @discardableResult
   private func refreshActiveSiteProduct() async -> Bool {
-    guard selectedProduct.isSiteProduct, let site = nearestSite, !showsFuture else {
+    guard selectedProduct.isSiteProduct, let preferred = nearestSite, !showsFuture else {
       return false
     }
     let product = selectedProduct
-    let frames = await IEMRadarService.loadSiteFrames(site: site.id, product: product)
-    guard selectedProduct == product, nearestSite?.id == site.id, !showsFuture else {
+    let coordinate =
+      lastLoadedCoordinate
+      ?? CLLocationCoordinate2D(latitude: preferred.lat, longitude: preferred.lon)
+
+    let load = await IEMRadarService.loadSiteFramesNear(
+      coordinate: coordinate,
+      product: product,
+      preferredSite: preferred
+    )
+    guard selectedProduct == product, nearestSite?.id == preferred.id, !showsFuture else {
       return false
     }
-    guard !frames.isEmpty else { return false }
+    guard let load, !load.frames.isEmpty else {
+      activeSiteProductSite = nil
+      siteProductAdvisory = nil
+      return false
+    }
 
-    timeline.live = frames
+    timeline.live = load.frames
     liveTileAvailability = .available
     siteProductUnavailableMessage = nil
-    playback.currentIndex = max(0, frames.count - 1)
-    radarLog("[RadarState] \(product.displayName) ready (\(frames.count) scans) — NWS \(site.id)")
+    activeSiteProductSite = load.site
+    siteProductAdvisory = Self.advisory(for: load, product: product)
+    playback.currentIndex = max(0, load.frames.count - 1)
+
+    let via =
+      load.isFallback
+      ? "\(load.site.id) (fallback from \(load.preferredSite.id))"
+      : load.site.id
+    radarLog(
+      "[RadarState] \(product.displayName) ready (\(load.frames.count) scans) — NWS \(via)"
+        + (load.isStale ? " STALE" : "")
+    )
     return true
+  }
+
+  /// Human-readable soft status for fallback / aging site volumes.
+  private static func advisory(
+    for load: IEMRadarService.SiteFrameLoad,
+    product: RadarProduct
+  ) -> String? {
+    if load.isFallback {
+      let ageMin = Int(load.newestScanAge / 60)
+      if load.isStale, ageMin > 0 {
+        return "\(product.shortCode) from \(load.site.id) · \(load.preferredSite.id) offline · \(ageMin)m old"
+      }
+      return "\(product.shortCode) from \(load.site.id) · \(load.preferredSite.id) offline"
+    }
+    if load.isStale {
+      let ageMin = max(1, Int(load.newestScanAge / 60))
+      return "\(load.site.id) \(product.shortCode) \(ageMin)m old"
+    }
+    return nil
   }
 
   /// Resolve the nearest NEXRAD site for the selected weather location and keep

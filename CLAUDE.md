@@ -1,6 +1,6 @@
 # CLAUDE.md — GrokCast
 
-Native SwiftUI iOS weather app (iOS 18+): Open-Meteo primary + NWS hybrid (US alerts/observations) + xAI Grok for AI weather features. App Store name is **SpotterCast**; codebase/Xcode scheme is **GrokCast**.
+Native SwiftUI iOS weather app (iOS 18+): Open-Meteo primary + NWS hybrid (US alerts/observations) + xAI Grok for AI weather features. App Store name is **DayCast**; codebase/Xcode scheme is **GrokCast**.
 
 Deeper background: `AGENTS.md` (full project rules — source of truth), `DesignSystem.md` (color/typography/spacing tokens — follow it for all UI work), `.grok/skills/grokcast/SKILL.md` (detailed feature history), `docs/Agent-Handoff-Claude-Cursor.md` (Claude Code ↔ Cursor handoff).
 

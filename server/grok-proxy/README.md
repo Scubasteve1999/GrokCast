@@ -1,6 +1,6 @@
-# SpotterCast Pro — Grok proxy
+# DayCast Pro — Grok proxy
 
-Cloudflare Worker that forwards xAI requests on behalf of verified SpotterCast Pro
+Cloudflare Worker that forwards xAI requests on behalf of verified DayCast Pro
 subscribers. It exists so the xAI key stops shipping inside the app binary.
 
 Scoped in [`docs/1.0.5-AI-GATE-SCOPE.md`](../../docs/1.0.5-AI-GATE-SCOPE.md), workstream A.
@@ -12,7 +12,7 @@ The app sends two things:
 | Header | Purpose |
 |---|---|
 | `Authorization: Bearer <PROXY_SECRET>` | Coarse gate. Shipped in the binary, so **treat it as public** — it stops idle scanning, nothing more. |
-| `X-SpotterCast-Transaction: <JWS>` | The actual credential: a StoreKit 2 signed transaction (`VerificationResult.jwsRepresentation`). |
+| `X-DayCast-Transaction: <JWS>` | The actual credential: a StoreKit 2 signed transaction (`VerificationResult.jwsRepresentation`). |
 
 Every request verifies the JWS from scratch — certificate chain to a pinned copy of
 **Apple Root CA - G3**, then the ES256 signature, then the payload (bundle id, Pro
@@ -44,7 +44,7 @@ Three independent controls, all daily and all resetting at UTC midnight:
 - `DAILY_IMAGE_LIMIT` (default 10) per subscriber
 - `GLOBAL_DAILY_LIMIT` (default 5000) across everyone — the one that actually bounds the bill
 
-Responses carry `X-SpotterCast-Limit`, `-Remaining`, and `-Reset`. Over-cap returns
+Responses carry `X-DayCast-Limit`, `-Remaining`, and `-Reset`. Over-cap returns
 **429** with `error.type = "daily_limit_exceeded"`; the client keys its "resets at
 midnight UTC" copy off that. A request xAI refuses is refunded, so users are not billed
 for upstream errors.

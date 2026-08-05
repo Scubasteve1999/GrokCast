@@ -1,4 +1,4 @@
-# AGENTS.md — SpotterCast / GrokCast
+# AGENTS.md — DayCast / GrokCast
 
 This document governs all AI agent work on this iOS project.
 
@@ -6,7 +6,7 @@ This document governs all AI agent work on this iOS project.
 
 | Name | Role |
 |------|------|
-| **SpotterCast** | App Store / product name |
+| **DayCast** | App Store / product name |
 | **GrokCast** | Xcode project, scheme, and codebase name |
 | Bundle ID | `com.scubasteve1999.GrokCast` |
 

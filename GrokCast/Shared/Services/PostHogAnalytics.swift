@@ -6,7 +6,7 @@ import PostHog
 /// live in source. Empty key = analytics disabled (local counters still work).
 enum PostHogAnalytics {
   static let host = "https://us.i.posthog.com"
-  static let optOutKey = "spottercast_analytics_opt_out"
+  static let optOutKey = "daycast_analytics_opt_out"
   static let uiTestLaunchArgument = "-UITesting"
 
   static var apiKey: String {
@@ -38,7 +38,7 @@ enum PostHogAnalytics {
   static func configure() {
     guard isConfigured else {
       #if DEBUG
-      print("[SpotterCast] PostHog skipped — set POSTHOG_API_KEY in Config/Secrets.xcconfig")
+      print("[DayCast] PostHog skipped — set POSTHOG_API_KEY in Config/Secrets.xcconfig")
       #endif
       return
     }

@@ -5,7 +5,7 @@ Kept in sync with `fastlane/metadata/review_information/notes.txt`.
 
 ---
 
-SpotterCast combines Open-Meteo forecasts, National Weather Service alerts and observations,
+DayCast combines Open-Meteo forecasts, National Weather Service alerts and observations,
 Mapbox radar, and AI weather features (powered by xAI's Grok) for briefings, radar explanations,
 and storm photo analysis.
 
@@ -16,14 +16,14 @@ Weather, radar, forecasts, and NWS alerts are free and need no purchase.
 
 ## Reaching the AI features — please read
 
-**AI features require SpotterCast Pro in this build.** Earlier versions shipped an embedded xAI
+**AI features require DayCast Pro in this build.** Earlier versions shipped an embedded xAI
 developer key so anyone could use AI; that key has been removed. The key now lives on our server,
 and AI calls are routed through it only for verified subscribers.
 
-To review the AI features, **purchase SpotterCast Pro in the StoreKit sandbox** — sandbox purchases
+To review the AI features, **purchase DayCast Pro in the StoreKit sandbox** — sandbox purchases
 are free and are not charged:
 
-1. Open **Settings → SpotterCast Pro → View SpotterCast Pro**.
+1. Open **Settings → DayCast Pro → View DayCast Pro**.
 2. Choose Monthly or Yearly and complete the sandbox purchase.
 3. Return to the **AI** tab and try a quick prompt. It should stream a reply within a few seconds.
 
@@ -33,21 +33,21 @@ works exactly like a real one.
 **Alternative, if you prefer not to transact:** Settings accepts your own xAI API key (starts with
 `xai-`, from console.x.ai). With a key saved, all AI features unlock without a subscription.
 
-If AI reports "SpotterCast Pro unlocks AI features," the subscription has not been recognised yet —
+If AI reports "DayCast Pro unlocks AI features," the subscription has not been recognised yet —
 tap **Restore Purchases** in Settings and retry.
 
 ## Suggested path
 
 1. Allow location when prompted (or use the default location).
-2. **Today** — conditions, SpotterCast Score, Minutecast.
+2. **Today** — conditions, DayCast Score, Minutecast.
 3. **Radar** — interactive map with animation.
 4. **Alerts** — live NWS watches and warnings.
 5. **AI** — after the sandbox purchase above, try a quick prompt; should stream a reply.
 6. **Settings → LEGAL & SUPPORT** — Privacy Policy and Terms of Use.
 
-## SpotterCast Pro (subscriptions) — how to review
+## DayCast Pro (subscriptions) — how to review
 
-Open the paywall from **Settings → SpotterCast Pro → View SpotterCast Pro**.
+Open the paywall from **Settings → DayCast Pro → View DayCast Pro**.
 
 It can also be triggered by:
 
@@ -57,8 +57,8 @@ It can also be triggered by:
 
 Product IDs in this binary:
 
-- `com.scubasteve1999.GrokCast.pro.monthly` — SpotterCast Pro Monthly
-- `com.scubasteve1999.GrokCast.pro.yearly` — SpotterCast Pro Yearly
+- `com.scubasteve1999.GrokCast.pro.monthly` — DayCast Pro Monthly
+- `com.scubasteve1999.GrokCast.pro.yearly` — DayCast Pro Yearly
 
 Pro unlocks: AI chat, Today's Take, Explain Radar, Morning AI Brief, Storm Spotter photo analysis,
 forecast radar (FUTURE), Live Activity (updates when the app refreshes weather), unlimited saved

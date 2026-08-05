@@ -86,7 +86,7 @@ struct WatchRectangularComplicationView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
     } else {
       VStack(alignment: .leading) {
-        Text("SpotterCast")
+        Text("DayCast")
           .font(.headline)
         Text("Open app to refresh")
           .font(.caption2)
@@ -107,7 +107,7 @@ struct WatchInlineComplicationView: View {
         Text("\(Int(snapshot.currentTemp.rounded()))° · \(snapshot.conditionText)")
       }
     } else {
-      Text("SpotterCast")
+      Text("DayCast")
     }
   }
 }
@@ -119,7 +119,7 @@ struct GrokCastWatchComplicationWidget: Widget {
     StaticConfiguration(kind: kind, provider: WatchWeatherComplicationProvider()) { entry in
       WatchComplicationEntryView(entry: entry)
     }
-    .configurationDisplayName("SpotterCast")
+    .configurationDisplayName("DayCast")
     .description("Temperature, conditions, and score.")
     .supportedFamilies([
       .accessoryCircular,

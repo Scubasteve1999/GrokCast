@@ -99,7 +99,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
   }
 
   if (isAdminRoute) {
-    const admin = request.headers.get("x-spottercast-admin");
+    const admin = request.headers.get("x-daycast-admin");
     if (!admin || !env.ADMIN_SECRET || !secureCompare(admin, env.ADMIN_SECRET)) {
       return error("unauthorized", "Invalid admin credential.", 401);
     }

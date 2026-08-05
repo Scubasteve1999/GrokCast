@@ -364,7 +364,7 @@ final class GrokAIViewModel {
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
       return """
-        You are the Storm Spotter assistant inside SpotterCast — field-first weather intelligence \
+        You are the Storm Spotter assistant inside DayCast — field-first weather intelligence \
         for storm spotters and severe-weather watchers. Prioritize hazards, timing, and radar cues. \
         Lifestyle advice only if the user asks. Be concise. Do not invent warnings.
         """
@@ -389,7 +389,7 @@ final class GrokAIViewModel {
       .map { "\n\($0)\n" } ?? ""
 
     return """
-      You are the Storm Spotter assistant inside SpotterCast — field-first weather intelligence \
+      You are the Storm Spotter assistant inside DayCast — field-first weather intelligence \
       for storm spotters and severe-weather watchers. Prioritize hazards, timing, radar cues, \
       and actionable monitoring. Lifestyle advice (outfits, walks) only if the user asks.
 
@@ -553,7 +553,7 @@ final class GrokAIViewModel {
     let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event).joined(separator: ", ")
 
     let system = """
-      You are a helpful weather assistant inside SpotterCast. Write a practical 2–4 sentence weather brief for \(location).
+      You are a helpful weather assistant inside DayCast. Write a practical 2–4 sentence weather brief for \(location).
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
@@ -584,7 +584,7 @@ final class GrokAIViewModel {
     guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
 
     let system = """
-      You are a helpful weather assistant explaining weather radar to a non-meteorologist inside SpotterCast.
+      You are a helpful weather assistant explaining weather radar to a non-meteorologist inside DayCast.
       Location: \(context.locationName). Product: \(context.productTechnicalName) (shown to the user as "\(context.productName)"). Mode: \(context.modeLabel). Frame: \(context.frameLabel).
       In 3–5 short sentences, describe what the radar likely shows, movement/trends if inferable, and practical impacts.
       No markdown. If uncertain, say so plainly.
@@ -606,7 +606,7 @@ final class GrokAIViewModel {
 
     let location = weatherStore.currentLocation?.name ?? "your area"
     let bulletList = alerts.prefix(5).map { alert in
-      "- \(alert.event): \(alert.headline ?? alert.areaDesc ?? "See SpotterCast for details")"
+      "- \(alert.event): \(alert.headline ?? alert.areaDesc ?? "See DayCast for details")"
     }.joined(separator: "\n")
 
     let system = """

@@ -220,7 +220,7 @@ struct MoreHubSheet: View {
                 store.selectedTab = tab
                 dismiss()
               }
-              .accessibilityIdentifier(SpotterCastAccessibility.MoreHub.row(tab))
+              .accessibilityIdentifier(DayCastAccessibility.MoreHub.row(tab))
             }
           }
         }

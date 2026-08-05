@@ -93,7 +93,7 @@ test("fetchActiveAlerts identifies itself to NWS and queries the point endpoint"
   await fetchActiveAlerts(35.5, -97.5, fetchImpl);
 
   assert.equal(seenUrl, "https://api.weather.gov/alerts/active?point=35.5,-97.5");
-  assert.match(seenAgent ?? "", /SpotterCast/);
+  assert.match(seenAgent ?? "", /DayCast/);
 });
 
 test("fetchActiveAlerts throws on HTTP failure so the caller can stay silent", async () => {

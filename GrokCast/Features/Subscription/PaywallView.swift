@@ -1,7 +1,7 @@
 import StoreKit
 import SwiftUI
 
-/// Primary upsell surface for SpotterCast Pro.
+/// Primary upsell surface for DayCast Pro.
 struct PaywallView: View {
   @Environment(\.dismiss) private var dismiss
   @Bindable var subscription: SubscriptionManager
@@ -28,7 +28,7 @@ struct PaywallView: View {
         .padding(DesignTokens.Spacing.space20)
       }
       .background(DesignTokens.Palette.bgPrimary.ignoresSafeArea())
-      .navigationTitle("SpotterCast Pro")
+      .navigationTitle("DayCast Pro")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -80,7 +80,7 @@ struct PaywallView: View {
       paywallRow(
         "Live Activity",
         "lock.rectangle.stack.fill",
-        "Score + Minutecast on Lock Screen when SpotterCast refreshes weather"
+        "Score + Minutecast on Lock Screen when DayCast refreshes weather"
       )
       paywallRow(
         "Home Screen widgets",
@@ -281,13 +281,13 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "AI chat needs an xAI developer key in Settings. SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited locations — not hosted AI (yet)."
+      "AI chat needs an xAI developer key in Settings. DayCast Pro unlocks forecast radar, Live Activity, and unlimited locations — not hosted AI (yet)."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:
       "Save unlimited cities and switch between them from Today, Radar, and widgets."
     case .liveActivity:
-      "Pro shows SpotterCast Score and Minutecast on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
+      "Pro shows DayCast Score and Minutecast on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:
       "Schedule a local morning notification from your cached Today's Take. Generating that take needs an xAI key in Settings."
     case .severeAlerts:

@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppLinks {
-  // SpotterCast GitHub Pages uses clean paths (privacy/, terms/) — `.html` URLs 404.
+  // DayCast GitHub Pages uses clean paths (privacy/, terms/) — `.html` URLs 404.
   static let privacyPolicy = URL(
     string: "https://scubasteve1999.github.io/SpotterCast/privacy/")!
   static let termsOfUse = URL(
@@ -15,36 +15,36 @@ enum AppLinks {
 }
 
 /// Stable accessibility identifiers for XCUITest and VoiceOver.
-enum SpotterCastAccessibility {
+enum DayCastAccessibility {
   /// The custom `CompactTabBar` items. The hidden system tab bar under
   /// `.tabViewStyle(.sidebarAdaptable)` still publishes buttons with the same
   /// labels ("Radar", "More", …), so tests must match on these instead.
   enum Tabs {
-    static func item(_ tab: CompactTab) -> String { "spottercast.tab.\(tab.rawValue)" }
+    static func item(_ tab: CompactTab) -> String { "daycast.tab.\(tab.rawValue)" }
   }
 
   /// Rows inside `MoreHubSheet`, keyed by the destination tab.
   enum MoreHub {
-    static func row(_ tab: WeatherStore.Tab) -> String { "spottercast.moreHub.\(tab.rawValue)" }
+    static func row(_ tab: WeatherStore.Tab) -> String { "daycast.moreHub.\(tab.rawValue)" }
   }
 
   enum Today {
-    static let location = "spottercast.today.location"
-    static let temperature = "spottercast.today.temperature"
-    static let root = "spottercast.today.root"
+    static let location = "daycast.today.location"
+    static let temperature = "daycast.today.temperature"
+    static let root = "daycast.today.root"
   }
 
   enum Radar {
-    static let root = "spottercast.radar.root"
-    static let liveBadge = "spottercast.radar.live"
+    static let root = "daycast.radar.root"
+    static let liveBadge = "daycast.radar.live"
   }
 
   enum Grok {
-    static let stormSpotterAnalyze = "spottercast.grok.stormSpotter.analyze"
-    static let chatField = "spottercast.grok.chatField"
+    static let stormSpotterAnalyze = "daycast.grok.stormSpotter.analyze"
+    static let chatField = "daycast.grok.chatField"
   }
 
   enum Settings {
-    static let proEntry = "spottercast.settings.pro"
+    static let proEntry = "daycast.settings.pro"
   }
 }

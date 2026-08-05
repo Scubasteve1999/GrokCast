@@ -48,7 +48,7 @@ private struct GrokAIViewContent: View {
                     subscription: SubscriptionManager.shared
                   )
                 }
-                // Storm Spotter first — core SpotterCast feature, not buried under lifestyle prompts.
+                // Storm Spotter first — core DayCast feature, not buried under lifestyle prompts.
                 figmaStormSpotterCard(viewModel: viewModel)
                 quickPromptsSection(viewModel: viewModel)
 
@@ -291,7 +291,7 @@ private struct GrokAIViewContent: View {
           .buttonStyle(.borderedProminent)
           .tint(DesignTokens.Palette.danger)
           .disabled(aiActionsDisabled)
-          .accessibilityIdentifier(SpotterCastAccessibility.Grok.stormSpotterAnalyze)
+          .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
         }
         .padding(DesignTokens.Spacing.space16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -650,7 +650,7 @@ private struct GrokAIViewContent: View {
         )
       }
 
-      ShareLink(item: shareText, subject: Text("SpotterCast Storm Spotter")) {
+      ShareLink(item: shareText, subject: Text("DayCast Storm Spotter")) {
         Label("Share Report", systemImage: "square.and.arrow.up")
       }
       .buttonStyle(.bordered)

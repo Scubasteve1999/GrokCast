@@ -85,8 +85,8 @@ targets:
     info:
       path: GrokCast/Info.plist
       properties:
-        CFBundleDisplayName: SpotterCast
-        CFBundleName: SpotterCast
+        CFBundleDisplayName: DayCast
+        CFBundleName: DayCast
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleIconName: AppIcon
@@ -102,9 +102,9 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        NSLocationWhenInUseUsageDescription: "SpotterCast uses your location to show accurate local weather forecasts and AI-powered insights."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "SpotterCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings."
-        NSPhotoLibraryAddUsageDescription: "SpotterCast saves AI-generated weather images to your Photo Library when you choose Save."
+        NSLocationWhenInUseUsageDescription: "DayCast uses your location to show accurate local weather forecasts and AI-powered insights."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "DayCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings."
+        NSPhotoLibraryAddUsageDescription: "DayCast saves AI-generated weather images to your Photo Library when you choose Save."
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:
           - fetch
@@ -115,7 +115,7 @@ targets:
           - CFBundleURLName: com.grokcast.GrokCast
             CFBundleURLSchemes:
               - grokcast
-              - spottercast
+              - daycast
     dependencies:
       - target: GrokCastWidgets
         embed: true
@@ -144,7 +144,7 @@ targets:
     info:
       path: GrokCastWidgets/Info.plist
       properties:
-        CFBundleDisplayName: SpotterCast Widgets
+        CFBundleDisplayName: DayCast Widgets
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:

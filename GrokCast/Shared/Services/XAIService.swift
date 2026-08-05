@@ -48,7 +48,7 @@ final class XAIService {
     let temp = Int(round(weather.currentTemp))
     let feels = Int(round(weather.feelsLike))
     return """
-      You are the Storm Spotter assistant in SpotterCast — field-first weather intelligence \
+      You are the Storm Spotter assistant in DayCast — field-first weather intelligence \
       for spotters and severe-weather watchers. You have current weather for \(weather.location.name).
 
       Current conditions:

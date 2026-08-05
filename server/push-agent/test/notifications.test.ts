@@ -41,7 +41,7 @@ test("buildAlertBody prefers instruction, then headline, then description", () =
   );
   assert.equal(buildAlertBody({ ...base, headline: "H", description: "D" }), "H");
   assert.equal(buildAlertBody({ ...base, description: "D" }), "D");
-  assert.equal(buildAlertBody(base), "Tap to view alert details in SpotterCast.");
+  assert.equal(buildAlertBody(base), "Tap to view alert details in DayCast.");
 });
 
 test("buildAlertBody caps at 300 characters", () => {
@@ -102,7 +102,7 @@ test("morningBriefSubtitle degrades cleanly as fields drop out", () => {
 
 test("the morning brief falls back to the app's copy when there is no brief text", () => {
   const payload = buildMorningBriefPayload({ hour: 7, soundsEnabled: true });
-  assert.equal(payload.aps.alert.body, "Open SpotterCast for today's weather and AI take.");
+  assert.equal(payload.aps.alert.body, "Open DayCast for today's weather and AI take.");
   assert.equal(payload.aps["thread-id"], "grokcast-morning-brief");
   assert.equal(payload.deepLink, "grokcast://today");
 });
@@ -118,7 +118,7 @@ test("brief bodies are trimmed and capped at 220 characters", () => {
 
 test("whitespace-only brief text uses the fallback rather than an empty body", () => {
   const payload = buildMorningBriefPayload({ hour: 7, briefBody: "   \n ", soundsEnabled: true });
-  assert.equal(payload.aps.alert.body, "Open SpotterCast for today's weather and AI take.");
+  assert.equal(payload.aps.alert.body, "Open DayCast for today's weather and AI take.");
 });
 
 test("the silent payload carries content-available and nothing user-visible", () => {
