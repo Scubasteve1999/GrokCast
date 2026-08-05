@@ -43,17 +43,17 @@ DerivedData/
 # Xcode Cloud needs the pinned SPM manifest committed (resolves mapbox-maps-ios).
 # Re-include the workspace dir chain so git can descend into it; the file itself
 # is un-ignored below, after the broad `Package.resolved` rule that would re-ignore it.
-!GrokCast.xcodeproj/project.xcworkspace/
-!GrokCast.xcodeproj/project.xcworkspace/xcshareddata/
-!GrokCast.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+!DayCast.xcodeproj/project.xcworkspace/
+!DayCast.xcodeproj/project.xcworkspace/xcshareddata/
+!DayCast.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 # ...but keep the user-specific workspace settings the re-inclusion above exposes ignored
-GrokCast.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+DayCast.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 
 # Swift Package Manager
 .build/
 Packages/
 Package.resolved
-!GrokCast.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+!DayCast.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 *.swiftpm
 
 # CocoaPods
@@ -79,15 +79,15 @@ iOSInjectionProject/
 # xAI / Grok API Keys and configuration files containing secrets
 GrokConfig.swift
 Secrets.swift
-GrokCast/Config/Secrets.swift
-GrokCast/Config/DeveloperAPIKey.swift
-GrokCast/Config/OpenWeatherMapKeys.swift
-GrokCast/Config/GoogleService-Info.plist
-# Defense in depth — never commit secrets under a SpotterCast path either
-SpotterCast/Config/DeveloperAPIKey.swift
-SpotterCast/Config/OpenWeatherMapKeys.swift
-SpotterCast/Config/GoogleService-Info.plist
-SpotterCast/Config/
+DayCast/Config/Secrets.swift
+DayCast/Config/DeveloperAPIKey.swift
+DayCast/Config/OpenWeatherMapKeys.swift
+DayCast/Config/GoogleService-Info.plist
+# Defense in depth — never commit secrets under a DayCast path either
+DayCast/Config/DeveloperAPIKey.swift
+DayCast/Config/OpenWeatherMapKeys.swift
+DayCast/Config/GoogleService-Info.plist
+DayCast/Config/
 *.key
 *.pem
 *.p8
@@ -102,9 +102,9 @@ SpotterCast/Config/
 # Allow example templates (safe to commit with placeholders)
 !GrokConfig.swift.example
 !Secrets.swift.example
-!GrokCast/Config/Secrets.swift.example
-!GrokCast/Config/DeveloperAPIKey.swift.example
-!GrokCast/Config/OpenWeatherMapKeys.swift.example
+!DayCast/Config/Secrets.swift.example
+!DayCast/Config/DeveloperAPIKey.swift.example
+!DayCast/Config/OpenWeatherMapKeys.swift.example
 !GrokAPIConfiguration.swift.example
 !Shared/Configuration/GrokAPIConfiguration.swift.example
 
@@ -164,7 +164,7 @@ DerivedData*
 *.xcarchive/
 *.mov
 .video-frames*/
-GrokCast */
+DayCast */
 
 # Grok Build session artifacts (local review/summary notes)
 grok-impl-summary-*.md

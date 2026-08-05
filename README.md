@@ -1,6 +1,6 @@
 # DayCast
 
-**GrokCast** — AI-powered weather forecasts with Grok (xAI).
+**DayCast** — AI-powered weather forecasts with Grok (xAI).
 
 A beautiful native SwiftUI iOS app that combines Open-Meteo (primary) + NWS for accurate forecasts with xAI's Grok for witty, contextual weather insights, outfit suggestions, activity recommendations, and free-form chat about the weather.
 
@@ -28,8 +28,8 @@ Built with the `grok build new swiftui-ios-app` template (weather-forecast + xai
 
 1. **Clone / Open**
    ```bash
-   cd ~/Desktop/GrokCast
-   open GrokCast.xcodeproj
+   cd ~/Desktop/DayCast
+   open DayCast.xcodeproj
    # or xed .
    ```
 
@@ -71,9 +71,9 @@ This pattern keeps the codebase clean while protecting credentials.
 ## Architecture
 
 ```
-GrokCast/
+DayCast/
 ├── App/
-│   └── GrokCastApp.swift
+│   └── DayCastApp.swift
 ├── Features/
 │   ├── Today/          # Hero current conditions
 │   ├── Forecast/       # Hourly + Daily
@@ -127,7 +127,7 @@ Before archiving for TestFlight or the App Store:
 1. **Add your App Icon**
    - Place a **1024×1024** PNG file named `AppIcon-1024.png` into:
      ```
-     GrokCast/Resources/Assets.xcassets/AppIcon.appiconset/
+     DayCast/Resources/Assets.xcassets/AppIcon.appiconset/
      ```
    - Then run:
      ```bash

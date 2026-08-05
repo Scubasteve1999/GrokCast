@@ -10,8 +10,8 @@ State as of 2026-07-30: **v1.0.5 build 75** on `main`, compiles clean, PostHog p
 
 | Tree | Use for | Notes |
 |------|---------|-------|
-| `~/Documents/GrokCast` | **Everything** — edits, commits, builds, simulator runs, archiving, fastlane | The only working tree. Stay on `main` (see `.cursor/rules/git-workflow.mdc`) |
-| `~/Desktop/GrokCast` | Nothing — do not use | Broken remnant, see below |
+| `~/Documents/DayCast` | **Everything** — edits, commits, builds, simulator runs, archiving, fastlane | The only working tree. Stay on `main` (see `.cursor/rules/git-workflow.mdc`) |
+| `~/Desktop/DayCast` | Nothing — do not use | Broken remnant, see below |
 
 Workflow: edit, commit, and build all in Documents on `main`.
 
@@ -23,7 +23,7 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 
 - Installed globally: `/opt/homebrew/bin/xcodebuildmcp` (v2.6.2, Node via Homebrew).
 - Registered in `~/.cursor/mcp.json` and Claude Code (`~/.claude.json`) with env `XCODEBUILDMCP_ENABLED_WORKFLOWS=simulator,simulator-management,ui-automation,debugging,project-discovery` (52 tools: build_run_sim, screenshot, snapshot_ui, tap/swipe/type_text, LLDB attach/breakpoints).
-- Set session defaults first: projectPath `~/Documents/GrokCast/GrokCast.xcodeproj`, scheme `GrokCast`, simulator iPhone 17 Pro Max (UDID `39C3B630-9A6E-4F5F-BE26-2A5A84FF76DE`; iPad Pro 13" M5 is `EACF8950-D3C0-4D22-B2C8-46163C736E2C`). Then `build_run_sim` with empty args.
+- Set session defaults first: projectPath `~/Documents/DayCast/DayCast.xcodeproj`, scheme `DayCast`, simulator iPhone 17 Pro Max (UDID `39C3B630-9A6E-4F5F-BE26-2A5A84FF76DE`; iPad Pro 13" M5 is `EACF8950-D3C0-4D22-B2C8-46163C736E2C`). Then `build_run_sim` with empty args.
   - UDIDs verified 2026-07-30 (iOS 26.5 runtime). **They are not stable** — Xcode/runtime updates delete and recreate simulators with fresh UDIDs, so a "No booted simulator named X" error usually means the UDID rotated, not that the device is gone. Re-derive rather than trusting this line:
     ```bash
     xcrun simctl list devices available | grep -i "iphone 17 pro max\|ipad pro 13"
@@ -37,7 +37,7 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 
 ## API keys (never commit)
 
-`GrokCast/Config/DeveloperAPIKey.swift` — gitignored, exists in BOTH clones, currently has real xai / mapbox / xweather values. Without it: Grok features show "Add key" empty states and the Radar Mapbox map renders black. Values must be quoted Swift strings.
+`DayCast/Config/DeveloperAPIKey.swift` — gitignored, exists in BOTH clones, currently has real xai / mapbox / xweather values. Without it: Grok features show "Add key" empty states and the Radar Mapbox map renders black. Values must be quoted Swift strings.
 
 ## App Store screenshots
 
@@ -51,10 +51,10 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 ## fastlane (upload screenshots / metadata)
 
 - Auth: `fastlane/asc_api_key.json` (gitignored) — embeds the .p8 content inline (this fastlane version rejects `key_filepath`). Key ID `ZCMMSMJLQD`, key file `fastlane/AuthKey_ZCMMSMJLQD.p8`. Recreate via `fastlane/README-KEY.md`.
-- Always run with `LC_ALL=en_US.UTF-8` from `~/Documents/GrokCast` (the Desktop tree this doc used to point at is broken — see "Two clones" above).
+- Always run with `LC_ALL=en_US.UTF-8` from `~/Documents/DayCast` (the Desktop tree this doc used to point at is broken — see "Two clones" above).
 - Upload screenshots (Deliverfile defaults are screenshot-only + overwrite):
   ```bash
-  cd ~/Documents/GrokCast && LC_ALL=en_US.UTF-8 fastlane deliver
+  cd ~/Documents/DayCast && LC_ALL=en_US.UTF-8 fastlane deliver
   ```
   ⚠️ `overwrite_screenshots` deletes ALL device sets first — the folder must contain BOTH iPhone and iPad sets or the missing one is wiped from the listing.
 - Upload metadata (description/URLs/review notes live in `fastlane/metadata/`):
@@ -66,15 +66,15 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
   GEM_HOME=/opt/homebrew/Cellar/fastlane/2.237.0/libexec GEM_PATH=$GEM_HOME \
   LC_ALL=en_US.UTF-8 /opt/homebrew/opt/ruby/bin/ruby -r spaceship -e '
   Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from_json_file("fastlane/asc_api_key.json")
-  Spaceship::ConnectAPI::App.find("com.scubasteve1999.GrokCast")
+  Spaceship::ConnectAPI::App.find("com.scubasteve1999.DayCast")
     .get_builds(sort: "-uploadedDate", limit: 3).each { |b| puts "#{b.version}: #{b.processing_state}" }'
   ```
 
 ## Version bump + archive
 
 - Build number lives in `project.yml` → `CURRENT_PROJECT_VERSION` (currently "50"). **Do not use agvtool** — `xcodegen generate` regenerates the project from project.yml and wipes agvtool bumps. Bump project.yml in both clones, run `xcodegen generate`, commit both files.
-- Archive: `cd ~/Documents/GrokCast && ./Scripts/archive_for_testflight.sh` — but codesign needs keychain access, which **fails from agent shells** (`errSecInternalComponent`). Have Stephen run it in his own Terminal or archive from Xcode GUI (Product → Archive → Distribute).
+- Archive: `cd ~/Documents/DayCast && ./Scripts/archive_for_testflight.sh` — but codesign needs keychain access, which **fails from agent shells** (`errSecInternalComponent`). Have Stephen run it in his own Terminal or archive from Xcode GUI (Product → Archive → Distribute).
 
 ## Branding rule
 
-App displays as **DayCast**; internal identifiers stay GrokCast (bundle id `com.scubasteve1999.GrokCast`, type names, widget kinds, `X-GrokCast-Subscription-Id` header). When touching UI, grep string literals for "GrokCast" and rebrand only user-visible text.
+App displays as **DayCast**; internal identifiers stay DayCast (bundle id `com.scubasteve1999.DayCast`, type names, widget kinds, `X-DayCast-Subscription-Id` header). When touching UI, grep string literals for "DayCast" and rebrand only user-visible text.

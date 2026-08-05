@@ -17,7 +17,7 @@ if [[ "${1:-}" == "--increment" ]]; then
   INCREMENT=true
 fi
 
-echo "📦 GrokCast TestFlight archive prep"
+echo "📦 DayCast TestFlight archive prep"
 echo "   Project: $PROJECT_DIR"
 
 read_project_yml_value() {
@@ -49,9 +49,9 @@ sync_pbxproj_versions() {
   fi
   # Keep checked-in pbxproj in sync when xcodegen isn't available.
   sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${build};/g" \
-    GrokCast.xcodeproj/project.pbxproj
+    DayCast.xcodeproj/project.pbxproj
   sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = ${marketing};/g" \
-    GrokCast.xcodeproj/project.pbxproj
+    DayCast.xcodeproj/project.pbxproj
 }
 
 resolve_xcodegen() {
@@ -81,7 +81,7 @@ if XCODEGEN_BIN="$(resolve_xcodegen)"; then
   echo "🔄 Regenerating Xcode project with $XCODEGEN_BIN..."
   "$XCODEGEN_BIN" generate --spec project.yml
 else
-  echo "⚠️  xcodegen not found — syncing versions into GrokCast.xcodeproj/project.pbxproj"
+  echo "⚠️  xcodegen not found — syncing versions into DayCast.xcodeproj/project.pbxproj"
   echo "   (Install later with: brew install xcodegen)"
   sync_pbxproj_versions
 fi
@@ -89,15 +89,15 @@ fi
 # Organizer only lists archives under ~/Library/Developer/Xcode/Archives/.
 ARCHIVE_DAY="$(date +%Y-%m-%d)"
 ARCHIVE_DIR="$HOME/Library/Developer/Xcode/Archives/$ARCHIVE_DAY"
-ARCHIVE_PATH="$ARCHIVE_DIR/GrokCast $MARKETING ($NEW_BUILD).xcarchive"
+ARCHIVE_PATH="$ARCHIVE_DIR/DayCast $MARKETING ($NEW_BUILD).xcarchive"
 mkdir -p "$ARCHIVE_DIR" "$PROJECT_DIR/build"
 
 echo "🔨 Archiving (Release, generic iOS)..."
 echo "   → $ARCHIVE_PATH"
 set +e
 xcodebuild \
-  -project GrokCast.xcodeproj \
-  -scheme GrokCast \
+  -project DayCast.xcodeproj \
+  -scheme DayCast \
   -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "$ARCHIVE_PATH" \
@@ -113,9 +113,9 @@ if [[ "$ARCHIVE_STATUS" -ne 0 ]]; then
   exit "$ARCHIVE_STATUS"
 fi
 
-# Keep a stable path copy for scripts / CI that expect build/GrokCast.xcarchive.
-rm -rf "$PROJECT_DIR/build/GrokCast.xcarchive"
-cp -R "$ARCHIVE_PATH" "$PROJECT_DIR/build/GrokCast.xcarchive"
+# Keep a stable path copy for scripts / CI that expect build/DayCast.xcarchive.
+rm -rf "$PROJECT_DIR/build/DayCast.xcarchive"
+cp -R "$ARCHIVE_PATH" "$PROJECT_DIR/build/DayCast.xcarchive"
 
 echo ""
 echo "✅ Archive ready (shows in Xcode Organizer):"
@@ -123,7 +123,7 @@ echo "   $ARCHIVE_PATH"
 echo ""
 echo "Next steps (no App Store submit required tonight):"
 echo "  1. Open Xcode → Window → Organizer → Archives"
-echo "  2. Select GrokCast $MARKETING ($NEW_BUILD) → Distribute App → App Store Connect → Upload"
+echo "  2. Select DayCast $MARKETING ($NEW_BUILD) → Distribute App → App Store Connect → Upload"
 echo "  3. In App Store Connect → TestFlight → add testers and run device QA"
 echo ""
 echo "See docs/App-Store-Connect.md and docs/TestFlight-Radar-Widget-Validation-Checklist.md"

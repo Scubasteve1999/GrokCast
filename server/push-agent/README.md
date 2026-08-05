@@ -90,7 +90,7 @@ Register body:
 ```
 
 `soundsEnabled` and `temperatureUnit` are device-local `UserDefaults`
-(`GrokCastNotificationSounds`, unit preference) that the server has no other way to
+(`DayCastNotificationSounds`, unit preference) that the server has no other way to
 read — the device has to report them or pushes drift from the in-app settings.
 
 ## What the secrets do and don't buy
@@ -187,7 +187,7 @@ teach the agent to throw away a perfectly good device token. Use
 
 ## Client side
 
-`PushRegistrationService` (`GrokCast/Shared/Services/`) does the uploading. It syncs:
+`PushRegistrationService` (`DayCast/Shared/Services/`) does the uploading. It syncs:
 
 - immediately when the APNs token arrives,
 - debounced (1.5s) when the location or any notification preference changes,
@@ -203,7 +203,7 @@ rather than leaving this worker polling NWS for a device that cannot display any
 local-only. To turn it on after deploying:
 
 ```swift
-// GrokCast/Config/DeveloperAPIKey.swift — gitignored
+// DayCast/Config/DeveloperAPIKey.swift — gitignored
 static let pushAgentBaseURL: String? = "https://<worker>.workers.dev/v1/push"
 static let pushAgentSharedSecret: String? = "<the PUSH_SECRET you set above>"
 ```

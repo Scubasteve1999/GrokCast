@@ -1,4 +1,4 @@
-# AGENTS.md — DayCast / GrokCast
+# AGENTS.md — DayCast
 
 This document governs all AI agent work on this iOS project.
 
@@ -6,30 +6,41 @@ This document governs all AI agent work on this iOS project.
 
 | Name | Role |
 |------|------|
-| **DayCast** | App Store / product name |
-| **GrokCast** | Xcode project, scheme, and codebase name |
-| Bundle ID | `com.scubasteve1999.GrokCast` |
+| **DayCast** | App Store display name, Xcode project, scheme, source tree |
+| **PRODUCT_BUNDLE_IDENTIFIER** | `com.scubasteve1999.DayCast` (widgets: `…DayCast.DayCastWidgets`) |
+| **App Group** | `group.com.scubasteve1999.DayCast` |
+| **URL scheme** | `daycast://` |
+| **Historical bundle ID** | `com.scubasteve1999.GrokCast` — changing the last segment is a **new App Store app identity**, not a cosmetic rename. Do not invent `com.daycast.*` as the product bundle ID. |
+
+### Intentional legacy wire names (do not “clean up” blindly)
+
+| Leftover | Why it stays |
+|----------|----------------|
+| Widget JSON keys `grokCastScore` / `grokCastScoreLabel` | App Group payloads from older installs |
+| `grokBriefOneLiner` key | Same shared snapshot contract |
+
+Notification category IDs use `DAYCAST_*`. In-process deep link uses `Notification.Name.dayCastDeepLink` (raw `"daycast.deepLink"`).
 
 **Always work from the app repo root** (not the marketing site):
 
 ```bash
-cd ~/Projects/GrokCast
-# real path (prefer this if xcodebuild hangs on Desktop/iCloud):
+# Live path on this machine (folder may still be named GrokCast):
 cd /Users/bigstevedev/Documents/GrokCast
+# Prefer Documents/DayCast if/when the directory is renamed.
 ```
 
 | Path | What it is |
 |------|------------|
-| `~/Projects/GrokCast` → `Documents/GrokCast` | **iOS app** (this repo) |
-| `~/Projects/SpotterCast` → `Documents/SpotterCast` | Marketing site only (HTML) — not the app |
+| `/Users/bigstevedev/Documents/GrokCast` (sources under `DayCast/`) | **iOS app** (this repo) |
+| Separate marketing HTML site (if present) | Not the app binary |
 
 ## Stack
 
 - SwiftUI + Xcode (iOS 18+)
-- XcodeGen (`project.yml` → `GrokCast.xcodeproj`)
+- XcodeGen (`project.yml` → `DayCast.xcodeproj`)
 - Observation (`@Observable`), async/await, plain `URLSession`
 - SPM: MapboxMaps, Firebase Messaging, PostHog (do not add more without asking)
-- WidgetKit + ActivityKit; App Group `group.com.scubasteve1999.GrokCast`
+- WidgetKit + ActivityKit; App Group `group.com.scubasteve1999.DayCast`
 - Weather: Open-Meteo (primary) + NWS hybrid (US alerts/observations, additive only)
 - AI: xAI Grok via Keychain / optional gitignored developer embed
 
@@ -42,14 +53,14 @@ Run all commands from the app repo root above.
 ### Build
 
 ```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+xcodebuild -project DayCast.xcodeproj -scheme DayCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
 ```
 
 Clean build when needed:
 
 ```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+xcodebuild -project DayCast.xcodeproj -scheme DayCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' clean build
 ```
 
@@ -58,12 +69,12 @@ xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
 Always run tests after non-trivial changes:
 
 ```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+xcodebuild -project DayCast.xcodeproj -scheme DayCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' test
 ```
 
-Targets: `GrokCast`, `GrokCastWidgets`, `GrokCastTests`, `GrokCastUITests`.
-Scheme: `GrokCast` (also `GrokCastWidgets` for widget-only work).
+Targets: `DayCast`, `DayCastWidgets`, `DayCastTests`, `DayCastUITests`.
+Scheme: `DayCast` (also `DayCastWidgets` for widget-only work).
 
 ### Archive / TestFlight
 
@@ -79,10 +90,10 @@ Preferred:
 Manual equivalent:
 
 ```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+xcodebuild -project DayCast.xcodeproj -scheme DayCast \
   -configuration Release \
   -destination 'generic/platform=iOS' \
-  -archivePath build/GrokCast.xcarchive \
+  -archivePath build/DayCast.xcarchive \
   archive
 ```
 
@@ -97,14 +108,14 @@ secret environment variables on the **Build and Testflight** workflow
 
 | Variable | Restores | Required for |
 |---|---|---|
-| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | `GrokCast/Config/GoogleService-Info.plist` | every Xcode Cloud build (hard build input) |
-| `DEVELOPER_API_KEY_SWIFT_BASE64` | `GrokCast/Config/DeveloperAPIKey.swift` | archive builds (Mapbox, Xweather, xAI) |
-| `OPENWEATHERMAP_KEYS_SWIFT_BASE64` | `GrokCast/Config/OpenWeatherMapKeys.swift` | optional — no real key is issued yet |
+| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | `DayCast/Config/GoogleService-Info.plist` | every Xcode Cloud build (hard build input) |
+| `DEVELOPER_API_KEY_SWIFT_BASE64` | `DayCast/Config/DeveloperAPIKey.swift` | archive builds (Mapbox, Xweather, xAI) |
+| `OPENWEATHERMAP_KEYS_SWIFT_BASE64` | `DayCast/Config/OpenWeatherMapKeys.swift` | optional — no real key is issued yet |
 
 Generate each value with, e.g.:
 
 ```bash
-base64 -i GrokCast/Config/DeveloperAPIKey.swift | pbcopy
+base64 -i DayCast/Config/DeveloperAPIKey.swift | pbcopy
 ```
 
 Paste it as the variable's value and check **Secret**. If a required file is
@@ -119,7 +130,7 @@ templates instead.
 xcodegen generate          # after project.yml or add/remove source files
 ./grok-build regenerate    # wrapper (preferred when available)
 ./grok-build clean         # or --deep for stubborn issues
-rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-*
+rm -rf ~/Library/Developer/Xcode/DerivedData/DayCast-*
 xed .                      # open in Xcode
 ```
 
@@ -127,7 +138,7 @@ xed .                      # open in Xcode
 
 ## Hard rules
 
-1. **Never commit secrets or API keys.** Keys live in the iOS Keychain (`KeychainService`) and gitignored `GrokCast/Config/DeveloperAPIKey.swift` (TestFlight embed only). `GrokAPIConfiguration.swift` stays secrets-free. Stub templates live as `*.example` under `GrokCast/Config/`.
+1. **Never commit secrets or API keys.** Keys live in the iOS Keychain (`KeychainService`) and gitignored `DayCast/Config/DeveloperAPIKey.swift` (TestFlight embed only). `GrokAPIConfiguration.swift` stays secrets-free. Stub templates live as `*.example` under `DayCast/Config/`.
 2. **Never change entitlement / paywall / StoreKit Pro logic without explicit approval.**
 3. Prefer **small, reviewable diffs**. Match existing code style exactly; clarity over cleverness.
 4. **Do not introduce new dependencies** without asking.
@@ -152,9 +163,9 @@ xed .                      # open in Xcode
 ### Layout (high level)
 
 ```
-GrokCast/
-├── GrokCast.xcodeproj/
-├── GrokCast/
+DayCast/
+├── DayCast.xcodeproj/
+├── DayCast/
 │   ├── App/
 │   ├── Features/          # Today, Forecast, Radar, Alerts, GrokAI, Locations, Settings, …
 │   ├── Shared/
@@ -163,9 +174,9 @@ GrokCast/
 │   │   ├── Grok/
 │   │   └── Components/
 │   └── Resources/
-├── GrokCastWidgets/
-├── GrokCastTests/
-├── GrokCastUITests/
+├── DayCastWidgets/
+├── DayCastTests/
+├── DayCastUITests/
 ├── Scripts/               # archive_for_testflight, increment_build, upload_testflight, …
 ├── project.yml
 ├── CLAUDE.md
@@ -184,7 +195,7 @@ GrokCast/
 
 - `CLAUDE.md` — short agent bootstrap (build + hard rules)
 - `DesignSystem.md` — color/typography/spacing tokens
-- `.grok/skills/grokcast/SKILL.md` — feature history and radar/Grok patterns
+- `.grok/skills/daycast/SKILL.md` — feature history and radar/Grok patterns
 - `docs/` — handoffs, App Store notes, roadmaps
 
 ---

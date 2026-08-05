@@ -1,6 +1,6 @@
 # Claude Code ↔ Cursor handoff
 
-Tactical workflow for running both agents on GrokCast without stepping on each other.
+Tactical workflow for running both agents on DayCast without stepping on each other.
 Written 2026-07-31 after a session where the two defaults collided.
 
 ## The one conflict you must know about
@@ -65,10 +65,10 @@ Starting agent reads: `git log --oneline -5`, `git status`, then this file.
 
 ## Repo rules both agents must respect
 
-- **Secrets:** `GrokCast/Config/DeveloperAPIKey.swift` and `OpenWeatherMapKeys.swift` are gitignored.
+- **Secrets:** `DayCast/Config/DeveloperAPIKey.swift` and `OpenWeatherMapKeys.swift` are gitignored.
   When you add a property to the real file, **add it to the `.example` template in the same commit.**
   CI builds from the templates, so drift breaks CI *and* every fresh clone. This broke on 2026-07-31.
-- **`~/Documents/GrokCast` is the only working tree.** The old `~/Desktop/GrokCast` was deleted on
+- **`~/Documents/DayCast` is the only working tree.** The old `~/Desktop/DayCast` was deleted on
   2026-07-31: no commits, no remote, just a stale `fastlane/` subset, so commits made there vanished
   silently. Don't recreate it — it's iCloud-backed and xcodebuild hangs on it.
 - `xcodegen generate` after touching `project.yml` or adding/removing files.

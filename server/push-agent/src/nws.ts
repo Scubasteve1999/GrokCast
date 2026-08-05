@@ -1,6 +1,6 @@
 // Server-side mirror of NWSService.fetchActiveAlerts + the NWSAlert severity
 // computed properties. Kept deliberately in lockstep with
-// GrokCast/Shared/Services/NWSService.swift and Shared/Models/NWSModels.swift —
+// DayCast/Shared/Services/NWSService.swift and Shared/Models/NWSModels.swift —
 // if the classification changes there, change it here too, or the same storm
 // produces two different notifications depending on which path fired.
 

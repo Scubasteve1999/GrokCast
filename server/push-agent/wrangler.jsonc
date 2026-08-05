@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "spottercast-push-agent",
+  "name": "daycast-push-agent",
   "main": "src/server.ts",
   "compatibility_date": "2026-08-01",
   // The Agents SDK depends on Node built-ins (crypto, streams).
@@ -13,7 +13,7 @@
   //   PUSH_SECRET      shared string the app sends; shipped in the binary, so public
   //   ADMIN_SECRET     operator-only; gates the manual send / silent-refresh routes
   "vars": {
-    "APNS_BUNDLE_ID": "com.scubasteve1999.GrokCast",
+    "APNS_BUNDLE_ID": "com.scubasteve1999.DayCast",
     // "production" targets api.push.apple.com. Devices may override per-registration
     // so a debug build on a sandbox APNs token still works.
     "APNS_DEFAULT_ENVIRONMENT": "production",

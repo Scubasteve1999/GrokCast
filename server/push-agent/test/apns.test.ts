@@ -23,7 +23,7 @@ function testCredentials(): APNsCredentials {
     keyId: "ABCDE12345",
     teamId: "TEAM123456",
     privateKeyPEM: privateKey as unknown as string,
-    bundleId: "com.scubasteve1999.GrokCast",
+    bundleId: "com.scubasteve1999.DayCast",
   };
 }
 
@@ -109,7 +109,7 @@ test("sendAPNs targets the right host and sets the required APNs headers", async
   );
 
   assert.equal(seenUrl, "https://api.push.apple.com/3/device/deadbeef");
-  assert.equal(seenHeaders["apns-topic"], "com.scubasteve1999.GrokCast");
+  assert.equal(seenHeaders["apns-topic"], "com.scubasteve1999.DayCast");
   assert.equal(seenHeaders["apns-push-type"], "alert");
   assert.equal(seenHeaders["apns-priority"], "10");
   assert.equal(seenHeaders["apns-expiration"], "1800000000");

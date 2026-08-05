@@ -20,7 +20,7 @@
 Then upload screenshots any time with:
 
 ```bash
-cd ~/Desktop/GrokCast && LC_ALL=en_US.UTF-8 fastlane deliver
+cd ~/Desktop/DayCast && LC_ALL=en_US.UTF-8 fastlane deliver
 ```
 
 Screenshots live in `fastlane/screenshots/en-US/` — 1320×2868 PNGs upload to the

@@ -209,10 +209,10 @@ async function handle(request, env, options = {}) {
   let entitlement;
   try {
     entitlement = await verifyTransaction(request.headers.get(TRANSACTION_HEADER), {
-      bundleId: env.BUNDLE_ID ?? "com.scubasteve1999.GrokCast",
+      bundleId: env.BUNDLE_ID ?? "com.scubasteve1999.DayCast",
       productIds: listVar(env, "PRO_PRODUCT_IDS", [
-        "com.scubasteve1999.GrokCast.pro.monthly",
-        "com.scubasteve1999.GrokCast.pro.yearly",
+        "com.scubasteve1999.DayCast.pro.monthly",
+        "com.scubasteve1999.DayCast.pro.yearly",
       ]),
       environments: listVar(env, "ALLOWED_ENVIRONMENTS", ["Production", "Sandbox"]),
       rootCertificate,

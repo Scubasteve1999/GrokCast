@@ -13,7 +13,7 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ARCHIVE_PATH="$PROJECT_DIR/build/GrokCast.xcarchive"
+ARCHIVE_PATH="$PROJECT_DIR/build/DayCast.xcarchive"
 EXPORT_DIR="$PROJECT_DIR/build/export"
 EXPORT_OPTIONS="$PROJECT_DIR/Scripts/ExportOptions.plist"
 

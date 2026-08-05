@@ -34,13 +34,13 @@ make_root() {
     ) 2>/dev/null
 }
 
-make_root root "/CN=SpotterCast Test Root/O=SpotterCast Tests"
-make_root rogue "/CN=SpotterCast Rogue Root/O=SpotterCast Tests"
+make_root root "/CN=DayCast Test Root/O=DayCast Tests"
+make_root rogue "/CN=DayCast Rogue Root/O=DayCast Tests"
 
 # Intermediate, signed by the trusted root.
 openssl ecparam -name secp384r1 -genkey -noout -out "$WORK/intermediate.key" 2>/dev/null
 openssl req -new -sha384 -key "$WORK/intermediate.key" -out "$WORK/intermediate.csr" \
-  -subj "/CN=SpotterCast Test Intermediate/O=SpotterCast Tests" 2>/dev/null
+  -subj "/CN=DayCast Test Intermediate/O=DayCast Tests" 2>/dev/null
 openssl x509 -req -sha384 -in "$WORK/intermediate.csr" \
   -CA "$WORK/root.crt" -CAkey "$WORK/root.key" -CAcreateserial \
   -out "$WORK/intermediate.crt" -days 3650 -extfile "$WORK/ca.cnf" 2>/dev/null
@@ -50,7 +50,7 @@ make_leaf() {
   local name="$1" ca="$2"
   openssl ecparam -name prime256v1 -genkey -noout -out "$WORK/$name.key" 2>/dev/null
   openssl req -new -sha256 -key "$WORK/$name.key" -out "$WORK/$name.csr" \
-    -subj "/CN=SpotterCast Test Leaf/O=SpotterCast Tests" 2>/dev/null
+    -subj "/CN=DayCast Test Leaf/O=DayCast Tests" 2>/dev/null
   openssl x509 -req -sha256 -in "$WORK/$name.csr" \
     -CA "$WORK/$ca.crt" -CAkey "$WORK/$ca.key" -CAcreateserial \
     -out "$WORK/$name.crt" -days 3650 -extfile "$WORK/leaf.cnf" 2>/dev/null

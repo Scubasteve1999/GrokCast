@@ -15,8 +15,8 @@
 #      only need to compile and run tests, and should not carry real secrets.
 #
 # Populate the secrets on the Xcode Cloud workflow with:
-#   base64 -i GrokCast/Config/DeveloperAPIKey.swift | pbcopy
-#   base64 -i GrokCast/Config/OpenWeatherMapKeys.swift | pbcopy
+#   base64 -i DayCast/Config/DeveloperAPIKey.swift | pbcopy
+#   base64 -i DayCast/Config/OpenWeatherMapKeys.swift | pbcopy
 #
 # A file that ends up holding placeholder values is fatal for an archive and
 # fine for a PR build, so the outcome depends on CI_XCODEBUILD_ACTION rather
@@ -169,7 +169,7 @@ validate_swift() {
 # registers push against the wrong app.
 validate_google_plist() {
   _v_target="$1"
-  _v_expected_bundle="com.scubasteve1999.GrokCast"
+  _v_expected_bundle="com.scubasteve1999.DayCast"
 
   if ! plutil -extract GOOGLE_APP_ID raw -o - "$_v_target" >/dev/null 2>&1; then
     echo "   (no GOOGLE_APP_ID — not a Firebase plist)" >&2
@@ -188,7 +188,7 @@ validate_google_plist() {
 # template on purpose — a stub would ship broken Firebase Messaging rather than
 # failing loudly — which `restore_config` reports as the missing-template case.
 restore_config \
-  GrokCast/Config/GoogleService-Info.plist \
+  DayCast/Config/GoogleService-Info.plist \
   GOOGLE_SERVICE_INFO_PLIST_BASE64 \
   validate_google_plist \
   xcode-cloud
@@ -196,7 +196,7 @@ restore_config \
 # Holds the Mapbox token, Xweather credentials and the xAI key: the file whose
 # absence produced the black Radar map.
 restore_config \
-  GrokCast/Config/DeveloperAPIKey.swift \
+  DayCast/Config/DeveloperAPIKey.swift \
   DEVELOPER_API_KEY_SWIFT_BASE64 \
   validate_swift \
   required
@@ -205,7 +205,7 @@ restore_config \
 # is the current state of the world rather than a misconfiguration. Promote this
 # to `required` once a real key is issued.
 restore_config \
-  GrokCast/Config/OpenWeatherMapKeys.swift \
+  DayCast/Config/OpenWeatherMapKeys.swift \
   OPENWEATHERMAP_KEYS_SWIFT_BASE64 \
   validate_swift \
   optional

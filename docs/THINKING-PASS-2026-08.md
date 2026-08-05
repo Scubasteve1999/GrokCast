@@ -5,7 +5,7 @@ Run 2026-08-01 against `~/Projects/_meta/THINKING-PASS.md`. Same structure as
 
 ## Stage
 
-**Live on the App Store as DayCast** (repo: `GrokCast`, bundle `com.scubasteve1999.GrokCast`,
+**Live on the App Store as DayCast** (repo: `DayCast`, bundle `com.scubasteve1999.DayCast`,
 App Store ID 6780682022). First release **2026-07-24**; current live version **1.0.4**, updated
 **2026-07-31**. Free, Weather / Utilities, iOS 18+.
 
@@ -67,7 +67,7 @@ morning brief, radar explanation and storm-photo vision call hits **your** xAI a
 client-side rate limit, no per-user cap, and Pro does not gate AI —
 `EntitlementChecker.canUseGrokAI` returns true for anyone the moment a developer key exists. The
 hosted proxy that would fix this (`server/grok-proxy/worker.js`, with a 200 req/day per-subscription
-limit) **is written and undeployed**: `GrokCastProConfig.grokProxyBaseURL = nil`, so
+limit) **is written and undeployed**: `DayCastProConfig.grokProxyBaseURL = nil`, so
 `GrokProxyConfiguration.isConfigured` is false everywhere.
 
 At 2 users this is invisible. At 2,000 it is a bill with no ceiling and no way to shut it off
@@ -85,7 +85,7 @@ intelligence for spotters," the radar ships SRV and correlation coefficient — 
 keywords are `weather, forecast, radar, AI, alerts, tornado, hurricane, widgets, complications,
 live radar, NWS, storm`. That is a generic consumer weather listing competing head-on with Apple
 Weather, CARROT (86k ratings) and AccuWeather. `docs/App-Store-Connect.md` still drafts the listing
-under the old name "GrokCast — AI Weather / Smart Forecasts & Live Radar." The live 1.0.4
+under the old name "DayCast — AI Weather / Smart Forecasts & Live Radar." The live 1.0.4
 description is better — it says "chase-ready radar" and "Storm Spotter AI" — but the keyword field,
 the thing App Store search actually ranks on, was never repositioned. The app is built for a niche
 and marketed to a mass market it cannot win.
@@ -185,7 +185,7 @@ user count and a cost-per-user to reason from.
 
 ## Sources
 
-[DayCast on the App Store](https://apps.apple.com/us/app/spottercast/id6780682022) ·
+[DayCast on the App Store](https://apps.apple.com/us/app/daycast/id6780682022) ·
 [RadarScope](https://apps.apple.com/US/app/id288419283) ·
 [RadarOmega](https://apps.apple.com/us/app/radaromega/id1439881811) ·
 [CARROT Weather](https://apps.apple.com/us/app/carrot-weather-alerts-radar/id961390574) ·

@@ -64,7 +64,7 @@ test("a transaction for another app is rejected", async () => {
 });
 
 test("a transaction for a non-Pro product is rejected", async () => {
-  await expectRejection({ productId: "com.scubasteve1999.GrokCast.tip.small" }, /not a Pro product/);
+  await expectRejection({ productId: "com.scubasteve1999.DayCast.tip.small" }, /not a Pro product/);
 });
 
 test("a revoked transaction is rejected", async () => {

@@ -1,6 +1,6 @@
 # TestFlight External Tester Validation – Radar + Widget Checklist
 
-Thanks for helping test GrokCast! This short checklist (10–15 minutes) focuses on the most important recent Radar updates (Future Cast, smooth animation, switching modes, offline/cached behavior, MapKit implementation) and the polished widget (with Today hero temp no-clip, DesignTokens cards).
+Thanks for helping test DayCast! This short checklist (10–15 minutes) focuses on the most important recent Radar updates (Future Cast, smooth animation, switching modes, offline/cached behavior, MapKit implementation) and the polished widget (with Today hero temp no-clip, DesignTokens cards).
 
 Please test on your **iPhone** and **iPad** if you have both. Use Airplane Mode for offline tests.
 
@@ -81,7 +81,7 @@ Report any problems clearly so we can fix them quickly.
 - Central DesignTokens for elevated shadows and card styling (matches Forecast/Alerts polish).
 
 ## Widget Tests
-1. Add the GrokCast widget to your home screen (try Small and Medium sizes).
+1. Add the DayCast widget to your home screen (try Small and Medium sizes).
 2. Check it shows weather for your current or saved location.
 3. Look at it for 1–2 minutes.
 

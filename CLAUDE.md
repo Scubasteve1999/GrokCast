@@ -1,21 +1,21 @@
-# CLAUDE.md — GrokCast
+# CLAUDE.md — DayCast
 
-Native SwiftUI iOS weather app (iOS 18+): Open-Meteo primary + NWS hybrid (US alerts/observations) + xAI Grok for AI weather features. App Store name is **DayCast**; codebase/Xcode scheme is **GrokCast**.
+Native SwiftUI iOS weather app (iOS 18+): Open-Meteo primary + NWS hybrid (US alerts/observations) + xAI Grok for AI weather features. App Store name is **DayCast**; codebase/Xcode scheme is **DayCast**.
 
-Deeper background: `AGENTS.md` (full project rules — source of truth), `DesignSystem.md` (color/typography/spacing tokens — follow it for all UI work), `.grok/skills/grokcast/SKILL.md` (detailed feature history), `docs/Agent-Handoff-Claude-Cursor.md` (Claude Code ↔ Cursor handoff).
+Deeper background: `AGENTS.md` (full project rules — source of truth), `DesignSystem.md` (color/typography/spacing tokens — follow it for all UI work), `.grok/skills/daycast/SKILL.md` (detailed feature history), `docs/Agent-Handoff-Claude-Cursor.md` (Claude Code ↔ Cursor handoff).
 
 **Always work from the app repo root** (not the marketing site):
 
 ```bash
-cd ~/Projects/GrokCast
+cd ~/Projects/DayCast
 # real path (prefer this if xcodebuild hangs on Desktop/iCloud):
-cd /Users/bigstevedev/Documents/GrokCast
+cd /Users/bigstevedev/Documents/DayCast
 ```
 
 | Path | What it is |
 |------|------------|
-| `~/Projects/GrokCast` → `Documents/GrokCast` | **iOS app** (this repo) |
-| `~/Projects/SpotterCast` → `Documents/SpotterCast` | Marketing site only (HTML) — not the app |
+| `~/Projects/DayCast` → `Documents/DayCast` | **iOS app** (this repo) |
+| `~/Projects/DayCast` → `Documents/DayCast` | Marketing site only (HTML) — not the app |
 
 ## Commands
 
@@ -24,7 +24,7 @@ Run all commands from the app repo root above.
 ### Build
 
 ```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+xcodebuild -project DayCast.xcodeproj -scheme DayCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
 ```
 
@@ -33,7 +33,7 @@ xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
 Always run tests after non-trivial changes:
 
 ```bash
-xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
+xcodebuild -project DayCast.xcodeproj -scheme DayCast \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' test
 ```
 
@@ -43,7 +43,7 @@ Archive/TestFlight and project-regeneration commands: see `AGENTS.md`.
 
 ## Hard rules
 
-1. **Never commit secrets or API keys.** Keys live in the iOS Keychain (`KeychainService`) and gitignored `GrokCast/Config/DeveloperAPIKey.swift` (TestFlight embed only). `GrokAPIConfiguration.swift` stays secrets-free. Stub templates live as `*.example` under `GrokCast/Config/`.
+1. **Never commit secrets or API keys.** Keys live in the iOS Keychain (`KeychainService`) and gitignored `DayCast/Config/DeveloperAPIKey.swift` (TestFlight embed only). `GrokAPIConfiguration.swift` stays secrets-free. Stub templates live as `*.example` under `DayCast/Config/`.
 2. **Never change entitlement / paywall / StoreKit Pro logic without explicit approval.**
 3. Prefer **small, reviewable diffs**. Match existing code style exactly; clarity over cleverness.
 4. **Do not introduce new dependencies** without asking.

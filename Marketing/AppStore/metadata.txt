@@ -1,19 +1,19 @@
 ============================================================
-GrokCast — App Store Connect Metadata
+DayCast — App Store Connect Metadata
 ============================================================
 
-APP NAME: GrokCast - AI Weather
+APP NAME: DayCast - AI Weather
 SUBTITLE: Smart Forecasts & Live Radar
 
 ------------------------------------------------------------
 DESCRIPTION (4000 char max)
 ------------------------------------------------------------
 
-GrokCast is a next-generation weather app powered by AI. Get hyper-local forecasts, real-time radar, and intelligent insights that help you plan your day — not just check the temperature.
+DayCast is a next-generation weather app powered by AI. Get hyper-local forecasts, real-time radar, and intelligent insights that help you plan your day — not just check the temperature.
 
-WHAT MAKES GROKCAST DIFFERENT
+WHAT MAKES DAYCAST DIFFERENT
 
-- GrokCast Score — A single 0-100 number that tells you how good it is to be outside right now, factoring in temperature, humidity, UV, wind, and precipitation.
+- DayCast Score — A single 0-100 number that tells you how good it is to be outside right now, factoring in temperature, humidity, UV, wind, and precipitation.
 
 - AI Daily Briefing — Wake up to a personalized weather summary written by Grok AI. Not a template — an actual briefing that tells you what to wear, when to leave, and what to watch for.
 
@@ -38,7 +38,7 @@ WIDGETS & LIVE ACTIVITY (iPhone)
 
 - Small, Medium, and Large home screen widgets with daily forecast
 - Lock Screen widgets (circular gauge, rectangular, inline)
-- Live Activity with GrokCast Score on your Lock Screen
+- Live Activity with DayCast Score on your Lock Screen
 
 BUILT FOR PRIVACY
 
@@ -46,7 +46,7 @@ BUILT FOR PRIVACY
 - Location used only for weather — never tracked or stored
 - API keys stored in iOS Keychain, never in plain text
 
-SpotterCast Pro unlocks forecast radar, Live Activity, and unlimited saved locations. AI chat, Today's Take, and Storm Spotter use an xAI developer key in Settings (or the embedded TestFlight key) — Pro does not replace that key until a hosted AI proxy ships.
+DayCast Pro unlocks forecast radar, Live Activity, and unlimited saved locations. AI chat, Today's Take, and Storm Spotter use an xAI developer key in Settings (or the embedded TestFlight key) — Pro does not replace that key until a hosted AI proxy ships.
 
 ------------------------------------------------------------
 KEYWORDS (100 char max, comma-separated)
@@ -70,19 +70,19 @@ WHAT'S NEW (for next release)
 PROMOTIONAL TEXT (170 char max, can change without review)
 ------------------------------------------------------------
 
-AI-powered weather that actually helps you plan. GrokCast Score, morning briefs, storm spotter, and time-sensitive severe weather alerts.
+AI-powered weather that actually helps you plan. DayCast Score, morning briefs, storm spotter, and time-sensitive severe weather alerts.
 
 ------------------------------------------------------------
 SUPPORT URL
 ------------------------------------------------------------
 
-https://scubasteve1999.github.io/GrokCast/support.html
+https://scubasteve1999.github.io/DayCast/support.html
 
 ------------------------------------------------------------
 PRIVACY POLICY URL
 ------------------------------------------------------------
 
-https://scubasteve1999.github.io/GrokCast/privacy.html
+https://scubasteve1999.github.io/DayCast/privacy.html
 
 ------------------------------------------------------------
 CATEGORIES
@@ -101,7 +101,7 @@ AGE RATING
 SCREENSHOT ORDER (6.7" iPhone — 1290×2796)
 ------------------------------------------------------------
 
-1. Today tab — Hero temp + GrokCast Score + AI brief
+1. Today tab — Hero temp + DayCast Score + AI brief
 2. Radar — Live radar with control panel
 3. Grok AI — Briefing Studio + Storm Spotter
 4. Widgets — Large widget + Lock Screen widgets

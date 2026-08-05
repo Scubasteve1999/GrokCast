@@ -4,10 +4,10 @@ Use this when you are ready to upload metadata and screenshots. **Do not submit 
 
 ## 1. TestFlight upload (when ready)
 
-**Prerequisite:** In [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list), ensure App Groups `group.com.scubasteve1999.GrokCast` is enabled for **GrokCast** and **GrokCastWidgets** (iPhone app + widget extension only — **no Apple Watch target in this submission**). Then in Xcode, open **Signing & Capabilities** for each target and let Xcode refresh provisioning profiles.
+**Prerequisite:** In [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list), ensure App Groups `group.com.scubasteve1999.DayCast` is enabled for **DayCast** and **DayCastWidgets** (iPhone app + widget extension only — **no Apple Watch target in this submission**). Then in Xcode, open **Signing & Capabilities** for each target and let Xcode refresh provisioning profiles.
 
 ```bash
-./grok-build archive          # Release archive → build/GrokCast.xcarchive
+./grok-build archive          # Release archive → build/DayCast.xcarchive
 ./grok-build archive --increment   # bump build number first
 ```
 
@@ -38,7 +38,7 @@ Output: `Marketing/AppStore/*.png` (1290×2796 target)
 
 Manual (Xcode Previews):
 
-1. Open `GrokCast/Features/Marketing/AppStoreScreenshotViews.swift`
+1. Open `DayCast/Features/Marketing/AppStoreScreenshotViews.swift`
 2. Run previews **ASO — Today**, **ASO — Radar**, **ASO — Grok**
 3. Capture at 3× scale (393×852 logical → ~1290×2796)
 
@@ -54,19 +54,19 @@ Optional 4th: real **Alerts** tab with Grok summary (device capture).
 
 ## 3. Metadata draft
 
-**Name:** GrokCast
+**Name:** DayCast
 
 **Subtitle:** Weather with Grok intelligence
 
 **Promotional text (170 chars):**
 
-Dark, premium weather with Minutecast, GrokCast Score, live radar, NWS alerts, widgets, and Grok briefings — know when to go outside.
+Dark, premium weather with Minutecast, DayCast Score, live radar, NWS alerts, widgets, and Grok briefings — know when to go outside.
 
 **Description (short):**
 
-GrokCast combines accurate Open-Meteo forecasts and NWS alerts with a beautiful dark UI, Mapbox radar, Live Activities, and optional Grok AI briefings.
+DayCast combines accurate Open-Meteo forecasts and NWS alerts with a beautiful dark UI, Mapbox radar, Live Activities, and optional Grok AI briefings.
 
-- Today: GrokCast Score, Minutecast, and Grok’s take
+- Today: DayCast Score, Minutecast, and Grok’s take
 - Radar: live and forecast frames with Explain Radar
 - Alerts: NWS warnings with plain-English Grok summaries
 - Grok AI: chat, Imagine, Storm Spotter photo analysis
@@ -76,11 +76,11 @@ GrokCast combines accurate Open-Meteo forecasts and NWS alerts with a beautiful 
 
 **Category:** Weather
 
-**Privacy Policy URL:** https://scubasteve1999.github.io/GrokCast/privacy.html
+**Privacy Policy URL:** https://scubasteve1999.github.io/DayCast/privacy.html
 
-**Terms of Use URL:** https://scubasteve1999.github.io/GrokCast/terms.html
+**Terms of Use URL:** https://scubasteve1999.github.io/DayCast/terms.html
 
-**Support URL:** https://scubasteve1999.github.io/GrokCast/support.html
+**Support URL:** https://scubasteve1999.github.io/DayCast/support.html
 
 ## 4. Submit checklist (later)
 

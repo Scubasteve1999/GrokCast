@@ -8,7 +8,7 @@
 #
 # The build number lives in project.yml (CURRENT_PROJECT_VERSION), which is the
 # source of truth. This script previously used `agvtool`, which writes to
-# GrokCast.xcodeproj/project.pbxproj — a file xcodegen regenerates from
+# DayCast.xcodeproj/project.pbxproj — a file xcodegen regenerates from
 # project.yml, so the bump was silently reverted by the next `xcodegen generate`.
 
 set -euo pipefail
@@ -17,7 +17,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
 PROJECT_YML="project.yml"
-XCODEPROJ_PBX="GrokCast.xcodeproj/project.pbxproj"
+XCODEPROJ_PBX="DayCast.xcodeproj/project.pbxproj"
 CREATE_TAG=false
 
 if [[ "${1:-}" == "--tag" ]]; then
@@ -26,7 +26,7 @@ fi
 
 [[ -f "$PROJECT_YML" ]] || { echo "❌ $PROJECT_YML not found"; exit 1; }
 
-echo "📦 Incrementing build number for SpotterCast..."
+echo "📦 Incrementing build number for DayCast..."
 
 CURRENT_BUILD=$(grep -E '^[[:space:]]*CURRENT_PROJECT_VERSION:' "$PROJECT_YML" \
     | head -1 | sed -E 's/.*"([0-9]+)".*/\1/')
@@ -49,12 +49,12 @@ fi
 
 echo "✅ Build number: $CURRENT_BUILD → $NEW_BUILD"
 
-# Regenerate so GrokCast.xcodeproj actually carries the new build — without this
+# Regenerate so DayCast.xcodeproj actually carries the new build — without this
 # the bump exists only in project.yml and any archive still ships the old number.
 if command -v xcodegen >/dev/null 2>&1; then
     echo "⚙️  Regenerating Xcode project..."
     xcodegen generate >/dev/null
-    echo "✅ GrokCast.xcodeproj regenerated"
+    echo "✅ DayCast.xcodeproj regenerated"
 else
     echo "⚠️  xcodegen not found — run 'xcodegen generate' before archiving,"
     echo "   or the build will still be $CURRENT_BUILD."

@@ -1,4 +1,4 @@
-name: GrokCast CI
+name: DayCast CI
 
 on:
   push:
@@ -72,9 +72,9 @@ jobs:
           echo "✅ Using scheme: $SCHEME"
 
           # === Use known project file (after regeneration) ===
-          # We always regenerate GrokCast.xcodeproj, so hardcode for reliability.
+          # We always regenerate DayCast.xcodeproj, so hardcode for reliability.
           # This avoids glob failures or picking wrong files like project.pbxproj
-          FILE_PARAMETER="-project GrokCast.xcodeproj"
+          FILE_PARAMETER="-project DayCast.xcodeproj"
           echo "📦 Building with: $FILE_PARAMETER"
 
           # === iOS Simulator destination (critical fix) ===

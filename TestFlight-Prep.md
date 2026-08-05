@@ -1,4 +1,4 @@
-# GrokCast TestFlight Prep + Launch Plan
+# DayCast TestFlight Prep + Launch Plan
 
 ## Build
 - Use ./grok-build increment-build --tag before archive.
@@ -12,7 +12,7 @@
 - Description: "AI-powered weather with Grok insights. Real-time forecasts, radar, alerts."
 
 ## X / Social Launch Post Draft
-"Today we're shipping GrokCast v1.0 to TestFlight! 
+"Today we're shipping DayCast v1.0 to TestFlight! 
 
 Dark, premium weather app with:
 - AccuWeather-style Today layout (hero temp, Tonight block, clean grid)

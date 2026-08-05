@@ -20,9 +20,9 @@ try {
 
 export const fixtures = JSON.parse(fixturesJSON);
 
-export const BUNDLE_ID = "com.scubasteve1999.GrokCast";
-export const MONTHLY = "com.scubasteve1999.GrokCast.pro.monthly";
-export const YEARLY = "com.scubasteve1999.GrokCast.pro.yearly";
+export const BUNDLE_ID = "com.scubasteve1999.DayCast";
+export const MONTHLY = "com.scubasteve1999.DayCast.pro.monthly";
+export const YEARLY = "com.scubasteve1999.DayCast.pro.yearly";
 export const PRO_PRODUCT_IDS = [MONTHLY, YEARLY];
 
 export function base64ToBytes(value) {

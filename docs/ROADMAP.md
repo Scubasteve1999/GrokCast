@@ -1,4 +1,4 @@
-# GrokCast Unified Roadmap
+# DayCast Unified Roadmap
 
 **North star:** *The weather app that explains what the sky means — and shows you what it looks like.*
 
@@ -76,8 +76,8 @@ App Store blockers and baseline polish.
 - [x] Minutecast / next-hour precip (15-min Open-Meteo + Today strip)
 - [x] Live Activities: score + temp + Minutecast (Lock Screen / Dynamic Island)
 - [x] “Explain this radar” — sparkles button + Grok sheet + share
-- [x] GrokCast Score / “Go outside” index on Today + medium widget
-- [x] Siri Shortcuts + App Intents (GrokCast Score, Minutecast)
+- [x] DayCast Score / “Go outside” index on Today + medium widget
+- [x] Siri Shortcuts + App Intents (DayCast Score, Minutecast)
 
 ### Design
 - [x] Minutecast strip on Today (precip intensity bars)
@@ -102,7 +102,7 @@ App Store blockers and baseline polish.
 ### Product
 - [x] Apple Watch app + WidgetKit complications (temp, score, Grok one-liner)
 - [x] Widget: Grok one-liner on medium widget
-- [x] Storm Spotter community share loop (#GrokCastStormSpotter + Share Report)
+- [x] Storm Spotter community share loop (#DayCastStormSpotter + Share Report)
 - [ ] Tab IA simplification (Home / Map / You) — optional, deferred
 
 ### Design

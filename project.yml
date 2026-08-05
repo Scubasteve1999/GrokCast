@@ -1,4 +1,4 @@
-name: GrokCast
+name: DayCast
 options:
   bundleIdPrefix: com.scubasteve1999
   deploymentTarget:
@@ -32,14 +32,14 @@ targetTemplates:
     type: application
     platform: iOS
     sources:
-      - path: GrokCast
+      - path: DayCast
         excludes:
           - "**/Info.plist"
           - "Features/Radar/NWSRadarOverlay.swift"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast
-        INFOPLIST_FILE: GrokCast/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.DayCast
+        INFOPLIST_FILE: DayCast/Info.plist
         DEVELOPMENT_TEAM: "742YD3WJAR"
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -48,7 +48,7 @@ targetTemplates:
         SUPPORTS_MACCATALYST: NO
       configs:
         Debug:
-          # Avoids GrokCast.debug.dylib injection that can fail simulator preflight checks (Xcode 16+).
+          # Avoids DayCast.debug.dylib injection that can fail simulator preflight checks (Xcode 16+).
           ENABLE_DEBUG_DYLIB: NO
     dependencies:
       - sdk: SwiftUI.framework
@@ -64,14 +64,14 @@ targetTemplates:
       - sdk: AppIntents.framework
 
 targets:
-  GrokCast:
+  DayCast:
     templates:
       - AppTarget
     entitlements:
-      path: GrokCast/GrokCast.entitlements
+      path: DayCast/DayCast.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.scubasteve1999.GrokCast
+          - group.com.scubasteve1999.DayCast
         aps-environment: production
     configFiles:
       Debug: Config/Shared.xcconfig
@@ -79,11 +79,11 @@ targets:
     settings:
       configs:
         Debug:
-          CODE_SIGN_ENTITLEMENTS: GrokCast/GrokCast-Debug.entitlements
+          CODE_SIGN_ENTITLEMENTS: DayCast/DayCast-Debug.entitlements
         Release:
-          CODE_SIGN_ENTITLEMENTS: GrokCast/GrokCast.entitlements
+          CODE_SIGN_ENTITLEMENTS: DayCast/DayCast.entitlements
     info:
-      path: GrokCast/Info.plist
+      path: DayCast/Info.plist
       properties:
         CFBundleDisplayName: DayCast
         CFBundleName: DayCast
@@ -110,14 +110,13 @@ targets:
           - fetch
           - remote-notification
         BGTaskSchedulerPermittedIdentifiers:
-          - com.grokcast.alerts.refresh
+          - com.daycast.alerts.refresh
         CFBundleURLTypes:
-          - CFBundleURLName: com.grokcast.GrokCast
+          - CFBundleURLName: com.daycast.DayCast
             CFBundleURLSchemes:
-              - grokcast
               - daycast
     dependencies:
-      - target: GrokCastWidgets
+      - target: DayCastWidgets
         embed: true
       - package: MapboxMaps
       - package: firebase-ios-sdk
@@ -125,24 +124,24 @@ targets:
       - package: PostHog
         product: PostHog
 
-  GrokCastWidgets:
+  DayCastWidgets:
     type: app-extension
     platform: iOS
     sources:
-      - path: GrokCastWidgets
+      - path: DayCastWidgets
         excludes:
           - "**/Info.plist"
-      - path: GrokCast/Shared/Widget
-      - path: GrokCast/Shared/LiveActivity
-      - path: GrokCast/Shared/Models/Location.swift
-      - path: GrokCast/Shared/Models/OpenMeteoModels.swift
+      - path: DayCast/Shared/Widget
+      - path: DayCast/Shared/LiveActivity
+      - path: DayCast/Shared/Models/Location.swift
+      - path: DayCast/Shared/Models/OpenMeteoModels.swift
     entitlements:
-      path: GrokCastWidgets/GrokCastWidgets.entitlements
+      path: DayCastWidgets/DayCastWidgets.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.scubasteve1999.GrokCast
+          - group.com.scubasteve1999.DayCast
     info:
-      path: GrokCastWidgets/Info.plist
+      path: DayCastWidgets/Info.plist
       properties:
         CFBundleDisplayName: DayCast Widgets
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
@@ -151,8 +150,8 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCast.GrokCastWidgets
-        INFOPLIST_FILE: GrokCastWidgets/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.DayCast.DayCastWidgets
+        INFOPLIST_FILE: DayCastWidgets/Info.plist
         DEVELOPMENT_TEAM: "742YD3WJAR"
         CODE_SIGN_STYLE: Automatic
         APPLICATION_EXTENSION_API_ONLY: YES
@@ -167,69 +166,68 @@ targets:
       - sdk: ActivityKit.framework
       - sdk: CoreLocation.framework
 
-  GrokCastTests:
+  DayCastTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: GrokCastTests
+      - path: DayCastTests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCastTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.DayCastTests
         DEVELOPMENT_TEAM: "742YD3WJAR"
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: 1,2
         SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/GrokCast.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GrokCast"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/DayCast.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DayCast"
         BUNDLE_LOADER: "$(TEST_HOST)"
     dependencies:
-      - target: GrokCast
+      - target: DayCast
 
-  GrokCastUITests:
+  DayCastUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - path: GrokCastUITests
+      - path: DayCastUITests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.GrokCastUITests
+        PRODUCT_BUNDLE_IDENTIFIER: com.scubasteve1999.DayCastUITests
         DEVELOPMENT_TEAM: "742YD3WJAR"
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: 1,2
         SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: YES
-        TEST_TARGET_NAME: GrokCast
+        TEST_TARGET_NAME: DayCast
     dependencies:
-      - target: GrokCast
+      - target: DayCast
 
 schemes:
-  GrokCast:
+  DayCast:
     build:
       targets:
-        GrokCast: all
-        GrokCastWidgets: all
-        GrokCastTests: [test]
-        GrokCastUITests: [test]
+        DayCast: all
+        DayCastWidgets: all
+        DayCastTests: [test]
+        DayCastUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - GrokCastTests
-        - GrokCastUITests
+        - DayCastTests
+        - DayCastUITests
     archive:
       config: Release
 
-  GrokCastWidgets:
+  DayCastWidgets:
     build:
       targets:
-        GrokCastWidgets: all
+        DayCastWidgets: all
     run:
       config: Debug
     test:
       config: Debug
     archive:
       config: Release
-

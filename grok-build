@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # grok-build
-# A lightweight local CLI for common GrokCast development tasks.
+# A lightweight local CLI for common DayCast development tasks.
 # Usage: ./grok-build <command>
 
 set -e
@@ -20,7 +20,7 @@ case $COMMAND in
     shift
     if [[ "$1" == "--force" ]]; then
         echo "🧹 Force mode: removing existing .xcodeproj..."
-        rm -rf GrokCast.xcodeproj
+        rm -rf DayCast.xcodeproj
     fi
     /opt/homebrew/bin/xcodegen generate --spec project.yml
     echo "✅ Project regenerated."
@@ -64,11 +64,11 @@ case $COMMAND in
       CLEAN_DERIVED=true
     fi
 
-    echo "🧹 Running clean for GrokCast..."
+    echo "🧹 Running clean for DayCast..."
 
     if $CLEAN_DERIVED; then
-      echo "→ Removing GrokCast DerivedData..."
-      rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+      echo "→ Removing DayCast DerivedData..."
+      rm -rf ~/Library/Developer/Xcode/DerivedData/DayCast-* 2>/dev/null || true
       echo "   DerivedData cleaned."
     fi
 
@@ -390,18 +390,18 @@ case $COMMAND in
       echo "   --build applied. Will run full xcodebuild after xcodegen."
     fi
 
-    echo "🧹 Removing GrokCast DerivedData..."
-    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "🧹 Removing DayCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/DayCast-* 2>/dev/null || true
     echo "   DerivedData cleaned."
     unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
     echo "🔄 Regenerating Xcode project (xcodegen)..."
     /opt/homebrew/bin/xcodegen generate --spec project.yml
     if $BUILD; then
       echo "🔨 Running xcodebuild (iPhone 17 Pro simulator)..."
-      xcodebuild -project GrokCast.xcodeproj -scheme GrokCast -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build
+      xcodebuild -project DayCast.xcodeproj -scheme DayCast -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build
       echo "✅ xcodebuild complete."
       # hygiene: restore scheme (xcodegen side-effect) so git --name-only shows only RadarView.swift + grok-build + pbxproj
-      git checkout -- GrokCast.xcodeproj/xcshareddata/xcschemes/GrokCast.xcscheme 2>/dev/null || true
+      git checkout -- DayCast.xcodeproj/xcshareddata/xcschemes/DayCast.xcscheme 2>/dev/null || true
       echo "   (scheme restored for clean git verif)"
     fi
     echo "✅ v14 faster-perceived + crossfade + pop applied."
@@ -475,10 +475,10 @@ case $COMMAND in
     done
 
     if $PRIMARY_SOURCE; then
-      echo "→ --primary-source: Make NWS the primary weather source using grid system instead of or in addition to Open-Meteo. Follow GrokCast architecture."
+      echo "→ --primary-source: Make NWS the primary weather source using grid system instead of or in addition to Open-Meteo. Follow DayCast architecture."
     fi
     if $UPDATE_WEATHERSTORE; then
-      echo "→ --update-weatherstore: Update WeatherStore refresh logic for NWS primary GrokCastWeather (fallback for non-US/errors)."
+      echo "→ --update-weatherstore: Update WeatherStore refresh logic for NWS primary DayCastWeather (fallback for non-US/errors)."
     fi
     if $ADD_ALERTS; then
       echo "→ --add-alerts: Enhance NWS alerts support (non-fatal, tied to store/UI)."
@@ -493,7 +493,7 @@ case $COMMAND in
       echo "→ --create-nws-service: Enhance NWSService.swift with forecast + tolerant models."
     fi
     if $MAP_TO_EXISTING_MODELS; then
-      echo "→ --map-to-existing-models: Map NWS periods to GrokCastWeather/HourlyForecast/DailyForecast (no model changes, stable Date ids)."
+      echo "→ --map-to-existing-models: Map NWS periods to DayCastWeather/HourlyForecast/DailyForecast (no model changes, stable Date ids)."
     fi
     if $TIE_TO_ALERTS_TAB; then
       echo "→ --tie-to-alerts-tab: NWS alerts used in Alerts tab via store (existing wiring preserved)."
@@ -509,49 +509,49 @@ case $COMMAND in
     fi
 
     if $PRIMARY_SOURCE; then
-      echo "   --primary-source applied. Follow GrokCast architecture."
+      echo "   --primary-source applied. Follow DayCast architecture."
     fi
     if $UPDATE_WEATHERSTORE; then
-      echo "   --update-weatherstore applied. Follow GrokCast architecture."
+      echo "   --update-weatherstore applied. Follow DayCast architecture."
     fi
     if $ADD_ALERTS; then
-      echo "   --add-alerts applied. Follow GrokCast architecture."
+      echo "   --add-alerts applied. Follow DayCast architecture."
     fi
     if $GRID_SYSTEM; then
-      echo "   --grid-system applied. Follow GrokCast architecture."
+      echo "   --grid-system applied. Follow DayCast architecture."
     fi
     if $LOCATION_AWARE; then
-      echo "   --location-aware applied. Follow GrokCast architecture."
+      echo "   --location-aware applied. Follow DayCast architecture."
     fi
     if $CREATE_NWS_SERVICE; then
-      echo "   --create-nws-service applied. Follow GrokCast architecture."
+      echo "   --create-nws-service applied. Follow DayCast architecture."
     fi
     if $MAP_TO_EXISTING_MODELS; then
-      echo "   --map-to-existing-models applied. Follow GrokCast architecture."
+      echo "   --map-to-existing-models applied. Follow DayCast architecture."
     fi
     if $TIE_TO_ALERTS_TAB; then
-      echo "   --tie-to-alerts-tab applied. Follow GrokCast architecture."
+      echo "   --tie-to-alerts-tab applied. Follow DayCast architecture."
     fi
     if $PRESERVE_RADAR; then
-      echo "   --preserve-radar applied. Follow GrokCast architecture."
+      echo "   --preserve-radar applied. Follow DayCast architecture."
     fi
     if $ERROR_HANDLING; then
-      echo "   --error-handling applied. Follow GrokCast architecture."
+      echo "   --error-handling applied. Follow DayCast architecture."
     fi
     if $SKELETONS; then
-      echo "   --skeletons applied. Follow GrokCast architecture."
+      echo "   --skeletons applied. Follow DayCast architecture."
     fi
 
-    echo "🧹 Removing GrokCast DerivedData..."
-    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "🧹 Removing DayCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/DayCast-* 2>/dev/null || true
     echo "   DerivedData cleaned."
     unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
     echo "🔄 Regenerating Xcode project (xcodegen)..."
     /opt/homebrew/bin/xcodegen generate --spec project.yml
     # Hygiene restores (match radar pattern) to keep git clean for verif (project files, scheme, radar untouched)
-    git checkout -- GrokCast.xcodeproj/xcshareddata/xcschemes/GrokCast.xcscheme 2>/dev/null || true
-    git checkout -- project.yml GrokCast/GrokCast.entitlements GrokCast.xcodeproj/project.pbxproj 2>/dev/null || true
-    git checkout -- GrokCast/Features/Radar/RadarView.swift 2>/dev/null || true
+    git checkout -- DayCast.xcodeproj/xcshareddata/xcschemes/DayCast.xcscheme 2>/dev/null || true
+    git checkout -- project.yml DayCast/DayCast.entitlements DayCast.xcodeproj/project.pbxproj 2>/dev/null || true
+    git checkout -- DayCast/Features/Radar/RadarView.swift 2>/dev/null || true
     echo "✅ NWS API integrate support added (code changes via follow-up edits)."
     ;;
 
@@ -610,14 +610,14 @@ case $COMMAND in
       echo "→ --update-weatherstore: Update WeatherStore orchestration for primary WeatherKit + fallback + alerts refresh."
     fi
     if $MAP_TO_EXISTING_MODELS; then
-      echo "→ --map-to-existing-models: Map WeatherKit types (CurrentWeather, HourWeather, etc) to GrokCastWeather / Hourly / Daily models without altering their public shape."
+      echo "→ --map-to-existing-models: Map WeatherKit types (CurrentWeather, HourWeather, etc) to DayCastWeather / Hourly / Daily models without altering their public shape."
     fi
     if $PRESERVE_GROK_INSIGHTS; then
       echo "→ --preserve-grok-insights: Keep all Grok prompt contexts, weather injection, Storm Spotter etc. unchanged (use mapped fields)."
     fi
 
-    echo "🧹 Removing GrokCast DerivedData..."
-    rm -rf ~/Library/Developer/Xcode/DerivedData/GrokCast-* 2>/dev/null || true
+    echo "🧹 Removing DayCast DerivedData..."
+    rm -rf ~/Library/Developer/Xcode/DerivedData/DayCast-* 2>/dev/null || true
     echo "   DerivedData cleaned."
     unset MTL_ENABLE_DEBUG_INFO 2>/dev/null || true
     echo "🔄 Regenerating Xcode project (xcodegen)..."
@@ -644,7 +644,7 @@ case $COMMAND in
     ;;
 
   help|*)
-    echo "GrokCast Build Helper"
+    echo "DayCast Build Helper"
     echo ""
     echo "Usage: ./grok-build <command> [options]"
     echo ""
@@ -656,7 +656,7 @@ case $COMMAND in
     echo "  radar [many v* flags] ... --v14-faster-perceived-speed --frame-advance-600ms --stronger-crossfade --boost-visual-pop --keep-single-nws   v14 faster perceived speed (600ms advance), stronger crossfade, boost pop, keep single NWS (all isolated to RadarView.swift)"
     echo "  integrate-nws-api --primary-source --update-weatherstore --add-alerts --grid-system --location-aware --create-nws-service --map-to-existing-models --tie-to-alerts-tab --preserve-radar --error-handling --skeletons   Make NWS primary for weather/alerts via grid (follow architecture, preserve radar/non-US)"
     echo "  integrate-weatherkit [--primary-source] [--hybrid-fallback-openmeteo] [--add-alerts-support] [--update-weatherstore] [--map-to-existing-models] [--preserve-grok-insights]   Integrate WeatherKit as primary (hybrid OpenMeteo fallback, alerts, map models, preserve Grok)"
-    echo "  archive [--increment]       Release archive → build/GrokCast.xcarchive (TestFlight prep)"
+    echo "  archive [--increment]       Release archive → build/DayCast.xcarchive (TestFlight prep)"
     echo "  capture-aso                 Simulator screenshots → Marketing/AppStore/"
     echo "  help                        Show this help message"
     echo ""

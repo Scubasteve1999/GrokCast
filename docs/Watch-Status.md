@@ -1,6 +1,6 @@
 # watchOS status
 
-`GrokCastWatch/` and `GrokCastWatchWidgets/` exist as source, but they are **not** included in `project.yml` / the App Store binary.
+`DayCastWatch/` and `DayCastWatchWidgets/` exist as source, but they are **not** included in `project.yml` / the App Store binary.
 
 DayCast 1.0.x ships **iPhone + iPad + widgets + Live Activities only**.
 

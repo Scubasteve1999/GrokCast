@@ -10,8 +10,8 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
 OUT_DIR="$PROJECT_DIR/Marketing/AppStore"
-SCHEME="GrokCast"
-BUNDLE_ID="com.scubasteve1999.GrokCast"
+SCHEME="DayCast"
+BUNDLE_ID="com.scubasteve1999.DayCast"
 SIM_NAME="${SIM_NAME:-iPhone 17 Pro Max}"
 DERIVED="$PROJECT_DIR/build/DerivedData"
 
@@ -27,16 +27,16 @@ fi
 
 echo "🔨 Building Debug for simulator..."
 xcodebuild \
-  -project GrokCast.xcodeproj \
+  -project DayCast.xcodeproj \
   -scheme "$SCHEME" \
   -configuration Debug \
   -destination "platform=iOS Simulator,name=$SIM_NAME" \
   -derivedDataPath "$DERIVED" \
   build >/dev/null
 
-APP_PATH=$(find "$DERIVED/Build/Products" -name "GrokCast.app" -type d | head -n 1)
+APP_PATH=$(find "$DERIVED/Build/Products" -name "DayCast.app" -type d | head -n 1)
 if [[ -z "$APP_PATH" ]]; then
-  echo "❌ Could not find GrokCast.app in $DERIVED"
+  echo "❌ Could not find DayCast.app in $DERIVED"
   exit 1
 fi
 

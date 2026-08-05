@@ -1,6 +1,6 @@
-# GrokCast Design System v1
+# DayCast Design System v1
 
-**Purpose**: This document defines the visual language, spacing, typography, and component rules for GrokCast. All future UI work should follow these rules for consistency and professional quality.
+**Purpose**: This document defines the visual language, spacing, typography, and component rules for DayCast. All future UI work should follow these rules for consistency and professional quality.
 
 ---
 
@@ -136,4 +136,4 @@ Use this 8pt-based scale:
 
 **Version**: v1  
 **Last Updated**: June 24, 2026  
-**Owner**: Stephen Moore (GrokCast)
+**Owner**: Stephen Moore (DayCast)

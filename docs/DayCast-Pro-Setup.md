@@ -1,0 +1,64 @@
+# DayCast Pro — hosted Grok proxy
+
+Pro subscribers call this proxy instead of xAI directly. Your **xAI API key stays on the server**.
+
+## Deploy (Cloudflare Workers)
+
+1. Install Wrangler: `npm i -g wrangler`
+2. Set secrets:
+   ```bash
+   cd server/grok-proxy
+   wrangler secret put XAI_API_KEY
+   wrangler secret put PROXY_SECRET   # optional; app sends Bearer daycast-pro by default
+   ```
+3. Deploy:
+   ```bash
+   wrangler deploy
+   ```
+4. Copy the worker URL into `DayCast/Config/DayCastProConfig.swift`:
+   ```swift
+   static let grokProxyBaseURL: String? = "https://YOUR-WORKER.workers.dev/v1"
+   ```
+   Leave this `nil` until the worker is live. While `nil`, Pro users with an embedded/Keychain xAI key call `api.x.ai` directly. Do **not** point at `grok-proxy.daycast.app` unless that hostname is deployed and DNS resolves.
+
+## Local dev
+
+```bash
+cd server/grok-proxy
+XAI_API_KEY=xai-... node worker.js
+# listens on :8787 — point DayCastProConfig to http://127.0.0.1:8787/v1 for simulator
+```
+
+## App Store Connect
+
+Create subscription group **DayCast Pro** with:
+
+| Product ID | Type |
+|------------|------|
+| `com.scubasteve1999.DayCast.pro.monthly` | Auto-renewable monthly |
+| `com.scubasteve1999.DayCast.pro.yearly` | Auto-renewable yearly |
+
+Link `DayCast/Configuration/GrokProducts.storekit` in Xcode: **Product → Scheme → Run → Options → StoreKit Configuration**.
+
+## Pro feature gates (app)
+
+| Feature | Free | Pro |
+|---------|------|-----|
+| Today / forecast / alerts / live radar | ✅ | ✅ |
+| Grok AI (chat, brief, Storm Spotter, Imagine) | ❌ (BYOK key OK) | ✅ via hosted proxy **or** BYOK |
+| Radar FUTURE | ❌ | ✅ |
+| Live Activity | ❌ | ✅ |
+| Widget Grok one-liner | ❌ | ✅ |
+| Saved locations | 1 | Unlimited |
+| BYOK developer key | ✅ (advanced) | ✅ |
+
+> **Note:** Until `DayCastProConfig.grokProxyBaseURL` points at a live worker, Grok features require an xAI developer key even for Pro subscribers. Other Pro perks (radar FUTURE, Live Activity, unlimited locations) still unlock with Pro alone.
+
+## Security notes (v1)
+
+- The app sends `X-DayCast-Subscription-Id` (StoreKit `originalID`) for rate limiting.
+- **v1 trusts client-side StoreKit** — acceptable for TestFlight; before scale, add [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi) verification on the proxy.
+
+## Rate limits
+
+Default: **200 requests / subscription ID / day** (`DAILY_REQ_LIMIT` env var).

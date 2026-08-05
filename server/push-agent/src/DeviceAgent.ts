@@ -316,7 +316,7 @@ export class DeviceAgent extends Agent<Env, DeviceState> {
         soundsEnabled: this.state.soundsEnabled,
       }),
       pushType: "alert",
-      collapseId: "grokcast-morning-brief",
+      collapseId: "daycast-morning-brief",
     });
   }
 
@@ -334,9 +334,9 @@ export class DeviceAgent extends Agent<Env, DeviceState> {
           alert: { title: input.title, subtitle: input.subtitle, body: input.body },
           sound: this.state.soundsEnabled ? "default" : undefined,
           category: "GROKCAST_SEVERE_ALERT",
-          "thread-id": "grokcast-messages",
+          "thread-id": "daycast-messages",
         },
-        deepLink: input.deepLink ?? "grokcast://today",
+        deepLink: input.deepLink ?? "daycast://today",
       },
       pushType: "alert",
     });
@@ -351,7 +351,7 @@ export class DeviceAgent extends Agent<Env, DeviceState> {
       payload: buildSilentRefreshPayload(),
       pushType: "background",
       priority: 5,
-      collapseId: "grokcast-refresh",
+      collapseId: "daycast-refresh",
     });
   }
 

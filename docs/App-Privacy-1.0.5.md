@@ -19,6 +19,6 @@ Apple’s App Privacy questionnaire is **not** available via the App Store Conne
 
 ## Matches in the app
 
-- `GrokCast/PrivacyInfo.xcprivacy` — Device ID + Product Interaction (Analytics), location (App Functionality)
+- `DayCast/PrivacyInfo.xcprivacy` — Device ID + Product Interaction (Analytics), location (App Functionality)
 - Settings → **Share analytics** opt-out
-- Privacy policy: https://scubasteve1999.github.io/SpotterCast/privacy/
+- Privacy policy: https://scubasteve1999.github.io/DayCast/privacy/

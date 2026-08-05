@@ -12,7 +12,7 @@ if [ -z "$1" ]; then
 fi
 
 SOURCE="$1"
-DEST="GrokCast/Resources/Assets.xcassets/AppIcon.appiconset"
+DEST="DayCast/Resources/Assets.xcassets/AppIcon.appiconset"
 
 echo "🎨 Generating complete iOS App Icons..."
 

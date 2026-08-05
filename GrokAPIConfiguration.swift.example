@@ -1,6 +1,6 @@
 //
 //  GrokAPIConfiguration.swift.example
-//  GrokCast
+//  DayCast
 //
 //  Copy this file to GrokAPIConfiguration.swift and fill in any public configuration values.
 //  NOTE: The real xAI API key is NEVER stored here.

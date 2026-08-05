@@ -57,8 +57,8 @@ It can also be triggered by:
 
 Product IDs in this binary:
 
-- `com.scubasteve1999.GrokCast.pro.monthly` — DayCast Pro Monthly
-- `com.scubasteve1999.GrokCast.pro.yearly` — DayCast Pro Yearly
+- `com.scubasteve1999.DayCast.pro.monthly` — DayCast Pro Monthly
+- `com.scubasteve1999.DayCast.pro.yearly` — DayCast Pro Yearly
 
 Pro unlocks: AI chat, Today's Take, Explain Radar, Morning AI Brief, Storm Spotter photo analysis,
 forecast radar (FUTURE), Live Activity (updates when the app refreshes weather), unlimited saved
@@ -83,9 +83,9 @@ far above normal use and review will not reach it.
 
 ## Subscriptions (3.1.2)
 
-- Privacy: https://scubasteve1999.github.io/SpotterCast/privacy/
-- Terms: https://scubasteve1999.github.io/SpotterCast/terms/
-- Support: https://scubasteve1999.github.io/SpotterCast/support/
+- Privacy: https://scubasteve1999.github.io/DayCast/privacy/
+- Terms: https://scubasteve1999.github.io/DayCast/terms/
+- Support: https://scubasteve1999.github.io/DayCast/support/
 
 ## Location / background
 

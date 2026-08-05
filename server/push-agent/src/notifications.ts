@@ -6,9 +6,9 @@
 import type { NWSAlert } from "./nws.ts";
 import { expiresRelativeText, isLifeThreatening } from "./nws.ts";
 
-// Mirrors GrokCastDeepLinks.
-const DEEP_LINK_TODAY = "grokcast://today";
-const DEEP_LINK_ALERTS = "grokcast://alerts";
+// Mirrors DayCastDeepLinks.
+const DEEP_LINK_TODAY = "daycast://today";
+const DEEP_LINK_ALERTS = "daycast://alerts";
 
 // Mirrors the categoryIdentifier constants the app registers.
 const CATEGORY_SEVERE = "GROKCAST_SEVERE_ALERT";
@@ -70,7 +70,7 @@ export function buildAlertPayload(
         body: buildAlertBody(alert),
       },
       category: lifeThreatening ? CATEGORY_CRITICAL : CATEGORY_SEVERE,
-      "thread-id": "grokcast-severe-alerts",
+      "thread-id": "daycast-severe-alerts",
       // The app sets .timeSensitive on every severe alert regardless of tier.
       // Without the Time Sensitive Notifications capability iOS quietly downgrades
       // this to .active, which is the same behaviour the local path already gets.
@@ -80,7 +80,7 @@ export function buildAlertPayload(
     alertId: alert.id,
   };
 
-  // Sound is a device-local preference (GrokCastNotificationSounds), so the device
+  // Sound is a device-local preference (DayCastNotificationSounds), so the device
   // reports it at registration — the server has no other way to know.
   if (options.soundsEnabled) payload.aps.sound = "default";
   if (alert.severity) payload.severity = alert.severity;
@@ -123,7 +123,7 @@ export function buildMorningBriefPayload(options: {
             : trimmed.slice(0, 220),
       },
       category: CATEGORY_MORNING_BRIEF,
-      "thread-id": "grokcast-morning-brief",
+      "thread-id": "daycast-morning-brief",
     },
     deepLink: DEEP_LINK_TODAY,
   };

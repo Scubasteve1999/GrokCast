@@ -58,12 +58,12 @@ is the real protection. Move to a Durable Object if per-user accuracy ever has t
 ```bash
 npm install
 npx wrangler kv namespace create USAGE     # paste the id into wrangler.toml
-npx wrangler secret put XAI_API_KEY        # the spottercast-proxy-prod key
+npx wrangler secret put XAI_API_KEY        # the daycast-proxy-prod key
 npx wrangler secret put PROXY_SECRET       # long random string; also goes in the app
 npx wrangler deploy
 ```
 
-Then set `grokProxyBaseURL` in `GrokCast/Config/GrokCastProConfig.swift` to
+Then set `grokProxyBaseURL` in `DayCast/Config/DayCastProConfig.swift` to
 `https://<worker>.workers.dev/v1` — **with the `/v1` suffix**, since the client appends
 `chat/completions` to it.
 

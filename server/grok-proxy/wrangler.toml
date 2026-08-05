@@ -1,15 +1,15 @@
-name = "spottercast-grok-proxy"
+name = "daycast-grok-proxy"
 main = "src/worker.js"
 compatibility_date = "2026-08-01"
 
 # Secrets (never in this file — `wrangler secret put <NAME>`):
-#   XAI_API_KEY    the spottercast-proxy-prod key
+#   XAI_API_KEY    the daycast-proxy-prod key
 #   PROXY_SECRET   shared string the app sends; public by necessity
 #   OWM_API_KEY    OpenWeatherMap key (One Call 4.0 is billed per request)
 
 [vars]
-BUNDLE_ID = "com.scubasteve1999.GrokCast"
-PRO_PRODUCT_IDS = "com.scubasteve1999.GrokCast.pro.monthly,com.scubasteve1999.GrokCast.pro.yearly"
+BUNDLE_ID = "com.scubasteve1999.DayCast"
+PRO_PRODUCT_IDS = "com.scubasteve1999.DayCast.pro.monthly,com.scubasteve1999.DayCast.pro.yearly"
 ALLOWED_ENVIRONMENTS = "Production,Sandbox"
 DAILY_CHAT_LIMIT = "150"
 DAILY_IMAGE_LIMIT = "10"
