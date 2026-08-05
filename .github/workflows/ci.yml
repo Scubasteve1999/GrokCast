@@ -25,22 +25,22 @@ jobs:
 
       # Real key files are gitignored by design, so CI has to synthesize
       # placeholder versions from the committed templates or the build can't
-      # resolve DeveloperAPIKey / OpenWeatherMapKeys. Templates carry nil/
-      # placeholder values — this never puts a real secret on a runner.
+      # resolve DeveloperAPIKey / OpenWeatherMapKeys.
+      #
+      # This is the same script Xcode Cloud runs after cloning. It used to be
+      # duplicated here with a comment asking that the two be kept in sync; they
+      # were not, and the copies drifted the moment the Xcode Cloud one learned
+      # to restore real keys. Calling it directly removes the question.
+      #
+      # No secret environment variables are set here on purpose: this runner is
+      # public and fork PRs build on it, so the script takes its template path
+      # and produces placeholder keys. It does not fail on that, because
+      # CI_XCODEBUILD_ACTION is unset — the archive gate only applies to Xcode
+      # Cloud distribution builds.
+      #
       # Must run before XcodeGen so the generated project picks the files up.
       - name: Stub gitignored config files from templates
-        run: |
-          set -euo pipefail
-          for template in GrokCast/Config/*.example; do
-            [ -e "$template" ] || continue
-            target="${template%.example}"
-            if [ -f "$target" ]; then
-              echo "↷ $target already present — leaving it alone"
-            else
-              cp "$template" "$target"
-              echo "✅ Created $target from $(basename "$template")"
-            fi
-          done
+        run: ./ci_scripts/ci_post_clone.sh
 
       - name: Make grok-build executable
         run: chmod +x ./grok-build || true

@@ -130,4 +130,39 @@ final class RadarPlaybackTests: XCTestCase {
 
     XCTAssertEqual(playback.currentIndex, 0, "a paused timeline must not drift")
   }
+
+  /// A refresh can empty the timeline while playback is running. `advance()` used
+  /// to return without stopping, so the tick kept rescheduling against a frozen
+  /// map with the control still showing "playing".
+  func testTimelineEmptiedMidPlaybackStopsAnimating() {
+    var frames = 6
+    let playback = RadarPlayback()
+    playback.frameCount = { frames }
+    playback.frameTimestamps = {
+      (0..<frames).map { Date(timeIntervalSince1970: Double($0) * 300) }
+    }
+
+    playback.start()
+    XCTAssertTrue(playback.isAnimating)
+
+    frames = 0
+    playback.advance()
+
+    XCTAssertFalse(playback.isAnimating, "an emptied timeline must stop playback")
+  }
+
+  func testClampRejectsNonFiniteSpeeds() {
+    // NaN survives min/max, and a NaN interval gives Timer a fire date that never
+    // arrives — playback wedges with isAnimating still true.
+    XCTAssertEqual(
+      RadarPlayback.clampedPlaybackSpeed(.nan),
+      RadarPlayback.defaultPlaybackSpeed,
+      accuracy: 0.0001)
+    XCTAssertEqual(
+      RadarPlayback.clampedPlaybackSpeed(.infinity),
+      RadarPlayback.defaultPlaybackSpeed,
+      accuracy: 0.0001)
+    XCTAssertEqual(RadarPlayback.clampedPlaybackSpeed(99), 4.0, accuracy: 0.0001)
+    XCTAssertEqual(RadarPlayback.clampedPlaybackSpeed(-5), 0.25, accuracy: 0.0001)
+  }
 }

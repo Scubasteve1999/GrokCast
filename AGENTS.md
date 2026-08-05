@@ -88,6 +88,31 @@ xcodebuild -project GrokCast.xcodeproj -scheme GrokCast \
 
 Build number lives in `project.yml` (`CURRENT_PROJECT_VERSION`). Prefer `./Scripts/increment_build.sh` or `./Scripts/archive_for_testflight.sh --increment` over `agvtool` (xcodegen regenerates wipe agvtool-only bumps).
 
+### Xcode Cloud archives
+
+Xcode Cloud clones fresh, so it has none of the gitignored key files a local
+archive already has on disk. `ci_scripts/ci_post_clone.sh` restores them from
+secret environment variables on the **Build and Testflight** workflow
+(App Store Connect → Xcode Cloud → Manage Workflows → Environment):
+
+| Variable | Restores | Required for |
+|---|---|---|
+| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | `GrokCast/Config/GoogleService-Info.plist` | every Xcode Cloud build (hard build input) |
+| `DEVELOPER_API_KEY_SWIFT_BASE64` | `GrokCast/Config/DeveloperAPIKey.swift` | archive builds (Mapbox, Xweather, xAI) |
+| `OPENWEATHERMAP_KEYS_SWIFT_BASE64` | `GrokCast/Config/OpenWeatherMapKeys.swift` | optional — no real key is issued yet |
+
+Generate each value with, e.g.:
+
+```bash
+base64 -i GrokCast/Config/DeveloperAPIKey.swift | pbcopy
+```
+
+Paste it as the variable's value and check **Secret**. If a required file is
+missing or still holds placeholder values, an archive build (`CI_XCODEBUILD_ACTION
+= archive`) fails loudly rather than shipping a build with no working keys —
+GitHub Actions PR builds are unaffected and use the committed `*.example`
+templates instead.
+
 ### Project regeneration & utilities
 
 ```bash

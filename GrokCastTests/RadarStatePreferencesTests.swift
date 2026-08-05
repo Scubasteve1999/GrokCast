@@ -78,6 +78,24 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertEqual(state.playback.playbackSpeed, 0.5, accuracy: 0.0001)
   }
 
+  /// The setter used to write `newValue` straight to `RadarPlayback` while
+  /// persisting through `RadarPreferences`, which clamps — so an out-of-range
+  /// speed animated unclamped for the session and then changed on next launch.
+  func testOutOfRangeSpeedIsClampedInMemoryAndInStorage() {
+    let state = RadarState()
+
+    state.playbackSpeed = 99
+
+    XCTAssertEqual(state.playbackSpeed, 4.0, accuracy: 0.0001)
+    XCTAssertEqual(state.playback.playbackSpeed, 4.0, accuracy: 0.0001)
+    XCTAssertEqual(RadarPreferences.playbackSpeed, 4.0, accuracy: 0.0001)
+
+    state.playbackSpeed = -5
+
+    XCTAssertEqual(state.playback.playbackSpeed, 0.25, accuracy: 0.0001)
+    XCTAssertEqual(RadarPreferences.playbackSpeed, 0.25, accuracy: 0.0001)
+  }
+
   func testDefaultsHoldWhenNothingWasEverStored() {
     let state = RadarState()
 
