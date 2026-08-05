@@ -10,7 +10,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.0.6"
-    CURRENT_PROJECT_VERSION: "78"
+    CURRENT_PROJECT_VERSION: "120"
 
 configs:
   Debug: debug
