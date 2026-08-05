@@ -29,6 +29,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertTrue(RadarPreferences.showRadarOverlay)
     XCTAssertFalse(RadarPreferences.showFireLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, RadarPlayback.defaultPlaybackSpeed)
+    XCTAssertEqual(RadarPreferences.radarOpacity, RadarPreferences.defaultRadarOpacity)
   }
 
   func testValuesRoundTrip() {
@@ -36,11 +37,13 @@ final class RadarPreferencesTests: XCTestCase {
     RadarPreferences.baseMapStyle = .dark
     RadarPreferences.showFireLayer = true
     RadarPreferences.playbackSpeed = 1.0
+    RadarPreferences.radarOpacity = 0.55
 
     XCTAssertEqual(RadarPreferences.colorScheme, .balanced)
     XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
     XCTAssertTrue(RadarPreferences.showFireLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, 1.0)
+    XCTAssertEqual(RadarPreferences.radarOpacity, 0.55, accuracy: 0.0001)
   }
 
   /// The default is true, so a stored `false` has to survive — the bug this guards
@@ -73,5 +76,33 @@ final class RadarPreferencesTests: XCTestCase {
   func testStoredSpeedOutOfRangeIsClampedOnRead() {
     suite.set(0.0, forKey: "radar.pref.playbackSpeed")
     XCTAssertEqual(RadarPreferences.playbackSpeed, 0.25)
+  }
+
+  func testRadarOpacityIsClampedInBothDirections() {
+    RadarPreferences.radarOpacity = 1.5
+    XCTAssertEqual(RadarPreferences.radarOpacity, 1.0, accuracy: 0.0001)
+
+    RadarPreferences.radarOpacity = 0.1
+    XCTAssertEqual(
+      RadarPreferences.radarOpacity,
+      RadarPreferences.radarOpacityRange.lowerBound,
+      accuracy: 0.0001
+    )
+  }
+
+  func testStoredOpacityOutOfRangeIsClampedOnRead() {
+    suite.set(0.0, forKey: "radar.pref.radarOpacity")
+    XCTAssertEqual(
+      RadarPreferences.radarOpacity,
+      RadarPreferences.radarOpacityRange.lowerBound,
+      accuracy: 0.0001
+    )
+
+    suite.set(Double.nan, forKey: "radar.pref.radarOpacity")
+    XCTAssertEqual(
+      RadarPreferences.radarOpacity,
+      RadarPreferences.defaultRadarOpacity,
+      accuracy: 0.0001
+    )
   }
 }

@@ -6,7 +6,7 @@ struct RadarView: View {
   @Environment(FireStore.self) private var fireStore
   @Environment(\.scenePhase) private var scenePhase
 
-  @State private var radarOpacity: Double = 0.85
+  @State private var radarOpacity: Double = RadarPreferences.radarOpacity
   @State private var radarState = RadarState()
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
@@ -121,6 +121,11 @@ struct RadarView: View {
         radarState.cancelModeSwitch()
         recenterDefaultTrigger = nil
         recenterUserCoordinate = nil
+      }
+      // Opacity is @State so Mapbox updates live; mirror to prefs so the next
+      // launch restores the last slider position (speed/overlay already do this).
+      .onChange(of: radarOpacity) { _, newValue in
+        RadarPreferences.radarOpacity = newValue
       }
     }
   }
