@@ -5,6 +5,8 @@ import SwiftUI
 enum BackgroundIntensity {
   case full
   case subtle
+  /// Static gradient only — default for calm DayCast UI.
+  case staticOnly
 }
 
 // MARK: - Category (WMO groupings aligned with mapWeatherCode)
@@ -40,7 +42,7 @@ private enum WeatherBackgroundCategory {
 struct WeatherBackgroundView: View {
   let conditionCode: Int?
   var isDay: Bool = true
-  var intensity: BackgroundIntensity = .full
+  var intensity: BackgroundIntensity = .staticOnly
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -61,16 +63,17 @@ struct WeatherBackgroundView: View {
   }
 
   private var showsParticles: Bool {
+    // Calm redesign: no perpetual particle theater on main surfaces.
     guard shouldAnimate else { return false }
-    return intensity == .full || intensity == .subtle
+    return intensity == .full
   }
 
   private var rainParticleCount: Int {
-    intensity == .full ? 12 : 6
+    intensity == .full ? 8 : 0
   }
 
   private var snowParticleCount: Int {
-    intensity == .full ? 8 : 4
+    intensity == .full ? 6 : 0
   }
 
   var body: some View {
@@ -86,167 +89,260 @@ struct WeatherBackgroundView: View {
     .allowsHitTesting(false)
   }
 
-  // MARK: - Static Base (never ticks)
+  // MARK: - Static Base (TWC-style immersive sky — no particle theater)
 
   private var staticBaseLayer: some View {
-    ZStack {
-      Color.black.opacity(blackBaseOpacity)
-      gradientLayer
-        .opacity(gradientOpacity)
+    GeometryReader { geo in
+      ZStack {
+        // Full-bleed sky (Weather Channel “live look” is mostly a rich sky plate).
+        skyPlate
+          .opacity(skyOpacity)
+
+        // Soft sun / moon for clear & partly cloudy.
+        if category == .clear || category == .partlyCloudy {
+          celestialGlow(in: geo.size)
+        }
+
+        // Static cloud banks — broadcast weather, not animated fluff.
+        if category == .partlyCloudy || category == .overcast || category == .rain
+          || category == .sleet || category == .thunderstorm
+        {
+          staticCloudDeck(in: geo.size)
+        }
+
+        if category == .fog {
+          fogVeil
+        }
+
+        if category == .rain || category == .sleet {
+          rainCurtain
+        }
+
+        // Light bottom fade only — TWC keeps most of the sky photo bright behind the hero.
+        LinearGradient(
+          colors: [
+            Color.clear,
+            Color.clear,
+            Color.black.opacity(0.25),
+            Color.black.opacity(0.55),
+          ],
+          startPoint: .top,
+          endPoint: .bottom
+        )
+      }
     }
   }
 
-  // MARK: - Layer Opacity
-
-  private var blackBaseOpacity: Double {
+  private var skyOpacity: Double {
     switch intensity {
     case .full: return 1.0
-    case .subtle: return 0.6
+    case .subtle: return 0.72
+    case .staticOnly: return 0.92
     }
-  }
-
-  private var gradientOpacity: Double {
-    let base: Double =
-      switch intensity {
-      case .full: 1.0
-      case .subtle: colorScheme == .dark ? 0.55 : 0.48
-      }
-    return base
   }
 
   private var particleOpacity: Double {
-    intensity == .full ? 0.8 : 0.4
+    intensity == .full ? 0.35 : 0
   }
 
-  // MARK: - Gradients
+  // MARK: - Sky plates (condition colors)
 
   @ViewBuilder
-  private var gradientLayer: some View {
+  private var skyPlate: some View {
     switch category {
     case .clear:
-      clearGradient
+      LinearGradient(
+        colors: isDay
+          ? [
+            Color(red: 0.25, green: 0.55, blue: 0.95),
+            Color(red: 0.40, green: 0.68, blue: 0.98),
+            Color(red: 0.55, green: 0.75, blue: 0.95),
+            Color(red: 0.18, green: 0.35, blue: 0.62),
+          ]
+          : [
+            Color(red: 0.04, green: 0.06, blue: 0.18),
+            Color(red: 0.08, green: 0.12, blue: 0.32),
+            Color(red: 0.12, green: 0.14, blue: 0.28),
+            Color(red: 0.02, green: 0.03, blue: 0.10),
+          ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .partlyCloudy:
-      partlyCloudyGradient
+      // Match TWC: deep blue sky plate under wispy cirrus texture.
+      LinearGradient(
+        colors: isDay
+          ? [
+            Color(red: 0.22, green: 0.42, blue: 0.72),
+            Color(red: 0.30, green: 0.52, blue: 0.82),
+            Color(red: 0.38, green: 0.58, blue: 0.86),
+            Color(red: 0.28, green: 0.48, blue: 0.78),
+          ]
+          : [
+            Color(red: 0.08, green: 0.10, blue: 0.22),
+            Color(red: 0.14, green: 0.16, blue: 0.28),
+            Color(red: 0.10, green: 0.12, blue: 0.20),
+          ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .overcast:
-      overcastGradient
+      LinearGradient(
+        colors: [
+          Color(red: 0.42, green: 0.46, blue: 0.52),
+          Color(red: 0.28, green: 0.32, blue: 0.38),
+          Color(red: 0.16, green: 0.18, blue: 0.22),
+          Color(red: 0.08, green: 0.09, blue: 0.11),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .fog:
-      fogGradient
+      LinearGradient(
+        colors: [
+          Color(red: 0.55, green: 0.58, blue: 0.62),
+          Color(red: 0.38, green: 0.40, blue: 0.44),
+          Color(red: 0.20, green: 0.22, blue: 0.25),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .rain, .sleet:
-      rainGradient
+      LinearGradient(
+        colors: [
+          Color(red: 0.18, green: 0.28, blue: 0.42),
+          Color(red: 0.12, green: 0.20, blue: 0.34),
+          Color(red: 0.08, green: 0.12, blue: 0.22),
+          Color(red: 0.04, green: 0.06, blue: 0.12),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .snow:
-      snowGradient
+      LinearGradient(
+        colors: [
+          Color(red: 0.55, green: 0.62, blue: 0.75),
+          Color(red: 0.38, green: 0.45, blue: 0.58),
+          Color(red: 0.20, green: 0.26, blue: 0.36),
+          Color(red: 0.10, green: 0.12, blue: 0.18),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .thunderstorm:
-      thunderstormGradient
+      LinearGradient(
+        colors: [
+          Color(red: 0.18, green: 0.14, blue: 0.32),
+          Color(red: 0.12, green: 0.16, blue: 0.28),
+          Color(red: 0.08, green: 0.08, blue: 0.16),
+          Color(red: 0.03, green: 0.03, blue: 0.08),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     case .neutral:
-      neutralTacticalGradient
+      LinearGradient(
+        colors: [
+          Color(red: 0.16, green: 0.22, blue: 0.34),
+          Color(red: 0.08, green: 0.10, blue: 0.16),
+          Color(red: 0.04, green: 0.05, blue: 0.08),
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+      )
     }
   }
 
-  private var clearGradient: some View {
-    LinearGradient(
-      colors: isDay
-        ? [
-          Color(red: 0.28, green: 0.52, blue: 0.85),
-          Color(red: 0.18, green: 0.38, blue: 0.72),
-          Color(red: 0.08, green: 0.18, blue: 0.42),
-        ]
-        : [
-          Color(red: 0.04, green: 0.06, blue: 0.18),
-          Color(red: 0.08, green: 0.10, blue: 0.28),
-          Color(red: 0.02, green: 0.03, blue: 0.10),
-        ],
-      startPoint: .top,
-      endPoint: .bottom
-    )
+  private func celestialGlow(in size: CGSize) -> some View {
+    let orb = isDay
+      ? Color(red: 1.0, green: 0.92, blue: 0.55)
+      : Color(red: 0.85, green: 0.90, blue: 1.0)
+    return ZStack {
+      Circle()
+        .fill(
+          RadialGradient(
+            colors: [orb.opacity(isDay ? 0.55 : 0.25), Color.clear],
+            center: .center,
+            startRadius: 0,
+            endRadius: size.width * 0.42
+          )
+        )
+        .frame(width: size.width * 0.85, height: size.width * 0.85)
+        .offset(x: size.width * 0.18, y: -size.height * 0.28)
+      Circle()
+        .fill(orb.opacity(isDay ? 0.85 : 0.35))
+        .frame(width: isDay ? 56 : 36, height: isDay ? 56 : 36)
+        .blur(radius: isDay ? 1 : 0.5)
+        .offset(x: size.width * 0.22, y: -size.height * 0.26)
+    }
+    .allowsHitTesting(false)
   }
 
-  private var partlyCloudyGradient: some View {
-    LinearGradient(
-      colors: isDay
-        ? [
-          Color(red: 0.32, green: 0.48, blue: 0.68),
-          Color(red: 0.20, green: 0.32, blue: 0.52),
-          Color(red: 0.08, green: 0.14, blue: 0.28),
-        ]
-        : [
-          Color(red: 0.10, green: 0.14, blue: 0.28),
-          Color(red: 0.06, green: 0.10, blue: 0.20),
-          Color(red: 0.03, green: 0.04, blue: 0.10),
-        ],
-      startPoint: .top,
-      endPoint: .bottom
-    )
+  /// Wispy cirrus / streaked cloud field like TWC photo skies (static Canvas).
+  private func staticCloudDeck(in size: CGSize) -> some View {
+    let heavy = category == .overcast || category == .thunderstorm
+    return Canvas { context, canvasSize in
+      // Diagonal streak field (high cloud texture).
+      for i in 0..<28 {
+        let t = CGFloat(i) / 28
+        var path = Path()
+        let y = canvasSize.height * (0.05 + t * 0.55)
+        let x0 = -canvasSize.width * 0.15 + CGFloat(i % 5) * 18
+        path.move(to: CGPoint(x: x0, y: y))
+        path.addQuadCurve(
+          to: CGPoint(x: canvasSize.width * 1.15, y: y + canvasSize.height * 0.08),
+          control: CGPoint(x: canvasSize.width * 0.45, y: y - 24 + CGFloat(i % 3) * 10)
+        )
+        context.stroke(
+          path,
+          with: .color(.white.opacity(heavy ? 0.10 : 0.14 + Double(i % 4) * 0.02)),
+          style: StrokeStyle(lineWidth: heavy ? 28 : 18 + CGFloat(i % 5) * 3, lineCap: .round)
+        )
+      }
+      // Soft billows
+      for i in 0..<8 {
+        let rect = CGRect(
+          x: CGFloat(i) * canvasSize.width * 0.18 - 40,
+          y: canvasSize.height * (0.08 + CGFloat(i % 3) * 0.07),
+          width: canvasSize.width * 0.55,
+          height: canvasSize.height * 0.12
+        )
+        context.fill(
+          Path(ellipseIn: rect),
+          with: .color(.white.opacity(heavy ? 0.12 : 0.08))
+        )
+      }
+    }
+    .blur(radius: heavy ? 18 : 12)
+    .opacity(heavy ? 0.85 : 0.95)
+    .allowsHitTesting(false)
   }
 
-  private var overcastGradient: some View {
+  private var fogVeil: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.22, green: 0.26, blue: 0.35),
-        Color(red: 0.14, green: 0.17, blue: 0.25),
-        Color(red: 0.06, green: 0.07, blue: 0.12),
+        Color.white.opacity(0.08),
+        Color.white.opacity(0.22),
+        Color.white.opacity(0.10),
       ],
       startPoint: .top,
       endPoint: .bottom
     )
+    .blur(radius: 8)
+    .allowsHitTesting(false)
   }
 
-  private var fogGradient: some View {
+  private var rainCurtain: some View {
     LinearGradient(
       colors: [
-        Color(red: 0.28, green: 0.30, blue: 0.34),
-        Color(red: 0.16, green: 0.18, blue: 0.22),
-        Color(red: 0.06, green: 0.07, blue: 0.10),
+        Color(red: 0.15, green: 0.25, blue: 0.40).opacity(0.0),
+        Color(red: 0.10, green: 0.18, blue: 0.32).opacity(0.35),
+        Color(red: 0.05, green: 0.08, blue: 0.16).opacity(0.55),
       ],
       startPoint: .top,
       endPoint: .bottom
     )
-  }
-
-  private var rainGradient: some View {
-    LinearGradient(
-      colors: [
-        Color(red: 0.12, green: 0.18, blue: 0.35),
-        Color(red: 0.06, green: 0.12, blue: 0.28),
-        Color(red: 0.02, green: 0.05, blue: 0.14),
-      ],
-      startPoint: .top,
-      endPoint: .bottom
-    )
-  }
-
-  private var snowGradient: some View {
-    LinearGradient(
-      colors: [
-        Color(red: 0.48, green: 0.58, blue: 0.72),
-        Color(red: 0.28, green: 0.36, blue: 0.50),
-        Color(red: 0.10, green: 0.14, blue: 0.24),
-      ],
-      startPoint: .top,
-      endPoint: .bottom
-    )
-  }
-
-  private var thunderstormGradient: some View {
-    LinearGradient(
-      colors: [
-        Color(red: 0.18, green: 0.08, blue: 0.32),
-        Color(red: 0.12, green: 0.06, blue: 0.24),
-        Color(red: 0.04, green: 0.02, blue: 0.10),
-      ],
-      startPoint: .top,
-      endPoint: .bottom
-    )
-  }
-
-  private var neutralTacticalGradient: some View {
-    LinearGradient(
-      colors: [
-        Color(red: 0.08, green: 0.10, blue: 0.18),
-        Color(red: 0.04, green: 0.05, blue: 0.12),
-      ],
-      startPoint: .top,
-      endPoint: .bottom
-    )
+    .allowsHitTesting(false)
   }
 
   // MARK: - Animated Overlays (TimelineView only when shouldAnimate)
@@ -452,7 +548,7 @@ private struct LightningOverlay: View {
 struct WeatherBackgroundLayer: View {
   let conditionCode: Int?
   var isDay: Bool = WeatherBackgroundView.inferredIsDay
-  var intensity: BackgroundIntensity = .full
+  var intensity: BackgroundIntensity = .staticOnly
   var extraOpacity: Double = 1.0
 
   var body: some View {
@@ -467,7 +563,7 @@ struct WeatherBackgroundLayer: View {
       )
       .ignoresSafeArea()
       .opacity(extraOpacity)
-      .animation(.easeInOut(duration: 1.0), value: conditionCode)
+      .animation(.easeInOut(duration: 0.35), value: conditionCode)
     }
     .allowsHitTesting(false)
   }

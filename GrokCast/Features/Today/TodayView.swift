@@ -31,7 +31,8 @@ struct TodayView: View {
           } ?? WeatherBackgroundView.inferredIsDay(
             timeZone: store.currentWeather?.locationTimeZone ?? .current
           ),
-          extraOpacity: 0.88
+          intensity: .staticOnly,
+          extraOpacity: 1.0
         )
 
         let status = store.locationService.authorizationStatus

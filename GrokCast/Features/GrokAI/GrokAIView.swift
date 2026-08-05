@@ -34,7 +34,7 @@ private struct GrokAIViewContent: View {
           isDay: weatherStore.currentWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
           } ?? WeatherBackgroundView.inferredIsDay,
-          intensity: .subtle
+          intensity: .staticOnly
         )
         .ignoresSafeArea()
 

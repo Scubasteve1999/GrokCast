@@ -18,24 +18,23 @@ struct TacticalCard: View {
   let icon: String
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 6) {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      HStack(spacing: DesignTokens.Spacing.space8) {
         Image(systemName: icon)
-          .font(.system(size: 13, weight: .semibold))
+          .font(.system(size: 13, weight: .regular))
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         Text(label)
-          .font(.system(size: 11, weight: .semibold))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
 
       Text(value)
-        .font(.system(size: 28, weight: .bold, design: .rounded))
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
         .lineLimit(1)
     }
-    .padding(.horizontal, DesignTokens.Spacing.space20)
-    .padding(.vertical, DesignTokens.Spacing.space20)
+    .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
     .tacticalCard()
   }

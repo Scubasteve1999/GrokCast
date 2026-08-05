@@ -25,8 +25,8 @@ struct FigmaSectionLabel: View {
   var body: some View {
     Text(title)
       .font(DesignTokens.Figma.Typography.sectionLabel)
-      .foregroundStyle(DesignTokens.Palette.textTertiary)
-      .textCase(.uppercase)
+      .foregroundStyle(DesignTokens.Palette.textSecondary)
+      // Calm weather UI: sentence case, no shouting caps / tracking.
       .frame(maxWidth: .infinity, alignment: .leading)
   }
 }
@@ -37,7 +37,7 @@ struct FigmaSubsectionLabel: View {
   var body: some View {
     Text(title)
       .font(DesignTokens.Figma.Typography.subsectionLabel)
-      .foregroundStyle(DesignTokens.Palette.textTertiary)
+      .foregroundStyle(DesignTokens.Palette.textSecondary)
       .frame(maxWidth: .infinity, alignment: .leading)
   }
 }
@@ -50,12 +50,11 @@ struct FigmaAccentSectionLabel: View {
   var body: some View {
     HStack(spacing: 6) {
       Image(systemName: icon)
-        .font(.system(size: 12, weight: .bold))
+        .font(.system(size: 13, weight: .semibold))
       Text(title)
-        .font(DesignTokens.Figma.Typography.sectionLabel)
+        .font(DesignTokens.Figma.Typography.subsectionLabel)
     }
     .foregroundStyle(color)
-    .textCase(.uppercase)
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 }

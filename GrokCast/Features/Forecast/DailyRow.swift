@@ -18,7 +18,6 @@ struct DailyRow: View {
   var timeZone: TimeZone = .current
   /// Opens day detail when set (Forecast tap-through).
   var onSelect: (() -> Void)? = nil
-  @State private var appeared = false
 
   private var condition: WeatherCondition {
     WeatherCondition(fromWMO: forecast.weatherCode)
@@ -54,13 +53,6 @@ struct DailyRow: View {
       onSelect()
     }
     .accessibilityAddTraits(onSelect == nil ? [] : .isButton)
-    .opacity(appeared ? 1 : 0)
-    .onAppear {
-      guard !appeared else { return }
-      withAnimation(.easeInOut(duration: 0.25)) {
-        appeared = true
-      }
-    }
   }
 
   private var figmaLayout: some View {
@@ -104,14 +96,13 @@ struct DailyRow: View {
     .padding(.leading, DesignTokens.Spacing.space16)
     .padding(.trailing, DesignTokens.Spacing.space16)
     .padding(.vertical, DesignTokens.Spacing.space16)
-    .background {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
-        .fill(
-          isToday
-            ? DesignTokens.Palette.cardElevated
-            : DesignTokens.Palette.cardBackground
-        )
-    }
+    .cardStyle(
+      background: isToday
+        ? DesignTokens.Palette.cardElevated
+        : DesignTokens.Palette.cardBackground,
+      cornerRadius: DesignTokens.Figma.Metrics.chipRadius,
+      elevated: isToday
+    )
     .overlay(alignment: .leading) {
       if isToday {
         UnevenRoundedRectangle(
@@ -125,16 +116,6 @@ struct DailyRow: View {
         .padding(.vertical, DesignTokens.Spacing.space8)
       }
     }
-    .overlay {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
-        .stroke(
-          isToday
-            ? DesignTokens.Palette.accent.opacity(0.4)
-            : DesignTokens.Palette.cardStroke,
-          lineWidth: DesignTokens.Card.strokeWidth
-        )
-    }
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius))
   }
 
   private var standardLayout: some View {

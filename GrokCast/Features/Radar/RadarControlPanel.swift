@@ -78,20 +78,11 @@ struct RadarControlPanel: View {
       }
     }
     .padding(prefersFigmaHUD ? DesignTokens.Spacing.space16 : DesignTokens.Spacing.space12)
-    .background {
-      if prefersFigmaHUD {
-        RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
-          .fill(DesignTokens.Palette.cardBackground)
-          .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
-              .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
-          )
-      } else {
-        RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-          .fill(.ultraThinMaterial)
-      }
-    }
-    .clipShape(RoundedRectangle(cornerRadius: prefersFigmaHUD ? DesignTokens.Card.cornerRadiusMedium : DesignTokens.Radius.medium))
+    .cardStyle(
+      background: DesignTokens.Palette.cardElevated,
+      cornerRadius: DesignTokens.Card.cornerRadiusMedium,
+      elevated: true
+    )
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
     .sheet(isPresented: $showDisplayOptions) {
