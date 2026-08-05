@@ -6,7 +6,6 @@ struct AIInsightFeedCard: View {
       Text("AI Insight")
         .font(DesignTokens.Figma.Typography.subsectionLabel)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .textCase(.uppercase)
         .tracking(DesignTokens.Typography.cardLabelTracking)
 
       GrokBriefCard(presentation: .figma)

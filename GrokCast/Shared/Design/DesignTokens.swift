@@ -1,40 +1,42 @@
 import SwiftUI
 
-// MARK: - Centralized Design Tokens (Modern Dark Professional)
+// MARK: - DayCast design tokens — Apple Weather calm
 
-/// Lightweight design tokens extracted from repeated card, typography, and visual patterns
-/// used across TodayView, ForecastView, and related components.
-/// Goal: single source of truth for consistent dark theme without over-engineering.
+/// Single source of truth for dark weather UI: quiet type, solid surfaces, restrained motion.
 enum DesignTokens {
 
-  // MARK: - GrokCast Color Palette (exact from redesign spec)
-  enum Palette {
-    static let bgPrimary = SwiftUI.Color(hex: "#0B0D14")
-    static let bgSecondary = SwiftUI.Color(hex: "#11141C")
-    static let cardBackground = SwiftUI.Color(hex: "#1A1F2B")
-    static let cardElevated = SwiftUI.Color(hex: "#22283A")
-    static let cardStroke = SwiftUI.Color(hex: "#2F3648")
-    static let textPrimary = SwiftUI.Color(hex: "#F1F3F8")
-    static let textSecondary = SwiftUI.Color(hex: "#A8AEC0")
-    static let textTertiary = SwiftUI.Color(hex: "#6B7280")
-    static let accent = SwiftUI.Color(hex: "#5B8DEE")
-    static let accentWarm = SwiftUI.Color(hex: "#F5A35C")
-    static let accentCool = SwiftUI.Color(hex: "#5BC4E8")
-    static let success = SwiftUI.Color(hex: "#4ADE80")
-    static let warning = SwiftUI.Color(hex: "#FACC15")
-    static let danger = SwiftUI.Color(hex: "#F87171")
+  // MARK: - Palette (layered weather — strong bg/card separation)
 
-    // Radar-specific tokens for consistency with radar tab polish (per task spec)
-    static let radarCardBackground = SwiftUI.Color(hex: "#161B22")
-    static let radarCardStroke = SwiftUI.Color(hex: "#30363D")
-    static let radarTextPrimary = SwiftUI.Color(hex: "#E6EDF3")
-    static let radarTextSecondary = SwiftUI.Color(hex: "#8B949E")
-    static let radarAccent = SwiftUI.Color(hex: "#58A6FF")
-    static let radarTrack = SwiftUI.Color(hex: "#21262D")
-    static let radarProgress = SwiftUI.Color(hex: "#58A6FF")
+  enum Palette {
+    /// Deep stage behind weather wash.
+    static let bgPrimary = SwiftUI.Color(hex: "#05070C")
+    static let bgSecondary = SwiftUI.Color(hex: "#0E121A")
+    /// Mid surface for secondary cards.
+    static let cardBackground = SwiftUI.Color(hex: "#1E2430")
+    /// Raised surface for hero-adjacent / primary blocks.
+    static let cardElevated = SwiftUI.Color(hex: "#2C3444")
+    static let cardStroke = SwiftUI.Color.white.opacity(0.20)
+    static let textPrimary = SwiftUI.Color.white
+    static let textSecondary = SwiftUI.Color.white.opacity(0.78)
+    static let textTertiary = SwiftUI.Color.white.opacity(0.52)
+    static let accent = SwiftUI.Color(hex: "#8BB8F0")
+    static let accentWarm = SwiftUI.Color(hex: "#F0B07A")
+    static let accentCool = SwiftUI.Color(hex: "#9AC4E8")
+    static let success = SwiftUI.Color(hex: "#34C759")
+    static let warning = SwiftUI.Color(hex: "#FFD60A")
+    static let danger = SwiftUI.Color(hex: "#FF453A")
+
+    static let radarCardBackground = SwiftUI.Color(hex: "#1E2430")
+    static let radarCardStroke = SwiftUI.Color.white.opacity(0.20)
+    static let radarTextPrimary = SwiftUI.Color.white
+    static let radarTextSecondary = SwiftUI.Color.white.opacity(0.70)
+    static let radarAccent = SwiftUI.Color(hex: "#8BB8F0")
+    static let radarTrack = SwiftUI.Color.white.opacity(0.16)
+    static let radarProgress = SwiftUI.Color(hex: "#8BB8F0")
   }
 
-  // MARK: - Spacing Scale (exact 8pt system from DesignSystem.md v1)
+  // MARK: - Spacing (8pt)
+
   enum Spacing {
     static let space2: CGFloat = 2
     static let space4: CGFloat = 4
@@ -48,15 +50,13 @@ enum DesignTokens {
     static let space48: CGFloat = 48
   }
 
-  // MARK: - Corner Radius (exact from DesignSystem.md v1)
   enum Radius {
-    static let small: CGFloat = 8
+    static let small: CGFloat = 12
     static let medium: CGFloat = 16
-    static let large: CGFloat = 24
-    static let xLarge: CGFloat = 32
+    static let large: CGFloat = 22
+    static let xLarge: CGFloat = 28
   }
 
-  // MARK: - Card Styling
   enum Card {
     static let cornerRadiusCompact: CGFloat = DesignTokens.Radius.small
     static let cornerRadius: CGFloat = DesignTokens.Radius.medium
@@ -65,110 +65,153 @@ enum DesignTokens {
     static let strokeWidth: CGFloat = 1
   }
 
-  // MARK: - Typography & Tracking
+  // MARK: - Typography (SF Pro, calm — no display black / shouting caps)
+
   enum Typography {
-    /// Tracking used for uppercase labels on cards.
-    static let cardLabelTracking: CGFloat = 1.2
+    /// Legacy aliases — prefer the named fonts below.
+    static let cardLabelTracking: CGFloat = 0
+    static let tightTracking: CGFloat = 0
+    static let headerTracking: CGFloat = 0
 
-    /// Tight tracking for time / small labels.
-    static let tightTracking: CGFloat = 0.3
+    /// Hero temperature — TWC-scale display number on the sky.
+    static func displayTemp() -> Font {
+      .system(size: 96, weight: .semibold)
+    }
 
-    /// Hero / section header tracking.
-    static let headerTracking: CGFloat = 1.5
+    /// Back-compat for call sites still using the old name.
+    static func heroTemperature() -> Font { displayTemp() }
 
-    /// Large hero temperature on Today and marketing screenshots.
-    static func heroTemperature() -> Font {
-      .system(size: 96, weight: .black, design: .rounded)
+    static func title() -> Font { .system(size: 28, weight: .semibold) }
+    static func headline() -> Font { .system(size: 17, weight: .semibold) }
+    static func body() -> Font { .system(size: 17, weight: .regular) }
+    static func callout() -> Font { .system(size: 15, weight: .regular) }
+    static func caption() -> Font { .system(size: 13, weight: .regular) }
+    static func metric() -> Font { .system(size: 20, weight: .medium) }
+    static func micro() -> Font { .system(size: 12, weight: .regular) }
+  }
+
+  /// Decorative motion (particles, shimmer sweeps). Off under Reduce Motion / Low Power.
+  enum Motion {
+    @MainActor
+    static var allowDecorative: Bool {
+      if ProcessInfo.processInfo.isLowPowerModeEnabled { return false }
+      // Accessibility is checked at view level via environment; default true for token helpers.
+      return true
     }
   }
 
-  // MARK: - Opacity
   enum Opacity {
-    static let iconWhite: Double = 0.65
+    static let iconWhite: Double = 0.55
   }
 
-  /// Pixel-matched metrics from the GrokCast Screens Figma page (393×852).
+  /// Screen metrics (formerly Figma.*) — kept nested so call sites compile.
   enum Figma {
     enum Typography {
-      static let screenTitle = Font.system(size: 34, weight: .bold)
-      static let studioTitle = Font.system(size: 28, weight: .bold)
-      static let sectionLabel = Font.system(size: 11, weight: .bold)
-      static let subsectionLabel = Font.system(size: 13, weight: .bold)
-      static let cardHeadline = Font.system(size: 17, weight: .bold)
-      static let rowTitle = Font.system(size: 15, weight: .semibold)
-      static let rowSubtitle = Font.system(size: 13, weight: .regular)
-      static let body = Font.system(size: 15, weight: .regular)
-      static let chipTime = Font.system(size: 11, weight: .semibold)
-      static let chipTemp = Font.system(size: 15, weight: .bold)
-      static let locationLabel = Font.system(size: 11, weight: .bold)
+      static let screenTitle = DesignTokens.Typography.title()
+      static let studioTitle = Font.system(size: 24, weight: .semibold)
+      /// Section headers — calm caption, **not** 11pt bold caps.
+      static let sectionLabel = DesignTokens.Typography.caption()
+      static let subsectionLabel = Font.system(size: 15, weight: .semibold)
+      static let cardHeadline = DesignTokens.Typography.headline()
+      static let rowTitle = Font.system(size: 17, weight: .regular)
+      static let rowSubtitle = DesignTokens.Typography.caption()
+      static let body = DesignTokens.Typography.callout()
+      static let chipTime = DesignTokens.Typography.caption()
+      static let chipTemp = DesignTokens.Typography.metric()
+      static let locationLabel = DesignTokens.Typography.caption()
     }
 
     enum Metrics {
       static let horizontalPadding: CGFloat = Spacing.space20
       static let topPadding: CGFloat = Spacing.space16
-      /// Scroll/content padding under last cards so they clear CompactTabBar + home indicator.
-      /// Live screenshots showed `space32` still clipping Today/Forecast under the bar.
       static let bottomPadding: CGFloat = Layout.tabBarScrollClearance
-      static let sectionSpacing: CGFloat = Spacing.space16
+      static let sectionSpacing: CGFloat = Spacing.space24
       static let cardPadding: CGFloat = Spacing.space16
       static let cardInnerSpacing: CGFloat = Spacing.space8
       static let cardRadius: CGFloat = Radius.medium
       static let chipRadius: CGFloat = Radius.small
-      static let searchRadius: CGFloat = 10
-      static let heroIconSize: CGFloat = 48
-      /// Room for precip % + optional amount line under temp.
-      static let hourlyRowHeight: CGFloat = 108
-      static let hourlyChipWidth: CGFloat = 100
+      static let searchRadius: CGFloat = 12
+      static let heroIconSize: CGFloat = 44
+      static let hourlyRowHeight: CGFloat = 100
+      static let hourlyChipWidth: CGFloat = 72
     }
   }
 
-  /// Cross-tab layout constants (CompactTabBar + home indicator).
   enum Layout {
-    /// Extra bottom inset for scroll content / radar HUD above the custom tab bar.
-    static let tabBarScrollClearance: CGFloat = Spacing.space48 + Spacing.space48  // 96
+    static let tabBarScrollClearance: CGFloat = Spacing.space48 + Spacing.space48
   }
 }
 
-// MARK: - Reusable Card Styling Modifier
+// MARK: - Card styling
 
-/// Applies the standard card background + stroke + clip using GrokCast palette.
-/// Updated for AccuWeather IA + GrokCast visual style redesign.
 struct CardStyle: ViewModifier {
   var background: SwiftUI.Color = DesignTokens.Palette.cardBackground
   var stroke: SwiftUI.Color = DesignTokens.Palette.cardStroke
   var cornerRadius: CGFloat = DesignTokens.Card.cornerRadius
   var strokeWidth: CGFloat = DesignTokens.Card.strokeWidth
+  var elevated: Bool = false
 
   func body(content: Content) -> some View {
     content
-      .background(background)
-      .overlay(
-        RoundedRectangle(cornerRadius: cornerRadius)
-          .stroke(stroke, lineWidth: strokeWidth)
+      .background(
+        ZStack {
+          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(background)
+          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(
+              LinearGradient(
+                colors: [
+                  Color.white.opacity(elevated ? 0.14 : 0.08),
+                  Color.white.opacity(0.02),
+                  Color.clear,
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+              )
+            )
+        }
       )
-      .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+      .overlay(
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+          .stroke(
+            LinearGradient(
+              colors: [
+                Color.white.opacity(elevated ? 0.42 : 0.28),
+                Color.white.opacity(0.08),
+                stroke.opacity(0.5),
+              ],
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            ),
+            lineWidth: elevated ? 1.25 : 1
+          )
+      )
+      .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+      // Stacked shadows = clearer separation from the stage.
+      .shadow(color: Color.black.opacity(0.55), radius: elevated ? 28 : 18, x: 0, y: elevated ? 16 : 10)
+      .shadow(color: Color.black.opacity(0.35), radius: elevated ? 6 : 4, x: 0, y: elevated ? 3 : 2)
   }
 }
 
 extension View {
-  /// Applies the canonical card styling using GrokCast palette.
   func cardStyle(
     background: SwiftUI.Color = DesignTokens.Palette.cardBackground,
     stroke: SwiftUI.Color = DesignTokens.Palette.cardStroke,
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
-    strokeWidth: CGFloat = DesignTokens.Card.strokeWidth
+    strokeWidth: CGFloat = DesignTokens.Card.strokeWidth,
+    elevated: Bool = false
   ) -> some View {
     modifier(
       CardStyle(
         background: background,
         stroke: stroke,
         cornerRadius: cornerRadius,
-        strokeWidth: strokeWidth
+        strokeWidth: strokeWidth,
+        elevated: elevated
       )
     )
   }
 
-  /// Convenience for the classic TacticalCard look with new palette.
   func tacticalCard() -> some View {
     cardStyle(
       background: DesignTokens.Palette.cardBackground,
@@ -177,21 +220,24 @@ extension View {
     )
   }
 
-  /// Elevated / "now" variant.
   func elevatedCard() -> some View {
     cardStyle(
       background: DesignTokens.Palette.cardElevated,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusCompact
+      cornerRadius: DesignTokens.Card.cornerRadius,
+      elevated: true
     )
   }
 
+  /// Soft depth without “gamey” neon glow.
   func elevatedShadow() -> some View {
-    self.shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
+    self
+      .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
+      .shadow(color: Color.black.opacity(0.18), radius: 2, x: 0, y: 1)
   }
 
   func elevatedCardStyle(
-    background: SwiftUI.Color = DesignTokens.Palette.cardBackground,
+    background: SwiftUI.Color = DesignTokens.Palette.cardElevated,
     stroke: SwiftUI.Color = DesignTokens.Palette.cardStroke,
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
     strokeWidth: CGFloat = DesignTokens.Card.strokeWidth
@@ -202,32 +248,46 @@ extension View {
     .elevatedShadow()
   }
 
-  /// Frosted glass — reserve for hero-adjacent / brief moments (Grok brief, Imagine result).
-  /// Data cards (score, minutecast, details, forecast rows) should use `cardStyle` / `elevatedCardStyle`.
+  /// Soft fill + light top highlight (depth without ultraThinMaterial stack).
   func glassCardStyle(
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
     strokeTint: Color = DesignTokens.Palette.cardStroke
   ) -> some View {
     background(
-      RoundedRectangle(cornerRadius: cornerRadius)
-        .fill(.ultraThinMaterial)
-        .background(
-          RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(DesignTokens.Palette.cardBackground.opacity(0.55))
+      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        .fill(
+          LinearGradient(
+            colors: [
+              DesignTokens.Palette.cardElevated.opacity(0.95),
+              DesignTokens.Palette.cardBackground,
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+          )
         )
     )
     .overlay(
-      RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(strokeTint, lineWidth: DesignTokens.Card.strokeWidth)
+      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        .stroke(
+          LinearGradient(
+            colors: [
+              Color.white.opacity(0.18),
+              Color.white.opacity(0.06),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+          ),
+          lineWidth: DesignTokens.Card.strokeWidth
+        )
     )
-    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    .elevatedShadow()
   }
 }
 
-// MARK: - Color + Hex (moved here for central access; used by DynamicBackground and theme tints)
+// MARK: - Color hex
 
 extension Color {
-  /// Parses #RRGGBB or #RRGGBBAA. Falls back to a very dark neutral.
   init(hex: String) {
     var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
     hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")

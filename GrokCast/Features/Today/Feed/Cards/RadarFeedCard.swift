@@ -6,7 +6,6 @@ struct RadarFeedCard: View {
       Text("Radar")
         .font(DesignTokens.Figma.Typography.subsectionLabel)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .textCase(.uppercase)
         .tracking(DesignTokens.Typography.cardLabelTracking)
 
       RadarPreviewCard()

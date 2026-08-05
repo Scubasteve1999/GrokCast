@@ -19,8 +19,8 @@ struct ForecastView: View {
           } ?? WeatherBackgroundView.inferredIsDay(
             timeZone: store.currentWeather?.locationTimeZone ?? .current
           ),
-          intensity: .subtle,
-          extraOpacity: 0.88
+          intensity: .staticOnly,
+          extraOpacity: 1.0
         )
 
         ForecastAdaptiveBody()

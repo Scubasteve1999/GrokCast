@@ -12,8 +12,7 @@ struct FireFeedCard: View {
           Label("Fire", systemImage: "flame.fill")
             .font(DesignTokens.Figma.Typography.subsectionLabel)
             .foregroundStyle(DesignTokens.Palette.accentWarm)
-            .textCase(.uppercase)
-            .tracking(DesignTokens.Typography.cardLabelTracking)
+                .tracking(DesignTokens.Typography.cardLabelTracking)
             .labelStyle(.titleAndIcon)
           Spacer()
           Image(systemName: "chevron.right")
@@ -249,7 +248,6 @@ struct FireDetailView: View {
     Text(title)
       .font(DesignTokens.Figma.Typography.subsectionLabel)
       .foregroundStyle(DesignTokens.Palette.textTertiary)
-      .textCase(.uppercase)
       .tracking(DesignTokens.Typography.cardLabelTracking)
   }
 }

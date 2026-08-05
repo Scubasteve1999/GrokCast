@@ -78,10 +78,10 @@ struct CompactTabBar: View {
     selection: Binding<WeatherStore.Tab>,
     namespace: Namespace.ID,
     pillCornerRadius: CGFloat = 12,
-    animation: Animation = .spring(response: 0.35, dampingFraction: 0.75),
-    activeColor: Color = .white,
-    inactiveColor: Color = DesignTokens.Palette.textSecondary,
-    backgroundMaterial: Material = .ultraThinMaterial
+    animation: Animation = .easeInOut(duration: 0.2),
+    activeColor: Color = DesignTokens.Palette.textPrimary,
+    inactiveColor: Color = DesignTokens.Palette.textTertiary,
+    backgroundMaterial: Material = .bar
   ) {
     _selection = selection
     self.namespace = namespace
@@ -118,8 +118,25 @@ struct CompactTabBar: View {
     }
     .padding(.top, 8)
     .padding(.bottom, 6)
-    .background(backgroundMaterial)
-    .background(Color.black.opacity(0.25))
+    .background(
+      ZStack {
+        Rectangle().fill(DesignTokens.Palette.bgSecondary.opacity(0.94))
+        Rectangle()
+          .fill(
+            LinearGradient(
+              colors: [Color.white.opacity(0.08), Color.clear],
+              startPoint: .top,
+              endPoint: .bottom
+            )
+          )
+      }
+    )
+    .overlay(alignment: .top) {
+      Rectangle()
+        .fill(Color.white.opacity(0.14))
+        .frame(height: 0.5)
+    }
+    .shadow(color: .black.opacity(0.45), radius: 20, y: -4)
     .ignoresSafeArea(.keyboard)
     .sheet(isPresented: $showMoreSheet) {
       MoreHubSheet()

@@ -1,56 +1,37 @@
 import SwiftUI
 
-/// A reusable shimmer effect for skeleton loading.
-/// Matches the dark tactical theme of GrokCast.
+/// Soft loading placeholder — no sweeping “arcade” shimmer.
 struct Shimmer: ViewModifier {
-  @State private var phase: CGFloat = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var pulse = false
 
   func body(content: Content) -> some View {
     content
-      .overlay(
-        GeometryReader { geometry in
-          LinearGradient(
-            gradient: Gradient(colors: [
-              Color.white.opacity(0.0),
-              Color.white.opacity(0.35),
-              Color.white.opacity(0.0),
-            ]),
-            startPoint: .leading,
-            endPoint: .trailing
-          )
-          .frame(width: geometry.size.width * 1.8)
-          .offset(x: -geometry.size.width + (geometry.size.width * 1.8 * phase))
-          .blendMode(.plusLighter)
-        }
-      )
-      .mask(content)
+      .opacity(reduceMotion ? 0.55 : (pulse ? 0.45 : 0.70))
       .onAppear {
-        withAnimation(
-          .linear(duration: 1.4)
-            .repeatForever(autoreverses: false)
-        ) {
-          phase = 1
+        guard !reduceMotion else { return }
+        withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
+          pulse = true
         }
       }
   }
 }
 
 extension View {
-  /// Applies a subtle shimmer animation, ideal for skeleton loading in dark UIs.
   func shimmer() -> some View {
     self.modifier(Shimmer())
   }
 }
 
-/// A simple rounded rectangle skeleton block with shimmer.
+/// Solid skeleton block with optional soft pulse.
 struct ShimmerBlock: View {
   var width: CGFloat? = nil
   var height: CGFloat = 16
-  var cornerRadius: CGFloat = 4
+  var cornerRadius: CGFloat = 8
 
   var body: some View {
-    RoundedRectangle(cornerRadius: cornerRadius)
-      .fill(Color.white.opacity(0.12))
+    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+      .fill(DesignTokens.Palette.cardElevated)
       .frame(width: width, height: height)
       .shimmer()
   }

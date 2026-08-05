@@ -10,7 +10,6 @@ struct AlertsFeedCard: View {
       Text("Active Alerts")
         .font(DesignTokens.Figma.Typography.subsectionLabel)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .textCase(.uppercase)
         .tracking(DesignTokens.Typography.cardLabelTracking)
 
       if let severeContext {

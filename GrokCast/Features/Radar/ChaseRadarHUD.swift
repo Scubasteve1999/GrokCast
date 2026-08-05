@@ -196,19 +196,20 @@ struct ChaseRadarHUD: View {
   }
 
   private var cardBackground: some View {
-    DesignTokens.Palette.radarCardBackground.opacity(0.92)
-      .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+      .fill(DesignTokens.Palette.cardElevated)
+      .shadow(color: .black.opacity(0.45), radius: 14, y: 8)
   }
 
   private func cardStroke(urgency: ChaseRadarHUDLogic.ScanFreshness) -> some View {
     let color: Color = {
       switch urgency {
-      case .stale: return DesignTokens.Palette.danger.opacity(0.7)
-      case .aging: return DesignTokens.Palette.warning.opacity(0.55)
-      default: return DesignTokens.Palette.radarAccent.opacity(0.28)
+      case .stale: return DesignTokens.Palette.danger.opacity(0.85)
+      case .aging: return DesignTokens.Palette.warning.opacity(0.70)
+      default: return Color.white.opacity(0.22)
       }
     }()
-    return RoundedRectangle(cornerRadius: 12, style: .continuous)
+    return RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
       .stroke(color, lineWidth: urgency == .stale || urgency == .aging ? 1.5 : 1)
   }
 

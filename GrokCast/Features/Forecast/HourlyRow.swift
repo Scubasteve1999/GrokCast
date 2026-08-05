@@ -15,8 +15,6 @@ struct HourlyRow: View {
   var openWeatherMapPrecipChance: Int? = nil
   /// Location timezone for hour labels (defaults to device).
   var timeZone: TimeZone = .current
-  @State private var appeared = false
-
   private var condition: WeatherCondition {
     WeatherCondition(fromWMO: forecast.weatherCode)
   }
@@ -36,13 +34,6 @@ struct HourlyRow: View {
         standardLayout
       case .figma:
         figmaLayout
-      }
-    }
-    .opacity(appeared ? 1 : 0)
-    .onAppear {
-      guard !appeared else { return }
-      withAnimation(.easeInOut(duration: 0.25)) {
-        appeared = true
       }
     }
   }
@@ -98,34 +89,15 @@ struct HourlyRow: View {
     .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
     .padding(.horizontal, DesignTokens.Spacing.space12)
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .background {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
-        .fill(
-          isNow
-            ? DesignTokens.Palette.cardElevated.opacity(0.92)
-            : DesignTokens.Palette.cardBackground.opacity(0.55)
-        )
-        .background {
-          if !isNow {
-            RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
-              .fill(.ultraThinMaterial)
-          }
-        }
-    }
-    .overlay {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
-        .stroke(
-          isNow
-            ? DesignTokens.Palette.accent.opacity(0.55)
-            : DesignTokens.Palette.cardStroke,
-          lineWidth: isNow ? 1.5 : DesignTokens.Card.strokeWidth
-        )
-    }
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius))
-    .shadow(
-      color: isNow ? DesignTokens.Palette.accent.opacity(0.18) : .black.opacity(0.16),
-      radius: isNow ? 10 : 8,
-      y: 4
+    .cardStyle(
+      background: isNow
+        ? DesignTokens.Palette.cardElevated
+        : DesignTokens.Palette.cardBackground,
+      stroke: isNow
+        ? DesignTokens.Palette.accent.opacity(0.55)
+        : DesignTokens.Palette.cardStroke,
+      cornerRadius: DesignTokens.Figma.Metrics.chipRadius,
+      elevated: isNow
     )
   }
 
