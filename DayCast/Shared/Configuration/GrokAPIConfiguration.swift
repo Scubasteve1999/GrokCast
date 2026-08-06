@@ -42,12 +42,29 @@ struct GrokAPIConfiguration {
 
   // MARK: - Secure Key Access
 
+  /// DEBUG or TestFlight (sandbox receipt). Never true for App Store production.
+  ///
+  /// TestFlight uses the same Release configuration as the store build, so we
+  /// cannot rely on `#if DEBUG` alone for internal AI smoke tests. App Store
+  /// installs keep the embedded key inert: Pro goes through the metered proxy,
+  /// and free users must paste their own key in Settings.
+  static var allowsEmbeddedDeveloperKey: Bool {
+    #if DEBUG
+      return true
+    #else
+      Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+    #endif
+  }
+
   /// Returns the current developer API key.
   ///
-  /// In Release this is **only** the user's own Keychain key. The embedded key is
-  /// compiled out entirely: shipping it meant every App Store user's AI calls were
-  /// billed to us, ungated and uncapped. Pro users reach Grok through the hosted
-  /// proxy instead, where the key stays server-side and every call is metered.
+  /// Order: Keychain (user-pasted) first, then the embedded key when allowed
+  /// (DEBUG / TestFlight only). App Store production never falls back to the
+  /// embedded key — that would bill every call to us ungated. Pro users reach
+  /// Grok through the hosted proxy instead.
+  ///
+  /// If Settings shows "invalid API key", clear the Keychain key first: a stale
+  /// saved key always wins over the embedded fallback.
   var developerAPIKey: String? {
     guard mode == .developerKey else { return nil }
 
@@ -55,12 +72,11 @@ struct GrokAPIConfiguration {
       return keychainKey
     }
 
-    #if DEBUG
-      // Local development only — never in TestFlight or App Store builds.
-      if let embeddedKey = DeveloperAPIKey.xai, !embeddedKey.isEmpty {
-        return embeddedKey
-      }
-    #endif
+    if Self.allowsEmbeddedDeveloperKey,
+      let embeddedKey = DeveloperAPIKey.xai, !embeddedKey.isEmpty
+    {
+      return embeddedKey
+    }
 
     return nil
   }

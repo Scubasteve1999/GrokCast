@@ -19,19 +19,12 @@ final class XAIService {
       configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
-  /// True when the active key is the embedded development key.
-  ///
-  /// Always false outside DEBUG, and the reference itself is compiled out so the
-  /// key literal is not linked into shipping binaries at all — an unused constant
-  /// still ends up in the binary, where anyone can read it.
+  /// True when the active key is the embedded development key (DEBUG / TestFlight).
   var isUsingEmbeddedDeveloperKey: Bool {
-    #if DEBUG
-      guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }
-      guard let active = configuration.developerAPIKey else { return false }
-      return active == embedded
-    #else
-      return false
-    #endif
+    guard GrokAPIConfiguration.allowsEmbeddedDeveloperKey else { return false }
+    guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }
+    guard let active = configuration.developerAPIKey else { return false }
+    return active == embedded
   }
 
   /// True when a real xAI developer key is available (Keychain, or embedded in DEBUG).
