@@ -4,6 +4,8 @@
 
 This document merges **App Store readiness**, **go-big product strategy**, and **Design System v2** into one phased plan. Each phase delivers user-visible value and moves toward a stunning, review-ready, differentiated app.
 
+**Post-1.0.6 handoff:** [Agent-Handoff-Grok-Next-Version.md](./Agent-Handoff-Grok-Next-Version.md) — gate rules, safe polish, and gated candidates (Spotter Network / mPING). Do not start gated work until a gate trips.
+
 ---
 
 ## Design north star
