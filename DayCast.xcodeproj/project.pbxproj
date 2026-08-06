@@ -179,7 +179,6 @@
 		A6E6C7F5324F57FF553015FC /* GrokStormSpotterButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089FC6E13A5CA75B0ADE66A /* GrokStormSpotterButton.swift */; };
 		A7C96A7404A54C514CE81760 /* OpenWeatherMapService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6650C048F6CA59F0AD726F7E /* OpenWeatherMapService.swift */; };
 		A90E01EFBDEF8BCD79BC0B22 /* AppReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C39E4354D382B96A752F190 /* AppReviewPrompt.swift */; };
-		A99AC1101089F68C821CAA0E /* DayCastUtilitiesDeveloperAPIKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05111193427AEAB5B6091BF8 /* DayCastUtilitiesDeveloperAPIKey.swift */; };
 		AA862232A4E751761D5652B4 /* DayCastApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9731ED57B0861C58475901 /* DayCastApp.swift */; };
 		AAEB6D04ECF909FD4A5D7856 /* GrokAIResponseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 334BC8580E6CF91E81EA9BA3 /* GrokAIResponseView.swift */; };
 		AB115549C752869FBC8C90D9 /* GrokAuthResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA7A41096F01DF0C5EDA8F96 /* GrokAuthResolver.swift */; };
@@ -300,7 +299,6 @@
 
 /* Begin PBXFileReference section */
 		03953D7F2CEF9DB27ED09B08 /* ShortTermPrecipModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortTermPrecipModels.swift; sourceTree = "<group>"; };
-		05111193427AEAB5B6091BF8 /* DayCastUtilitiesDeveloperAPIKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastUtilitiesDeveloperAPIKey.swift; sourceTree = "<group>"; };
 		05256275F334E47E1DE57D0C /* OpenMeteoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenMeteoService.swift; sourceTree = "<group>"; };
 		09E4F2D5164CAEA854049C56 /* DayCastUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DayCastUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A5AF9E68C779614D061E015 /* WidgetLocationIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetLocationIntent.swift; sourceTree = "<group>"; };
@@ -727,7 +725,6 @@
 			isa = PBXGroup;
 			children = (
 				ED1CDB2F814212B8976E31EF /* DayCastProConfig.swift */,
-				05111193427AEAB5B6091BF8 /* DayCastUtilitiesDeveloperAPIKey.swift */,
 				170D68C73406B1ABDDC54B4E /* DeveloperAPIKey.swift */,
 				9B072FAB6C8278751CF5E72A /* DeveloperAPIKey.swift.example */,
 				E928ECFF871666ED64F67949 /* GoogleService-Info.plist */,
@@ -1433,7 +1430,6 @@
 				CDF1D62BEC2725F5FE3836F1 /* DayCastProProducts.swift in Sources */,
 				16F076BA8684F3FFB4D993B8 /* DayCastScore.swift in Sources */,
 				E42A2E29F7F91A1A37695472 /* DayCastScoreCard.swift in Sources */,
-				A99AC1101089F68C821CAA0E /* DayCastUtilitiesDeveloperAPIKey.swift in Sources */,
 				F1C49A1AEB5EA22EC88A79CD /* DebugFlags.swift in Sources */,
 				61598A0CACE31C7B61C23F32 /* DesignComponents.swift in Sources */,
 				19E31E6604A85EA280FBB686 /* DesignTokens.swift in Sources */,

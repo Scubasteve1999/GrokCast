@@ -82,7 +82,6 @@ Secrets.swift
 DayCast/Config/Secrets.swift
 DayCast/Config/DeveloperAPIKey.swift
 DayCast/Config/OpenWeatherMapKeys.swift
-DayCast/Config/DayCastUtilitiesDeveloperAPIKey.swift
 # Do NOT ignore DayCast/Config/ wholesale — that prevents re-including
 # *.example templates and the Firebase client plist (see below).
 *.key
