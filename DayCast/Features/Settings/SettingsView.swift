@@ -267,14 +267,17 @@ struct SettingsView: View {
               set: { store.rainAlertsEnabled = $0 }
             )
           )
-          .onChange(of: store.rainAlertsEnabled) { _, _ in
+          .onChange(of: store.rainAlertsEnabled) { _, enabled in
             Haptic.impact(.light)
+            if enabled {
+              Task { await store.requestAlertNotificationPermissionIfNeeded() }
+            }
           }
         } header: {
           Text("RAIN ALERTS")
         } footer: {
           Text(
-            "Get notified when rain is about to start or stop at your exact location using 15-minute precipitation data."
+            "Get notified when rain is about to start or stop at your location from Minutecast (15-minute precip). Uses local notifications and background refresh — keep Background App Refresh on for best results."
           )
         }
 

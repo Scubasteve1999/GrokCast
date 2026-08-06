@@ -57,7 +57,7 @@ App Store blockers and baseline polish.
 - [ ] Hosted xAI proxy OR subscription (no user API keys)
 - [x] Grok Morning Brief — local notification + Settings toggle (7–11 AM)
 - [x] Shareable Grok Brief text (Today card + Alerts summary)
-- [ ] Push: rain starting soon (Phase 3)
+- [x] Push: rain starting soon (Phase 3)
 
 ### Design
 - [x] Grok tab → Briefing studio (2×2 action grid + full-width tiles)
@@ -88,7 +88,7 @@ App Store blockers and baseline polish.
 - [x] Radar scrub selection haptics
 
 ### Remaining Phase 3 polish
-- [ ] Push: rain starting soon (local notification from Minutecast)
+- [x] Push: rain starting soon (local notification from Minutecast; BG path + kind-transition cooldown)
 - [ ] Live Activity variants for severe alert / radar event
 - [ ] “Ask Grok” App Intent (opens chat with context)
 - [ ] Radar glass HUD + glowing playhead

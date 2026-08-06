@@ -150,10 +150,15 @@ final class WeatherStore {
     }
   }
 
-  private static let rainAlertsEnabledKey = "daycast_rain_alerts_enabled"
+  nonisolated static let rainAlertsEnabledKey = "daycast_rain_alerts_enabled"
   nonisolated static let fireProximityNotificationsEnabledKey =
     "daycast_fire_proximity_notifications_enabled"
   nonisolated static let fireProximityRadiusMilesKey = "daycast_fire_proximity_radius_miles"
+
+  /// Readable from BG task scheduling without hopping through the store instance.
+  nonisolated static var persistedRainAlertsEnabled: Bool {
+    UserDefaults.standard.bool(forKey: rainAlertsEnabledKey)
+  }
 
   private var _rainAlertsEnabled: Bool = UserDefaults.standard.bool(
     forKey: WeatherStore.rainAlertsEnabledKey)
@@ -212,6 +217,14 @@ final class WeatherStore {
       guard newValue != _rainAlertsEnabled else { return }
       _rainAlertsEnabled = newValue
       UserDefaults.standard.set(newValue, forKey: Self.rainAlertsEnabledKey)
+      if newValue {
+        Task { await scheduleBackgroundAlertRefreshIfEnabled() }
+        if let weather = currentWeather {
+          Task { await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit) }
+        }
+      } else {
+        BackgroundAlertRefreshService.scheduleAlertRefreshTask()
+      }
     }
   }
 
@@ -313,7 +326,8 @@ final class WeatherStore {
       if newValue {
         Task { await scheduleBackgroundAlertRefreshIfEnabled() }
       } else {
-        BackgroundAlertRefreshService.cancelAlertRefreshTask()
+        // Re-evaluate: rain / fire / Live Activity may still need BG refresh.
+        BackgroundAlertRefreshService.scheduleAlertRefreshTask()
       }
     }
   }
@@ -1126,8 +1140,8 @@ final class WeatherStore {
 
   /// Never calls Grok (morning brief) here — that belongs on foreground refresh only.
   ///
-  /// Covers NWS alert polling and, when Live Activity is on, a lightweight weather
-  /// refresh so Lock Screen content does not go stale solely from being backgrounded.
+  /// Covers NWS alert polling, rain Minutecast checks, fire proximity, and Live Activity
+  /// weather sync so Lock Screen content does not go stale solely from being backgrounded.
   ///
   /// v1 limitation: only the current/preferred location is checked (isCurrent preferred, else first
   /// saved). Multi-location background polling can be added later if user demand warrants it.
@@ -1135,12 +1149,13 @@ final class WeatherStore {
   @discardableResult
   func performBackgroundRefresh(taskStart: CFAbsoluteTime? = nil) async -> Bool {
     let needsAlerts = alertNotificationsEnabled
+    let needsRain = rainAlertsEnabled
     let needsFire = fireProximityNotificationsEnabled
     let needsLiveActivity =
       liveActivityEnabled
       && EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared)
 
-    guard needsAlerts || needsLiveActivity || needsFire else {
+    guard needsAlerts || needsRain || needsLiveActivity || needsFire else {
       return true
     }
     if Self.isBackgroundBudgetExhausted(taskStart) { return false }
@@ -1194,7 +1209,7 @@ final class WeatherStore {
       }
     }
 
-    if needsLiveActivity || needsAlerts,
+    if needsLiveActivity || needsAlerts || needsRain,
       !Self.isBackgroundBudgetExhausted(taskStart)
     {
       // Fetch without calling refreshWeather(for:), which would overwrite currentLocation
@@ -1207,13 +1222,18 @@ final class WeatherStore {
       if loc.id == currentLocation?.id {
         currentWeather = weather
         syncScoreSurfacesFromCurrentWeather()
-        if rainAlertsEnabled, needsAlerts {
-          await RainAlertService.checkAndNotify(weather: weather, units: temperatureUnit)
+        if needsRain {
+          await RainAlertService.checkAndNotify(
+            weather: weather, units: temperatureUnit, taskStart: taskStart)
         }
-      } else if needsLiveActivity {
+      } else if needsLiveActivity || needsRain {
         // Keep the selected-city UI intact; still refresh LA + widgets for the BG target
         // (usually the device "Current Location" entry).
         publishBackgroundWeatherSurfaces(weather: weather, locationName: loc.name)
+        if needsRain {
+          await RainAlertService.checkAndNotify(
+            weather: weather, units: temperatureUnit, taskStart: taskStart)
+        }
       }
     }
 
@@ -1266,10 +1286,10 @@ final class WeatherStore {
     return CFAbsoluteTimeGetCurrent() - taskStart >= backgroundAlertBudgetSeconds
   }
 
-  /// Requests notification permission (if needed) then schedules BG refresh for alerts and/or Live Activity.
+  /// Requests notification permission (if needed) then schedules BG refresh for alerts, rain, fire, and/or Live Activity.
   @MainActor
   func scheduleBackgroundAlertRefreshIfEnabled() async {
-    if alertNotificationsEnabled || fireProximityNotificationsEnabled {
+    if alertNotificationsEnabled || rainAlertsEnabled || fireProximityNotificationsEnabled {
       await requestAlertNotificationPermissionIfNeeded()
     }
     BackgroundAlertRefreshService.scheduleAlertRefreshTask()
