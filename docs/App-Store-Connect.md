@@ -76,11 +76,11 @@ DayCast combines accurate Open-Meteo forecasts and NWS alerts with a beautiful d
 
 **Category:** Weather
 
-**Privacy Policy URL:** https://scubasteve1999.github.io/DayCast/privacy.html
+**Privacy Policy URL:** https://scubasteve1999.github.io/GrokCast/privacy.html
 
-**Terms of Use URL:** https://scubasteve1999.github.io/DayCast/terms.html
+**Terms of Use URL:** https://scubasteve1999.github.io/GrokCast/terms.html
 
-**Support URL:** https://scubasteve1999.github.io/DayCast/support.html
+**Support URL:** https://scubasteve1999.github.io/GrokCast/support.html
 
 ## 4. Submit checklist (later)
 

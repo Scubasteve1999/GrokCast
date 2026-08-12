@@ -83,9 +83,9 @@ far above normal use and review will not reach it.
 
 ## Subscriptions (3.1.2)
 
-- Privacy: https://scubasteve1999.github.io/DayCast/privacy/
-- Terms: https://scubasteve1999.github.io/DayCast/terms/
-- Support: https://scubasteve1999.github.io/DayCast/support/
+- Privacy: https://scubasteve1999.github.io/GrokCast/privacy.html
+- Terms: https://scubasteve1999.github.io/GrokCast/terms.html
+- Support: https://scubasteve1999.github.io/GrokCast/support.html
 
 ## Location / background
 

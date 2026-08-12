@@ -19,7 +19,7 @@ enum NIFCFireService {
 
   private static let browserHeaders: [String: String] = [
     "User-Agent":
-      "DayCast/1.0 (iOS; weather; +https://github.com/Scubasteve1999/DayCast)",
+      "DayCast/1.0 (iOS; weather; +https://github.com/Scubasteve1999/GrokCast)",
     "Accept": "application/geo+json, application/json",
   ]
 

@@ -76,13 +76,13 @@ AI-powered weather that actually helps you plan. DayCast Score, morning briefs, 
 SUPPORT URL
 ------------------------------------------------------------
 
-https://scubasteve1999.github.io/DayCast/support.html
+https://scubasteve1999.github.io/GrokCast/support.html
 
 ------------------------------------------------------------
 PRIVACY POLICY URL
 ------------------------------------------------------------
 
-https://scubasteve1999.github.io/DayCast/privacy.html
+https://scubasteve1999.github.io/GrokCast/privacy.html
 
 ------------------------------------------------------------
 CATEGORIES
