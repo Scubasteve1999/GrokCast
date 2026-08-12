@@ -83,6 +83,10 @@ far above normal use and review will not reach it.
 
 ## Subscriptions (3.1.2)
 
+The DayCast Pro paywall (Settings → DayCast Pro → View DayCast Pro) shows the subscription
+title, length, price per plan, and functional Privacy Policy / Terms of Use (EULA) links at
+the bottom of the purchase sheet, per guideline 3.1.2(c).
+
 - Privacy: https://scubasteve1999.github.io/GrokCast/privacy.html
 - Terms: https://scubasteve1999.github.io/GrokCast/terms.html
 - Support: https://scubasteve1999.github.io/GrokCast/support.html
