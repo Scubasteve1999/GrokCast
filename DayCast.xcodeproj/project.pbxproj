@@ -1749,6 +1749,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = DayCastWidgets/DayCastWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 122;
 				DEVELOPMENT_TEAM = 742YD3WJAR;
 				INFOPLIST_FILE = DayCastWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1773,6 +1774,7 @@
 				CODE_SIGN_ENTITLEMENTS = DayCast/DayCast.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 122;
 				DEVELOPMENT_TEAM = 742YD3WJAR;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = DayCast/Info.plist;
@@ -1817,6 +1819,7 @@
 				CODE_SIGN_ENTITLEMENTS = DayCast/DayCast.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 122;
 				DEVELOPMENT_TEAM = 742YD3WJAR;
 				INFOPLIST_FILE = DayCast/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1837,6 +1840,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = DayCastWidgets/DayCastWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 122;
 				DEVELOPMENT_TEAM = 742YD3WJAR;
 				INFOPLIST_FILE = DayCastWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
