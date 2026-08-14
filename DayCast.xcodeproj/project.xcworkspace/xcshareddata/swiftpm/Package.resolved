@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleDataTransport.git",
       "state" : {
-        "revision" : "617af071af9aa1d6a091d59a202910ac482128f9",
-        "version" : "10.1.0"
+        "revision" : "ba3358d3c3dbae8ef230b58a46b97ad65e84e974",
+        "version" : "10.1.1"
       }
     },
     {
@@ -105,8 +105,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mapbox/mapbox-common-ios.git",
       "state" : {
-        "revision" : "909028ebf1329a30301dac6a2da061966074da5b",
-        "version" : "24.27.0"
+        "revision" : "96c41d0b1a42e339cb682b02f7eaa0df5d1f42ec",
+        "version" : "24.28.2"
       }
     },
     {
@@ -114,8 +114,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mapbox/mapbox-core-maps-ios.git",
       "state" : {
-        "revision" : "c71450c0f5ad1fd28ed238cb332217d7802c9bb5",
-        "version" : "11.27.0"
+        "revision" : "0e4589bb663020264b779d1813e513cb6d6d0cc8",
+        "version" : "11.28.2"
       }
     },
     {
@@ -123,8 +123,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mapbox/mapbox-maps-ios.git",
       "state" : {
-        "revision" : "187cc7fdef044a64eeea4359be5cd69617936ac1",
-        "version" : "11.27.0"
+        "revision" : "311d1829115928c83b5a7111a07f1f37b8377053",
+        "version" : "11.28.2"
       }
     },
     {
@@ -141,8 +141,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/PostHog/posthog-ios.git",
       "state" : {
-        "revision" : "fe6193716ed54b0430b2d5370b746885fd442787",
-        "version" : "3.68.4"
+        "revision" : "c0218386c49115cce6b05a50b41f4f60bc995acb",
+        "version" : "3.69.6"
       }
     },
     {
