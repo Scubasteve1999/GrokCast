@@ -61,7 +61,7 @@ struct SettingsView: View {
         Section {
           if subscription.isPro {
             Label("DayCast Pro is active", systemImage: "checkmark.seal.fill")
-              .foregroundStyle(.green)
+              .foregroundStyle(DesignTokens.Palette.success)
             Button("Manage Subscription") {
               if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
                 UIApplication.shared.open(url)
@@ -72,8 +72,8 @@ struct SettingsView: View {
               Text(
                 "Unlock AI features, forecast radar, Live Activity, and unlimited locations."
               )
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(DesignTokens.Typography.callout())
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
               Button("View DayCast Pro") {
                 PaywallCoordinator.shared.present(.locations)
               }
@@ -90,8 +90,8 @@ struct SettingsView: View {
 
           if let error = subscription.lastErrorMessage {
             Text(error)
-              .font(.caption)
-              .foregroundStyle(.red)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.danger)
           }
         } header: {
           Text("DAYCAST PRO")
@@ -108,14 +108,14 @@ struct SettingsView: View {
               Image(systemName: "key.fill")
                 .foregroundStyle(.tint)
               Text("xAI Developer Key")
-                .font(.headline)
+                .font(DesignTokens.Typography.headline())
               Spacer()
               Text("SECURE")
-                .font(.caption2.weight(.bold))
+                .font(DesignTokens.Typography.micro())
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(.green.opacity(0.2), in: Capsule())
-                .foregroundStyle(.green)
+                .background(DesignTokens.Palette.success.opacity(0.2), in: Capsule())
+                .foregroundStyle(DesignTokens.Palette.success)
             }
 
             if !isEditingKey {
@@ -123,22 +123,22 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                   if store.xaiService.isUsingEmbeddedDeveloperKey {
                     Text("Using embedded developer key")
-                      .font(.system(.body, design: .monospaced))
+                      .font(DesignTokens.Typography.monoBody())
                     Text("This build includes a developer key for TestFlight")
-                      .font(.caption)
-                      .foregroundStyle(.green)
+                      .font(DesignTokens.Typography.caption())
+                      .foregroundStyle(DesignTokens.Palette.success)
                   } else if hasKey {
                     Text(maskedKey)
-                      .font(.system(.body, design: .monospaced))
+                      .font(DesignTokens.Typography.monoBody())
                     Text("Stored in iOS Keychain • Developer Mode")
-                      .font(.caption)
-                      .foregroundStyle(.secondary)
+                      .font(DesignTokens.Typography.caption())
+                      .foregroundStyle(DesignTokens.Palette.textSecondary)
                   } else {
                     Text("No developer key configured")
-                      .foregroundStyle(.secondary)
+                      .foregroundStyle(DesignTokens.Palette.textSecondary)
                     Text("Optional — DayCast Pro already includes AI. Add your own key to skip the daily limit.")
-                      .font(.caption)
-                      .foregroundStyle(.secondary)
+                      .font(DesignTokens.Typography.caption())
+                      .foregroundStyle(DesignTokens.Palette.textSecondary)
                   }
                 }
                 Spacer()
@@ -157,7 +157,7 @@ struct SettingsView: View {
                       Haptic.notification(.success)
                     }
                     .buttonStyle(.bordered)
-                    .tint(.red)
+                    .tint(DesignTokens.Palette.danger)
                   }
                 }
               }
@@ -167,14 +167,14 @@ struct SettingsView: View {
                 SecureField("xai-XXXXXXXXXXXXXXXXXXXXXXXX", text: $apiKeyInput)
                   .textInputAutocapitalization(.never)
                   .autocorrectionDisabled()
-                  .font(.system(.body, design: .monospaced))
-                  .padding(10)
+                  .font(DesignTokens.Typography.monoBody())
+                  .padding(DesignTokens.Spacing.space12)
                   .background(
-                    Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+                    DesignTokens.Palette.cardElevated, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
 
                 Text("Paste your key from console.x.ai. It will be saved directly to the Keychain.")
-                  .font(.caption2)
-                  .foregroundStyle(.secondary)
+                  .font(DesignTokens.Typography.micro())
+                  .foregroundStyle(DesignTokens.Palette.textSecondary)
               }
 
               HStack {
@@ -218,9 +218,12 @@ struct SettingsView: View {
                     systemName: connectionTestSuccess
                       ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                   )
-                  .foregroundStyle(connectionTestSuccess ? .green : .red)
+                  .foregroundStyle(
+                    connectionTestSuccess
+                      ? DesignTokens.Palette.success : DesignTokens.Palette.danger
+                  )
                   Text(result)
-                    .font(.caption)
+                    .font(DesignTokens.Typography.caption())
                 }
                 .padding(.top, 4)
               }
@@ -346,8 +349,8 @@ struct SettingsView: View {
 
           if !subscription.isPro {
             Text("Live Activity requires DayCast Pro.")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
 
           Toggle(
@@ -373,8 +376,8 @@ struct SettingsView: View {
 
           if !subscription.isPro, !hasKey {
             Text("Morning AI Brief requires DayCast Pro.")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
 
           if store.morningBriefEnabled {
@@ -439,12 +442,12 @@ struct SettingsView: View {
         Section("APP") {
           LabeledContent("Version") {
             Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-              .foregroundStyle(.secondary)
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
 
           LabeledContent("Build") {
             Text(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-              .foregroundStyle(.secondary)
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
 
           Button {
@@ -460,7 +463,7 @@ struct SettingsView: View {
           } label: {
             Label("Clear Local Weather Cache", systemImage: "trash")
           }
-          .foregroundStyle(.red)
+          .foregroundStyle(DesignTokens.Palette.danger)
         }
 
         Section {
@@ -475,8 +478,8 @@ struct SettingsView: View {
                   ? "Anonymous usage helps improve DayCast. On-device counts always stay local."
                   : "Analytics is off until POSTHOG_API_KEY is set in this build."
               )
-              .font(.caption)
-              .foregroundStyle(.secondary)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
           }
           .disabled(!PostHogAnalytics.isConfigured)
@@ -518,8 +521,8 @@ struct SettingsView: View {
           }
 
           Text("DayCast uses free Open-Meteo for forecasts and AI models for intelligence.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
         } header: {
           Text("DATA & CREDITS")
         }
@@ -639,7 +642,7 @@ struct SettingsView: View {
                 .foregroundStyle(DesignTokens.Palette.textPrimary)
               Spacer()
               Image(systemName: "arrow.up.right")
-                .font(.caption.weight(.bold))
+                .font(DesignTokens.Typography.caption())
                 .foregroundStyle(DesignTokens.Palette.textTertiary)
             }
             .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -717,7 +720,7 @@ struct SettingsView: View {
           Text(
             "Unlock AI features, forecast radar, Live Activity, and unlimited locations."
           )
-            .font(.system(size: 14))
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
@@ -725,11 +728,11 @@ struct SettingsView: View {
           Button("View DayCast Pro") {
             PaywallCoordinator.shared.present(.locations)
           }
-          .font(.system(size: 15, weight: .semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .frame(maxWidth: .infinity)
-          .padding(.vertical, 10)
-          .background(DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: 10))
+          .padding(.vertical, DesignTokens.Spacing.space12)
+          .background(DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
           .padding(.horizontal, DesignTokens.Spacing.space16)
           .accessibilityIdentifier(DayCastAccessibility.Settings.proEntry)
         }
@@ -737,14 +740,14 @@ struct SettingsView: View {
         Button("Restore Purchases") {
           Task { await subscription.restorePurchases() }
         }
-        .font(.footnote)
+        .font(DesignTokens.Typography.caption())
         .padding(.horizontal, DesignTokens.Spacing.space16)
         .padding(.bottom, DesignTokens.Spacing.space16)
         .disabled(subscription.purchaseInFlight)
 
         if let error = subscription.lastErrorMessage {
           Text(error)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.danger)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.bottom, DesignTokens.Spacing.space8)
@@ -765,20 +768,20 @@ struct SettingsView: View {
       } label: {
         HStack(spacing: DesignTokens.Spacing.space12) {
           Image(systemName: "key.fill")
-            .font(.system(size: 16, weight: .semibold))
+            .font(DesignTokens.Typography.symbol(16))
             .foregroundStyle(DesignTokens.Palette.accent)
             .frame(width: 24)
           VStack(alignment: .leading, spacing: 2) {
             Text("xAI Developer Key")
-              .font(.system(size: 15, weight: .semibold))
+              .font(DesignTokens.Typography.subsection())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
             Text(figmaDeveloperKeySubtitle)
-              .font(.system(size: 13))
+              .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
           Spacer()
           Image(systemName: "chevron.right")
-            .font(.caption.weight(.bold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
         .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -793,11 +796,11 @@ struct SettingsView: View {
           SecureField("xai-XXXXXXXXXXXXXXXXXXXXXXXX", text: $apiKeyInput)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-            .font(.system(.body, design: .monospaced))
+            .font(DesignTokens.Typography.monoBody())
             .padding(10)
             .background(
               DesignTokens.Palette.cardElevated,
-              in: RoundedRectangle(cornerRadius: 8)
+              in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
             )
           HStack {
             Button("Cancel") {
@@ -838,7 +841,7 @@ struct SettingsView: View {
 
         if let result = connectionTestResult {
           Text(result)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.bottom, DesignTokens.Spacing.space8)
@@ -850,7 +853,7 @@ struct SettingsView: View {
             connectionTestResult = nil
             Haptic.notification(.success)
           }
-          .font(.footnote)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.danger)
           .padding(.horizontal, DesignTokens.Spacing.space16)
           .padding(.bottom, DesignTokens.Spacing.space12)
@@ -877,15 +880,15 @@ struct SettingsView: View {
   ) -> some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       Image(systemName: icon)
-        .font(.system(size: 16, weight: .semibold))
+        .font(DesignTokens.Typography.symbol(16))
         .foregroundStyle(DesignTokens.Palette.accent)
         .frame(width: 24)
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
-          .font(.system(size: 15, weight: .semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(subtitle)
-          .font(.system(size: 13))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Spacer()
@@ -907,18 +910,18 @@ struct SettingsView: View {
     } label: {
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: "thermometer.medium")
-          .font(.system(size: 16, weight: .semibold))
+          .font(DesignTokens.Typography.symbol(16))
           .foregroundStyle(DesignTokens.Palette.accent)
           .frame(width: 24)
         Text(title)
-          .font(.system(size: 15, weight: .semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer()
         Text(value)
-          .font(.system(size: 13))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         Image(systemName: "chevron.right")
-          .font(.caption.weight(.bold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -930,11 +933,11 @@ struct SettingsView: View {
   private func figmaInfoRow(title: String, value: String) -> some View {
     HStack {
       Text(title)
-        .font(.system(size: 15, weight: .semibold))
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       Spacer()
       Text(value)
-        .font(.system(size: 13))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -949,10 +952,10 @@ struct SettingsView: View {
         .foregroundStyle(notificationStatusColor(for: status))
       VStack(alignment: .leading, spacing: 2) {
         Text(notificationStatusTitle(for: status))
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
         Text(notificationStatusDetail(for: status))
-          .font(.caption2)
-          .foregroundStyle(.secondary)
+          .font(DesignTokens.Typography.micro())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Spacer()
       if status == .denied {
@@ -961,7 +964,7 @@ struct SettingsView: View {
             UIApplication.shared.open(url)
           }
         }
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .buttonStyle(.bordered)
       }
     }
@@ -984,13 +987,13 @@ struct SettingsView: View {
   private func notificationStatusColor(for status: UNAuthorizationStatus) -> Color {
     switch status {
     case .authorized, .provisional, .ephemeral:
-      return .green
+      return DesignTokens.Palette.success
     case .denied:
-      return .red
+      return DesignTokens.Palette.danger
     case .notDetermined:
-      return .orange
+      return DesignTokens.Palette.warning
     @unknown default:
-      return .secondary
+      return DesignTokens.Palette.textSecondary
     }
   }
 

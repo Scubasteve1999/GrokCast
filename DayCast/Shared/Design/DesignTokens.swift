@@ -89,6 +89,7 @@ enum DesignTokens {
     static func studioTitle() -> Font { .system(size: 24, weight: .semibold) }
     static func headline() -> Font { .system(size: 17, weight: .semibold) }
     static func body() -> Font { .system(size: 17, weight: .regular) }
+    static func monoBody() -> Font { .system(size: 17, weight: .regular, design: .monospaced) }
     static func callout() -> Font { .system(size: 15, weight: .regular) }
     static func subsection() -> Font { .system(size: 15, weight: .semibold) }
     static func caption() -> Font { .system(size: 13, weight: .regular) }

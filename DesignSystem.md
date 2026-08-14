@@ -44,6 +44,7 @@ SF Pro. Prefer these helpers over `.font(.caption)` or `.system(size:)`.
 | `studioTitle()` | 24 | Semibold | Briefing Studio |
 | `headline()` | 17 | Semibold | Card titles |
 | `body()` | 17 | Regular | Primary copy, rows |
+| `monoBody()` | 17 | Regular mono | API keys, codes |
 | `callout()` | 15 | Regular | Supporting copy |
 | `subsection()` | 15 | Semibold | Section labels in cards |
 | `caption()` | 13 | Regular | Meta, timestamps |
