@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 
 /// Configuration for the xAI Grok API in developer-key mode.
 /// Keys are always loaded from the secure Keychain via KeychainService.
@@ -42,7 +43,7 @@ struct GrokAPIConfiguration {
 
   // MARK: - Secure Key Access
 
-  /// DEBUG or TestFlight (sandbox receipt). Never true for App Store production.
+  /// DEBUG or TestFlight (sandbox environment). Never true for App Store production.
   ///
   /// TestFlight uses the same Release configuration as the store build, so we
   /// cannot rely on `#if DEBUG` alone for internal AI smoke tests. App Store
@@ -52,9 +53,22 @@ struct GrokAPIConfiguration {
     #if DEBUG
       return true
     #else
-      Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+      return _isTestFlight
     #endif
   }
+
+  // Populated once by a detached Task on first access. Written before any caller
+  // reads the final value in normal app flow, so the unsafe annotation is safe.
+  nonisolated(unsafe) private static var _isTestFlight: Bool = {
+    Task.detached(priority: .utility) {
+      if let result = try? await AppTransaction.shared,
+        case .verified(let tx) = result
+      {
+        _isTestFlight = tx.environment == .sandbox
+      }
+    }
+    return false
+  }()
 
   /// Returns the current developer API key.
   ///
