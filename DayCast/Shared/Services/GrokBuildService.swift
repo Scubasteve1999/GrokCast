@@ -220,6 +220,9 @@ enum GrokBuildError: Error, LocalizedError {
       {
         return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
       }
+      if code == 404 {
+        return "AI service is offline. Try again later."
+      }
       if (500...599).contains(code) {
         return "AI service temporarily unavailable. Please try again later."
       }

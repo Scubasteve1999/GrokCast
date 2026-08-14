@@ -206,6 +206,8 @@ enum GrokAPIError: Error, LocalizedError {
       case 400, 422:
         // Never surface raw JSON bodies to users / App Review.
         return "AI request couldn’t be completed. Check your key in Settings, then try again."
+      case 404:
+        return "AI service is offline. Try again later."
       case 500...599:
         return "AI service temporarily unavailable. Please try again later."
       default:
