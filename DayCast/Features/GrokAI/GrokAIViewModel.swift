@@ -550,19 +550,21 @@ final class GrokAIViewModel {
 
     let location = weatherStore.currentLocation?.name ?? weather.location.name
     let unit = weatherStore.temperatureUnit
-    let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event).joined(separator: ", ")
+    let alertEvents = weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+    let alertLine = alertEvents.joined(separator: ", ")
 
     let system = """
       You are a helpful weather assistant inside DayCast. Write a practical 2–4 sentence weather brief for \(location).
       Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
-      Active alerts: \(alerts.isEmpty ? "none" : alerts).
+      Active alerts: \(alertLine.isEmpty ? "none" : alertLine).
       Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
       """
 
+    let raw: String
     do {
-      return try await completeChat(
+      raw = try await completeChat(
         messages: [
           GrokBuildMessage(role: "system", content: system),
           GrokBuildMessage(role: "user", content: "Give me today's weather take."),
@@ -571,13 +573,26 @@ final class GrokAIViewModel {
         maxTokens: 280
       )
     } catch StructuredFetchError.emptyResponse {
-      return LocalWeatherBrief.make(
+      raw = LocalWeatherBrief.make(
         weather: weather,
         unit: unit,
         locationName: location,
-        activeAlerts: weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+        activeAlerts: Array(alertEvents)
       )
     }
+
+    guard
+      let finalized = GrokBriefText.finalize(
+        raw: raw,
+        weather: weather,
+        unit: unit,
+        locationName: location,
+        activeAlerts: Array(alertEvents)
+      )
+    else {
+      throw StructuredFetchError.emptyResponse
+    }
+    return finalized
   }
 
   func fetchRadarExplanation(context: RadarExplainContext) async throws -> String {

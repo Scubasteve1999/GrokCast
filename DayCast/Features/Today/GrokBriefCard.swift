@@ -9,12 +9,16 @@ enum GrokBriefPresentation {
 
 struct GrokBriefCard: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(GrokBriefSafety.self) private var safety
   var presentation: GrokBriefPresentation = .full
 
   @State private var briefText: String?
   @State private var isLoading = false
   @State private var errorMessage: String?
   @State private var isExpanded = false
+  @State private var showingReport = false
+  @State private var showingReportThanks = false
+  @State private var hiddenThisBrief = false
 
   private var cacheKey: String {
     GrokBriefCache.key(for: store) ?? "grok_brief_none"
@@ -22,25 +26,18 @@ struct GrokBriefCard: View {
 
   /// Re-run load/fetch only when cache validity would change (same rules as GrokBriefCache).
   private var weatherTaskID: String {
-    "\(cacheKey)_\(GrokBriefCache.refreshToken(for: store))"
+    "\(cacheKey)_\(GrokBriefCache.refreshToken(for: store))_\(safety.isFeatureHidden)"
   }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      HStack {
-        Label("TODAY'S TAKE", systemImage: "sparkles")
-          .font(DesignTokens.Typography.caption())
-          .tracking(DesignTokens.Typography.cardLabelTracking)
-          .foregroundStyle(DesignTokens.Palette.accent)
-        Spacer()
-        if isLoading {
-          ProgressView()
-            .scaleEffect(0.75)
-            .tint(DesignTokens.Palette.accent)
-        }
-      }
+      header
 
-      if let briefText {
+      if safety.isFeatureHidden {
+        hiddenFeatureBody
+      } else if hiddenThisBrief {
+        hiddenBriefBody
+      } else if let briefText {
         Text(briefText)
           .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
@@ -102,14 +99,106 @@ struct GrokBriefCard: View {
     .modifier(GrokBriefCardChrome(presentation: presentation))
     .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
     .onTapGesture {
-      guard presentation == .figma else { return }
+      guard presentation == .figma, !safety.isFeatureHidden else { return }
       store.selectedTab = .grok
     }
+    .sheet(isPresented: $showingReport) {
+      if let briefText {
+        GrokBriefReportSheet(
+          brief: briefText,
+          locationName: store.currentLocation?.name ?? "My location"
+        ) {
+          showingReportThanks = true
+        }
+      }
+    }
+    .alert("Report sent", isPresented: $showingReportThanks) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(GrokBriefReport.responsePromise)
+    }
     .task(id: weatherTaskID) {
-      briefText = GrokBriefCache.loadValidBrief(for: store)
+      hiddenThisBrief = false
+      guard !safety.isFeatureHidden else {
+        briefText = nil
+        return
+      }
+      briefText = acceptedCachedBrief()
       if briefText == nil, store.xaiService.hasValidKey, !isLoading {
         await fetchBrief(force: false)
       }
+    }
+  }
+
+  private var header: some View {
+    HStack {
+      Label("TODAY'S TAKE", systemImage: "sparkles")
+        .font(DesignTokens.Typography.caption())
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+        .foregroundStyle(DesignTokens.Palette.accent)
+      Spacer()
+      if isLoading {
+        ProgressView()
+          .scaleEffect(0.75)
+          .tint(DesignTokens.Palette.accent)
+      }
+      if !safety.isFeatureHidden {
+        safetyMenu
+      }
+    }
+  }
+
+  private var safetyMenu: some View {
+    Menu {
+      if let briefText {
+        Button("Report…", systemImage: "flag") {
+          showingReport = true
+        }
+        Button("Hide this take", systemImage: "eye.slash") {
+          hideThisBrief(briefText)
+        }
+      }
+      Button("Turn off Today's Take", systemImage: "minus.circle") {
+        turnOffFeature()
+      }
+    } label: {
+      Image(systemName: "ellipsis.circle")
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .frame(minWidth: 32, minHeight: 32)
+        .contentShape(Rectangle())
+    }
+    .accessibilityLabel("Today's Take options")
+  }
+
+  private var hiddenBriefBody: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text("This take was hidden.")
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+      Button("Get another take") {
+        hiddenThisBrief = false
+        Task { await fetchBrief(force: true) }
+      }
+      .font(DesignTokens.Typography.caption())
+      .buttonStyle(.bordered)
+      .controlSize(.small)
+    }
+  }
+
+  private var hiddenFeatureBody: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text("Today's Take is off. You can turn it back on anytime.")
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+      Button("Turn back on") {
+        safety.isFeatureHidden = false
+        store.refreshGrokBriefSurfaces()
+        Task { await fetchBrief(force: false) }
+      }
+      .font(DesignTokens.Typography.caption())
+      .buttonStyle(.bordered)
+      .controlSize(.small)
     }
   }
 
@@ -166,8 +255,39 @@ struct GrokBriefCard: View {
     )
   }
 
+  private func acceptedCachedBrief() -> String? {
+    guard let text = GrokBriefCache.loadValidBrief(for: store) else { return nil }
+    guard GrokContentFilter.acceptedText(text) != nil else {
+      GrokBriefCache.clear(for: store)
+      return nil
+    }
+    if safety.isBriefHidden(text) {
+      hiddenThisBrief = true
+      return nil
+    }
+    return text
+  }
+
+  private func hideThisBrief(_ text: String) {
+    Haptic.impact(.light)
+    safety.hideBrief(text)
+    GrokBriefCache.clear(for: store)
+    briefText = nil
+    hiddenThisBrief = true
+    store.refreshGrokBriefSurfaces()
+  }
+
+  private func turnOffFeature() {
+    Haptic.impact(.light)
+    safety.isFeatureHidden = true
+    briefText = nil
+    hiddenThisBrief = false
+    store.refreshGrokBriefSurfaces()
+  }
+
   @MainActor
   private func fetchBrief(force: Bool) async {
+    guard !safety.isFeatureHidden else { return }
     guard store.xaiService.hasValidKey else {
       errorMessage = "Add your xAI developer key in Settings to unlock Today's Take."
       return
@@ -179,10 +299,16 @@ struct GrokBriefCard: View {
 
     do {
       let response = try await store.grokAIViewModel.fetchWeatherBrief()
-      GrokBriefCache.save(response, for: store)
-      briefText = response
-      store.refreshWidgetSnapshotGrokBrief()
-      Task { await store.syncMorningBriefNotification(briefBody: response) }
+      if safety.isBriefHidden(response) {
+        hiddenThisBrief = true
+        briefText = nil
+      } else {
+        GrokBriefCache.save(response, for: store)
+        briefText = response
+        hiddenThisBrief = false
+        store.refreshWidgetSnapshotGrokBrief()
+        Task { await store.syncMorningBriefNotification(briefBody: response) }
+      }
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -207,6 +333,7 @@ private struct GrokBriefCardChrome: ViewModifier {
 #Preview("Figma") {
   GrokBriefCard(presentation: .figma)
     .environment(WeatherStore())
+    .environment(GrokBriefSafety())
     .padding()
     .preferredColorScheme(.dark)
 }
@@ -214,6 +341,7 @@ private struct GrokBriefCardChrome: ViewModifier {
 #Preview {
   GrokBriefCard()
     .environment(WeatherStore())
+    .environment(GrokBriefSafety())
     .padding()
     .preferredColorScheme(.dark)
 }

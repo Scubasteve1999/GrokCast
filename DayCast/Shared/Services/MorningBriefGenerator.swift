@@ -44,6 +44,12 @@ enum GrokBriefCache {
     UserDefaults.standard.set(text, forKey: key)
     UserDefaults.standard.set(refreshToken(for: store), forKey: tokenKey(for: key))
   }
+
+  static func clear(for store: WeatherStore) {
+    guard let key = key(for: store) else { return }
+    UserDefaults.standard.removeObject(forKey: key)
+    UserDefaults.standard.removeObject(forKey: tokenKey(for: key))
+  }
 }
 
 /// A deterministic, forecast-only brief used when Grok completes without any text.
@@ -161,6 +167,7 @@ enum LocalWeatherBrief {
 enum MorningBriefGenerator {
 
   static func generateIfStale(weatherStore: WeatherStore) async {
+    guard !GrokBriefSafety.shared.isFeatureHidden else { return }
     guard MorningBriefNotificationService.persistedEnabled else { return }
     guard GrokAuthResolver.canAccessGrok(subscription: SubscriptionManager.shared) else { return }
 
@@ -217,7 +224,7 @@ enum MorningBriefGenerator {
       }
 
       let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
-      let brief =
+      let raw =
         trimmed.isEmpty
         ? LocalWeatherBrief.make(
           weather: weather,
@@ -226,6 +233,16 @@ enum MorningBriefGenerator {
           activeAlerts: weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
         )
         : trimmed
+      guard
+        let brief = GrokBriefText.finalize(
+          raw: raw,
+          weather: weather,
+          unit: unit,
+          locationName: location,
+          activeAlerts: weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+        ),
+        !GrokBriefSafety.shared.isBriefHidden(brief)
+      else { return }
 
       GrokBriefCache.save(brief, for: weatherStore)
 

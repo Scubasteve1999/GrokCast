@@ -6,6 +6,7 @@ struct TodayFeedView: View {
   @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(FireStore.self) private var fireStore
+  @Environment(GrokBriefSafety.self) private var briefSafety
 
   let weather: DayCastWeather
   var isGeneratingImage: Bool
@@ -38,7 +39,8 @@ struct TodayFeedView: View {
     var snap = FeedSnapshotBuilder.make(
       weather: weather,
       alerts: store.displayableActiveAlerts,
-      showFireCard: showFire
+      showFireCard: showFire,
+      showAIInsight: !briefSafety.isFeatureHidden
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)

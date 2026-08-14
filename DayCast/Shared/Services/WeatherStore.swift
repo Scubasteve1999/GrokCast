@@ -625,15 +625,25 @@ final class WeatherStore {
     syncScoreSurfacesFromCurrentWeather(grokBriefOneLiner: cachedGrokBriefOneLiner())
   }
 
+  func refreshGrokBriefSurfaces() {
+    refreshWidgetSnapshotGrokBrief()
+    Task { await syncMorningBriefNotification(briefBody: cachedGrokBriefOneLiner()) }
+  }
+
   func syncMorningBriefNotification(briefBody: String?) async {
     await MorningBriefNotificationService.scheduleIfEnabled(briefBody: briefBody)
   }
 
   private func cachedGrokBriefOneLiner() -> String? {
+    guard !GrokBriefSafety.shared.isFeatureHidden else { return nil }
     guard let loc = currentLocation else { return nil }
     let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
     let key = "grok_brief_\(loc.id.uuidString)_\(Int(day))"
-    return UserDefaults.standard.string(forKey: key).map { String($0.prefix(120)) }
+    guard let text = UserDefaults.standard.string(forKey: key),
+      GrokContentFilter.acceptedText(text) != nil,
+      !GrokBriefSafety.shared.isBriefHidden(text)
+    else { return nil }
+    return String(text.prefix(120))
   }
 
   /// Hydrates `currentWeather` from the App Group widget snapshot so cold launch can show

@@ -1,3 +1,4 @@
 • Ask Grok from Siri or Shortcuts — opens chat with your current weather attached
 • Glass radar HUD and a glowing timeline playhead
+• Report or hide Today's Take if a brief looks wrong
 • Share and Rate links now open the live App Store listing

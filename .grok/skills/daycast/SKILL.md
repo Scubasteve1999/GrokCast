@@ -64,6 +64,7 @@ After the feature is complete and working, update this `daycast` skill with any 
 - **Forecast Fixes**: When date/time display bugs appear (repeated days/times), check `Identifiable` conformance and date parsing fallbacks first.
 - **Row Polish**: Keep `HourlyRow` and `DailyRow` compact, visually balanced, and consistent with the dark theme.
 - **Grok AI Features**: These should work without requiring end users to enter their own xAI key (developer key is embedded via `DeveloperAPIKey.swift` for TestFlight builds).
+- **Guideline 4.7 on Today's Take (Aug 2026)**: Never render raw Grok brief text. Screen with `GrokContentFilter` / `GrokBriefText.finalize` before cache, card, widget one-liner, or morning notification. Blocked Grok output falls back to `LocalWeatherBrief`. Report is `GrokBriefReport` mailto from the card ••• menu (24-hour review promise in App Review notes). Block is hide-this-brief (hashed) or turn off the feature (`GrokBriefSafety`); restore from Settings → Today's Take. Do not touch entitlement/paywall logic when adding safety chrome. Tests: `GrokBriefSafetyTests.swift`.
 
 - **Grok Vision & Advanced Analysis**:
   - Centralized prompts for technical or storm-related analysis live in `GrokPrompts.swift` (`Shared/Grok/GrokPrompts.swift`).

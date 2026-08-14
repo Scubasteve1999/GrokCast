@@ -4,7 +4,8 @@ enum FeedSnapshotBuilder {
   static func make(
     weather: DayCastWeather?,
     alerts: [NWSAlert],
-    showFireCard: Bool = false
+    showFireCard: Bool = false,
+    showAIInsight: Bool = true
   ) -> FeedSnapshot {
     guard let weather else { return .empty }
 
@@ -27,7 +28,7 @@ enum FeedSnapshotBuilder {
       hasAQI: weather.airQualityIndex != nil,
       hasSunriseOrSunset: hasSun,
       showFireCard: showFireCard,
-      showAIInsight: true
+      showAIInsight: showAIInsight
     )
   }
 }

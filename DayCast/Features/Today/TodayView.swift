@@ -479,6 +479,7 @@ struct TacticalCardSkeleton: View {
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
+    .environment(GrokBriefSafety())
 }
 
 #Preview("Today — 500pt regular") {
@@ -487,6 +488,7 @@ struct TacticalCardSkeleton: View {
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
+    .environment(GrokBriefSafety())
     .frame(width: 500, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -497,6 +499,7 @@ struct TacticalCardSkeleton: View {
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
+    .environment(GrokBriefSafety())
     .frame(width: 650, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -507,6 +510,7 @@ struct TacticalCardSkeleton: View {
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
+    .environment(GrokBriefSafety())
     .frame(width: 700, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -517,6 +521,7 @@ struct TacticalCardSkeleton: View {
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
+    .environment(GrokBriefSafety())
     .frame(width: 1024, height: 900)
     .environment(\.horizontalSizeClass, .regular)
 }
@@ -527,4 +532,5 @@ struct TacticalCardSkeleton: View {
     .environment(SevereWeatherStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
+    .environment(GrokBriefSafety())
 }

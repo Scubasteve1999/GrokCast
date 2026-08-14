@@ -5,6 +5,7 @@ import UserNotifications
 struct SettingsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
+  @Environment(GrokBriefSafety.self) private var briefSafety
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -380,6 +381,17 @@ struct SettingsView: View {
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
 
+          Toggle(
+            "Today's Take",
+            isOn: Binding(
+              get: { !briefSafety.isFeatureHidden },
+              set: { isOn in
+                briefSafety.isFeatureHidden = !isOn
+                store.refreshGrokBriefSurfaces()
+              }
+            )
+          )
+
           if store.morningBriefEnabled {
             Picker(
               "Brief time",
@@ -405,7 +417,7 @@ struct SettingsView: View {
           Text("DISPLAY & NOTIFICATIONS")
         } footer: {
           Text(
-            "Live Activity (Pro) shows Score + Minutecast on the Lock Screen, switches to a severe-alert or rain-event layout when those are active, and updates when the app refreshes weather — not a continuous background push feed yet. Morning brief notifies from your cached Today's Take when scheduled."
+            "Live Activity (Pro) shows Score + Minutecast on the Lock Screen, switches to a severe-alert or rain-event layout when those are active, and updates when the app refreshes weather — not a continuous background push feed yet. Morning brief notifies from your cached Today's Take when scheduled. Turn off Today's Take to hide the AI brief on Today, widgets, and the morning notification body."
           )
         }
 
@@ -605,6 +617,20 @@ struct SettingsView: View {
             isOn: Binding(
               get: { store.notificationSoundsEnabled },
               set: { store.notificationSoundsEnabled = $0 }
+            )
+          )
+          SettingsDivider()
+          figmaToggleRow(
+            title: "Today's Take",
+            subtitle: briefSafety.isFeatureHidden
+              ? "Hidden — tap to restore" : "AI brief on Today",
+            icon: "sparkles",
+            isOn: Binding(
+              get: { !briefSafety.isFeatureHidden },
+              set: { isOn in
+                briefSafety.isFeatureHidden = !isOn
+                store.refreshGrokBriefSurfaces()
+              }
             )
           )
         }
@@ -1077,4 +1103,5 @@ struct SettingsView: View {
 #Preview {
   SettingsView()
     .environment(WeatherStore())
+    .environment(GrokBriefSafety())
 }

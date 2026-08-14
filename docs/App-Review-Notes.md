@@ -82,6 +82,21 @@ accessed only when they pick a photo for Storm Spotter analysis.
 AI usage has a daily allowance per subscription (resets at midnight UTC) to prevent abuse. It is
 far above normal use and review will not reach it.
 
+## Guideline 4.7 — Today's Take (AI brief)
+
+Today's Take is a 2–4 sentence weather brief generated off-device by xAI Grok.
+
+- **Filter:** Output is screened on-device before it is shown, cached, sent to widgets, or used
+  in the morning notification. Blocked categories include sexual content, hate, self-harm,
+  graphic violence, prompt-leak dumps, and advice to ignore official warnings. A blocked Grok
+  reply is replaced with a deterministic forecast-only brief, or not shown.
+- **Report:** On the Today's Take card, open the ••• menu → **Report…**. Choose a reason and
+  submit. That opens a pre-filled email to stephenmoorecm1357@gmail.com. We review reports
+  within 24 hours.
+- **Block:** The same menu can **Hide this take** (that brief will not come back) or **Turn off
+  Today's Take**. Restore from **Settings → Today's Take**. Turning it off also clears the
+  widget one-liner and the morning-notification body.
+
 ## Subscriptions (3.1.2)
 
 The DayCast Pro paywall (Settings → DayCast Pro → View DayCast Pro) shows the subscription
