@@ -48,24 +48,16 @@ date is **2026-09-13** (30 days out), sooner if 10+ subscribers land first.
   `docs/baseline-2026-08-14.md`. Do not score the reposition against the old
   113. The number to beat on this record starts at ~0.
 
-## First task on pickup: finish the 2026-08-14 dashboard capture
+## First task on pickup: done, except optional Sources
 
-Live-day marker started in [`docs/baseline-2026-08-14.md`](baseline-2026-08-14.md).
-API-side facts are recorded. **The two Acquisition dashboard views are still empty**
-— the App Manager key gets `403` on Analytics Reports, and there is no API for the
-live Overview/Sources numbers.
+Live-day marker is in [`docs/baseline-2026-08-14.md`](baseline-2026-08-14.md).
+Overview captured 2026-08-14 (date pill **August 13**): every Acquisition
+and Sales tile is **Not Enough Data**; subscription event tiles are dashes.
+Sources was not screenshotted — skip until Overview impressions leave NED.
 
-1. Open App Store Connect → Analytics → Acquisition → Overview, and Sources
-   (Product Page Views by Unique Devices). Paste the funnel + source-type rows
-   into the empty table in `docs/baseline-2026-08-14.md`.
-2. Watch **App Store Search impressions** specifically — that's the one metric the
-   keyword/subtitle change acts on. Browse and Referrer aren't moved by this reposition.
-3. Give it until **2026-09-13** (30 days) before drawing conclusions. A week of data
-   at this volume is noise. This listing itself launched 2026-08-14 (new App Store
-   ID `6798461672`); the 2026-08-01 baseline was a different, now-dead record
-   (`6780682022`) and is **not** a before/after for the same page.
-4. Also watch subscriber count — 10+ subscribers trips the gate independently of the
-   30-day clock.
+Watch **App Store Search impressions** once numbers appear. Gate is not
+tripped. Earliest trip **2026-09-13**, or 10+ subscribers. Do not start
+Spotter Network / mPING before then.
 
 ## Safe to build now, regardless of gate status
 
