@@ -155,12 +155,12 @@ struct CompactTabBar: View {
             .frame(width: 40, height: 28)
         }
         Image(systemName: tab.icon)
-          .font(.system(size: 20))
+          .font(DesignTokens.Typography.symbol(20))
           .foregroundStyle(active ? activeColor : inactiveColor)
       }
       .frame(height: 28)
       Text(tab.title)
-        .font(.system(size: 10, weight: .medium))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(active ? DesignTokens.Palette.textPrimary : inactiveColor)
     }
     .padding(.vertical, 4)

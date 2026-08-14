@@ -19,7 +19,7 @@ struct SevereProductsSections: View {
   }
 
   private var outlookSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
       FigmaAccentSectionLabel(
         title: "DAY 1 OUTLOOK",
         icon: "cloud.bolt.rain.fill",
@@ -52,7 +52,7 @@ struct SevereProductsSections: View {
   }
 
   private var mdSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
       FigmaAccentSectionLabel(
         title: "MESOSCALE DISCUSSIONS",
         icon: "text.bubble.fill",
@@ -85,7 +85,7 @@ struct SevereProductsSections: View {
   }
 
   private var lsrSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
       FigmaAccentSectionLabel(
         title: "NEARBY STORM REPORTS",
         icon: "mappin.and.ellipse",

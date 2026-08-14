@@ -17,7 +17,7 @@ struct HourlyFeedCard: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         HStack {
           Text("Hourly")
-            .font(DesignTokens.Figma.Typography.subsectionLabel)
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
                 .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
@@ -38,7 +38,7 @@ struct HourlyFeedCard: View {
             }
           }
         }
-        .frame(height: DesignTokens.Figma.Metrics.hourlyRowHeight + DesignTokens.Spacing.space8)
+        .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space8)
       }
       .padding(DesignTokens.Spacing.space16)
       .cardStyle()

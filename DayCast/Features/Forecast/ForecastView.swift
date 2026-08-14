@@ -4,7 +4,7 @@ private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 /// Figma Forecast screen: content starts below status bar with modest top inset.
 private let forecastContentTopPadding = DesignTokens.Spacing.space16
 /// Room for Now accent + precip indicator under temp.
-private let hourlyStripHeight = DesignTokens.Figma.Metrics.hourlyRowHeight + DesignTokens.Spacing.space24
+private let hourlyStripHeight = DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24
 
 struct ForecastView: View {
   @Environment(WeatherStore.self) private var store
@@ -437,7 +437,7 @@ private struct ForecastAdaptiveBody: View {
         }
       } label: {
         Text("Compare \(openWeatherMapCompactTitle)")
-          .font(DesignTokens.Figma.Typography.rowSubtitle)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .tint(DesignTokens.Palette.textTertiary)

@@ -38,22 +38,22 @@ struct AlertsGrokSummaryCard: View {
 
   @ViewBuilder
   private var figmaBody: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
       if isLoading {
         HStack(spacing: 8) {
           ProgressView().scaleEffect(0.75)
           Text("Summarizing alerts…")
-            .font(DesignTokens.Figma.Typography.rowSubtitle)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       } else if let summary {
         Text(summary)
-          .font(DesignTokens.Figma.Typography.body)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
       } else if let errorMessage {
         Text(errorMessage)
-          .font(DesignTokens.Figma.Typography.body)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         if store.xaiService.hasValidKey {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
@@ -61,23 +61,23 @@ struct AlertsGrokSummaryCard: View {
         }
       } else if !store.xaiService.hasValidKey {
         Text("Add an xAI key in Settings for AI alert summaries.")
-          .font(DesignTokens.Figma.Typography.body)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {
         Text(figmaReadyPrompt)
-          .font(DesignTokens.Figma.Typography.body)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .onTapGesture {
             Task { await fetchSummary(force: false) }
           }
       }
     }
-    .padding(DesignTokens.Figma.Metrics.cardPadding)
+    .padding(DesignTokens.Layout.cardPadding)
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle(
       background: DesignTokens.Palette.cardBackground,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.cardRadius
+      cornerRadius: DesignTokens.Layout.cardRadius
     )
   }
 

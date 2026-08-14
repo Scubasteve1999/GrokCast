@@ -14,7 +14,7 @@ struct DailyFeedCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Text("Daily")
-        .font(DesignTokens.Figma.Typography.subsectionLabel)
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .tracking(DesignTokens.Typography.cardLabelTracking)
 

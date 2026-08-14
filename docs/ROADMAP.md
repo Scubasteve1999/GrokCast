@@ -126,18 +126,16 @@ App Store blockers and baseline polish.
 
 ---
 
-## Design System v2 tokens (reference)
+## Design system (code is the contract)
 
-See `DesignSystem.md` § Design System v2.
+See `DesignSystem.md`. Names below map to existing Swift — they are not extra colors.
 
-| Token | Usage |
+| Name | In code |
 |-------|--------|
-| `surfaceGlass` | Brief cards, HUD, Settings rows |
-| `surfaceSolid` | Dense data grids |
-| `surfaceElevated` | Hero-adjacent cards |
-| `bgGlow` | Condition-tinted radial behind hero temp |
-| `motionHero` | 0.8s background crossfade |
-| `motionCard` | spring 0.35 / 0.75 |
+| `surfaceGlass` | `.glassCardStyle()` — HUD / overlays on map or sky |
+| `surfaceSolid` | `.dayCastCard()` — feed, settings, forecast |
+| `surfaceElevated` | `.dayCastCard(elevated: true)` |
+| `bgGlow` | `WeatherBackgroundView` wash, not a palette token |
 
 ---
 

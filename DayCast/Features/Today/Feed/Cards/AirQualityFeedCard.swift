@@ -11,7 +11,7 @@ struct AirQualityFeedCard: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         HStack {
           Text("Air Quality")
-            .font(DesignTokens.Figma.Typography.subsectionLabel)
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
                 .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()

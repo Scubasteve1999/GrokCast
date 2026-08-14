@@ -83,14 +83,14 @@ struct LocationsView: View {
     .cardStyle(
       background: DesignTokens.Palette.cardElevated,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.searchRadius
+      cornerRadius: DesignTokens.Layout.searchRadius
     )
   }
 
   @ViewBuilder
   private var figmaSearchResults: some View {
     Text("SEARCH RESULTS")
-      .font(DesignTokens.Figma.Typography.sectionLabel)
+      .font(DesignTokens.Typography.caption())
       .foregroundStyle(DesignTokens.Palette.textTertiary)
 
     SettingsGroupCard {

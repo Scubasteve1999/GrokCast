@@ -26,13 +26,14 @@ enum DesignTokens {
     static let warning = SwiftUI.Color(hex: "#FFD60A")
     static let danger = SwiftUI.Color(hex: "#FF453A")
 
-    static let radarCardBackground = SwiftUI.Color(hex: "#1E2430")
-    static let radarCardStroke = SwiftUI.Color.white.opacity(0.20)
-    static let radarTextPrimary = SwiftUI.Color.white
-    static let radarTextSecondary = SwiftUI.Color.white.opacity(0.70)
-    static let radarAccent = SwiftUI.Color(hex: "#8BB8F0")
+    /// Radar-only chrome (track on the map). Everything else uses text/accent.
     static let radarTrack = SwiftUI.Color.white.opacity(0.16)
-    static let radarProgress = SwiftUI.Color(hex: "#8BB8F0")
+    static var radarProgress: SwiftUI.Color { accent }
+    static var radarAccent: SwiftUI.Color { accent }
+    static var radarCardBackground: SwiftUI.Color { cardBackground }
+    static var radarCardStroke: SwiftUI.Color { cardStroke }
+    static var radarTextPrimary: SwiftUI.Color { textPrimary }
+    static var radarTextSecondary: SwiftUI.Color { textSecondary }
   }
 
   // MARK: - Spacing (8pt)
@@ -81,13 +82,19 @@ enum DesignTokens {
     /// Back-compat for call sites still using the old name.
     static func heroTemperature() -> Font { displayTemp() }
 
+    /// Compact temperature (sheets, More hub). Hero stays `displayTemp()`.
+    static func compactTemp() -> Font { .system(size: 44, weight: .semibold) }
+
     static func title() -> Font { .system(size: 28, weight: .semibold) }
+    static func studioTitle() -> Font { .system(size: 24, weight: .semibold) }
     static func headline() -> Font { .system(size: 17, weight: .semibold) }
     static func body() -> Font { .system(size: 17, weight: .regular) }
     static func callout() -> Font { .system(size: 15, weight: .regular) }
+    static func subsection() -> Font { .system(size: 15, weight: .semibold) }
     static func caption() -> Font { .system(size: 13, weight: .regular) }
     static func metric() -> Font { .system(size: 20, weight: .medium) }
     static func micro() -> Font { .system(size: 12, weight: .regular) }
+    static func symbol(_ size: CGFloat = 13) -> Font { .system(size: size, weight: .semibold) }
   }
 
   /// Decorative motion (particles, shimmer sweeps). Off under Reduce Motion / Low Power.
@@ -104,16 +111,31 @@ enum DesignTokens {
     static let iconWhite: Double = 0.55
   }
 
-  /// Screen metrics (formerly Figma.*) — kept nested so call sites compile.
+  enum Layout {
+    static let horizontalPadding: CGFloat = Spacing.space20
+    static let topPadding: CGFloat = Spacing.space16
+    static let tabBarScrollClearance: CGFloat = Spacing.space48 + Spacing.space48
+    static let bottomPadding: CGFloat = tabBarScrollClearance
+    static let sectionSpacing: CGFloat = Spacing.space24
+    static let cardPadding: CGFloat = Spacing.space16
+    static let cardInnerSpacing: CGFloat = Spacing.space8
+    static let cardRadius: CGFloat = Radius.medium
+    static let chipRadius: CGFloat = Radius.small
+    static let searchRadius: CGFloat = Radius.small
+    static let heroIconSize: CGFloat = 44
+    static let hourlyRowHeight: CGFloat = 100
+    static let hourlyChipWidth: CGFloat = 72
+  }
+
+  /// Temporary aliases. Prefer `Typography` / `Layout`.
   enum Figma {
     enum Typography {
       static let screenTitle = DesignTokens.Typography.title()
-      static let studioTitle = Font.system(size: 24, weight: .semibold)
-      /// Section headers — calm caption, **not** 11pt bold caps.
+      static let studioTitle = DesignTokens.Typography.studioTitle()
       static let sectionLabel = DesignTokens.Typography.caption()
-      static let subsectionLabel = Font.system(size: 15, weight: .semibold)
+      static let subsectionLabel = DesignTokens.Typography.subsection()
       static let cardHeadline = DesignTokens.Typography.headline()
-      static let rowTitle = Font.system(size: 17, weight: .regular)
+      static let rowTitle = DesignTokens.Typography.body()
       static let rowSubtitle = DesignTokens.Typography.caption()
       static let body = DesignTokens.Typography.callout()
       static let chipTime = DesignTokens.Typography.caption()
@@ -122,23 +144,19 @@ enum DesignTokens {
     }
 
     enum Metrics {
-      static let horizontalPadding: CGFloat = Spacing.space20
-      static let topPadding: CGFloat = Spacing.space16
-      static let bottomPadding: CGFloat = Layout.tabBarScrollClearance
-      static let sectionSpacing: CGFloat = Spacing.space24
-      static let cardPadding: CGFloat = Spacing.space16
-      static let cardInnerSpacing: CGFloat = Spacing.space8
-      static let cardRadius: CGFloat = Radius.medium
-      static let chipRadius: CGFloat = Radius.small
-      static let searchRadius: CGFloat = 12
-      static let heroIconSize: CGFloat = 44
-      static let hourlyRowHeight: CGFloat = 100
-      static let hourlyChipWidth: CGFloat = 72
+      static let horizontalPadding = Layout.horizontalPadding
+      static let topPadding = Layout.topPadding
+      static let bottomPadding = Layout.bottomPadding
+      static let sectionSpacing = Layout.sectionSpacing
+      static let cardPadding = Layout.cardPadding
+      static let cardInnerSpacing = Layout.cardInnerSpacing
+      static let cardRadius = Layout.cardRadius
+      static let chipRadius = Layout.chipRadius
+      static let searchRadius = Layout.searchRadius
+      static let heroIconSize = Layout.heroIconSize
+      static let hourlyRowHeight = Layout.hourlyRowHeight
+      static let hourlyChipWidth = Layout.hourlyChipWidth
     }
-  }
-
-  enum Layout {
-    static let tabBarScrollClearance: CGFloat = Spacing.space48 + Spacing.space48
   }
 }
 
@@ -212,12 +230,12 @@ extension View {
     )
   }
 
+  func dayCastCard(elevated: Bool = false) -> some View {
+    cardStyle(elevated: elevated)
+  }
+
   func tacticalCard() -> some View {
-    cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadius
-    )
+    dayCastCard()
   }
 
   func elevatedCard() -> some View {

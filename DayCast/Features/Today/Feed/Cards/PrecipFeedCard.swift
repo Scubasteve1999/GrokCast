@@ -13,7 +13,7 @@ struct PrecipFeedCard: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         HStack {
           Text("Next hour")
-            .font(DesignTokens.Figma.Typography.subsectionLabel)
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
                 .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()

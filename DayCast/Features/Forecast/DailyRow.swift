@@ -58,7 +58,7 @@ struct DailyRow: View {
   private var figmaLayout: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       Text(dayLabel)
-        .font(DesignTokens.Figma.Typography.rowTitle)
+        .font(DesignTokens.Typography.body())
         .fontWeight(isToday ? .bold : .semibold)
         .foregroundStyle(
           isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
@@ -100,14 +100,14 @@ struct DailyRow: View {
       background: isToday
         ? DesignTokens.Palette.cardElevated
         : DesignTokens.Palette.cardBackground,
-      cornerRadius: DesignTokens.Figma.Metrics.chipRadius,
+      cornerRadius: DesignTokens.Layout.chipRadius,
       elevated: isToday
     )
     .overlay(alignment: .leading) {
       if isToday {
         UnevenRoundedRectangle(
-          topLeadingRadius: DesignTokens.Figma.Metrics.chipRadius,
-          bottomLeadingRadius: DesignTokens.Figma.Metrics.chipRadius,
+          topLeadingRadius: DesignTokens.Layout.chipRadius,
+          bottomLeadingRadius: DesignTokens.Layout.chipRadius,
           bottomTrailingRadius: 0,
           topTrailingRadius: 0
         )

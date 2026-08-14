@@ -41,7 +41,7 @@ struct HourlyRow: View {
   private var figmaLayout: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       Text(isNow ? "Now" : formattedTime)
-        .font(DesignTokens.Figma.Typography.chipTime)
+        .font(DesignTokens.Typography.caption())
         .fontWeight(isNow ? .bold : .semibold)
         .foregroundStyle(
           isNow ? DesignTokens.Palette.accent : DesignTokens.Palette.textTertiary
@@ -53,7 +53,7 @@ struct HourlyRow: View {
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(forecast.temp)))°")
-        .font(DesignTokens.Figma.Typography.chipTemp)
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
         .lineLimit(1)
@@ -86,7 +86,7 @@ struct HourlyRow: View {
         }
       }
     }
-    .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
+    .frame(width: DesignTokens.Layout.hourlyChipWidth)
     .padding(.horizontal, DesignTokens.Spacing.space12)
     .padding(.vertical, DesignTokens.Spacing.space12)
     .cardStyle(
@@ -96,7 +96,7 @@ struct HourlyRow: View {
       stroke: isNow
         ? DesignTokens.Palette.accent.opacity(0.55)
         : DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.chipRadius,
+      cornerRadius: DesignTokens.Layout.chipRadius,
       elevated: isNow
     )
   }

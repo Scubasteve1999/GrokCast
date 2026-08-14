@@ -13,7 +13,7 @@ struct FigmaScreenTitle: View {
 
   var body: some View {
     Text(title)
-      .font(style == .screen ? DesignTokens.Figma.Typography.screenTitle : DesignTokens.Figma.Typography.studioTitle)
+      .font(style == .screen ? DesignTokens.Typography.title() : DesignTokens.Typography.studioTitle())
       .foregroundStyle(DesignTokens.Palette.textPrimary)
       .frame(maxWidth: .infinity, alignment: .leading)
   }
@@ -24,7 +24,7 @@ struct FigmaSectionLabel: View {
 
   var body: some View {
     Text(title)
-      .font(DesignTokens.Figma.Typography.sectionLabel)
+      .font(DesignTokens.Typography.caption())
       .foregroundStyle(DesignTokens.Palette.textSecondary)
       // Calm weather UI: sentence case, no shouting caps / tracking.
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -36,7 +36,7 @@ struct FigmaSubsectionLabel: View {
 
   var body: some View {
     Text(title)
-      .font(DesignTokens.Figma.Typography.subsectionLabel)
+      .font(DesignTokens.Typography.subsection())
       .foregroundStyle(DesignTokens.Palette.textSecondary)
       .frame(maxWidth: .infinity, alignment: .leading)
   }
@@ -50,9 +50,9 @@ struct FigmaAccentSectionLabel: View {
   var body: some View {
     HStack(spacing: 6) {
       Image(systemName: icon)
-        .font(.system(size: 13, weight: .semibold))
+        .font(DesignTokens.Typography.symbol())
       Text(title)
-        .font(DesignTokens.Figma.Typography.subsectionLabel)
+        .font(DesignTokens.Typography.subsection())
     }
     .foregroundStyle(color)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,10 +61,10 @@ struct FigmaAccentSectionLabel: View {
 
 extension View {
   /// Standard Figma screen content padding (20pt sides, tab-bar bottom clearance).
-  func figmaScreenPadding(top: CGFloat = DesignTokens.Figma.Metrics.topPadding) -> some View {
-    padding(.horizontal, DesignTokens.Figma.Metrics.horizontalPadding)
+  func figmaScreenPadding(top: CGFloat = DesignTokens.Layout.topPadding) -> some View {
+    padding(.horizontal, DesignTokens.Layout.horizontalPadding)
       .padding(.top, top)
-      .padding(.bottom, DesignTokens.Figma.Metrics.bottomPadding)
+      .padding(.bottom, DesignTokens.Layout.bottomPadding)
   }
 }
 
@@ -80,7 +80,7 @@ struct SettingsSectionHeader: View {
 
       if let footer {
         Text(footer)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
           .fixedSize(horizontal: false, vertical: true)
       }
@@ -99,7 +99,7 @@ struct SettingsGroupCard<Content: View>: View {
     .cardStyle(
       background: DesignTokens.Palette.cardBackground,
       stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Figma.Metrics.cardRadius
+      cornerRadius: DesignTokens.Layout.cardRadius
     )
   }
 }
@@ -111,7 +111,7 @@ struct SettingsToggleRow: View {
   var body: some View {
     Toggle(isOn: $isOn) {
       Text(title)
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
     }
     .tint(DesignTokens.Palette.accent)
@@ -129,15 +129,15 @@ struct SettingsLinkRow: View {
     Link(destination: url) {
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: icon)
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .foregroundStyle(DesignTokens.Palette.accent)
           .frame(width: 24)
         Text(title)
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer()
         Image(systemName: "arrow.up.right")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -158,22 +158,22 @@ struct SettingsNavigationRow: View {
     Button(action: action) {
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: icon)
-          .font(.system(size: 16, weight: .semibold))
+          .font(DesignTokens.Typography.symbol(16))
           .foregroundStyle(tint)
           .frame(width: 24)
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
           Text(title)
-            .font(DesignTokens.Figma.Typography.rowTitle)
+            .font(DesignTokens.Typography.body())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           if let subtitle {
             Text(subtitle)
-              .font(DesignTokens.Figma.Typography.rowSubtitle)
+              .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
         }
         Spacer()
         Image(systemName: "chevron.right")
-          .font(.caption.weight(.bold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -203,7 +203,7 @@ struct MoreHubSheet: View {
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+        VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
           hubHeader
 
           SettingsGroupCard {
@@ -241,26 +241,26 @@ struct MoreHubSheet: View {
   }
 
   private var hubHeader: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
+    VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
       if let name = store.currentLocation?.name {
         Text(name.uppercased())
-          .font(DesignTokens.Figma.Typography.locationLabel)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       if let w = store.currentWeather {
         HStack(alignment: .bottom, spacing: DesignTokens.Spacing.space8) {
           Text(store.formatTemperatureShort(w.currentTemp))
-            .font(.system(size: 44, weight: .black, design: .rounded))
+            .font(DesignTokens.Typography.compactTemp())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(w.conditionText)
-            .font(DesignTokens.Figma.Typography.body)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(DesignTokens.Figma.Metrics.cardPadding)
-    .cardStyle(cornerRadius: DesignTokens.Figma.Metrics.cardRadius)
+    .padding(DesignTokens.Layout.cardPadding)
+    .dayCastCard()
   }
 
   private func moreTitle(for tab: WeatherStore.Tab) -> String {

@@ -134,7 +134,7 @@ private struct GrokAIViewContent: View {
                   .id("error")
                 }
               }
-              .figmaScreenPadding(top: DesignTokens.Figma.Metrics.topPadding)
+              .figmaScreenPadding(top: DesignTokens.Layout.topPadding)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.conversationHistory.count) {
@@ -163,7 +163,7 @@ private struct GrokAIViewContent: View {
       .navigationBarTitleDisplayMode(.inline)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         inputArea(viewModel: viewModel)
-          .padding(.horizontal, DesignTokens.Figma.Metrics.horizontalPadding)
+          .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
           .padding(.top, 8)
           .padding(.bottom, 8)
           .background(
@@ -253,7 +253,7 @@ private struct GrokAIViewContent: View {
   private func figmaStormSpotterCard(viewModel: GrokAIViewModel) -> some View {
     Group {
       if prefersFigmaStudioLayout {
-        VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.cardInnerSpacing) {
+        VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
           FigmaAccentSectionLabel(
             title: "STORM SPOTTER ANALYSIS",
             icon: "cloud.bolt.rain.fill",

@@ -29,7 +29,7 @@ struct DailyRowSkeleton: View {
     .padding(.vertical, DesignTokens.Spacing.space16)
     .padding(.horizontal, DesignTokens.Spacing.space16)
     .background {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+      RoundedRectangle(cornerRadius: DesignTokens.Layout.chipRadius)
         .fill(
           isToday
             ? DesignTokens.Palette.cardElevated.opacity(0.95)
@@ -39,8 +39,8 @@ struct DailyRowSkeleton: View {
     .overlay(alignment: .leading) {
       if isToday {
         UnevenRoundedRectangle(
-          topLeadingRadius: DesignTokens.Figma.Metrics.chipRadius,
-          bottomLeadingRadius: DesignTokens.Figma.Metrics.chipRadius,
+          topLeadingRadius: DesignTokens.Layout.chipRadius,
+          bottomLeadingRadius: DesignTokens.Layout.chipRadius,
           bottomTrailingRadius: 0,
           topTrailingRadius: 0
         )
@@ -50,7 +50,7 @@ struct DailyRowSkeleton: View {
       }
     }
     .overlay {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+      RoundedRectangle(cornerRadius: DesignTokens.Layout.chipRadius)
         .stroke(
           isToday
             ? DesignTokens.Palette.accent.opacity(0.35)

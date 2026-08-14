@@ -22,11 +22,11 @@ struct HourlyRowSkeleton: View {
       ShimmerBlock(width: 28, height: 15, cornerRadius: 4)
       ShimmerBlock(width: 32, height: 10, cornerRadius: 3)
     }
-    .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
+    .frame(width: DesignTokens.Layout.hourlyChipWidth)
     .padding(.horizontal, DesignTokens.Spacing.space12)
     .padding(.vertical, DesignTokens.Spacing.space12)
     .background {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+      RoundedRectangle(cornerRadius: DesignTokens.Layout.chipRadius)
         .fill(
           isNow
             ? DesignTokens.Palette.cardElevated.opacity(0.92)
@@ -34,7 +34,7 @@ struct HourlyRowSkeleton: View {
         )
     }
     .overlay {
-      RoundedRectangle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+      RoundedRectangle(cornerRadius: DesignTokens.Layout.chipRadius)
         .stroke(
           isNow
             ? DesignTokens.Palette.accent.opacity(0.45)

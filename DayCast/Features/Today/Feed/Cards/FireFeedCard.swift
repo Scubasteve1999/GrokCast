@@ -10,7 +10,7 @@ struct FireFeedCard: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         HStack {
           Label("Fire", systemImage: "flame.fill")
-            .font(DesignTokens.Figma.Typography.subsectionLabel)
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
                 .tracking(DesignTokens.Typography.cardLabelTracking)
             .labelStyle(.titleAndIcon)
@@ -246,7 +246,7 @@ struct FireDetailView: View {
 
   private func sectionHeader(_ title: String) -> some View {
     Text(title)
-      .font(DesignTokens.Figma.Typography.subsectionLabel)
+      .font(DesignTokens.Typography.subsection())
       .foregroundStyle(DesignTokens.Palette.textTertiary)
       .tracking(DesignTokens.Typography.cardLabelTracking)
   }

@@ -96,7 +96,7 @@ struct AlertsView: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Alerts")
 
-        VStack(alignment: .leading, spacing: DesignTokens.Figma.Metrics.sectionSpacing) {
+        VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
           FigmaAccentSectionLabel(
             title: "ACTIVE NOW",
             icon: "bolt.fill",

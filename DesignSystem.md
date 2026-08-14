@@ -1,139 +1,112 @@
-# DayCast Design System v1
+# DayCast Design System
 
-**Purpose**: This document defines the visual language, spacing, typography, and component rules for DayCast. All future UI work should follow these rules for consistency and professional quality.
+Contract for UI. Matches `DayCast/Shared/Design/DesignTokens.swift`. Do not add a color, size, or radius without updating both.
 
----
-
-## 1. Color Palette
-
-Use these exact color tokens. Do not introduce new colors without updating this system.
-
-| Token             | Hex       | Usage                                      | Notes |
-|-------------------|-----------|--------------------------------------------|-------|
-| `bgPrimary`       | `#0B0D14` | Main screen background                     | Deepest background |
-| `bgSecondary`     | `#11141C` | Secondary background layers                | Subtle lift |
-| `cardBackground`  | `#1A1F2B` | Default card / surface background          | Main card color |
-| `cardElevated`    | `#22283A` | Elevated or pressed card states            | Higher elevation |
-| `cardStroke`      | `#2F3648` | Subtle card borders (use sparingly)        | Low contrast |
-| `textPrimary`     | `#F1F3F8` | Primary text, large temperature            | High contrast |
-| `textSecondary`   | `#A8AEC0` | Labels and secondary information           | Medium contrast |
-| `textTertiary`    | `#6B7280` | Small details and captions                 | Low emphasis |
-| `accent`          | `#5B8DEE` | Buttons, links, active states              | Main interactive color |
-| `accentWarm`      | `#F5A35C` | Warm temperatures and sun elements         | Temperature feedback |
-| `accentCool`      | `#5BC4E8` | Cool temperatures and precipitation        | Temperature feedback |
-| `success`         | `#4ADE80` | Positive states                            | Good air quality, clear skies |
-| `warning`         | `#FACC15` | Warning states                             | UV index, moderate alerts |
-| `danger`          | `#F87171` | Severe / danger states                     | Severe weather alerts |
-
-**Rule**: Stick to this palette. Temperature values should use `accentWarm` or `accentCool` when it adds meaningful visual feedback.
+**Look:** dark weather, quiet type, solid cards, restrained glass on HUD/overlays. Not a new brand.
 
 ---
 
-## 2. Typography
+## 1. Color (`DesignTokens.Palette`)
 
-| Element              | Size     | Weight      | Color            | Usage |
-|----------------------|----------|-------------|------------------|-------|
-| **Hero Temperature** | 96pt     | Black/Heavy | `textPrimary`    | Main temperature in Today hero (Figma-matched) |
-| **Large Title**      | 34pt     | Bold        | `textPrimary`    | Screen titles |
-| **Title**            | 28pt     | Semibold    | `textPrimary`    | Section headers |
-| **Headline**         | 20pt     | Semibold    | `textPrimary`    | Card titles, important labels |
-| **Body**             | 17pt     | Regular     | `textPrimary`    | Main body text |
-| **Callout**          | 16pt     | Medium      | `textSecondary`  | Secondary info |
-| **Subheadline**      | 15pt     | Regular     | `textSecondary`  | Supporting text |
-| **Footnote**         | 13pt     | Regular     | `textTertiary`   | Small details, timestamps |
-| **Caption**          | 12pt     | Regular     | `textTertiary`   | Very small labels |
+| Token | Hex / value | Use |
+|---|---|---|
+| `bgPrimary` | `#05070C` | Stage behind the weather wash |
+| `bgSecondary` | `#0E121A` | Secondary layers, tab bar fill |
+| `cardBackground` | `#1E2430` | Default card |
+| `cardElevated` | `#2C3444` | Raised / hero-adjacent card |
+| `cardStroke` | white 20% | Card edge (via `cardStyle`, not raw) |
+| `textPrimary` | white | Body, values, titles |
+| `textSecondary` | white 78% | Labels |
+| `textTertiary` | white 52% | Captions, chevrons |
+| `accent` | `#8BB8F0` | Interactive, radar playhead |
+| `accentWarm` | `#F0B07A` | Warm temps |
+| `accentCool` | `#9AC4E8` | Cool temps / precip |
+| `success` | `#34C759` | Good AQI |
+| `warning` | `#FFD60A` | UV, aging scan |
+| `danger` | `#FF453A` | Severe alerts |
+| `radarTrack` | white 16% | Radar timeline track only |
 
-**Rules**:
-- Limit to 2–3 font weights maximum.
-- Hero temperature must feel dominant (significantly larger than surrounding text).
-- Maintain consistent line height and letter spacing.
+Radar text/accent/card aliases resolve to the rows above. Do not introduce a second radar palette.
 
----
-
-## 3. Spacing Scale
-
-Use this 8pt-based scale:
-
-| Token      | Value | Common Usage |
-|------------|-------|--------------|
-| `space2`   | 2pt   | Fine adjustments |
-| `space4`   | 4pt   | Tiny gaps |
-| `space8`   | 8pt   | Small gaps, icon padding |
-| `space12`  | 12pt  | Tight spacing |
-| `space16`  | 16pt  | Standard card internal padding |
-| `space20`  | 20pt  | Preferred card internal padding |
-| `space24`  | 24pt  | Default section spacing |
-| `space32`  | 32pt  | Generous section gaps |
-| `space40`  | 40pt  | Large breathing room |
-| `space48`  | 48pt  | Very generous spacing |
-
-**Rule**: Prefer `space16`, `space24`, and `space32` for most layout work. Avoid random spacing values.
+Atmosphere in `WeatherBackgroundView` may use raw white at low opacity (particles, not chrome).
 
 ---
 
-## 4. Corner Radius
+## 2. Type (`DesignTokens.Typography`)
 
-| Token           | Value | Usage |
-|-----------------|-------|-------|
-| `radiusSmall`   | 8pt   | Pills, tags, small elements |
-| `radiusMedium`  | 16pt  | Default card radius (most common) |
-| `radiusLarge`   | 24pt  | Hero cards, prominent surfaces |
-| `radiusXLarge`  | 32pt  | Very large containers (rare) |
+SF Pro. Prefer these helpers over `.font(.caption)` or `.system(size:)`.
 
-**Rule**: Be consistent. Most cards should use `radiusMedium`.
+| Helper | Size | Weight | Use |
+|---|---|---|---|
+| `displayTemp()` | 96 | Semibold | Today hero temp only |
+| `compactTemp()` | 44 | Semibold | Sheets, More hub |
+| `title()` | 28 | Semibold | Screen titles |
+| `studioTitle()` | 24 | Semibold | Briefing Studio |
+| `headline()` | 17 | Semibold | Card titles |
+| `body()` | 17 | Regular | Primary copy, rows |
+| `callout()` | 15 | Regular | Supporting copy |
+| `subsection()` | 15 | Semibold | Section labels in cards |
+| `caption()` | 13 | Regular | Meta, timestamps |
+| `metric()` | 20 | Medium | Compact numbers |
+| `micro()` | 12 | Regular | Dense HUD / ticks |
+| `symbol(_:)` | 13 default | Semibold | SF Symbols |
 
----
-
-## 5. Card & Surface System
-
-- **Default Card**: Background = `cardBackground`, Corner Radius = `radiusMedium`, subtle shadow
-- **Elevated Card**: Background = `cardElevated`, slightly stronger shadow
-- **Internal Padding**: Minimum `space16`, preferred `space20`
-- **Stroke**: Use `cardStroke` only when necessary for definition (keep very low contrast)
-
-**Recommended Shadow (SwiftUI)**:
-```swift
-// Default card
-.shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-
-// Elevated card
-.shadow(color: .black.opacity(0.20), radius: 12, x: 0, y: 6)
-```
+Exception: monospaced HUD digits and weather symbols may set `design: .monospaced` or a symbol point size via `symbol(_:)`.
 
 ---
 
-## 6. Iconography
+## 3. Spacing (`DesignTokens.Spacing` + `Layout`)
 
-- Primary icon set: **SF Symbols** (recommended for consistency)
-- Size guidelines:
-  - Small: 16–20pt
-  - Medium: 24–28pt
-  - Large / Hero: 36–48pt+
-- Keep icon weight and rendering mode consistent across the app.
+8pt scale: 2, 4, 8, 12, 16, 20, 24, 32, 40, 48.
 
----
+| Layout | Value |
+|---|---|
+| `horizontalPadding` | 20 |
+| `topPadding` | 16 |
+| `sectionSpacing` | 24 |
+| `cardPadding` | 16 |
+| `cardInnerSpacing` | 8 |
+| `tabBarScrollClearance` | 96 |
 
-## 7. Layout & Hierarchy Principles
-
-- The **hero temperature** should be the most visually dominant element on the Today screen.
-- Use clear section separation with generous vertical spacing (`space32`–`space40` between major sections).
-- Inside cards, maintain consistent internal padding (`space16`–`space20`).
-- Prioritize **scannability** — users should understand current conditions in under 3 seconds.
-- Apply `accentWarm` and `accentCool` thoughtfully for temperature-related elements.
-- Maintain strong visual hierarchy: biggest = most important.
+Prefer 16 / 24 / 32 for layout. No one-off 10 / 14 / 18 paddings in feature views.
 
 ---
 
-## 8. General Rules
+## 4. Radius
 
-- **Consistency over creativity** in spacing, radius, and colors.
-- Never hardcode colors, spacing, or radius values — always reference the tokens above.
-- When in doubt, increase spacing slightly rather than making things feel cramped.
-- Temperature display should feel premium and dominant.
-- All components should feel intentional and polished.
+| Token | Value | Use |
+|---|---|---|
+| `Radius.small` | 12 | Chips, search, HUD pills |
+| `Radius.medium` | 16 | Default cards |
+| `Radius.large` | 22 | Hero surfaces |
+| `Radius.xLarge` | 28 | Rare |
 
 ---
 
-**Version**: v1  
-**Last Updated**: June 24, 2026  
-**Owner**: Stephen Moore (DayCast)
+## 5. Surfaces
+
+| Modifier | When |
+|---|---|
+| `.dayCastCard()` / `.cardStyle()` | Default cards, feed, settings groups, forecast rows |
+| `.dayCastCard(elevated: true)` | Hero-adjacent / Now card |
+| `.glassCardStyle()` | HUD or overlay sitting on a map/photo/sky |
+
+Do not invent a fourth card. `.tacticalCard()` is an alias of `.dayCastCard()`.
+
+---
+
+## 6. Icons
+
+SF Symbols. `Typography.symbol()` for chrome; larger sizes only for empty-state heroes.
+
+---
+
+## 7. Rules
+
+1. Tokens over literals.
+2. Consistency over a new accent.
+3. Hero temperature stays the loudest thing on Today.
+4. Widgets (`WidgetStyle`) are a later pass — they support light mode.
+
+**Version:** matches code as of 2026-08-14  
+**Owner:** Stephen Moore

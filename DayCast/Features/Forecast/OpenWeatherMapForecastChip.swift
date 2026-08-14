@@ -24,7 +24,7 @@ struct OpenWeatherMapForecastChip: View {
   private var figmaLayout: some View {
     VStack(spacing: 6) {
       Text(formattedTime)
-        .font(DesignTokens.Figma.Typography.chipTime)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .lineLimit(1)
 
@@ -33,7 +33,7 @@ struct OpenWeatherMapForecastChip: View {
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(entry.temperatureF)))°")
-        .font(DesignTokens.Figma.Typography.chipTemp)
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
         .lineLimit(1)
@@ -43,10 +43,10 @@ struct OpenWeatherMapForecastChip: View {
         .foregroundStyle(DesignTokens.Palette.accent)
         .lineLimit(1)
     }
-    .frame(width: DesignTokens.Figma.Metrics.hourlyChipWidth)
+    .frame(width: DesignTokens.Layout.hourlyChipWidth)
     .padding(.horizontal, 10)
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .glassCardStyle(cornerRadius: DesignTokens.Figma.Metrics.chipRadius)
+    .glassCardStyle(cornerRadius: DesignTokens.Layout.chipRadius)
   }
 
   private var standardLayout: some View {
