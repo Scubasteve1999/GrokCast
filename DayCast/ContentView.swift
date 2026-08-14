@@ -7,53 +7,7 @@ struct MainTabView: View {
   @State private var suppressTabBar = false
 
   var body: some View {
-    TabView(selection: Bindable(store).selectedTab) {
-      TodayView()
-        .tabItem {
-          Label("Today", systemImage: "sun.max.fill")
-        }
-        .tag(WeatherStore.Tab.today)
-
-      ForecastView()
-        .tabItem {
-          Label("Forecast", systemImage: "calendar")
-        }
-        .tag(WeatherStore.Tab.forecast)
-
-      RadarView()
-        .tabItem {
-          Label("Radar", systemImage: "map.fill")
-        }
-        .tag(WeatherStore.Tab.radar)
-
-      AlertsView()
-        .tabItem {
-          Label("Alerts", systemImage: WeatherStore.Tab.alerts.icon)
-        }
-        .tag(WeatherStore.Tab.alerts)
-
-      GrokAIView()
-        .tabItem {
-          Label("Storm Spotter", systemImage: "sparkles")
-        }
-        .tag(WeatherStore.Tab.grok)
-
-      LocationsView()
-        .tabItem {
-          Label("Locations", systemImage: "mappin.and.ellipse")
-        }
-        .tag(WeatherStore.Tab.locations)
-
-      SettingsView()
-        .tabItem {
-          Label("Settings", systemImage: "gearshape")
-        }
-        .tag(WeatherStore.Tab.settings)
-    }
-    // Intentionally TabView + sidebarAdaptable (not NavigationSplitView): split navigation
-    // would duplicate chrome and risk regressing the tab-based model on iPad.
-    .tabViewStyle(.sidebarAdaptable)
-    .toolbar(.hidden, for: .tabBar)
+    tabRoot
     .onPreferenceChange(TabBarSuppressionPreferenceKey.self) { suppressTabBar = $0 }
     .safeAreaInset(edge: .bottom, spacing: 0) {
       Group {
@@ -84,6 +38,73 @@ struct MainTabView: View {
     }
     .onChange(of: store.selectedTab) { _, tab in
       Analytics.track(AnalyticsEvent.tabEvent(for: tab))
+    }
+  }
+
+  @ViewBuilder
+  private var tabRoot: some View {
+    let tabs = TabView(selection: Bindable(store).selectedTab) {
+      TodayView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Today", systemImage: "sun.max.fill")
+        }
+        .tag(WeatherStore.Tab.today)
+
+      ForecastView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Forecast", systemImage: "calendar")
+        }
+        .tag(WeatherStore.Tab.forecast)
+
+      RadarView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Radar", systemImage: "map.fill")
+        }
+        .tag(WeatherStore.Tab.radar)
+
+      AlertsView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Alerts", systemImage: WeatherStore.Tab.alerts.icon)
+        }
+        .tag(WeatherStore.Tab.alerts)
+
+      GrokAIView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Storm Spotter", systemImage: "sparkles")
+        }
+        .tag(WeatherStore.Tab.grok)
+
+      LocationsView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Locations", systemImage: "mappin.and.ellipse")
+        }
+        .tag(WeatherStore.Tab.locations)
+
+      SettingsView()
+        .hidesSystemTabBar()
+        .tabItem {
+          Label("Settings", systemImage: "gearshape")
+        }
+        .tag(WeatherStore.Tab.settings)
+    }
+    .background {
+      if horizontalSizeClass == .compact {
+        SystemTabBarHider()
+      }
+    }
+
+    // sidebarAdaptable is iPad-only. On iPhone it still draws the system tab
+    // bar, which stacks under CompactTabBar (ghost labels + map showing through).
+    if horizontalSizeClass == .regular {
+      tabs.tabViewStyle(.sidebarAdaptable)
+    } else {
+      tabs
     }
   }
 

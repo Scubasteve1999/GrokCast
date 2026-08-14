@@ -1,4 +1,65 @@
 import SwiftUI
+import UIKit
+
+extension View {
+  /// Hide the system `TabView` bar so only `CompactTabBar` is visible on iPhone.
+  func hidesSystemTabBar() -> some View {
+    toolbar(.hidden, for: .tabBar)
+      .toolbarBackground(.hidden, for: .tabBar)
+  }
+}
+
+/// Walks up to the hosting `UITabBarController` and hides its bar.
+/// SwiftUI `.toolbar(.hidden, for: .tabBar)` is ignored by `sidebarAdaptable`
+/// and by the iOS 26 glass tab bar.
+struct SystemTabBarHider: UIViewControllerRepresentable {
+  func makeUIViewController(context: Context) -> SystemTabBarHiderController {
+    SystemTabBarHiderController()
+  }
+
+  func updateUIViewController(_ uiViewController: SystemTabBarHiderController, context: Context) {
+    uiViewController.hideSystemTabBar()
+  }
+}
+
+final class SystemTabBarHiderController: UIViewController {
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    hideSystemTabBar()
+  }
+
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    hideSystemTabBar()
+  }
+
+  func hideSystemTabBar() {
+    guard let tab = enclosingTabBarController() else { return }
+    tab.tabBar.isHidden = true
+    tab.tabBar.alpha = 0
+    tab.tabBar.isUserInteractionEnabled = false
+  }
+
+  private func enclosingTabBarController() -> UITabBarController? {
+    var current: UIViewController? = parent ?? self
+    while let controller = current {
+      if let tab = controller as? UITabBarController { return tab }
+      current = controller.parent
+    }
+    return view.window?.rootViewController.flatMap(findTabBar(in:))
+  }
+
+  private func findTabBar(in root: UIViewController) -> UITabBarController? {
+    if let tab = root as? UITabBarController { return tab }
+    for child in root.children {
+      if let tab = findTabBar(in: child) { return tab }
+    }
+    if let presented = root.presentedViewController {
+      return findTabBar(in: presented)
+    }
+    return nil
+  }
+}
 
 enum CompactTab: String, CaseIterable, Identifiable {
   case today
@@ -118,25 +179,15 @@ struct CompactTabBar: View {
     }
     .padding(.top, 8)
     .padding(.bottom, 6)
-    .background(
-      ZStack {
-        Rectangle().fill(DesignTokens.Palette.bgSecondary.opacity(0.94))
-        Rectangle()
-          .fill(
-            LinearGradient(
-              colors: [Color.white.opacity(0.08), Color.clear],
-              startPoint: .top,
-              endPoint: .bottom
-            )
-          )
-      }
-    )
+    .background {
+      DesignTokens.Palette.bgSecondary
+        .ignoresSafeArea(edges: .bottom)
+    }
     .overlay(alignment: .top) {
       Rectangle()
         .fill(Color.white.opacity(0.14))
         .frame(height: 0.5)
     }
-    .shadow(color: .black.opacity(0.45), radius: 20, y: -4)
     .ignoresSafeArea(.keyboard)
     .sheet(isPresented: $showMoreSheet) {
       MoreHubSheet()
