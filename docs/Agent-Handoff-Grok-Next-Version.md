@@ -1,8 +1,9 @@
 # Handoff to Grok agent — next version after 1.0.6
 
-Written 2026-08-06, while 1.0.6 is in App Store review. Modeled on
-`docs/Agent-Handoff-Claude-Cursor.md`'s handoff format. **Deliverable of this pass is
-this document, saved to `docs/Agent-Handoff-Grok-Next-Version.md`** — no code changes.
+Written 2026-08-06, while 1.0.6 is in App Store review. **Updated 2026-08-14: 1.0.6
+(build 122) was approved and is live today** — see the state/first-task sections
+below, both revised accordingly. Modeled on `docs/Agent-Handoff-Claude-Cursor.md`'s
+handoff format.
 
 ## The one thing you must know before touching this
 
@@ -12,15 +13,30 @@ this document, saved to `docs/Agent-Handoff-Grok-Next-Version.md`** — no code 
 > of post-reposition App Store Search data, (2) 10+ subscribers, (3) the reposition
 > demonstrably fails.
 
-**None of these are true yet.** 1.0.6 — which carries the spotter-niche reposition
-(new subtitle/keywords/description) — is still in review as of this writing. The
-30-day clock has not started. Do not scope or start the big candidate feature below
-(Spotter Network / mPING) until a gate trips. This handoff exists so the next agent
-picks up the right work immediately when it does, instead of re-deriving strategy.
+**None of these are true yet, but the clock has now started.** 1.0.6 — which carries
+the spotter-niche reposition (new subtitle/keywords/description) — was approved and
+went live **2026-08-14** (build 122, after one 3.1.2(c) rejection for broken
+privacy/terms links, fixed and resubmitted). Do not scope or start the big candidate
+feature below (Spotter Network / mPING) until a gate trips — earliest possible trip
+date is **2026-09-13** (30 days out), sooner if 10+ subscribers land first.
 
 ## State of the repo right now
 
-- `main` is clean, 1.0.6 submitted, awaiting Apple review.
+- `main` is clean and pushed, 1.0.6 (build 122) approved and live as of 2026-08-14.
+- Since the 2026-08-06 version of this handoff, these landed on `main` (all from the
+  "safe to build now" list below, pre-approved):
+  - Live Activity severe-alert / radar-event variants shipped (`WeatherLiveActivityManager`,
+    `WeatherLiveActivityWidget`, `WeatherLiveActivityAttributes`) — the roadmap item is
+    now checked off.
+  - TestFlight detection fixed to use `AppTransaction.shared` instead of sniffing the
+    sandbox receipt path (`GrokAPIConfiguration.swift`) — the old method was unreliable.
+  - `grok-build` CLI trimmed from 676 to 148 lines: removed the `radar`,
+    `integrate-nws-api`, and `integrate-weatherkit` commands, which were echo-only
+    scaffolding from an old workflow (printed a flag description, then just ran
+    `xcodegen generate` — never touched source). The six commands that do real work
+    (`increment-build`, `regenerate`, `generate-icons`, `clean`, `archive`,
+    `capture-aso`) are untouched.
+  - App Store review screenshot assets added under `Marketing/AppStore/`.
 - AI cost gate is live: metered Cloudflare Worker proxy, per-subscriber + global daily
   caps, kill switch (shipped 1.0.5).
 - Instrumentation shipped with 1.0.6: `share_completed`, `ai_request` (per feature),
@@ -31,16 +47,20 @@ picks up the right work immediately when it does, instead of re-deriving strateg
 
 ## First task on pickup: re-capture acquisition data
 
-The moment 1.0.6 clears review and goes live:
+1.0.6 is live as of **2026-08-14** — this is the live date to use for all of the
+following (Apple's Analytics date filters won't mark the metadata change on their
+own, so this has to be tracked by hand):
 
-1. Note the live date by hand (Apple's Analytics date filters won't mark the metadata
-   change).
-2. Re-run the same two App Store Connect Analytics views documented in
+1. Re-run the same two App Store Connect Analytics views documented in
    `docs/baseline-2026-08-01.md` (Acquisition → Overview, Acquisition → Sources,
-   Product Page Views by Unique Devices).
-3. Watch **App Store Search impressions** specifically — that's the one metric the
+   Product Page Views by Unique Devices) — start now so there's a clean pre/post
+   boundary at 2026-08-14.
+2. Watch **App Store Search impressions** specifically — that's the one metric the
    keyword/subtitle change acts on. Browse and Referrer aren't moved by this reposition.
-4. Give it 30 days before drawing conclusions. A week of data at this volume is noise.
+3. Give it until **2026-09-13** (30 days) before drawing conclusions. A week of data
+   at this volume is noise.
+4. Also watch subscriber count — 10+ subscribers trips the gate independently of the
+   30-day clock.
 
 ## Safe to build now, regardless of gate status
 
@@ -48,14 +68,15 @@ Small polish items already scoped in `docs/ROADMAP.md`, Phase 3/4 remainder. Non
 these touch AI cost, paywall, or entitlements — the two things the thinking-pass doc
 flagged as the actual risk:
 
-- Push notification: rain-starting-soon, sourced from existing Minutecast data
-- Live Activity variants for severe alert / radar event (reuses existing Live Activity
-  infra)
+- ~~Push notification: rain-starting-soon~~ — shipped (82d7cea).
+- ~~Live Activity variants for severe alert / radar event~~ — shipped 2026-08-14
+  (657b609).
 - "Ask Grok" App Intent (opens chat with context), reuses existing Grok chat surface
 - Radar glass HUD + glowing playhead (visual polish on existing radar view)
 - Tab IA simplification (Home / Map / You) — marked optional in ROADMAP; skip if not cheap
 
-Fine to pick these up between now and whichever gate trips first.
+Fine to pick these up between now and whichever gate trips first. Only two Phase 3/4
+polish items remain.
 
 ## Do NOT build yet: the gated candidate list, ranked
 
