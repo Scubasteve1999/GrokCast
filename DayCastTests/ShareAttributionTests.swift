@@ -35,13 +35,23 @@ final class ShareAttributionTests: XCTestCase {
   }
 
   func testURLMatchesTheLinkAppStoreConnectGeneratedByteForByte() {
-    // Copied verbatim from App Store Connect → Analytics → Campaigns for the
-    // "share_today" campaign. If our builder ever drifts from Apple's format,
-    // attribution could fail silently — this is the check that catches it.
-    let fromAppStoreConnect =
-      "https://apps.apple.com/app/apple-store/id6780682022?pt=128792554&ct=share_today&mt=8"
+    // Apple's campaign format: /app/apple-store/id{app}?pt={provider}&ct={surface}&mt=8.
+    // App ID remapped 2026-08-14 when listing 6780682022 was replaced by 6798461672.
+    // pt is account-level and was kept.
+    let expected =
+      "https://apps.apple.com/app/apple-store/id6798461672?pt=128792554&ct=share_today&mt=8"
 
-    XCTAssertEqual(ShareAttribution.appStoreURL(for: .todayCard).absoluteString, fromAppStoreConnect)
+    XCTAssertEqual(ShareAttribution.appStoreURL(for: .todayCard).absoluteString, expected)
+  }
+
+  func testReviewURLsPointAtTheLiveListing() {
+    XCTAssertEqual(ShareAttribution.appStoreID, "6798461672")
+    XCTAssertTrue(AppReviewPrompt.appStoreURL.absoluteString.contains(ShareAttribution.appStoreID))
+    XCTAssertEqual(
+      AppReviewPrompt.writeReviewURL.absoluteString,
+      "https://apps.apple.com/app/id6798461672?action=write-review")
+    XCTAssertEqual(AppLinks.appStore, AppReviewPrompt.appStoreURL)
+    XCTAssertEqual(AppLinks.writeReview, AppReviewPrompt.writeReviewURL)
   }
 
   func testFooterEmbedsAnOpenableLink() {

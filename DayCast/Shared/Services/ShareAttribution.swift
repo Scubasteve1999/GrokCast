@@ -9,11 +9,13 @@ import Foundation
 /// Acquisition, which is where install attribution actually lives; no SDK and
 /// no tracking of the person sharing is involved.
 enum ShareAttribution {
-  static let appStoreID = "6780682022"
+  /// Live listing (`DayCast Weather`). The previous ID `6780682022` no longer
+  /// resolves; do not restore it.
+  static let appStoreID = "6798461672"
 
   /// Provider token from App Store Connect (Analytics → Acquisition → Campaigns).
-  /// Not a secret — it appears in every public campaign link — so it belongs in
-  /// tracked source. Attribution reports do not populate without it.
+  /// Account-level, not per-app — kept across the listing-ID change. Not a
+  /// secret; it appears in every public campaign link.
   static let providerToken: String? = "128792554"
 
   /// Where a share originated. Raw values become campaign tokens, so keep them

@@ -18,11 +18,11 @@ enum AppReviewPrompt {
   @MainActor private static var requestedReviewThisLaunch = false
 
   static var appStoreURL: URL {
-    URL(string: "https://apps.apple.com/app/id6780682022")!
+    URL(string: "https://apps.apple.com/app/id\(ShareAttribution.appStoreID)")!
   }
 
   static var writeReviewURL: URL {
-    URL(string: "https://apps.apple.com/app/id6780682022?action=write-review")!
+    URL(string: "https://apps.apple.com/app/id\(ShareAttribution.appStoreID)?action=write-review")!
   }
 
   /// Call after weather has loaded successfully (once per app launch).
