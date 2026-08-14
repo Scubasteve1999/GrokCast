@@ -368,7 +368,7 @@
 		4DB318A3ABCA183492AFBCE5 /* WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBackground.swift; sourceTree = "<group>"; };
 		4EC0538ACB315A9F0D6F5D96 /* FireFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireFeedCard.swift; sourceTree = "<group>"; };
 		4F8F3DE6C4114B111D26DF43 /* HourlyFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyFeedCard.swift; sourceTree = "<group>"; };
-		504193505780DAF0BC934722 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		504193505780DAF0BC934722 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5089FC6E13A5CA75B0ADE66A /* GrokStormSpotterButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokStormSpotterButton.swift; sourceTree = "<group>"; };
 		5296CB008FFD5104E7A9D275 /* WeatherShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherShareCard.swift; sourceTree = "<group>"; };
 		52A9063C42C047B6127384CA /* RadarLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarLog.swift; sourceTree = "<group>"; };
@@ -406,10 +406,10 @@
 		6EC74F6B8148799773943BC1 /* Location.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
 		6F3FC61B1391C20FE7B3F594 /* GrokAPIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIConfiguration.swift; sourceTree = "<group>"; };
 		716551B4279E6811F83E3D01 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
-		745705B7DE7E0272E551E884 /* DayCastWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = DayCastWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		745705B7DE7E0272E551E884 /* DayCastWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DayCastWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		748B038F2AB42F010BF7B370 /* RadarTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarTimeline.swift; sourceTree = "<group>"; };
 		7A58AB2A21809CEDB7773FB7 /* RadarFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarFrame.swift; sourceTree = "<group>"; };
-		7AB0DB4C2E458E445EDC0E3D /* GrokProducts.storekit */ = {isa = PBXFileReference; path = GrokProducts.storekit; sourceTree = "<group>"; };
+		7AB0DB4C2E458E445EDC0E3D /* GrokProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = GrokProducts.storekit; sourceTree = "<group>"; };
 		7C66B6B55D978BA67FACD2C5 /* AirQualityAndMoonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirQualityAndMoonTests.swift; sourceTree = "<group>"; };
 		7C6FA010DD5E336453535FDB /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		7D055CCCAAC27A525349671F /* CriticalFlowsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriticalFlowsUITests.swift; sourceTree = "<group>"; };
@@ -441,7 +441,7 @@
 		98BD96EF3042487A5E6F1BAF /* SmallWeatherWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallWeatherWidgetView.swift; sourceTree = "<group>"; };
 		9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokUsageLimiterTests.swift; sourceTree = "<group>"; };
 		9A270636E6538021FD147BB8 /* SPCSevereService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCSevereService.swift; sourceTree = "<group>"; };
-		9B072FAB6C8278751CF5E72A /* DeveloperAPIKey.swift.example */ = {isa = PBXFileReference; path = DeveloperAPIKey.swift.example; sourceTree = "<group>"; };
+		9B072FAB6C8278751CF5E72A /* DeveloperAPIKey.swift.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = DeveloperAPIKey.swift.example; sourceTree = "<group>"; };
 		9B5209B61529516137ADA7DA /* FeedAssemblerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedAssemblerTests.swift; sourceTree = "<group>"; };
 		9C39E4354D382B96A752F190 /* AppReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPrompt.swift; sourceTree = "<group>"; };
 		9C459B2B538D805B36EF7F19 /* NIFCFireService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NIFCFireService.swift; sourceTree = "<group>"; };
@@ -453,7 +453,7 @@
 		A51B41B30B8ECF4BE35BAD63 /* ShareAttributionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareAttributionTests.swift; sourceTree = "<group>"; };
 		A6131D15BC17ADFF672723A4 /* AirNowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirNowService.swift; sourceTree = "<group>"; };
 		A70E23606A0506D44E5BC593 /* GrokActionTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokActionTile.swift; sourceTree = "<group>"; };
-		A71313966C2D1C15E3ADDDB5 /* OpenWeatherMapKeys.swift.example */ = {isa = PBXFileReference; path = OpenWeatherMapKeys.swift.example; sourceTree = "<group>"; };
+		A71313966C2D1C15E3ADDDB5 /* OpenWeatherMapKeys.swift.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = OpenWeatherMapKeys.swift.example; sourceTree = "<group>"; };
 		A7A027B57AA685240B4D5E12 /* WidgetDeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDeepLink.swift; sourceTree = "<group>"; };
 		A8FA50BF3B362AE1122AC83E /* OpenWeatherMapKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapKeys.swift; sourceTree = "<group>"; };
 		A9421C5ABF8EF68B7AF25EA2 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
@@ -491,7 +491,7 @@
 		CA7A41096F01DF0C5EDA8F96 /* GrokAuthResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAuthResolver.swift; sourceTree = "<group>"; };
 		CB671C40840164D603BD500B /* DayCastAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastAppIntents.swift; sourceTree = "<group>"; };
 		CCF1689F1E6B8CBBC6659A92 /* LocationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationsView.swift; sourceTree = "<group>"; };
-		CD38C886C0ED24BD8434C183 /* DayCast.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DayCast.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD38C886C0ED24BD8434C183 /* DayCast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DayCast.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CDCD398C47456C76BC945AE6 /* Shimmer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shimmer.swift; sourceTree = "<group>"; };
 		CEE27759ACF82ED0800A0400 /* FeedAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedAssembler.swift; sourceTree = "<group>"; };
 		CEE6FE48B1552B327CB9976E /* DailyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRow.swift; sourceTree = "<group>"; };
@@ -535,7 +535,7 @@
 		F7E2855BEEF9B966A4362489 /* ForecastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastView.swift; sourceTree = "<group>"; };
 		F9DD4620D3525897EF3C8385 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FAB04FBBB06494AD7577FFA1 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
-		FBFE5C4AD0E6A91CE1890AFD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		FBFE5C4AD0E6A91CE1890AFD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FDDC5116F73CBBFCB7E898AD /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 

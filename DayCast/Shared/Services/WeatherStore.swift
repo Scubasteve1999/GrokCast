@@ -615,7 +615,8 @@ final class WeatherStore {
       minutecast: minutecast,
       locationName: name,
       temperatureText: formatTemperatureShort(weather.currentTemp),
-      enabled: liveActivityEnabled
+      enabled: liveActivityEnabled,
+      alerts: activeAlerts
     )
   }
 
@@ -1166,7 +1167,8 @@ final class WeatherStore {
     }
 
     var alertOK = true
-    if needsAlerts {
+    // Fetch when alert pushes *or* Live Activity needs severe-variant content.
+    if needsAlerts || needsLiveActivity {
       do {
         let alerts = try await nwsService.fetchActiveAlerts(for: loc, timeout: 8)
         if Self.isBackgroundBudgetExhausted(taskStart) { return false }
@@ -1277,7 +1279,8 @@ final class WeatherStore {
       minutecast: minutecast,
       locationName: locationName,
       temperatureText: formatTemperatureShort(weather.currentTemp),
-      enabled: true
+      enabled: true,
+      alerts: activeAlerts
     )
   }
 

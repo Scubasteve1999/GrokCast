@@ -402,7 +402,7 @@ struct SettingsView: View {
           Text("DISPLAY & NOTIFICATIONS")
         } footer: {
           Text(
-            "Live Activity (Pro) shows Score + Minutecast on the Lock Screen and updates when the app refreshes weather — not a continuous background push feed yet. Morning brief notifies from your cached Today's Take when scheduled."
+            "Live Activity (Pro) shows Score + Minutecast on the Lock Screen, switches to a severe-alert or rain-event layout when those are active, and updates when the app refreshes weather — not a continuous background push feed yet. Morning brief notifies from your cached Today's Take when scheduled."
           )
         }
 
