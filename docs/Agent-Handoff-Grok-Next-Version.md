@@ -22,9 +22,11 @@ date is **2026-09-13** (30 days out), sooner if 10+ subscribers land first.
 
 ## State of the repo right now
 
-- `main` is at **1.0.7 (build 123)**. Archive exists locally
-  (`~/Library/Developer/Xcode/Archives/2026-08-14/DayCast 1.0.7 (123).xcarchive`).
-  Live on the store is still 1.0.6 (build 122) until this archive is uploaded and approved.
+- `main` is at **1.0.7 (build 124)**. Archive exists locally
+  (`~/Library/Developer/Xcode/Archives/2026-08-14/DayCast 1.0.7 (124).xcarchive`).
+  Includes Today's Take 4.7 filter / report / hide. Live on the store is still
+  1.0.6 (build 122) until this archive is uploaded and approved. The earlier
+  123 archive is stale — upload **124**.
 - Since the 2026-08-06 version of this handoff, these landed on `main` (all from the
   "safe to build now" list below, pre-approved):
   - Live Activity severe-alert / radar-event variants shipped (`WeatherLiveActivityManager`,
