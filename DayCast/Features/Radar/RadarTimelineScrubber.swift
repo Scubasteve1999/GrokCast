@@ -6,6 +6,15 @@ enum RadarTimelineScrubberLayout {
   case figma
 }
 
+enum RadarTimelinePlayhead {
+  /// Fraction along the track for a frame index. 0 when there is nothing to scrub.
+  static func progress(index: Int, count: Int) -> CGFloat {
+    guard count > 1 else { return 0 }
+    let clamped = min(max(index, 0), count - 1)
+    return CGFloat(clamped) / CGFloat(count - 1)
+  }
+}
+
 struct RadarTimelineScrubber: View {
   @Bindable var radarState: RadarState
   var layout: RadarTimelineScrubberLayout = .standard
@@ -31,10 +40,7 @@ struct RadarTimelineScrubber: View {
 
     VStack(spacing: DesignTokens.Spacing.space4) {
       GeometryReader { geo in
-        let progress =
-          count > 1
-          ? CGFloat(clampedIndex) / CGFloat(count - 1)
-          : 0
+        let progress = RadarTimelinePlayhead.progress(index: clampedIndex, count: count)
         let thumbX = geo.size.width * progress
 
         ZStack(alignment: .leading) {
@@ -44,6 +50,18 @@ struct RadarTimelineScrubber: View {
           Capsule()
             .fill(DesignTokens.Palette.radarProgress)
             .frame(width: max(4, thumbX), height: 4)
+
+          Circle()
+            .fill(DesignTokens.Palette.radarProgress)
+            .frame(width: 12, height: 12)
+            .shadow(
+              color: DesignTokens.Palette.radarProgress.opacity(0.55),
+              radius: 8,
+              x: 0,
+              y: 0
+            )
+            .offset(x: thumbX - 6)
+            .accessibilityHidden(true)
 
           if isScrubbing {
             let tooltipWidth: CGFloat = 60

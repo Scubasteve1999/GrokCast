@@ -197,8 +197,28 @@ struct ChaseRadarHUD: View {
 
   private var cardBackground: some View {
     RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
-      .fill(DesignTokens.Palette.cardElevated)
-      .shadow(color: .black.opacity(0.45), radius: 14, y: 8)
+      .fill(
+        LinearGradient(
+          colors: [
+            DesignTokens.Palette.cardElevated.opacity(0.88),
+            DesignTokens.Palette.cardBackground.opacity(0.78),
+          ],
+          startPoint: .top,
+          endPoint: .bottom
+        )
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+          .stroke(
+            LinearGradient(
+              colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
+              startPoint: .top,
+              endPoint: .bottom
+            ),
+            lineWidth: DesignTokens.Card.strokeWidth
+          )
+      )
+      .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
   }
 
   private func cardStroke(urgency: ChaseRadarHUDLogic.ScanFreshness) -> some View {

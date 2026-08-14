@@ -90,8 +90,8 @@ App Store blockers and baseline polish.
 ### Remaining Phase 3 polish
 - [x] Push: rain starting soon (local notification from Minutecast; BG path + kind-transition cooldown)
 - [x] Live Activity variants for severe alert / radar event (priority: severe NWS → Minutecast rain → standard; deep links + tint)
-- [ ] “Ask Grok” App Intent (opens chat with context)
-- [ ] Radar glass HUD + glowing playhead
+- [x] “Ask Grok” App Intent (opens chat with context)
+- [x] Radar glass HUD + glowing playhead
 
 ### Exit criteria
 - Users can plan the next hour without opening another app

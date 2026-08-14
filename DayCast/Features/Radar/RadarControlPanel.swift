@@ -78,11 +78,7 @@ struct RadarControlPanel: View {
       }
     }
     .padding(prefersFigmaHUD ? DesignTokens.Spacing.space16 : DesignTokens.Spacing.space12)
-    .cardStyle(
-      background: DesignTokens.Palette.cardElevated,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium,
-      elevated: true
-    )
+    .glassCardStyle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
     .sheet(isPresented: $showDisplayOptions) {

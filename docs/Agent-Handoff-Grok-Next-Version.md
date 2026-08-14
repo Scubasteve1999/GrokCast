@@ -68,12 +68,14 @@ flagged as the actual risk:
 - ~~Push notification: rain-starting-soon~~ — shipped (82d7cea).
 - ~~Live Activity variants for severe alert / radar event~~ — shipped 2026-08-14
   (657b609).
-- "Ask Grok" App Intent (opens chat with context), reuses existing Grok chat surface
-- Radar glass HUD + glowing playhead (visual polish on existing radar view)
+- ~~"Ask Grok" App Intent (opens chat with context)~~ — shipped on `main` 2026-08-14
+  (`AskGrokIntent` + `AskGrokPendingPrompt`; reuses `GrokAIViewModel.askGrok`).
+- ~~Radar glass HUD + glowing playhead~~ — shipped on `main` 2026-08-14
+  (`ChaseRadarHUD` / `RadarControlPanel` glass, figma scrubber playhead).
 - Tab IA simplification (Home / Map / You) — marked optional in ROADMAP; skip if not cheap
 
-Fine to pick these up between now and whichever gate trips first. Only two Phase 3/4
-polish items remain.
+Fine to pick the leftover item up between now and whichever gate trips first.
+Only optional Tab IA remains on this list.
 
 ## Do NOT build yet: the gated candidate list, ranked
 

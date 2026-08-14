@@ -177,11 +177,20 @@ private struct GrokAIViewContent: View {
     .preferredColorScheme(.dark)
     .onAppear {
       viewModel.recoverFromStaleActionStateIfNeeded()
+      consumePendingAskGrok(viewModel: viewModel)
       Task {
         if weatherStore.currentWeather == nil {
           await weatherStore.performInitialLoadIfNeeded()
         }
       }
+    }
+    .onChange(of: weatherStore.selectedTab) { _, tab in
+      if tab == .grok {
+        consumePendingAskGrok(viewModel: viewModel)
+      }
+    }
+    .onReceive(NotificationCenter.default.publisher(for: AskGrokPendingPrompt.didChange)) { _ in
+      consumePendingAskGrok(viewModel: viewModel)
     }
     .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
     .onChange(of: selectedPhotoItem) { _, newItem in
@@ -762,6 +771,17 @@ private struct GrokAIViewContent: View {
   private func askQuickPrompt(_ prompt: String, viewModel: GrokAIViewModel) {
     Task {
       await viewModel.askGrok(question: prompt)
+    }
+  }
+
+  private func consumePendingAskGrok(viewModel: GrokAIViewModel) {
+    guard let action = AskGrokPendingPrompt.take() else { return }
+    switch action {
+    case .submit(let pending):
+      question = ""
+      Task { await viewModel.askGrok(question: pending) }
+    case .focusInput:
+      isInputFocused = true
     }
   }
 }
