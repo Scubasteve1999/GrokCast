@@ -67,10 +67,10 @@ struct LocationsView: View {
   private var figmaSearchField: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Image(systemName: "magnifyingglass")
-        .font(.system(size: 15))
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
       TextField("Search cities...", text: $searchText)
-        .font(.system(size: 15))
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .textInputAutocapitalization(.words)
         .autocorrectionDisabled()
@@ -78,8 +78,8 @@ struct LocationsView: View {
           scheduleSearch(newValue)
         }
     }
-    .padding(.horizontal, 14)
-    .padding(.vertical, 10)
+    .padding(.horizontal, DesignTokens.Spacing.space12)
+    .padding(.vertical, DesignTokens.Spacing.space12)
     .cardStyle(
       background: DesignTokens.Palette.cardElevated,
       stroke: DesignTokens.Palette.cardStroke,
@@ -98,13 +98,13 @@ struct LocationsView: View {
         HStack(spacing: 8) {
           ProgressView()
           Text("Searching…")
-            .font(.subheadline)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
         .padding(DesignTokens.Spacing.space16)
       } else if searchResults.isEmpty {
         Text("No locations found. Try Memphis or Nashville.")
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .padding(DesignTokens.Spacing.space16)
       } else {
@@ -140,11 +140,11 @@ struct LocationsView: View {
         } label: {
           HStack(spacing: DesignTokens.Spacing.space12) {
             Image(systemName: "location.fill")
-              .font(.system(size: 16, weight: .semibold))
+              .font(DesignTokens.Typography.symbol(16))
               .foregroundStyle(DesignTokens.Palette.accent)
               .frame(width: 24)
             Text("Use My Current Location")
-              .font(.system(size: 15, weight: .semibold))
+              .font(DesignTokens.Typography.subsection())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
             Spacer()
           }
@@ -165,7 +165,7 @@ struct LocationsView: View {
         let saved = store.savedLocations.filter { !$0.isCurrent }
         if saved.isEmpty {
           Text("No saved cities yet. Search above to add one.")
-            .font(.subheadline)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(DesignTokens.Spacing.space16)
         } else {
@@ -236,7 +236,7 @@ struct LocationsView: View {
         HStack {
           ProgressView()
           Text("Searching…")
-            .foregroundStyle(.secondary)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       } else if searchResults.isEmpty {
         ContentUnavailableView(
@@ -359,18 +359,18 @@ private struct SearchResultRow: View {
     HStack {
       VStack(alignment: .leading, spacing: 2) {
         Text(primaryTitle)
-          .font(.body.weight(.medium))
-          .foregroundStyle(.primary)
+          .font(DesignTokens.Typography.headline())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
         if let subtitle {
           Text(subtitle)
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
             .lineLimit(2)
         }
       }
       Spacer()
       Image(systemName: "plus.circle")
-        .foregroundStyle(.tint)
+        .foregroundStyle(DesignTokens.Palette.accent)
     }
     .contentShape(Rectangle())
   }
@@ -412,19 +412,19 @@ struct LocationRow: View {
   private var figmaRow: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       Image(systemName: location.isCurrent ? "location.fill" : "mappin.and.ellipse")
-        .font(.system(size: 16, weight: .semibold))
+        .font(DesignTokens.Typography.symbol(16))
         .foregroundStyle(DesignTokens.Palette.accent)
         .frame(width: 24)
 
       VStack(alignment: .leading, spacing: 2) {
         Text(location.name)
-          .font(.system(size: 15, weight: .semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
 
         if location.isCurrent {
           Text(isSelected ? "GPS · Selected" : "GPS")
-            .font(.system(size: 13))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
@@ -432,7 +432,7 @@ struct LocationRow: View {
       Spacer(minLength: 0)
 
       Image(systemName: "chevron.right")
-        .font(.caption.weight(.bold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
     }
     .padding(.vertical, DesignTokens.Spacing.space12)
@@ -443,18 +443,18 @@ struct LocationRow: View {
     HStack {
       VStack(alignment: .leading, spacing: 2) {
         Text(location.name)
-          .font(.body.weight(.medium))
+          .font(DesignTokens.Typography.headline())
         Text(String(format: "%.4f, %.4f", location.latitude, location.longitude))
-          .font(.caption2.monospaced())
-          .foregroundStyle(.secondary)
+          .font(DesignTokens.Typography.micro().monospaced())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Spacer()
       if location.isCurrent {
         Image(systemName: "mappin.circle.fill")
-          .foregroundStyle(.tint)
+          .foregroundStyle(DesignTokens.Palette.accent)
       } else if isSelected {
         Image(systemName: "checkmark.circle.fill")
-          .foregroundStyle(.tint)
+          .foregroundStyle(DesignTokens.Palette.accent)
       }
     }
     .contentShape(Rectangle())

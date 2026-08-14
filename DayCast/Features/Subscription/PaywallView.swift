@@ -55,11 +55,11 @@ struct PaywallView: View {
   private var header: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Label(feature.headline, systemImage: feature.icon)
-        .font(.title2.weight(.bold))
+        .font(DesignTokens.Typography.studioTitle())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(feature.subheadline)
-        .font(.subheadline)
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -96,10 +96,10 @@ struct PaywallView: View {
       Text(
         "AI features have a generous daily limit that resets at midnight UTC. Weather, radar, and NWS alerts stay free for everyone."
       )
-      .font(.caption2)
+      .font(DesignTokens.Typography.micro())
       .foregroundStyle(DesignTokens.Palette.textTertiary)
       .fixedSize(horizontal: false, vertical: true)
-      .padding(.top, 4)
+      .padding(.top, DesignTokens.Spacing.space4)
     }
     .padding(DesignTokens.Spacing.space16)
     .cardStyle(
@@ -114,12 +114,12 @@ struct PaywallView: View {
       Image(systemName: icon)
         .foregroundStyle(DesignTokens.Palette.accent)
         .frame(width: 24)
-      VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
         Text(title)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(detail)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
     }
@@ -133,14 +133,14 @@ struct PaywallView: View {
     } else if subscription.products.isEmpty {
       VStack(spacing: DesignTokens.Spacing.space12) {
         Text("Subscriptions unavailable. Check your connection or try again.")
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.warning)
           .multilineTextAlignment(.center)
         Button {
           Task { await subscription.loadProducts() }
         } label: {
           Label("Retry", systemImage: "arrow.clockwise")
-            .font(.subheadline.weight(.semibold))
+            .font(DesignTokens.Typography.subsection())
         }
         .buttonStyle(.bordered)
         .tint(DesignTokens.Palette.accent)
@@ -161,18 +161,18 @@ struct PaywallView: View {
       Haptic.impact(.light)
     } label: {
       HStack {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
           Text(product.displayName)
-            .font(.headline)
+            .font(DesignTokens.Typography.headline())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(product.description)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .multilineTextAlignment(.leading)
         }
         Spacer()
         Text(product.displayPrice)
-          .font(.headline)
+          .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.accentWarm)
         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
           .foregroundStyle(isSelected ? DesignTokens.Palette.accent : DesignTokens.Palette.textTertiary)
@@ -229,12 +229,12 @@ struct PaywallView: View {
           }
         }
       }
-      .font(.footnote)
+      .font(DesignTokens.Typography.caption())
       .disabled(subscription.purchaseInFlight)
 
       if let error = subscription.lastErrorMessage {
         Text(error)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.danger)
           .multilineTextAlignment(.center)
       }
@@ -244,15 +244,15 @@ struct PaywallView: View {
   private var legalFooter: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       Text("Payment charged to your Apple ID. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the period.")
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .multilineTextAlignment(.center)
 
-      HStack(spacing: 16) {
+      HStack(spacing: DesignTokens.Spacing.space16) {
         Link("Privacy Policy", destination: AppLinks.privacyPolicy)
         Link("Terms of Use (EULA)", destination: AppLinks.termsOfUse)
       }
-      .font(.caption2)
+      .font(DesignTokens.Typography.micro())
       .underline()
     }
     .frame(maxWidth: .infinity)
