@@ -22,7 +22,8 @@ date is **2026-09-13** (30 days out), sooner if 10+ subscribers land first.
 
 ## State of the repo right now
 
-- `main` is clean and pushed, 1.0.6 (build 122) approved and live as of 2026-08-14.
+- `main` is at **1.0.7 (build 123)**, prepared 2026-08-14, not yet archived/uploaded.
+  Live on the store is still 1.0.6 (build 122) until this build is submitted and approved.
 - Since the 2026-08-06 version of this handoff, these landed on `main` (all from the
   "safe to build now" list below, pre-approved):
   - Live Activity severe-alert / radar-event variants shipped (`WeatherLiveActivityManager`,

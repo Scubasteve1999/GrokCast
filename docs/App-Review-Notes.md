@@ -43,6 +43,7 @@ tap **Restore Purchases** in Settings and retry.
 3. **Radar** — interactive map with animation.
 4. **Alerts** — live NWS watches and warnings.
 5. **AI** — after the sandbox purchase above, try a quick prompt; should stream a reply.
+   Optional: Shortcuts → “Ask Grok” with a question (opens the AI tab and submits).
 6. **Settings → LEGAL & SUPPORT** — Privacy Policy and Terms of Use.
 
 ## DayCast Pro (subscriptions) — how to review
