@@ -15,10 +15,10 @@ struct GrokStormSpotterButton: View {
     Button(action: action) {
       HStack(spacing: 8) {
         Image(systemName: "camera.fill")
-          .font(.system(size: 15, weight: .semibold))
+          .font(DesignTokens.Typography.subsection())
 
         Text("Analyze Storm Photo")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .tracking(DesignTokens.Typography.cardLabelTracking)
       }
       .foregroundStyle(.white)

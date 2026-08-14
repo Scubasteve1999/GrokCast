@@ -29,7 +29,7 @@ struct GrokBriefCard: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       HStack {
         Label("TODAY'S TAKE", systemImage: "sparkles")
-          .font(.caption.weight(.heavy))
+          .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.accent)
         Spacer()
@@ -42,7 +42,7 @@ struct GrokBriefCard: View {
 
       if let briefText {
         Text(briefText)
-          .font(.body.weight(.medium))
+          .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .lineLimit(isExpanded ? nil : (presentation == .figma ? 6 : 3))
           .fixedSize(horizontal: false, vertical: true)
@@ -53,7 +53,7 @@ struct GrokBriefCard: View {
         }
       } else if let errorMessage {
         Text(errorMessage)
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
 
         if !store.xaiService.hasValidKey {
@@ -67,7 +67,7 @@ struct GrokBriefCard: View {
               store.selectedTab = .settings
             }
           }
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .buttonStyle(.borderedProminent)
           .tint(DesignTokens.Palette.accent)
           .controlSize(.small)
@@ -75,13 +75,13 @@ struct GrokBriefCard: View {
           Button("Try Again") {
             Task { await fetchBrief(force: true) }
           }
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .buttonStyle(.bordered)
           .controlSize(.small)
         }
       } else {
         Text("A quick, practical read on today's weather — outfit tips, outdoor windows, and anything worth watching.")
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
 
@@ -120,14 +120,14 @@ struct GrokBriefCard: View {
         Button(isExpanded ? "Show less" : "Show more") {
           withAnimation { isExpanded.toggle() }
         }
-        .font(.caption.weight(.semibold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.accent)
       }
 
       Button("Refresh") {
         Task { await fetchBrief(force: true) }
       }
-      .font(.caption.weight(.semibold))
+      .font(DesignTokens.Typography.caption())
       .foregroundStyle(DesignTokens.Palette.textTertiary)
 
       Spacer()
@@ -138,7 +138,7 @@ struct GrokBriefCard: View {
         message: Text(shareText(for: briefText))
       ) {
         Image(systemName: "square.and.arrow.up")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
       }
       .foregroundStyle(DesignTokens.Palette.accent)
 
@@ -146,7 +146,7 @@ struct GrokBriefCard: View {
         store.selectedTab = .grok
       } label: {
         Text("Ask AI")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
       }
       .buttonStyle(.bordered)
       .controlSize(.small)

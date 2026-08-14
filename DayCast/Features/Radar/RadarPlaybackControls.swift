@@ -14,7 +14,7 @@ struct RadarPlaybackControls: View {
         toggleAnimation()
       } label: {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-          .font(.title2)
+          .font(DesignTokens.Typography.studioTitle())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
       }
       .buttonStyle(.plain)
@@ -35,7 +35,7 @@ struct RadarPlaybackControls: View {
 
   private var frameCounter: some View {
     Text(radarState.currentFrameDisplayTime)
-      .font(.caption)
+      .font(DesignTokens.Typography.caption())
       .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
       .monospacedDigit()
   }
@@ -50,7 +50,7 @@ struct RadarPlaybackControls: View {
         recenterDefaultTrigger = UUID()
       } label: {
         Image(systemName: "house.fill")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
           .frame(width: 32, height: 32)
           .background(DesignTokens.Palette.radarTrack)
@@ -83,7 +83,7 @@ struct RadarPlaybackControls: View {
         }
       } label: {
         Image(systemName: "location.fill")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
           .frame(width: 32, height: 32)
           .background(DesignTokens.Palette.radarTrack)
@@ -113,7 +113,7 @@ struct RadarPlaybackSpeedPicker: View {
           radarState.setPlaybackSpeed(speed)
         } label: {
           Text(label)
-            .font(.caption2.weight(isSelected ? .semibold : .regular))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(
               isSelected
                 ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary

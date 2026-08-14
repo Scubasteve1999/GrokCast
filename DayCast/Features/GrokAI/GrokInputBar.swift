@@ -38,7 +38,7 @@ struct GrokInputBar: View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       TextField("Ask about the weather…", text: $text, axis: .vertical)
         .textFieldStyle(.plain)
-        .font(.system(size: 15))
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .focused($isFocused)
         .lineLimit(1...4)
@@ -51,7 +51,7 @@ struct GrokInputBar: View {
       if !isSendDisabled {
         Button(action: onSend) {
           Image(systemName: "arrow.up.circle.fill")
-            .font(.system(size: 24, weight: .semibold))
+            .font(DesignTokens.Typography.studioTitle())
             .foregroundStyle(DesignTokens.Palette.accent)
         }
       }
@@ -69,7 +69,7 @@ struct GrokInputBar: View {
     HStack(spacing: 8) {
       TextField("Ask about the weather...", text: $text, axis: .vertical)
         .textFieldStyle(.plain)
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .focused($isFocused)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -81,7 +81,7 @@ struct GrokInputBar: View {
 
       Button(action: onSend) {
         Image(systemName: "arrow.up.circle.fill")
-          .font(.system(size: 28, weight: .semibold))
+          .font(DesignTokens.Typography.title())
           .foregroundStyle(isSendDisabled ? .gray : .white)
       }
       .disabled(isSendDisabled)

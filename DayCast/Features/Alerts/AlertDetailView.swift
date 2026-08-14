@@ -26,23 +26,23 @@ struct AlertDetailView: View {
   private var header: some View {
     HStack(alignment: .top, spacing: 12) {
       Image(systemName: NWSAlertStyle.iconName(for: alert))
-        .font(.title)
+        .font(DesignTokens.Typography.title())
         .foregroundStyle(NWSAlertStyle.tint(for: alert))
 
       VStack(alignment: .leading, spacing: 6) {
         Text(alert.event.uppercased())
-          .font(.headline.weight(.bold))
+          .font(DesignTokens.Typography.headline())
           .foregroundStyle(.white)
 
         if let headline = alert.headline, !headline.isEmpty {
           Text(headline)
-            .font(.subheadline)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(.white.opacity(0.85))
         }
 
         if let area = alert.areaDesc, !area.isEmpty {
           Label(area, systemImage: "mappin.and.ellipse")
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(.secondary)
         }
       }
@@ -81,12 +81,12 @@ struct AlertDetailView: View {
   private func metadataRow(label: String, value: String) -> some View {
     HStack {
       Text(label)
-        .font(.caption2.weight(.heavy))
+        .font(DesignTokens.Typography.micro())
         .tracking(1)
         .foregroundStyle(.secondary)
       Spacer()
       Text(value)
-        .font(.caption.monospaced())
+        .font(DesignTokens.Typography.caption().monospaced())
         .foregroundStyle(.white.opacity(0.9))
     }
   }
@@ -94,11 +94,11 @@ struct AlertDetailView: View {
   private func detailSection(title: String, body: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(title)
-        .font(.caption2.weight(.heavy))
+        .font(DesignTokens.Typography.micro())
         .tracking(1.5)
         .foregroundStyle(.secondary)
       Text(body)
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .foregroundStyle(.white.opacity(0.9))
         .fixedSize(horizontal: false, vertical: true)
     }

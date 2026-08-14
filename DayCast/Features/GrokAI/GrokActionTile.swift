@@ -13,15 +13,15 @@ struct GrokActionTile: View {
     Button(action: action) {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         Image(systemName: icon)
-          .font(.title2)
+          .font(DesignTokens.Typography.studioTitle())
           .foregroundStyle(tint)
         Text(title)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
           .lineLimit(2)
         Text(subtitle)
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
           .lineLimit(2)
           .multilineTextAlignment(.leading)

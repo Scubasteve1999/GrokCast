@@ -84,6 +84,10 @@ enum DesignTokens {
 
     /// Compact temperature (sheets, More hub). Hero stays `displayTemp()`.
     static func compactTemp() -> Font { .system(size: 44, weight: .semibold) }
+    /// Home-screen widget temperature (rounded, compact).
+    static func widgetTemp(_ size: CGFloat = 36) -> Font {
+      .system(size: size, weight: .semibold, design: .rounded)
+    }
 
     static func title() -> Font { .system(size: 28, weight: .semibold) }
     static func studioTitle() -> Font { .system(size: 24, weight: .semibold) }

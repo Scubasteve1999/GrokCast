@@ -58,18 +58,18 @@ struct DailyFeedCard: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
       if let uv = day.uvMax {
         Text("UV max \(Int(round(uv)))")
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       let liq = (day.rainSum ?? 0) + (day.showersSum ?? 0)
       let sn = day.snowfallSum ?? 0
       if liq > 0 || sn > 0 {
         Text(precipDetail(liquid: liq, snow: sn))
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Text("\(day.precipChance)% chance of precipitation")
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)

@@ -67,7 +67,7 @@ struct DailyRow: View {
         .frame(width: 52, alignment: .leading)
 
       Image(systemName: rowSymbol)
-        .font(.system(size: 22))
+        .font(DesignTokens.Typography.metric())
         .symbolRenderingMode(.multicolor)
         .frame(width: 28, alignment: .center)
 
@@ -82,12 +82,12 @@ struct DailyRow: View {
       Group {
         if forecast.precipChance > 0 {
           Text("\(forecast.precipChance)%")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentCool)
             .monospacedDigit()
         } else {
           Text("—")
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       }
@@ -121,7 +121,7 @@ struct DailyRow: View {
   private var standardLayout: some View {
     HStack(alignment: .center, spacing: DesignTokens.Spacing.space16) {
       Text(dayLabel)
-        .font(.system(size: 17, weight: isToday ? .bold : .medium))
+        .font(DesignTokens.Typography.headline())
         .foregroundStyle(
           isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
         )
@@ -129,7 +129,7 @@ struct DailyRow: View {
         .frame(width: 56, alignment: .leading)
 
       Image(systemName: rowSymbol)
-        .font(.system(size: 28))
+        .font(DesignTokens.Typography.title())
         .symbolRenderingMode(.multicolor)
         .frame(width: 32, alignment: .center)
 
@@ -144,12 +144,12 @@ struct DailyRow: View {
       Group {
         if forecast.precipChance > 0 {
           Text("\(forecast.precipChance)%")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentCool)
             .monospacedDigit()
         } else {
           Text("—")
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       }

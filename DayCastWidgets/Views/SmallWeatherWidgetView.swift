@@ -24,10 +24,10 @@ struct SmallWeatherWidgetView: View {
       HStack(spacing: 4) {
         HStack(spacing: 4) {
           Image(systemName: "mappin.and.ellipse")
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(style.secondaryText)
           Text(snapshot.location.name)
-            .font(.caption2.weight(.semibold))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(style.secondaryText)
             .lineLimit(1)
         }
@@ -37,7 +37,7 @@ struct SmallWeatherWidgetView: View {
 
         if entry.hasActiveAlert, let summary = entry.alertSummary {
           Image(systemName: WidgetAlertStyle.iconName(for: summary))
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(WidgetAlertStyle.tint(for: summary))
         }
       }
@@ -47,18 +47,18 @@ struct SmallWeatherWidgetView: View {
       VStack(alignment: .leading, spacing: 6) {
         HStack(alignment: .center, spacing: 8) {
           Image(systemName: snapshot.symbolName)
-            .font(.title2)
+            .font(DesignTokens.Typography.studioTitle())
             .symbolRenderingMode(.multicolor)
             .foregroundStyle(style.primaryText)
 
           Text("\(Int(snapshot.currentTemp.rounded()))°")
-            .font(.system(size: 34, weight: .bold, design: .rounded))
+            .font(DesignTokens.Typography.widgetTemp(34))
             .foregroundStyle(style.primaryText)
             .minimumScaleFactor(0.8)
         }
 
         Text(snapshot.conditionText)
-          .font(.caption.weight(.medium))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(style.secondaryText)
           .lineLimit(1)
       }

@@ -7,9 +7,9 @@ struct WidgetTacticalBackground: View {
     Group {
       if colorScheme == .dark {
         ZStack {
-          Color.black
+          DesignTokens.Palette.bgPrimary
           LinearGradient(
-            colors: [Color(red: 0.05, green: 0.05, blue: 0.12), .black],
+            colors: [DesignTokens.Palette.bgSecondary, DesignTokens.Palette.bgPrimary],
             startPoint: .top,
             endPoint: .bottom
           )

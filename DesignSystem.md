@@ -40,6 +40,7 @@ SF Pro. Prefer these helpers over `.font(.caption)` or `.system(size:)`.
 |---|---|---|---|
 | `displayTemp()` | 96 | Semibold | Today hero temp only |
 | `compactTemp()` | 44 | Semibold | Sheets, More hub |
+| `widgetTemp(_:)` | 36 default | Semibold rounded | Widget and compact weather numbers |
 | `title()` | 28 | Semibold | Screen titles |
 | `studioTitle()` | 24 | Semibold | Briefing Studio |
 | `headline()` | 17 | Semibold | Card titles |

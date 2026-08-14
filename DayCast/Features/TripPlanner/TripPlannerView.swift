@@ -33,7 +33,7 @@ struct TripPlannerView: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         Text("DESTINATION")
-          .font(.caption.weight(.bold))
+          .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.textTertiary)
 
@@ -45,7 +45,7 @@ struct TripPlannerView: View {
       HStack(spacing: DesignTokens.Spacing.space16) {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
           Text("FROM")
-            .font(.caption2.weight(.bold))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
           DatePicker("", selection: $startDate, in: Date()..., displayedComponents: .date)
             .labelsHidden()
@@ -53,7 +53,7 @@ struct TripPlannerView: View {
 
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
           Text("TO")
-            .font(.caption2.weight(.bold))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
           DatePicker("", selection: $endDate, in: startDate..., displayedComponents: .date)
             .labelsHidden()
@@ -65,7 +65,7 @@ struct TripPlannerView: View {
         Task { await fetchTripForecast() }
       } label: {
         Label("GET TRIP FORECAST", systemImage: "airplane.departure")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .frame(maxWidth: .infinity)
       }
       .buttonStyle(.borderedProminent)
@@ -81,7 +81,7 @@ struct TripPlannerView: View {
       ProgressView()
         .tint(DesignTokens.Palette.accent)
       Text("Checking forecast for \(destination)...")
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
     }
     .frame(maxWidth: .infinity)
@@ -93,20 +93,20 @@ struct TripPlannerView: View {
       HStack {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
           Text(result.locationName)
-            .font(.title3.weight(.bold))
+            .font(DesignTokens.Typography.metric())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(result.dateRange)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
         Spacer()
         if let avgScore = result.averageScore {
           VStack(spacing: 2) {
             Text("\(avgScore)")
-              .font(.title2.weight(.bold))
+              .font(DesignTokens.Typography.studioTitle())
               .foregroundStyle(DesignTokens.Palette.accent)
             Text("Avg Score")
-              .font(.caption2)
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
         }
@@ -130,32 +130,32 @@ struct TripPlannerView: View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       VStack(alignment: .leading, spacing: 2) {
         Text(day.dayLabel)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(day.condition)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
 
       Spacer()
 
       Image(systemName: day.symbolName)
-        .font(.title3)
+        .font(DesignTokens.Typography.metric())
         .symbolRenderingMode(.multicolor)
 
       VStack(alignment: .trailing, spacing: 2) {
         Text("\(Int(day.high.rounded()))°")
-          .font(.subheadline.weight(.bold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text("\(Int(day.low.rounded()))°")
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       .frame(width: 36)
 
       if day.precipChance > 0 {
         Text("\(day.precipChance)%")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(.cyan)
           .frame(width: 36)
       } else {
@@ -169,14 +169,14 @@ struct TripPlannerView: View {
   private func packingSection(_ items: [String]) -> some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Label("PACKING LIST", systemImage: "suitcase.fill")
-        .font(.caption.weight(.bold))
+        .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.accentWarm)
 
       FlowLayout(spacing: 8) {
         ForEach(items, id: \.self) { item in
           Text(item)
-            .font(.caption.weight(.medium))
+            .font(DesignTokens.Typography.caption())
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(DesignTokens.Palette.cardElevated, in: Capsule())
@@ -191,12 +191,12 @@ struct TripPlannerView: View {
   private func grokAdviceSection(_ advice: String) -> some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Label("TODAY'S TAKE", systemImage: "sparkles")
-        .font(.caption.weight(.bold))
+        .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.accent)
 
       Text(advice)
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
     }
     .padding(DesignTokens.Spacing.space16)
@@ -208,7 +208,7 @@ struct TripPlannerView: View {
       Image(systemName: "exclamationmark.triangle.fill")
         .foregroundStyle(DesignTokens.Palette.danger)
       Text(message)
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.danger)
     }
     .padding(DesignTokens.Spacing.space12)

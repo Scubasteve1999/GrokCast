@@ -19,20 +19,20 @@ struct MinutecastStrip: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       HStack(spacing: DesignTokens.Spacing.space8) {
         Image(systemName: summary.icon)
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(accent)
         Text(summary.message)
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer(minLength: 0)
         if let sourceLabel, !sourceLabel.isEmpty {
           Text(sourceLabel)
-            .font(.system(size: 9, weight: .heavy))
+            .font(DesignTokens.Typography.micro())
             .tracking(1.0)
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
         Text("MINUTECAST")
-          .font(.system(size: 9, weight: .heavy))
+          .font(DesignTokens.Typography.micro())
           .tracking(1.2)
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
@@ -51,7 +51,7 @@ struct MinutecastStrip: View {
 
       if let disagreementCaption, !disagreementCaption.isEmpty {
         Text(disagreementCaption)
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
     }

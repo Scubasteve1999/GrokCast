@@ -20,7 +20,7 @@ struct SunMoonFeedCard: View {
                 .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
           Image(systemName: "chevron.right")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
 
@@ -42,10 +42,10 @@ struct SunMoonFeedCard: View {
   private var sunColumn: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
       Label(formatTime(sunrise), systemImage: "sunrise.fill")
-        .font(.subheadline.weight(.semibold))
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.accentWarm)
       Label(formatTime(sunset), systemImage: "sunset.fill")
-        .font(.subheadline.weight(.semibold))
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.accentCool)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -54,15 +54,15 @@ struct SunMoonFeedCard: View {
   private var moonColumn: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Image(systemName: moon.phase.symbolName)
-        .font(.title2)
+        .font(DesignTokens.Typography.studioTitle())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .symbolRenderingMode(.hierarchical)
       VStack(alignment: .leading, spacing: 2) {
         Text(moon.phase.displayName)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text("\(Int(round(moon.illumination * 100)))% lit")
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
     }
@@ -100,15 +100,15 @@ struct SunMoonDetailView: View {
 
         HStack(spacing: DesignTokens.Spacing.space12) {
           Image(systemName: moon.phase.symbolName)
-            .font(.system(size: 36))
+            .font(DesignTokens.Typography.symbol(36))
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .symbolRenderingMode(.hierarchical)
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
             Text(moon.phase.displayName)
-              .font(.headline)
+              .font(DesignTokens.Typography.headline())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
             Text("About \(Int(round(moon.illumination * 100)))% of the moon is illuminated tonight.")
-              .font(.subheadline)
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
         }

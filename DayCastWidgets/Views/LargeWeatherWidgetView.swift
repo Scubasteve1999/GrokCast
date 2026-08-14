@@ -68,26 +68,26 @@ struct LargeWeatherWidgetView: View {
     VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 4) {
         Image(systemName: "mappin.and.ellipse")
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(style.secondaryText)
         Text(snapshot.location.name)
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(style.secondaryText)
           .lineLimit(1)
 
         Spacer(minLength: 0)
 
         Text("H:\(Int(snapshot.high.rounded()))° L:\(Int(snapshot.low.rounded()))°")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(style.secondaryText)
       }
 
       HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text("\(Int(snapshot.currentTemp.rounded()))°")
-          .font(.system(size: 38, weight: .bold, design: .rounded))
+          .font(DesignTokens.Typography.widgetTemp(38))
           .foregroundStyle(style.primaryText)
         Image(systemName: snapshot.symbolName)
-          .font(.title2)
+          .font(DesignTokens.Typography.studioTitle())
           .symbolRenderingMode(.multicolor)
 
         Spacer(minLength: 0)
@@ -95,10 +95,10 @@ struct LargeWeatherWidgetView: View {
         if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
           VStack(alignment: .trailing, spacing: 1) {
             Text("\(score)")
-              .font(.system(size: 22, weight: .bold, design: .rounded))
+              .font(DesignTokens.Typography.widgetTemp(22))
               .foregroundStyle(style.primaryText)
             Text(label)
-              .font(.caption2.weight(.medium))
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(style.secondaryText)
               .lineLimit(1)
           }
@@ -106,7 +106,7 @@ struct LargeWeatherWidgetView: View {
       }
 
       Text(snapshot.conditionText)
-        .font(.subheadline.weight(.medium))
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(style.secondaryText)
         .lineLimit(1)
     }
@@ -117,13 +117,13 @@ struct LargeWeatherWidgetView: View {
       ForEach(hourly) { hour in
         VStack(spacing: 4) {
           Text(hourLabel(for: hour.time))
-            .font(.caption2.weight(.medium))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(style.secondaryText)
           Image(systemName: hour.symbolName)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .symbolRenderingMode(.multicolor)
           Text("\(Int(hour.temp.rounded()))°")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(style.primaryText)
         }
         .frame(maxWidth: .infinity)
@@ -145,18 +145,18 @@ struct LargeWeatherWidgetView: View {
   private func dailyRow(_ day: DailyForecast) -> some View {
     HStack(spacing: 8) {
       Text(dayLabel(for: day.date))
-        .font(.caption.weight(.semibold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(style.primaryText)
         .frame(width: 36, alignment: .leading)
 
       Image(systemName: day.symbolName)
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .symbolRenderingMode(.multicolor)
         .frame(width: 20)
 
       if day.precipChance > 0 {
         Text("\(day.precipChance)%")
-          .font(.caption2.weight(.medium))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.cyan)
           .frame(width: 32, alignment: .leading)
       } else {
@@ -168,12 +168,12 @@ struct LargeWeatherWidgetView: View {
       tempBar(low: day.low, high: day.high)
 
       Text("\(Int(day.high.rounded()))°")
-        .font(.caption.weight(.semibold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(style.primaryText)
         .frame(width: 28, alignment: .trailing)
 
       Text("\(Int(day.low.rounded()))°")
-        .font(.caption2.weight(.medium))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(style.secondaryText)
         .frame(width: 28, alignment: .trailing)
     }
@@ -198,10 +198,10 @@ struct LargeWeatherWidgetView: View {
   private func grokBriefSection(_ brief: String) -> some View {
     HStack(alignment: .top, spacing: 4) {
       Image(systemName: "sparkles")
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(style.secondaryText)
       Text(brief)
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(style.primaryText)
         .lineLimit(3)
         .minimumScaleFactor(0.9)

@@ -34,7 +34,7 @@ struct GrokQuickPromptButton: View {
 
   private var chipLabel: some View {
     Text(title)
-      .font(.subheadline.weight(.medium))
+      .font(DesignTokens.Typography.callout())
       .tracking(DesignTokens.Typography.cardLabelTracking)
       .foregroundStyle(.white.opacity(DesignTokens.Opacity.iconWhite))
       .padding(.horizontal, 14)
@@ -49,11 +49,11 @@ struct GrokQuickPromptButton: View {
   private var figmaTileLabel: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Image(systemName: icon ?? "sparkles")
-        .font(.system(size: 16, weight: .semibold))
+        .font(DesignTokens.Typography.symbol(16))
         .foregroundStyle(DesignTokens.Palette.accent)
 
       Text(title)
-        .font(.system(size: 12, weight: .semibold))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .multilineTextAlignment(.leading)
         .lineLimit(2)

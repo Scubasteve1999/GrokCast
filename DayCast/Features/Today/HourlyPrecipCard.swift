@@ -16,13 +16,13 @@ struct HourlyPrecipCard: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       HStack {
         Text("PRECIPITATION")
-          .font(.caption.weight(.bold))
+          .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.textTertiary)
         Spacer()
         if maxChance > 0 {
           Text("Next 12h")
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       }
@@ -30,10 +30,10 @@ struct HourlyPrecipCard: View {
       if maxChance == 0 {
         HStack(spacing: DesignTokens.Spacing.space8) {
           Image(systemName: "sun.max.fill")
-            .font(.title3)
+            .font(DesignTokens.Typography.metric())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
           Text("No precipitation expected")
-            .font(.subheadline)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
         .padding(.vertical, DesignTokens.Spacing.space4)
@@ -55,7 +55,7 @@ struct HourlyPrecipCard: View {
             VStack(spacing: 2) {
               if hour.precipChance > 30 {
                 Text("\(hour.precipChance)")
-                  .font(.system(size: 8, weight: .bold))
+                  .font(DesignTokens.Typography.micro())
                   .foregroundStyle(.cyan)
               }
               RoundedRectangle(cornerRadius: 2)
@@ -70,11 +70,11 @@ struct HourlyPrecipCard: View {
 
       HStack {
         Text(formatHour(next12Hours.first?.time))
-          .font(.system(size: 9))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
         Spacer()
         Text(formatHour(next12Hours.last?.time))
-          .font(.system(size: 9))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
     }

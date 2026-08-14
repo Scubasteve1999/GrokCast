@@ -133,6 +133,7 @@ targets:
           - "**/Info.plist"
       - path: DayCast/Shared/Widget
       - path: DayCast/Shared/LiveActivity
+      - path: DayCast/Shared/Design/DesignTokens.swift
       - path: DayCast/Shared/Models/Location.swift
       - path: DayCast/Shared/Models/OpenMeteoModels.swift
     entitlements:

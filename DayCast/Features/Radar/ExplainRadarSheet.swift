@@ -32,19 +32,19 @@ struct ExplainRadarSheet: View {
             HStack(spacing: 10) {
               ProgressView()
               Text("Reading the radar…")
-                .font(.subheadline)
+                .font(DesignTokens.Typography.callout())
                 .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
           } else if let explanation {
             Text(explanation)
-              .font(.body)
+              .font(DesignTokens.Typography.body())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
           } else if let errorMessage {
             Text(errorMessage)
-              .font(.subheadline)
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.danger)
           }
         }
@@ -85,13 +85,13 @@ struct ExplainRadarSheet: View {
   private var contextCard: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Label("Radar Brief", systemImage: "sparkles")
-        .font(.caption.weight(.heavy))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.accent)
       Text("\(context.locationName) · \(context.productName)")
-        .font(.subheadline.weight(.semibold))
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       Text("\(context.modeLabel) · \(context.frameLabel)")
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
     }
     .frame(maxWidth: .infinity, alignment: .leading)

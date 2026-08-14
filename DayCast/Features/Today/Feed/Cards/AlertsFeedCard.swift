@@ -23,17 +23,17 @@ struct AlertsFeedCard: View {
         } label: {
           HStack(spacing: DesignTokens.Spacing.space8) {
             Image(systemName: NWSAlertStyle.iconName(for: alert))
-              .font(.title3)
+              .font(DesignTokens.Typography.metric())
               .foregroundStyle(tint(for: alert))
 
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
               Text(alert.event)
-                .font(.subheadline.weight(.semibold))
+                .font(DesignTokens.Typography.subsection())
                 .foregroundStyle(DesignTokens.Palette.textPrimary)
                 .multilineTextAlignment(.leading)
               if let headline = alert.headline, !headline.isEmpty {
                 Text(headline)
-                  .font(.caption)
+                  .font(DesignTokens.Typography.caption())
                   .foregroundStyle(DesignTokens.Palette.textSecondary)
                   .lineLimit(2)
                   .multilineTextAlignment(.leading)
@@ -41,7 +41,7 @@ struct AlertsFeedCard: View {
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
-              .font(.caption.weight(.semibold))
+              .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
           .padding(DesignTokens.Spacing.space12)

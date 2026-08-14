@@ -122,6 +122,7 @@
 		6D7FFA6A4AB8248AF3189CD6 /* RadarFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A58AB2A21809CEDB7773FB7 /* RadarFrame.swift */; };
 		6E80A9E66EF27DE85573393D /* FireProximityDedupe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82DDFF7F2E222F230F3CBF9C /* FireProximityDedupe.swift */; };
 		70012A0E8858AF28A3FE297B /* SmallWeatherWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BD96EF3042487A5E6F1BAF /* SmallWeatherWidgetView.swift */; };
+		70B5A91705402128D5CE5CE8 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6FA010DD5E336453535FDB /* DesignTokens.swift */; };
 		72BBDBFD282D519CC1A0198A /* GrokUsageLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */; };
 		72F2AE3017181425828C4D66 /* OpenMeteoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87159F8D417E8988A505FC20 /* OpenMeteoModels.swift */; };
 		74FA07F509814B847EB658F3 /* GrokProxyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A55DF33C7692982C4A73BF /* GrokProxyConfiguration.swift */; };
@@ -1345,6 +1346,7 @@
 			files = (
 				17EB8E463000A221D1019D4C /* DayCastDeepLinks.swift in Sources */,
 				FA7759EB5A9607847EDC67C9 /* DayCastWidgets.swift in Sources */,
+				70B5A91705402128D5CE5CE8 /* DesignTokens.swift in Sources */,
 				75DBE8874E59E5B4056770DD /* GrokBriefSnapshot.swift in Sources */,
 				36B5E8AA2310199D5A696FAA /* LargeWeatherWidgetView.swift in Sources */,
 				FA2E66D15B1CD3A123EF9B8D /* Location.swift in Sources */,

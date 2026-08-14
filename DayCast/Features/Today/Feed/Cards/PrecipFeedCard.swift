@@ -18,7 +18,7 @@ struct PrecipFeedCard: View {
                 .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
           Image(systemName: "chevron.right")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
 
@@ -33,7 +33,7 @@ struct PrecipFeedCard: View {
             Image(systemName: summary.icon)
               .foregroundStyle(DesignTokens.Palette.accentCool)
             Text(timingSentence)
-              .font(.subheadline)
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
           }

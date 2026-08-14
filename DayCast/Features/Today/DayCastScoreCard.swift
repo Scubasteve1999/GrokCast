@@ -32,22 +32,22 @@ struct DayCastScoreCard: View {
   private var figmaLayout: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Text("DAYCAST SCORE")
-        .font(.caption.weight(.bold))
+        .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
 
       HStack(spacing: DesignTokens.Spacing.space12) {
         Image(systemName: score.icon)
-          .font(.system(size: 28))
+          .font(DesignTokens.Typography.title())
           .foregroundStyle(ringColor)
           .symbolRenderingMode(.hierarchical)
 
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
           Text("\(score.value) · \(score.label)")
-            .font(.body.weight(.bold))
+            .font(DesignTokens.Typography.headline())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(score.subtitle)
-            .font(.subheadline)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -75,10 +75,10 @@ struct DayCastScoreCard: View {
           .frame(width: 72, height: 72)
         VStack(spacing: 0) {
           Text("\(score.value)")
-            .font(.system(size: 24, weight: .bold, design: .rounded))
+            .font(DesignTokens.Typography.studioTitle())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text("SCORE")
-            .font(.system(size: 8, weight: .heavy))
+            .font(DesignTokens.Typography.micro())
             .tracking(1)
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
@@ -89,16 +89,16 @@ struct DayCastScoreCard: View {
           Image(systemName: score.icon)
             .foregroundStyle(ringColor)
           Text(score.label.uppercased())
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .tracking(DesignTokens.Typography.headerTracking)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
         }
         Text(score.subtitle)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
         Text(locationName.uppercased())
-          .font(.caption2.weight(.semibold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
 

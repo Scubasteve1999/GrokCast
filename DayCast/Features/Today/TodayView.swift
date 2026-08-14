@@ -64,7 +64,7 @@ struct TodayView: View {
                   ProgressView()
                     .tint(.white)
                   Text("ACQUIRING...")
-                    .font(.footnote.weight(.semibold))
+                    .font(DesignTokens.Typography.caption())
                     .foregroundStyle(DesignTokens.Palette.textTertiary)
                 }
               } else if store.weatherError != nil
@@ -76,7 +76,7 @@ struct TodayView: View {
                   )
                   .foregroundStyle(DesignTokens.Palette.danger)
                   Text(store.weatherError ?? "")
-                    .font(.caption)
+                    .font(DesignTokens.Typography.caption())
                     .foregroundStyle(DesignTokens.Palette.danger)
                     .lineLimit(2)
                   Spacer(minLength: 8)
@@ -84,7 +84,7 @@ struct TodayView: View {
                     Haptic.impact(.medium)
                     Task { await store.useCurrentDeviceLocation() }
                   }
-                  .font(.caption.bold())
+                  .font(DesignTokens.Typography.caption())
                   .buttonStyle(.bordered)
                   .tint(DesignTokens.Palette.danger)
                   .controlSize(.small)
@@ -189,10 +189,10 @@ struct TodayView: View {
       Spacer()
       VStack(spacing: 20) {
         Image(systemName: "sun.max")
-          .font(.system(size: 48))
+          .font(DesignTokens.Typography.symbol(48))
           .foregroundStyle(DesignTokens.Palette.textTertiary)
         Text("Welcome to DayCast")
-          .font(.title2.weight(.semibold))
+          .font(DesignTokens.Typography.studioTitle())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(
           "Your AI-powered weather companion. Get accurate, localized forecasts with smart insights."
@@ -223,15 +223,15 @@ struct TodayView: View {
   private func permissionExplanation() -> some View {
     VStack(spacing: 20) {
       Image(systemName: "location.fill")
-        .font(.system(size: 48))
+        .font(DesignTokens.Typography.symbol(48))
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       VStack(spacing: 12) {
         Text("DayCast uses your location to show accurate weather forecasts for where you are.")
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .multilineTextAlignment(.center)
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text("Your location is only used for weather — we don’t track or store it.")
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .multilineTextAlignment(.center)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
@@ -262,10 +262,10 @@ struct GrokImagineButton: View {
           ProgressView()
             .tint(.white)
           Text("Generating…")
-            .font(.subheadline.weight(.semibold))
+            .font(DesignTokens.Typography.subsection())
         } else {
           Label("Imagine today", systemImage: "sparkles.rectangle.stack")
-            .font(.subheadline.weight(.semibold))
+            .font(DesignTokens.Typography.subsection())
         }
       }
       .frame(maxWidth: .infinity)

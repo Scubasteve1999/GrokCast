@@ -14,9 +14,9 @@ struct NowFeedCard: View {
         // Location chip (TWC-style pill)
         HStack(spacing: 6) {
           Image(systemName: "location.fill")
-            .font(.system(size: 12, weight: .semibold))
+            .font(DesignTokens.Typography.micro())
           Text(store.currentLocation?.name ?? weather.location.name)
-            .font(.system(size: 16, weight: .semibold))
+            .font(DesignTokens.Typography.symbol(16))
             .lineLimit(1)
         }
         .foregroundStyle(Color.white)
@@ -40,13 +40,13 @@ struct NowFeedCard: View {
 
           VStack(spacing: 8) {
             Image(systemName: weather.symbolName)
-              .font(.system(size: 52, weight: .regular))
+              .font(DesignTokens.Typography.widgetTemp(52))
               .symbolRenderingMode(.monochrome)
               .foregroundStyle(Color.white)
               .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
 
             Text(weather.conditionText)
-              .font(.system(size: 17, weight: .semibold))
+              .font(DesignTokens.Typography.headline())
               .foregroundStyle(Color.white)
               .multilineTextAlignment(.center)
               .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
@@ -57,7 +57,7 @@ struct NowFeedCard: View {
         Text(
           "Feels like \(store.formatTemperatureShort(weather.feelsLike))  |  H \(store.formatTemperatureShort(weather.high))  |  L \(store.formatTemperatureShort(weather.low))"
         )
-        .font(.system(size: 17, weight: .medium))
+        .font(DesignTokens.Typography.headline())
         .foregroundStyle(Color.white.opacity(0.95))
         .monospacedDigit()
         .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
@@ -65,14 +65,14 @@ struct NowFeedCard: View {
         // Score chip under hero (our product surface — still elevated)
         HStack(spacing: DesignTokens.Spacing.space8) {
           Image(systemName: score.icon)
-            .font(.body.weight(.semibold))
+            .font(DesignTokens.Typography.headline())
             .foregroundStyle(scoreAccent)
           Text("\(score.value) · \(score.label)")
-            .font(.system(size: 15, weight: .semibold))
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(Color.white)
           Spacer(minLength: 0)
           Image(systemName: "chevron.right")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(Color.white.opacity(0.55))
         }
         .padding(.horizontal, 16)
@@ -133,7 +133,7 @@ struct NowDetailView: View {
               .font(DesignTokens.Typography.callout())
             Spacer()
             Image(systemName: "chevron.right")
-              .font(.caption.weight(.semibold))
+              .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
           .padding(DesignTokens.Spacing.space16)

@@ -22,7 +22,7 @@ struct HourlyFeedCard: View {
                 .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
           Image(systemName: "chevron.right")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
 

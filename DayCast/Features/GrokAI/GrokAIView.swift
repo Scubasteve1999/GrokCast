@@ -72,7 +72,7 @@ private struct GrokAIViewContent: View {
                       ProgressView()
                         .tint(.white)
                       Text("GENERATING IMAGE...")
-                        .font(.footnote.weight(.semibold))
+                        .font(DesignTokens.Typography.caption())
                         .tracking(1.5)
                         .foregroundStyle(.secondary)
                     }
@@ -231,17 +231,17 @@ private struct GrokAIViewContent: View {
       } else {
         VStack(alignment: .leading, spacing: 6) {
           Text("WEATHER INTELLIGENCE")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .tracking(2)
             .foregroundStyle(.white.opacity(0.5))
 
           if let location = weatherStore.currentLocation?.name {
             Text(location.uppercased())
-              .font(.subheadline.weight(.semibold))
+              .font(DesignTokens.Typography.subsection())
               .foregroundStyle(.white.opacity(0.85))
           } else {
             Text("SELECT A LOCATION FOR CONTEXT")
-              .font(.subheadline.weight(.medium))
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(.secondary)
           }
         }
@@ -264,19 +264,19 @@ private struct GrokAIViewContent: View {
             HStack(spacing: 8) {
               ProgressView().scaleEffect(0.85)
               Text("Analyzing your photo…")
-                .font(.system(size: 15))
+                .font(DesignTokens.Typography.callout())
                 .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
           } else if !viewModel.responseText.isEmpty,
             viewModel.stormAnalysisMode || viewModel.lastStormImageData != nil
           {
             Text(viewModel.responseText)
-              .font(.system(size: 15))
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
           } else {
             Text("Upload a storm photo for AI to assess rotation, wall clouds, and hail risk.")
-              .font(.system(size: 15))
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
           }
@@ -293,7 +293,7 @@ private struct GrokAIViewContent: View {
             }
           } label: {
             Label("Analyze Storm Photo", systemImage: "camera.fill")
-              .font(.subheadline.weight(.semibold))
+              .font(DesignTokens.Typography.subsection())
               .frame(maxWidth: .infinity)
               .padding(.vertical, DesignTokens.Spacing.space4)
           }
@@ -390,7 +390,7 @@ private struct GrokAIViewContent: View {
   private func standardQuickPromptsSection(viewModel: GrokAIViewModel) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("QUICK PROMPTS")
-        .font(.caption.weight(.heavy))
+        .font(DesignTokens.Typography.caption())
         .tracking(1.5)
         .foregroundStyle(.white.opacity(0.5))
 
@@ -487,7 +487,7 @@ private struct GrokAIViewContent: View {
           }
         } label: {
           Image(systemName: "sparkles")
-            .font(.title3)
+            .font(DesignTokens.Typography.metric())
             .foregroundStyle(.white.opacity(0.85))
         }
         .disabled(aiActionsDisabled)
@@ -501,7 +501,7 @@ private struct GrokAIViewContent: View {
     NavigationStack {
       VStack(alignment: .leading, spacing: 16) {
         Text("Add optional notes about what you see (wall cloud, rotation, hail size, etc.)")
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(.secondary)
 
         TextField("Observer notes (optional)", text: $stormNotes, axis: .vertical)
@@ -572,7 +572,7 @@ private struct GrokAIViewContent: View {
             .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
             .frame(maxWidth: 280, alignment: .trailing)
           Text(timeString(from: message.timestamp))
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       } else if let url = message.generatedImageURL {
@@ -608,7 +608,7 @@ private struct GrokAIViewContent: View {
           .buttonStyle(.plain)
 
           Text(timeString(from: message.timestamp))
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
         Spacer(minLength: 60)
@@ -626,7 +626,7 @@ private struct GrokAIViewContent: View {
             .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
             .frame(maxWidth: 280, alignment: .leading)
           Text(timeString(from: message.timestamp))
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
         Spacer(minLength: 60)
@@ -670,7 +670,7 @@ private struct GrokAIViewContent: View {
         }
       )
     }
-    .font(.caption.weight(.semibold))
+    .font(DesignTokens.Typography.caption())
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.vertical, 4)
   }
@@ -715,7 +715,7 @@ private struct GrokAIViewContent: View {
                 .shadow(radius: 12)
             case .failure:
               Image(systemName: "photo")
-                .font(.system(size: 80))
+                .font(DesignTokens.Typography.symbol(80))
                 .foregroundStyle(.secondary)
                 .frame(height: 400)
             @unknown default:
@@ -726,7 +726,7 @@ private struct GrokAIViewContent: View {
 
           if let caption = caption, !caption.isEmpty {
             Text(caption)
-              .font(.subheadline)
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
               .multilineTextAlignment(.center)
               .padding(.horizontal)

@@ -105,7 +105,7 @@ struct AlertsView: View {
 
           if activeAlerts.isEmpty {
             Text("No active alerts right now")
-              .font(.subheadline)
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
               .frame(maxWidth: .infinity, alignment: .leading)
           } else {
@@ -134,7 +134,7 @@ struct AlertsView: View {
             }
 
             Text("Showing alerts from the last \(AlertHistoryStore.retentionDays) days.")
-              .font(.caption2)
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
         }
@@ -169,20 +169,20 @@ struct AlertsView: View {
     let tint = NWSAlertStyle.tint(for: alert)
     return HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
       Image(systemName: NWSAlertStyle.iconName(for: alert))
-        .font(.title3)
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(tint)
         .frame(width: 28)
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
           Text(alert.event)
-            .font(.system(size: isActive ? 17 : 15, weight: isActive ? .bold : .semibold))
+            .font(isActive ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .multilineTextAlignment(.leading)
           Spacer(minLength: 0)
           if isActive {
             Text("LIVE")
-              .font(.caption2.weight(.heavy))
+              .font(DesignTokens.Typography.micro())
               .tracking(1)
               .padding(.horizontal, DesignTokens.Spacing.space8)
               .padding(.vertical, DesignTokens.Spacing.space4)
@@ -192,7 +192,7 @@ struct AlertsView: View {
         }
 
         Text(figmaMetaLine(for: alert, isActive: isActive))
-          .font(.system(size: 13))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(
             isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary
           )
@@ -201,7 +201,7 @@ struct AlertsView: View {
 
         if isActive, let headline = alert.headline, !headline.isEmpty {
           Text(headline)
-            .font(.system(size: 14))
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .lineLimit(3)
             .multilineTextAlignment(.leading)
@@ -253,19 +253,19 @@ struct AlertsView: View {
   private func standardAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
     HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
       Image(systemName: NWSAlertStyle.iconName(for: alert))
-        .font(.title3)
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(NWSAlertStyle.tint(for: alert))
         .frame(width: 28)
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
         Text(alert.event)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
 
         if let headline = alert.headline, !headline.isEmpty {
           Text(headline)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textPrimary.opacity(0.75))
             .lineLimit(2)
             .multilineTextAlignment(.leading)
@@ -273,13 +273,13 @@ struct AlertsView: View {
 
         if let area = alert.areaDesc, !area.isEmpty {
           Text(area)
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
             .lineLimit(1)
         }
 
         Text(rowTimestamp(for: alert, isActive: isActive))
-          .font(.caption2.monospaced())
+          .font(DesignTokens.Typography.micro().monospaced())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
 
@@ -287,7 +287,7 @@ struct AlertsView: View {
 
       if isActive {
         Text("LIVE")
-          .font(.caption2.weight(.heavy))
+          .font(DesignTokens.Typography.micro())
           .tracking(1)
           .padding(.horizontal, DesignTokens.Spacing.space8)
           .padding(.vertical, DesignTokens.Spacing.space4)
@@ -296,7 +296,7 @@ struct AlertsView: View {
       }
 
       Image(systemName: "chevron.right")
-        .font(.caption.weight(.semibold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
     }
     .padding(DesignTokens.Spacing.space16)

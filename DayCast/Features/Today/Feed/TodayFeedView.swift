@@ -243,7 +243,7 @@ struct TodayFeedView: View {
       Image(systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill")
         .foregroundStyle(DesignTokens.Palette.danger)
       Text(error)
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.danger)
         .lineLimit(2)
       Spacer(minLength: DesignTokens.Spacing.space8)
@@ -251,7 +251,7 @@ struct TodayFeedView: View {
         Haptic.impact(.medium)
         Task { await store.refreshWeather() }
       }
-      .font(.caption.bold())
+      .font(DesignTokens.Typography.caption())
       .buttonStyle(.bordered)
       .tint(DesignTokens.Palette.danger)
       .controlSize(.small)

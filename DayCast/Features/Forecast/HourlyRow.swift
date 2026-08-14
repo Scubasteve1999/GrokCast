@@ -49,7 +49,7 @@ struct HourlyRow: View {
         .lineLimit(1)
 
       Image(systemName: rowSymbol)
-        .font(.system(size: 24))
+        .font(DesignTokens.Typography.symbol(24))
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(forecast.temp)))°")
@@ -65,7 +65,7 @@ struct HourlyRow: View {
               .fill(DesignTokens.Palette.accentCool)
               .frame(width: 4, height: 4)
             Text("\(forecast.precipChance)%")
-              .font(.caption2.weight(.semibold))
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(DesignTokens.Palette.accentCool)
               .monospacedDigit()
           }
@@ -79,7 +79,7 @@ struct HourlyRow: View {
         let sn = forecast.snowfall ?? 0
         if let amt = precipAmountText(liquid: liq, snow: sn) {
           Text(amt)
-            .font(.caption2.weight(.medium))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .lineLimit(1)
             .minimumScaleFactor(0.85)
@@ -104,7 +104,7 @@ struct HourlyRow: View {
   private var standardLayout: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       Text(isNow ? "Now" : formattedTime)
-        .font(.system(size: 13, weight: isNow ? .bold : .semibold))
+        .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.tightTracking)
         .foregroundStyle(
           isNow ? DesignTokens.Palette.accent : DesignTokens.Palette.textSecondary
@@ -112,11 +112,11 @@ struct HourlyRow: View {
         .lineLimit(1)
 
       Image(systemName: rowSymbol)
-        .font(.system(size: 32))
+        .font(DesignTokens.Typography.widgetTemp(32))
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(forecast.temp)))°")
-        .font(.system(size: 20, weight: .bold, design: .rounded))
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
         .lineLimit(1)
@@ -127,7 +127,7 @@ struct HourlyRow: View {
             .fill(DesignTokens.Palette.accentCool)
             .frame(width: 4, height: 4)
           Text("\(forecast.precipChance)% \(precipLabel)")
-            .font(.caption2.weight(.medium))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.accentCool)
             .lineLimit(1)
         }
@@ -138,7 +138,7 @@ struct HourlyRow: View {
         let sn = forecast.snowfall ?? 0
         if let amt = precipAmountText(liquid: liq, snow: sn) {
           Text(amt)
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .lineLimit(1)
         }
@@ -147,7 +147,7 @@ struct HourlyRow: View {
           let precipSuffix =
             openWeatherMapPrecipChance.map { " · \($0)%" } ?? ""
           Text("OWM \(owmTemp)°\(precipSuffix)")
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
             .lineLimit(1)
         }

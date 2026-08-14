@@ -25,13 +25,13 @@ struct SunriseSunsetCard: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       HStack {
         Text("SUNRISE & SUNSET")
-          .font(.caption.weight(.bold))
+          .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.textTertiary)
         Spacer()
         if let daylight {
           Text(daylight)
-            .font(.caption2.weight(.medium))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
@@ -41,11 +41,11 @@ struct SunriseSunsetCard: View {
 
       HStack {
         Label(formatTime(sunrise), systemImage: "sunrise.fill")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.accentWarm)
         Spacer()
         Label(formatTime(sunset), systemImage: "sunset.fill")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.accentCool)
       }
     }

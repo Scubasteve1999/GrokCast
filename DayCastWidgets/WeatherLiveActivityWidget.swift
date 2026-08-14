@@ -12,18 +12,18 @@ struct WeatherLiveActivityWidget: Widget {
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
           Image(systemName: context.state.symbolName)
-            .font(.title2)
+            .font(DesignTokens.Typography.studioTitle())
             .symbolRenderingMode(.multicolor)
             .foregroundStyle(accentColor(for: context.state))
         }
         DynamicIslandExpandedRegion(.trailing) {
           Text(context.state.temperatureText)
-            .font(.title3.bold())
+            .font(DesignTokens.Typography.metric())
             .monospacedDigit()
         }
         DynamicIslandExpandedRegion(.center) {
           Text(expandedCenterTitle(for: context.state))
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .lineLimit(1)
         }
         DynamicIslandExpandedRegion(.bottom) {
@@ -52,45 +52,45 @@ struct WeatherLiveActivityWidget: Widget {
     let state = context.state
     HStack(spacing: 12) {
       Image(systemName: state.symbolName)
-        .font(.title2)
+        .font(DesignTokens.Typography.studioTitle())
         .symbolRenderingMode(.multicolor)
         .foregroundStyle(accentColor(for: state))
       VStack(alignment: .leading, spacing: 2) {
         HStack {
           Text(state.locationName)
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
           Spacer()
           Text(state.temperatureText)
-            .font(.headline.bold())
+            .font(DesignTokens.Typography.headline())
             .monospacedDigit()
         }
         switch state.variant {
         case .severeAlert:
           Text(state.headline ?? "Severe Weather")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(accentColor(for: state))
             .lineLimit(1)
           if let detail = state.detail {
             Text(detail)
-              .font(.caption2)
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(.secondary)
               .lineLimit(1)
           }
         case .radarEvent:
           Text(state.headline ?? "Radar")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(Color.cyan)
             .lineLimit(1)
           Text(state.detail ?? state.minutecastMessage)
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(.secondary)
             .lineLimit(1)
         case .standard:
           Text(state.conditionText)
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(.secondary)
           Text("Score \(state.score) · \(state.minutecastMessage)")
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .lineLimit(1)
         }
       }
@@ -122,25 +122,25 @@ struct WeatherLiveActivityWidget: Widget {
       switch state.variant {
       case .severeAlert:
         Text(state.headline ?? "Severe Weather")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(accentColor(for: state))
           .lineLimit(2)
         Text(state.detail ?? "Score \(state.score) · \(state.scoreLabel)")
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.secondary)
           .lineLimit(2)
       case .radarEvent:
         Text(state.detail ?? state.minutecastMessage)
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .lineLimit(2)
         Text("Score \(state.score) · \(state.scoreLabel)")
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.secondary)
       case .standard:
         Text("Score \(state.score) · \(state.scoreLabel)")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
         Text(state.minutecastMessage)
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.secondary)
           .lineLimit(2)
       }
@@ -154,15 +154,15 @@ struct WeatherLiveActivityWidget: Widget {
     switch state.variant {
     case .severeAlert:
       Text("!")
-        .font(.caption.bold())
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(accentColor(for: state))
     case .radarEvent:
       Text(state.temperatureText)
-        .font(.caption.bold())
+        .font(DesignTokens.Typography.caption())
         .monospacedDigit()
     case .standard:
       Text("\(state.score)")
-        .font(.caption.bold())
+        .font(DesignTokens.Typography.caption())
         .monospacedDigit()
     }
   }
@@ -203,13 +203,13 @@ struct WeatherLiveActivityWidget: Widget {
     switch state.variant {
     case .severeAlert:
       if state.severityLevel >= 3 {
-        return Color.red.opacity(0.55)
+        return DesignTokens.Palette.danger.opacity(0.55)
       }
-      return Color.orange.opacity(0.5)
+      return DesignTokens.Palette.warning.opacity(0.5)
     case .radarEvent:
-      return Color.cyan.opacity(0.35)
+      return DesignTokens.Palette.accentCool.opacity(0.35)
     case .standard:
-      return Color.black.opacity(0.75)
+      return DesignTokens.Palette.bgPrimary.opacity(0.85)
     }
   }
 

@@ -32,7 +32,7 @@ struct GrokImagineResultView: View {
                 .shadow(radius: 10)
             case .failure:
               Image(systemName: "photo")
-                .font(.system(size: 60))
+                .font(DesignTokens.Typography.symbol(60))
                 .foregroundStyle(.secondary)
                 .frame(height: 320)
             @unknown default:
@@ -44,9 +44,9 @@ struct GrokImagineResultView: View {
           // Context
           VStack(spacing: 4) {
             Text(locationName)
-              .font(.headline)
+              .font(DesignTokens.Typography.headline())
             Text("\(currentCondition) • \(Int(temperature))°")
-              .font(.subheadline)
+              .font(DesignTokens.Typography.callout())
               .foregroundStyle(.secondary)
           }
 

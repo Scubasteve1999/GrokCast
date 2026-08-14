@@ -17,13 +17,13 @@ struct GrokErrorView: View {
   var body: some View {
     VStack(spacing: 12) {
       Text(message)
-        .font(.subheadline)
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(.white.opacity(0.85))
         .multilineTextAlignment(.center)
 
       Button(action: retryAction) {
         Text(isStormError ? "Try Again" : "Retry")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(.white)
           .padding(.horizontal, 20)
           .padding(.vertical, 8)

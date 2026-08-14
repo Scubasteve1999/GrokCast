@@ -6,12 +6,12 @@ struct LocationPermissionView: View {
   var body: some View {
     VStack(spacing: 24) {
       Image(systemName: "location.fill")
-        .font(.system(size: 64))
+        .font(DesignTokens.Typography.symbol(64))
         .foregroundStyle(.white)
         .symbolEffect(.pulse, options: .repeating)
 
       Text("LOCATION ACCESS")
-        .font(.title2.weight(.black))
+        .font(DesignTokens.Typography.studioTitle())
         .tracking(2)
 
       switch store.locationService.authorizationStatus {
@@ -19,7 +19,7 @@ struct LocationPermissionView: View {
         Text(
           "DayCast uses your location to show accurate local weather forecasts and AI-powered insights."
         )
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .multilineTextAlignment(.center)
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
@@ -30,7 +30,7 @@ struct LocationPermissionView: View {
           store.locationService.requestLocationPermission()
         } label: {
           Label("ENABLE LOCATION", systemImage: "location.fill")
-            .font(.footnote.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .tracking(1.5)
         }
         .buttonStyle(.borderedProminent)
@@ -41,7 +41,7 @@ struct LocationPermissionView: View {
         Text(
           "Location access was denied. Enable it in Settings to use your current position for weather and insights."
         )
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .multilineTextAlignment(.center)
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
@@ -51,7 +51,7 @@ struct LocationPermissionView: View {
           store.locationService.openSettings()
         } label: {
           Label("OPEN SETTINGS", systemImage: "gearshape")
-            .font(.footnote.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .tracking(1.5)
         }
         .buttonStyle(.borderedProminent)
@@ -62,7 +62,7 @@ struct LocationPermissionView: View {
         Text(
           "Location access is restricted on this device. Check Settings > Screen Time or parental controls."
         )
-        .font(.body)
+        .font(DesignTokens.Typography.body())
         .multilineTextAlignment(.center)
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)

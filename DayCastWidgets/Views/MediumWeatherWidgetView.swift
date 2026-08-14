@@ -31,20 +31,20 @@ struct MediumWeatherWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
           HStack(spacing: 4) {
             Image(systemName: "mappin.and.ellipse")
-              .font(.caption2)
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(style.secondaryText)
             Text(snapshot.location.name)
-              .font(.caption.weight(.semibold))
+              .font(DesignTokens.Typography.caption())
               .foregroundStyle(style.secondaryText)
               .lineLimit(1)
           }
 
           HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text("\(Int(snapshot.currentTemp.rounded()))°")
-              .font(.system(size: 36, weight: .bold, design: .rounded))
+              .font(DesignTokens.Typography.widgetTemp(36))
               .foregroundStyle(style.primaryText)
             Image(systemName: snapshot.symbolName)
-              .font(.title3)
+              .font(DesignTokens.Typography.metric())
               .symbolRenderingMode(.multicolor)
           }
 
@@ -52,13 +52,13 @@ struct MediumWeatherWidgetView: View {
             Label("H \(Int(snapshot.high.rounded()))°", systemImage: "arrow.up")
             Label("L \(Int(snapshot.low.rounded()))°", systemImage: "arrow.down")
           }
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(style.secondaryText)
           .labelStyle(.titleOnly)
 
           if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
             Text("Score \(score) · \(label)")
-              .font(.caption2.weight(.semibold))
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(style.secondaryText)
               .lineLimit(1)
           }
@@ -66,16 +66,16 @@ struct MediumWeatherWidgetView: View {
           if let brief = snapshot.grokBriefOneLiner, !brief.isEmpty {
             HStack(alignment: .top, spacing: 4) {
               Image(systemName: "sparkles")
-                .font(.caption2)
+                .font(DesignTokens.Typography.micro())
                 .foregroundStyle(style.secondaryText)
               Text(brief)
-                .font(.caption2)
+                .font(DesignTokens.Typography.micro())
                 .foregroundStyle(style.primaryText)
                 .lineLimit(2)
             }
           } else if let minutecast = snapshot.minutecastMessage {
             Text(minutecast)
-              .font(.caption2)
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(style.secondaryText)
               .lineLimit(1)
           }
@@ -105,13 +105,13 @@ struct MediumWeatherWidgetView: View {
       ForEach(hourly) { hour in
         VStack(spacing: 4) {
           Text(hourLabel(for: hour.time))
-            .font(.caption2.weight(.medium))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(style.secondaryText)
           Image(systemName: hour.symbolName)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .symbolRenderingMode(.multicolor)
           Text("\(Int(hour.temp.rounded()))°")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(style.primaryText)
         }
         .frame(minWidth: 36)

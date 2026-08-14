@@ -182,7 +182,7 @@ struct RadarView: View {
           // Keep offline cue even when decluttered — it's safety-critical chrome.
           if store.isOffline {
             Text("Offline — showing last loaded tiles if available")
-              .font(.system(size: 11, weight: .semibold))
+              .font(DesignTokens.Typography.micro())
               .foregroundStyle(DesignTokens.Palette.warning)
               .padding(.horizontal, DesignTokens.Spacing.space12)
               .padding(.vertical, 6)
@@ -234,7 +234,7 @@ struct RadarView: View {
 
   private var radarModeBadge: some View {
     Text(radarState.showsFuture ? "FUTURE" : "LIVE")
-      .font(.system(size: 11, weight: .bold))
+      .font(DesignTokens.Typography.micro())
       .foregroundStyle(DesignTokens.Palette.accent)
       .padding(.horizontal, DesignTokens.Spacing.space12)
       .padding(.vertical, 6)

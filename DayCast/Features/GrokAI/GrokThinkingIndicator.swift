@@ -19,7 +19,7 @@ struct GrokThinkingIndicator: View {
         .scaleEffect(0.8)
 
       Text("Thinking...")
-        .font(.subheadline)
+        .font(DesignTokens.Typography.callout())
         .foregroundStyle(.white.opacity(0.7))
     }
     .padding(.vertical, 8)

@@ -57,7 +57,7 @@ struct AlertsGrokSummaryCard: View {
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         if store.xaiService.hasValidKey {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
         }
       } else if !store.xaiService.hasValidKey {
         Text("Add an xAI key in Settings for AI alert summaries.")
@@ -92,7 +92,7 @@ struct AlertsGrokSummaryCard: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       HStack {
         Label("IN PLAIN ENGLISH", systemImage: "text.bubble")
-          .font(.caption.weight(.heavy))
+          .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.warning)
         Spacer()
@@ -103,7 +103,7 @@ struct AlertsGrokSummaryCard: View {
 
       if let summary {
         Text(summary)
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .fixedSize(horizontal: false, vertical: true)
 
@@ -115,7 +115,7 @@ struct AlertsGrokSummaryCard: View {
           )
         ) {
           Label("Share Summary", systemImage: "square.and.arrow.up")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
         }
         .foregroundStyle(DesignTokens.Palette.accent)
         // ShareLink reports no completion, so intent is all this surface can
@@ -127,15 +127,15 @@ struct AlertsGrokSummaryCard: View {
         )
       } else if let errorMessage {
         Text(errorMessage)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
         if store.xaiService.hasValidKey {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
         }
       } else if !store.xaiService.hasValidKey {
         Text("Add an xAI key in Settings for AI alert summaries.")
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {
         Button {

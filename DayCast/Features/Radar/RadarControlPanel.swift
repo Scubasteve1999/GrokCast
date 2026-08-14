@@ -36,7 +36,7 @@ struct RadarControlPanel: View {
       if !prefersFigmaHUD, let updatedText {
         HStack {
           Text(updatedText)
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
           Spacer()
         }
@@ -104,16 +104,16 @@ struct RadarControlPanel: View {
   private var figmaHeaderRow: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Image(systemName: "cloud.rain.fill")
-        .font(.system(size: 13, weight: .semibold))
+        .font(DesignTokens.Typography.symbol())
         .foregroundStyle(DesignTokens.Palette.radarAccent)
       Text("Radar · \(radarState.selectedProduct.displayName)")
-        .font(.system(size: 13, weight: .semibold))
+        .font(DesignTokens.Typography.symbol())
         .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
         .lineLimit(1)
 
       if !prefersFigmaHUD {
         Text(sourceBadgeText)
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .padding(.horizontal, 6)
           .padding(.vertical, 2)
           .background(DesignTokens.Palette.radarTrack)
@@ -133,7 +133,7 @@ struct RadarControlPanel: View {
         showDisplayOptions = true
       } label: {
         Image(systemName: "slider.horizontal.3")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
       }
       .accessibilityLabel("Radar display options")
@@ -143,7 +143,7 @@ struct RadarControlPanel: View {
         showExplainRadar = true
       } label: {
         Image(systemName: "sparkles")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
       }
       .accessibilityLabel("Explain radar with AI")
@@ -156,7 +156,7 @@ struct RadarControlPanel: View {
         radarState.togglePlayback()
       } label: {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-          .font(.body.weight(.semibold))
+          .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
           .frame(minWidth: 28, minHeight: 28)
       }
@@ -164,7 +164,7 @@ struct RadarControlPanel: View {
       .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
 
       Text(radarState.currentFrameDisplayTime)
-        .font(.caption.monospacedDigit())
+        .font(DesignTokens.Typography.caption().monospacedDigit())
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         .lineLimit(1)
 
@@ -179,7 +179,7 @@ struct RadarControlPanel: View {
         recenterDefaultTrigger = UUID()
       } label: {
         Image(systemName: "house.fill")
-          .font(.caption.weight(.semibold))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
           .frame(width: 28, height: 28)
           .background(DesignTokens.Palette.radarTrack)
@@ -195,7 +195,7 @@ struct RadarControlPanel: View {
   private var compactOpacityRow: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Image(systemName: "circle.lefthalf.filled")
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         .accessibilityHidden(true)
 
@@ -211,7 +211,7 @@ struct RadarControlPanel: View {
       .accessibilityValue("\(Int((opacity * 100).rounded())) percent")
 
       Text(String(format: "%.0f%%", opacity * 100))
-        .font(.caption2.monospacedDigit())
+        .font(DesignTokens.Typography.micro().monospacedDigit())
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         .frame(width: 36, alignment: .trailing)
         .accessibilityHidden(true)
@@ -240,7 +240,7 @@ struct RadarControlPanel: View {
         HStack {
           Spacer()
           Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
-            .font(.caption2.weight(.semibold))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         }
       }
@@ -258,7 +258,7 @@ struct RadarControlPanel: View {
         radarState.setFutureMode(false)
       } label: {
         Text("Live")
-          .font(.caption2.weight(!radarState.showsFuture ? .semibold : .regular))
+          .font(DesignTokens.Typography.micro())
           .padding(.horizontal, 10)
           .padding(.vertical, 3)
           .background(
@@ -279,7 +279,7 @@ struct RadarControlPanel: View {
         radarState.setFutureMode(true)
       } label: {
         Text("Forecast")
-          .font(.caption2.weight(radarState.showsFuture ? .semibold : .regular))
+          .font(DesignTokens.Typography.micro())
           .padding(.horizontal, 10)
           .padding(.vertical, 3)
           .background(
@@ -310,16 +310,16 @@ struct RadarControlPanel: View {
         ProgressView()
           .controlSize(.small)
         Text(footer.text)
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.secondary)
       }
     case .warning:
       Text(footer.text)
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(.orange)
     case .error:
       Text(footer.text)
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(.red)
     case .secondary:
       EmptyView()
@@ -402,9 +402,9 @@ struct RadarControlPanel: View {
   private func siteBadge(_ id: String) -> some View {
     HStack(spacing: 4) {
       Image(systemName: "wifi")
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
       Text(id)
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 4)
@@ -420,7 +420,7 @@ struct RadarControlPanel: View {
     if let tip = product.userTip, !dismissedTips.contains(product) {
       HStack(alignment: .top, spacing: 6) {
         Text(tip)
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
           .fixedSize(horizontal: false, vertical: true)
 
@@ -432,7 +432,7 @@ struct RadarControlPanel: View {
           dismissedTips.insert(product)
         } label: {
           Image(systemName: "xmark")
-            .font(.system(size: 9, weight: .semibold))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         }
         .buttonStyle(.plain)
@@ -462,10 +462,10 @@ struct RadarControlPanel: View {
       HStack(spacing: 4) {
         if let img = systemImage {
           Image(systemName: img)
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
         }
         Text(title)
-          .font(.caption2.weight(isSelected ? .semibold : .regular))
+          .font(DesignTokens.Typography.micro())
       }
       .padding(.horizontal, 10)
       .padding(.vertical, 4)
@@ -571,7 +571,7 @@ private struct RadarDisplayOptionsSheet: View {
               step: 0.05
             )
             Text(String(format: "%.0f%%", opacity * 100))
-              .font(.caption.monospacedDigit())
+              .font(DesignTokens.Typography.caption().monospacedDigit())
               .foregroundStyle(.secondary)
               .frame(width: 40)
           }
@@ -630,12 +630,12 @@ struct RadarMiniLegend: View {
       .accessibilityLabel("Velocity legend: green toward radar, red away from radar")
 
       HStack {
-        Text("Toward").font(.caption2).foregroundStyle(
+        Text("Toward").font(DesignTokens.Typography.micro()).foregroundStyle(
           style == .panel
             ? DesignTokens.Palette.radarTextSecondary : .secondary
         )
         Spacer()
-        Text("Away").font(.caption2).foregroundStyle(
+        Text("Away").font(DesignTokens.Typography.micro()).foregroundStyle(
           style == .panel
             ? DesignTokens.Palette.radarTextSecondary : .secondary
         )
@@ -648,7 +648,7 @@ struct RadarMiniLegend: View {
             .fill(Color(red: 0.72, green: 0.28, blue: 0.85))
             .frame(width: 8, height: 8)
           Text("Purple at scan edge = range fold (unreliable)")
-            .font(.caption2)
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(.secondary)
         }
         .accessibilityLabel("Purple at scan edge means range fold and is unreliable")
@@ -675,13 +675,13 @@ struct RadarMiniLegend: View {
       .accessibilityLabel("Reflectivity legend: light to extreme precipitation intensity")
 
       HStack {
-        Text("Light").font(.caption2).foregroundStyle(legendCaptionColor)
+        Text("Light").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
         Spacer()
-        Text("Mod").font(.caption2).foregroundStyle(legendCaptionColor)
+        Text("Mod").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
         Spacer()
-        Text("Heavy").font(.caption2).foregroundStyle(legendCaptionColor)
+        Text("Heavy").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
         Spacer()
-        Text("Extreme").font(.caption2).foregroundStyle(legendCaptionColor)
+        Text("Extreme").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
       }
     }
   }

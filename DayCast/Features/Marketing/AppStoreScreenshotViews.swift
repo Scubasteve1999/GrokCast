@@ -20,13 +20,13 @@ struct AppStoreScreenshotToday: View {
             .font(.largeTitle.bold())
           Spacer()
           Text("OLIVE BRANCH")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
 
         HStack(alignment: .firstTextBaseline, spacing: 8) {
           Image(systemName: "cloud.sun.fill")
-            .font(.system(size: 48))
+            .font(DesignTokens.Typography.symbol(48))
             .symbolRenderingMode(.multicolor)
           Text("72°")
             .font(DesignTokens.Typography.heroTemperature())
@@ -40,10 +40,10 @@ struct AppStoreScreenshotToday: View {
 
         VStack(alignment: .leading, spacing: 8) {
           Label("TODAY'S TAKE", systemImage: "sparkles")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accent)
           Text("Clear morning, comfortable afternoon — sunscreen after lunch if you're outside long.")
-            .font(.body.weight(.medium))
+            .font(DesignTokens.Typography.headline())
         }
         .padding(20)
         .glassCardStyle(strokeTint: DesignTokens.Palette.accent.opacity(0.35))
@@ -79,7 +79,7 @@ struct AppStoreScreenshotRadar: View {
                 Image(systemName: "cloud.rain.fill")
                   .foregroundStyle(DesignTokens.Palette.radarAccent)
                 Text("Radar · Reflectivity")
-                  .font(.caption.weight(.semibold))
+                  .font(DesignTokens.Typography.caption())
                 Spacer()
                 Image(systemName: "sparkles")
                   .foregroundStyle(DesignTokens.Palette.radarAccent)
@@ -94,7 +94,7 @@ struct AppStoreScreenshotRadar: View {
 
       VStack {
         Text("FUTURE")
-          .font(.caption.weight(.heavy))
+          .font(DesignTokens.Typography.caption())
           .padding(.horizontal, 12)
           .padding(.vertical, 6)
           .background(DesignTokens.Palette.radarAccent.opacity(0.25))
@@ -113,7 +113,7 @@ struct AppStoreScreenshotGrok: View {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
       VStack(alignment: .leading, spacing: 16) {
         Text("Briefing Studio")
-          .font(.title.bold())
+          .font(DesignTokens.Typography.title())
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
           screenshotTile("Threat check", icon: "exclamationmark.triangle.fill")
           screenshotTile("Chase window", icon: "car.fill")
@@ -122,10 +122,10 @@ struct AppStoreScreenshotGrok: View {
         }
         VStack(alignment: .leading, spacing: 8) {
           Label("STORM SPOTTER ANALYSIS", systemImage: "cloud.bolt.rain.fill")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.danger)
           Text("Scud cloud with weak rotation aloft — monitor radar for the next 30–45 minutes.")
-            .font(.body)
+            .font(DesignTokens.Typography.body())
         }
         .padding(16)
         .glassCardStyle(strokeTint: DesignTokens.Palette.danger.opacity(0.45))
@@ -140,10 +140,10 @@ struct AppStoreScreenshotGrok: View {
   private func screenshotTile(_ title: String, icon: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Image(systemName: icon)
-        .font(.title3)
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(DesignTokens.Palette.accent)
       Text(title)
-        .font(.caption.weight(.semibold))
+        .font(DesignTokens.Typography.caption())
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(14)
@@ -157,35 +157,35 @@ struct AppStoreScreenshotWidgets: View {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
       VStack(spacing: 24) {
         Text("Widgets Everywhere")
-          .font(.title.bold())
+          .font(DesignTokens.Typography.title())
           .frame(maxWidth: .infinity, alignment: .leading)
 
         VStack(alignment: .leading, spacing: 12) {
           Label("HOME SCREEN", systemImage: "square.grid.2x2")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accent)
           Text("Small, Medium, and Large widgets with live temperature, daily forecast, and AI insights.")
-            .font(.body)
+            .font(DesignTokens.Typography.body())
         }
         .padding(16)
         .glassCardStyle()
 
         VStack(alignment: .leading, spacing: 12) {
           Label("LOCK SCREEN", systemImage: "lock.rectangle.stack.fill")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentCool)
           Text("Circular gauge, rectangular forecast, and inline conditions — always visible at a glance.")
-            .font(.body)
+            .font(DesignTokens.Typography.body())
         }
         .padding(16)
         .glassCardStyle()
 
         VStack(alignment: .leading, spacing: 12) {
           Label("APPLE WATCH", systemImage: "applewatch")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
           Text("Temperature range gauge, AI brief, and DayCast Score right on your wrist.")
-            .font(.body)
+            .font(DesignTokens.Typography.body())
         }
         .padding(16)
         .glassCardStyle()
@@ -205,23 +205,23 @@ struct AppStoreScreenshotAlerts: View {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
       VStack(alignment: .leading, spacing: 20) {
         Text("Severe Weather Alerts")
-          .font(.title.bold())
+          .font(DesignTokens.Typography.title())
 
         VStack(alignment: .leading, spacing: 12) {
           HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-              .font(.title2)
+              .font(DesignTokens.Typography.studioTitle())
               .foregroundStyle(DesignTokens.Palette.danger)
             VStack(alignment: .leading) {
               Text("TORNADO WARNING")
-                .font(.caption.weight(.black))
+                .font(DesignTokens.Typography.caption())
               Text("DeSoto County, MS · Expires in 45m")
-                .font(.caption2)
+                .font(DesignTokens.Typography.micro())
                 .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
           }
           Text("TAKE SHELTER NOW. Move to an interior room on the lowest floor of a sturdy building. Avoid windows.")
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
         .padding(16)
@@ -230,20 +230,20 @@ struct AppStoreScreenshotAlerts: View {
 
         VStack(alignment: .leading, spacing: 8) {
           Label("TIME-SENSITIVE ALERTS", systemImage: "bell.badge.fill")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.danger)
           Text("Warnings and watches use iOS time-sensitive notifications so severe weather reaches you promptly when alerts are enabled.")
-            .font(.body)
+            .font(DesignTokens.Typography.body())
         }
         .padding(16)
         .glassCardStyle()
 
         VStack(alignment: .leading, spacing: 8) {
           Label("AI MORNING BRIEF", systemImage: "sunrise.fill")
-            .font(.caption.weight(.heavy))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
           Text("\"Light jacket this morning — great afternoon for a walk. UV peaks around 2pm, sunscreen if you'll be outside.\"")
-            .font(.body.italic())
+            .font(DesignTokens.Typography.body())
         }
         .padding(16)
         .glassCardStyle()

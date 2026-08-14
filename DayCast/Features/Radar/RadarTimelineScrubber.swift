@@ -67,7 +67,7 @@ struct RadarTimelineScrubber: View {
             let tooltipWidth: CGFloat = 60
             let clampedX = min(max(thumbX - tooltipWidth / 2, 0), geo.size.width - tooltipWidth)
             Text(radarState.currentFrameDisplayTime)
-              .font(.caption2.weight(.semibold).monospacedDigit())
+              .font(DesignTokens.Typography.micro().monospacedDigit())
               .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
               .padding(.horizontal, 6)
               .padding(.vertical, 3)
@@ -136,7 +136,7 @@ struct RadarTimelineScrubber: View {
           max(estHalfWidth, geo.size.width - estHalfWidth))
         let label = i < labels.count ? labels[i] : "?"
         Text(label)
-          .font(.system(size: 10).monospacedDigit())
+          .font(DesignTokens.Typography.micro().monospacedDigit())
           .foregroundStyle(
             clampedIndex == i
               ? DesignTokens.Palette.radarTextPrimary
@@ -192,7 +192,7 @@ struct RadarTimelineScrubber: View {
         ForEach(Array(keys), id: \.self) { i in
           let label = i < labels.count ? labels[i] : "?"
           Text(label)
-            .font(.caption2.weight(radarState.currentIndex == i ? .semibold : .regular))
+            .font(DesignTokens.Typography.micro())
             .lineLimit(1)
             .minimumScaleFactor(0.7)
             .foregroundStyle(

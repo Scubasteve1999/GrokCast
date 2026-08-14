@@ -14,7 +14,10 @@ struct LocationChipBar: View {
             Analytics.track(.feedCardTap, parameters: ["card": "location_chip"])
           } label: {
             Text(chipTitle(for: location))
-              .font(.subheadline.weight(isSelected(location) ? .semibold : .medium))
+              .font(
+                isSelected(location)
+                  ? DesignTokens.Typography.subsection() : DesignTokens.Typography.callout()
+              )
               .foregroundStyle(
                 isSelected(location)
                   ? DesignTokens.Palette.textPrimary

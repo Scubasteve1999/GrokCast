@@ -39,11 +39,11 @@ private struct GrokResponseCard: View {
     VStack(alignment: .leading, spacing: 6) {
       if isStreaming {
         StreamingText(text: text, isStreaming: isStreaming)
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .foregroundStyle(.white.opacity(0.9))
       } else {
         Text(text)
-          .font(.body)
+          .font(DesignTokens.Typography.body())
           .foregroundStyle(.white.opacity(0.9))
       }
     }

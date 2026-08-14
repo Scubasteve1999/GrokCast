@@ -53,7 +53,7 @@ struct RadarPreviewCard: View {
       }
 
       Text("Live Radar")
-        .font(.caption2.weight(.semibold))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(.white)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -67,11 +67,11 @@ struct RadarPreviewCard: View {
     HStack {
       HStack(spacing: DesignTokens.Spacing.space8) {
         Image(systemName: "dot.radiowaves.left.and.right")
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.accent)
 
         Text("Radar")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
       }
 
@@ -79,10 +79,10 @@ struct RadarPreviewCard: View {
 
       HStack(spacing: DesignTokens.Spacing.space4) {
         Text("Open")
-          .font(.caption.weight(.medium))
+          .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
         Image(systemName: "chevron.right")
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
     }

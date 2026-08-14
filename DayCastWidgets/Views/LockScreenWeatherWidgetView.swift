@@ -33,9 +33,9 @@ struct LockScreenWeatherWidgetView: View {
     case .accessoryRectangular:
       VStack(alignment: .leading, spacing: 2) {
         Text("DayCast")
-          .font(.headline)
+          .font(DesignTokens.Typography.headline())
         Text(rectangularEmptyMessage)
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
           .lineLimit(2)
       }
     default:
@@ -78,7 +78,7 @@ struct LockScreenWeatherWidgetView: View {
         .symbolRenderingMode(.multicolor)
     } currentValueLabel: {
       Text("\(Int(snapshot.currentTemp.rounded()))°")
-        .font(.system(.body, design: .rounded, weight: .bold))
+        .font(DesignTokens.Typography.widgetTemp(17))
     }
     .gaugeStyle(.accessoryCircular)
     .opacity(entry.isStale ? WidgetStyle.staleContentOpacity : 1)
@@ -90,11 +90,11 @@ struct LockScreenWeatherWidgetView: View {
         Image(systemName: snapshot.symbolName)
           .symbolRenderingMode(.multicolor)
         Text("\(Int(snapshot.currentTemp.rounded()))° · \(snapshot.conditionText)")
-          .font(.headline)
+          .font(DesignTokens.Typography.headline())
           .lineLimit(1)
       }
       Text(snapshot.location.name)
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(.secondary)
         .lineLimit(1)
       if entry.hasActiveAlert, let summary = entry.alertSummary {
@@ -104,15 +104,15 @@ struct LockScreenWeatherWidgetView: View {
           Text(summary.displayText(relativeTo: entry.date))
             .lineLimit(1)
         }
-        .font(.caption2.weight(.semibold))
+        .font(DesignTokens.Typography.micro())
       } else if !entry.isStale {
         Text(WidgetRelativeTime.updatedLabel(for: snapshot.fetchedAt, relativeTo: entry.date))
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.secondary)
           .lineLimit(1)
       } else {
         Text("Open DayCast to refresh")
-          .font(.caption2)
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.secondary)
           .lineLimit(1)
       }

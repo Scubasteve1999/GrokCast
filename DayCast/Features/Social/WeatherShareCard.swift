@@ -21,13 +21,13 @@ struct WeatherShareCard: View {
     HStack {
       HStack(spacing: 6) {
         Image(systemName: "mappin.circle.fill")
-          .font(.caption)
+          .font(DesignTokens.Typography.caption())
         Text(locationName)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
       }
       Spacer()
       Text(Date.now, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
-        .font(.caption.weight(.medium))
+        .font(DesignTokens.Typography.caption())
     }
     .foregroundStyle(.white.opacity(0.8))
     .padding(.horizontal, 24)
@@ -39,23 +39,23 @@ struct WeatherShareCard: View {
     VStack(spacing: 16) {
       HStack(alignment: .firstTextBaseline, spacing: 12) {
         Image(systemName: weather.symbolName)
-          .font(.system(size: 44))
+          .font(DesignTokens.Typography.compactTemp())
           .symbolRenderingMode(.multicolor)
 
         Text("\(Int(weather.currentTemp.rounded()))°")
-          .font(.system(size: 72, weight: .thin, design: .rounded))
+          .font(DesignTokens.Typography.widgetTemp(72))
           .foregroundStyle(.white)
       }
 
       Text(weather.conditionText)
-        .font(.title3.weight(.medium))
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(.white.opacity(0.9))
 
       HStack(spacing: 16) {
         Label("H:\(Int(weather.high.rounded()))°", systemImage: "arrow.up")
         Label("L:\(Int(weather.low.rounded()))°", systemImage: "arrow.down")
       }
-      .font(.subheadline.weight(.semibold))
+      .font(DesignTokens.Typography.subsection())
       .foregroundStyle(.white.opacity(0.75))
       .labelStyle(.titleOnly)
 
@@ -64,9 +64,9 @@ struct WeatherShareCard: View {
       if let brief = grokBrief, !brief.isEmpty {
         HStack(alignment: .top, spacing: 6) {
           Image(systemName: "sparkles")
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
           Text(brief)
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .lineLimit(2)
             .multilineTextAlignment(.center)
         }
@@ -96,10 +96,10 @@ struct WeatherShareCard: View {
 
       VStack(alignment: .leading, spacing: 2) {
         Text("DayCast Score")
-          .font(.caption2.weight(.medium))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(.white.opacity(0.6))
         Text(score.label)
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(.white)
       }
     }
@@ -111,11 +111,11 @@ struct WeatherShareCard: View {
   private var footerSection: some View {
     HStack {
       Text("DayCast")
-        .font(.footnote.weight(.bold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(.white.opacity(0.5))
       Spacer()
       Image(systemName: "square.and.arrow.up")
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(.white.opacity(0.4))
     }
     .padding(.horizontal, 24)

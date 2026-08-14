@@ -136,7 +136,7 @@ extension View {
         horizontalSizeClass: horizontalSizeClass
       )
       VStack(alignment: .leading, spacing: 8) {
-        Text(label).font(.headline)
+        Text(label).font(DesignTokens.Typography.headline())
         Text("measured: \(Int(width))pt")
         Text("two-column: \(twoColumn ? "yes" : "no")")
       }

@@ -29,7 +29,7 @@ struct OpenWeatherMapForecastChip: View {
         .lineLimit(1)
 
       Image(systemName: entry.symbolName)
-        .font(.system(size: 22))
+        .font(DesignTokens.Typography.metric())
         .symbolRenderingMode(.multicolor)
 
       Text("\(Int(round(entry.temperatureF)))°")
@@ -39,7 +39,7 @@ struct OpenWeatherMapForecastChip: View {
         .lineLimit(1)
 
       Text(entry.precipitationChance > 0 ? "\(entry.precipitationChance)%" : " ")
-        .font(.caption2.weight(.medium))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.accent)
         .lineLimit(1)
     }
@@ -52,27 +52,27 @@ struct OpenWeatherMapForecastChip: View {
   private var standardLayout: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       Text(formattedTime)
-        .font(.system(size: 13, weight: .semibold))
+        .font(DesignTokens.Typography.symbol())
         .tracking(DesignTokens.Typography.tightTracking)
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .lineLimit(1)
 
       Image(systemName: entry.symbolName)
-        .font(.system(size: 28))
+        .font(DesignTokens.Typography.title())
         .foregroundStyle(DesignTokens.Palette.accentCool)
 
       Text("\(Int(round(entry.temperatureF)))°")
-        .font(.system(size: 20, weight: .bold, design: .rounded))
+        .font(DesignTokens.Typography.metric())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .monospacedDigit()
 
       Text("\(entry.precipitationChance)%")
-        .font(.caption2.weight(.medium))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.accent)
         .lineLimit(1)
 
       Text(entry.condition)
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .lineLimit(2)
         .multilineTextAlignment(.center)

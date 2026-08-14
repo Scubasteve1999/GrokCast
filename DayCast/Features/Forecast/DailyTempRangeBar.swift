@@ -15,7 +15,7 @@ struct DailyTempRangeBar: View {
   var body: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Text(store.formatTemperatureShort(low))
-        .font(.caption.weight(.medium))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .frame(width: 32, alignment: .trailing)
         .monospacedDigit()
@@ -49,7 +49,7 @@ struct DailyTempRangeBar: View {
       .frame(maxWidth: .infinity)
 
       Text(store.formatTemperatureShort(high))
-        .font(.caption.weight(.semibold))
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .frame(width: 32, alignment: .leading)
         .monospacedDigit()

@@ -62,14 +62,14 @@ struct ForecastDayDetailSheet: View {
   private var headerBlock: some View {
     HStack(spacing: DesignTokens.Spacing.space16) {
       Image(systemName: condition.rowSymbolName(precipChance: forecast.precipChance))
-        .font(.system(size: 44))
+        .font(DesignTokens.Typography.compactTemp())
         .symbolRenderingMode(.multicolor)
       VStack(alignment: .leading, spacing: 4) {
         Text(condition.displayText)
-          .font(.title3.weight(.semibold))
+          .font(DesignTokens.Typography.metric())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Text(title)
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Spacer(minLength: 0)
@@ -98,16 +98,16 @@ struct ForecastDayDetailSheet: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         if forecast.precipChance > 0 {
           Text("\(forecast.precipChance)% chance of \(precipTypeLabel)")
-            .font(.body.weight(.medium))
+            .font(DesignTokens.Typography.headline())
             .foregroundStyle(DesignTokens.Palette.accentCool)
         } else {
           Text("No meaningful precip chance")
-            .font(.body.weight(.medium))
+            .font(DesignTokens.Typography.headline())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
         if let precipAmount {
           Text("Expected \(precipAmount)")
-            .font(.subheadline)
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
@@ -118,7 +118,7 @@ struct ForecastDayDetailSheet: View {
     detailCard(title: "UV Index") {
       if let uv = forecast.uvMax {
         Text("Max \(Int(round(uv)))")
-          .font(.title2.weight(.bold))
+          .font(DesignTokens.Typography.studioTitle())
           .monospacedDigit()
           .foregroundStyle(DesignTokens.Palette.textPrimary)
       }
@@ -129,10 +129,10 @@ struct ForecastDayDetailSheet: View {
     detailCard(title: "Sun") {
       HStack(spacing: DesignTokens.Spacing.space24) {
         Label(formatTime(forecast.sunrise), systemImage: "sunrise.fill")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.accentWarm)
         Label(formatTime(forecast.sunset), systemImage: "sunset.fill")
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.accentCool)
         Spacer(minLength: 0)
       }
@@ -144,7 +144,7 @@ struct ForecastDayDetailSheet: View {
   {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Text(title.uppercased())
-        .font(.caption.weight(.bold))
+        .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
       content()
@@ -161,10 +161,10 @@ struct ForecastDayDetailSheet: View {
   private func metric(label: String, value: String) -> some View {
     VStack(alignment: .leading, spacing: 4) {
       Text(label)
-        .font(.caption)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
       Text(value)
-        .font(.title2.weight(.bold))
+        .font(DesignTokens.Typography.studioTitle())
         .monospacedDigit()
         .foregroundStyle(DesignTokens.Palette.textPrimary)
     }

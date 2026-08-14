@@ -131,12 +131,12 @@ struct ChaseRadarHUD: View {
   private func declutteredStrip(at now: Date) -> some View {
     VStack(alignment: .trailing, spacing: 4) {
       Text(scanAgeLine(at: now))
-        .font(.system(size: 12, weight: .bold, design: .monospaced))
+        .font(DesignTokens.Typography.micro().monospaced())
         .foregroundStyle(scanAgeColor(at: now))
 
       if let alert = nearestAlertPresentation {
         Text(alert.text)
-          .font(.system(size: 11, weight: .bold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(alertColor(alert))
           .lineLimit(1)
       }
@@ -150,40 +150,40 @@ struct ChaseRadarHUD: View {
   private func fullStrip(at now: Date) -> some View {
     VStack(alignment: .trailing, spacing: 4) {
       Text(scanAgeLine(at: now))
-        .font(.system(size: 11, weight: .bold, design: .monospaced))
+        .font(DesignTokens.Typography.micro().monospaced())
         .foregroundStyle(scanAgeColor(at: now))
 
       Text(siteProductLine)
-        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+        .font(DesignTokens.Typography.micro().monospaced())
         .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
 
       Text(coordLine)
-        .font(.system(size: 10, weight: .medium, design: .monospaced))
+        .font(DesignTokens.Typography.micro().monospaced())
         .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.75))
 
       if let alert = nearestAlertPresentation {
         Text(alert.text)
-          .font(.system(size: 11, weight: .semibold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(alertColor(alert))
           .lineLimit(1)
       }
 
       if let day1Summary, !day1Summary.isEmpty {
         Text(day1Summary)
-          .font(.system(size: 10, weight: .medium))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.7))
           .lineLimit(1)
       }
 
       if let message = radarState.siteProductUnavailableMessage {
         Text(message)
-          .font(.system(size: 10, weight: .semibold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.warning)
           .multilineTextAlignment(.trailing)
           .lineLimit(2)
       } else if let note = radarState.siteProductAdvisory {
         Text(note)
-          .font(.system(size: 10, weight: .semibold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.warning)
           .multilineTextAlignment(.trailing)
           .lineLimit(2)
@@ -244,7 +244,7 @@ struct ChaseRadarHUD: View {
           radarState.togglePlayback()
         } label: {
           Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-            .font(.system(size: 11, weight: .bold))
+            .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.radarAccent)
             .frame(width: 32, height: 28)
             .background(DesignTokens.Palette.radarCardBackground.opacity(0.92), in: Capsule())
@@ -273,7 +273,7 @@ struct ChaseRadarHUD: View {
         }
       } label: {
         Text(isDecluttered ? "HUD" : "MAP")
-          .font(.system(size: 11, weight: .bold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
           .padding(.horizontal, 10)
           .padding(.vertical, 6)
@@ -309,7 +309,7 @@ struct ChaseRadarHUD: View {
             )
         }
         Text(label)
-          .font(.system(size: 11, weight: .bold))
+          .font(DesignTokens.Typography.micro())
           .foregroundStyle(
             isSelected
               ? DesignTokens.Palette.radarCardBackground

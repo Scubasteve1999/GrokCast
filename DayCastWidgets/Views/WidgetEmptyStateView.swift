@@ -7,13 +7,13 @@ struct WidgetEmptyStateView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Image(systemName: iconName)
-        .font(.title2)
+        .font(DesignTokens.Typography.studioTitle())
         .foregroundStyle(style.secondaryText)
       Text(title)
-        .font(.headline.weight(.semibold))
+        .font(DesignTokens.Typography.headline())
         .foregroundStyle(style.primaryText)
       Text(message)
-        .font(.caption2)
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(style.secondaryText)
         .fixedSize(horizontal: false, vertical: true)
     }

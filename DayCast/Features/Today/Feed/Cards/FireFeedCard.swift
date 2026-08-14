@@ -16,17 +16,17 @@ struct FireFeedCard: View {
             .labelStyle(.titleAndIcon)
           Spacer()
           Image(systemName: "chevron.right")
-            .font(.caption.weight(.semibold))
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
 
         Text(summary.title)
-          .font(.title3.weight(.semibold))
+          .font(DesignTokens.Typography.metric())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .lineLimit(2)
 
         Text(summary.subtitle)
-          .font(.subheadline)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .lineLimit(2)
 
@@ -60,7 +60,7 @@ struct FireFeedCard: View {
 
   private func metricChip(icon: String, text: String) -> some View {
     Label(text, systemImage: icon)
-      .font(.caption.weight(.medium))
+      .font(DesignTokens.Typography.caption())
       .foregroundStyle(DesignTokens.Palette.accentWarm.opacity(0.95))
       .labelStyle(.titleAndIcon)
   }
@@ -127,14 +127,14 @@ struct FireDetailView: View {
 
         if rankedIncidents.isEmpty && rankedHotspots.isEmpty && fireWeatherAlerts.isEmpty {
           Text("No active fire data for this location right now.")
-            .font(.body)
+            .font(DesignTokens.Typography.body())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
 
         Text(
           "Hotspots from NASA FIRMS; incidents from NIFC. Red Flag warnings come from NWS."
         )
-        .font(.footnote)
+        .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .padding(DesignTokens.Spacing.space20)
@@ -160,11 +160,11 @@ struct FireDetailView: View {
       ForEach(fireWeatherAlerts) { alert in
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
           Text(alert.event)
-            .font(.subheadline.weight(.semibold))
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
           if let headline = alert.headline, !headline.isEmpty {
             Text(headline)
-              .font(.caption)
+              .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
         }
@@ -180,15 +180,15 @@ struct FireDetailView: View {
       sectionHeader("Air quality near fires")
       HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space12) {
         Text("\(observation.aqi)")
-          .font(.system(size: 40, weight: .bold, design: .rounded))
+          .font(DesignTokens.Typography.widgetTemp(40))
           .foregroundStyle(AirQualityCategory(usAQI: observation.aqi).color)
           .monospacedDigit()
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
           Text(observation.category)
-            .font(.subheadline.weight(.semibold))
+            .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text(observation.parameter.map { "AirNow \($0)" } ?? "AirNow")
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       }
@@ -201,7 +201,7 @@ struct FireDetailView: View {
   private func incidentRow(_ incident: FireIncident, miles: Double?) -> some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
       Text(incident.displayName)
-        .font(.subheadline.weight(.semibold))
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
       HStack(spacing: DesignTokens.Spacing.space8) {
         if let miles {
@@ -217,7 +217,7 @@ struct FireDetailView: View {
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
-      .font(.caption)
+      .font(DesignTokens.Typography.caption())
     }
     .padding(DesignTokens.Spacing.space12)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -228,11 +228,11 @@ struct FireDetailView: View {
     HStack {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
         Text(String(format: "%.0f mi away", miles))
-          .font(.subheadline.weight(.semibold))
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         if let frp = spot.frp {
           Text(String(format: "FRP %.1f · %@", frp, spot.confidence ?? "detection"))
-            .font(.caption)
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
