@@ -42,23 +42,28 @@ date is **2026-09-13** (30 days out), sooner if 10+ subscribers land first.
 - Instrumentation shipped with 1.0.6: `share_completed`, `ai_request` (per feature),
   `ai_limit_reached`, `first_open`.
 - Acquisition baseline captured pre-reposition in `docs/baseline-2026-08-01.md`:
-  113 impressions / 27 page views / 5 downloads / 2 ratings over 8 live days. That's
-  the number the reposition has to beat.
+  113 impressions / 27 page views / 5 downloads / 2 ratings over 8 live days.
+  That capture is for **dead listing `6780682022`**. Live listing is
+  `6798461672`, launched 2026-08-14 as 1.0.6 — see
+  `docs/baseline-2026-08-14.md`. Do not score the reposition against the old
+  113. The number to beat on this record starts at ~0.
 
-## First task on pickup: re-capture acquisition data
+## First task on pickup: finish the 2026-08-14 dashboard capture
 
-1.0.6 is live as of **2026-08-14** — this is the live date to use for all of the
-following (Apple's Analytics date filters won't mark the metadata change on their
-own, so this has to be tracked by hand):
+Live-day marker started in [`docs/baseline-2026-08-14.md`](baseline-2026-08-14.md).
+API-side facts are recorded. **The two Acquisition dashboard views are still empty**
+— the App Manager key gets `403` on Analytics Reports, and there is no API for the
+live Overview/Sources numbers.
 
-1. Re-run the same two App Store Connect Analytics views documented in
-   `docs/baseline-2026-08-01.md` (Acquisition → Overview, Acquisition → Sources,
-   Product Page Views by Unique Devices) — start now so there's a clean pre/post
-   boundary at 2026-08-14.
+1. Open App Store Connect → Analytics → Acquisition → Overview, and Sources
+   (Product Page Views by Unique Devices). Paste the funnel + source-type rows
+   into the empty table in `docs/baseline-2026-08-14.md`.
 2. Watch **App Store Search impressions** specifically — that's the one metric the
    keyword/subtitle change acts on. Browse and Referrer aren't moved by this reposition.
 3. Give it until **2026-09-13** (30 days) before drawing conclusions. A week of data
-   at this volume is noise.
+   at this volume is noise. This listing itself launched 2026-08-14 (new App Store
+   ID `6798461672`); the 2026-08-01 baseline was a different, now-dead record
+   (`6780682022`) and is **not** a before/after for the same page.
 4. Also watch subscriber count — 10+ subscribers trips the gate independently of the
    30-day clock.
 
