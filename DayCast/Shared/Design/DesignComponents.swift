@@ -273,8 +273,12 @@ struct MoreHubSheet: View {
   private func moreSubtitle(for tab: WeatherStore.Tab) -> String {
     switch tab {
     case .grok:
-      store.xaiService.hasValidKey
-        ? "Photo analysis, briefings, and chat" : "Add key in Settings"
+      GrokAccessRules.moreHubGrokSubtitle(
+        canUseAI: EntitlementChecker.canUseGrokAI(
+          subscription: SubscriptionManager.shared,
+          hasDeveloperKey: store.xaiService.hasValidKey
+        )
+      )
     case .locations:
       "\(store.savedLocations.count) saved place\(store.savedLocations.count == 1 ? "" : "s")"
     case .settings: "Units, alerts, privacy"

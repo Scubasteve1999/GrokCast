@@ -44,4 +44,12 @@ enum GrokAccessRules {
     if hasDeveloperKey { return .developerKey }
     return nil
   }
+
+  /// More hub subtitle. Pro + proxy (or a user key) is enough — do not send
+  /// people to Settings for a key they no longer need.
+  static func moreHubGrokSubtitle(canUseAI: Bool) -> String {
+    canUseAI
+      ? "Photo analysis, briefings, and chat"
+      : "Included with DayCast Pro"
+  }
 }

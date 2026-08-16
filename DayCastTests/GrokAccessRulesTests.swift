@@ -32,6 +32,24 @@ final class GrokAccessRulesTests: XCTestCase {
       GrokAccessRules.canUseGrokAI(isPro: false, proxyConfigured: false, hasDeveloperKey: true))
   }
 
+  func testMoreHubDoesNotTellProUsersToAddAKey() {
+    let allowed = GrokAccessRules.canUseGrokAI(
+      isPro: true, proxyConfigured: true, hasDeveloperKey: false)
+    XCTAssertTrue(allowed)
+    XCTAssertEqual(
+      GrokAccessRules.moreHubGrokSubtitle(canUseAI: allowed),
+      "Photo analysis, briefings, and chat")
+    XCTAssertFalse(
+      GrokAccessRules.moreHubGrokSubtitle(canUseAI: allowed)
+        .localizedCaseInsensitiveContains("key"))
+  }
+
+  func testMoreHubLockedCopyPointsAtProNotSettings() {
+    let copy = GrokAccessRules.moreHubGrokSubtitle(canUseAI: false)
+    XCTAssertEqual(copy, "Included with DayCast Pro")
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+  }
+
   // MARK: - Tier resolution
 
   func testProRoutesThroughTheProxyEvenWithAnOwnKey() {
