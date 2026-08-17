@@ -12,7 +12,6 @@ final class GrokAIViewModel {
   var isGeneratingImage: Bool = false
 
   private let weatherStore: WeatherStore
-  private let grokAIService = GrokAIService()
   private let conversationStore = GrokAIConversationStore()
   @ObservationIgnored private nonisolated(unsafe) var generationTask: Task<Void, Never>?
   /// Identifies the current generation so a cancelled/superseded task's teardown can't
@@ -61,7 +60,7 @@ final class GrokAIViewModel {
     guard !isStreaming && !isGeneratingImage else { return }
 
     // Early key guard — stay on AI tab with a clear CTA (no error banner / tab bounce).
-    if !grokAIService.hasValidKey {
+    if !weatherStore.canUseGrok {
       handleMissingDeveloperKey()
       return
     }
@@ -105,7 +104,7 @@ final class GrokAIViewModel {
       var tokenCount = 0
       do {
         // Use streaming for progressive token display
-        for try await token in self.grokAIService.streamResponse(
+        for try await token in try GrokBuildService.stream(
           messages: apiMessages, feature: .chat)
         {
           if Task.isCancelled || !self.isStreaming { break }
@@ -154,7 +153,7 @@ final class GrokAIViewModel {
       return
     }
 
-    guard weatherStore.xaiService.hasValidKey else {
+    guard weatherStore.canUseGrok else {
       handleMissingDeveloperKey()
       isStreaming = false
       stormAnalysisMode = false
@@ -164,7 +163,7 @@ final class GrokAIViewModel {
     await refreshStormWeatherContext()
 
     let weather = weatherStore.currentWeather
-    let alerts = weatherStore.activeAlerts
+    let alerts = weatherStore.displayableActiveAlerts
     let severeContext = SevereWeatherStore.shared.context
     let shortTerm = ShortTermPrecipStore.shared.context
     let locationKey = weatherStore.currentLocation?.id.uuidString
@@ -175,14 +174,14 @@ final class GrokAIViewModel {
     generationTask = Task { @MainActor [weak self] in
       guard let self else { return }
       do {
-        for try await token in self.weatherStore.xaiService.streamAdvancedStormAnalysis(
+        for try await token in try GrokBuildService.streamStormPhoto(
           imageData: imageData,
           weather: weather,
           alerts: alerts,
           severeContext: severeContext.locationID == locationKey ? severeContext : nil,
           shortTermContext: shortTerm.locationID == locationKey && shortTerm.hasHRRRSlots
             ? shortTerm : nil,
-          nearestStationObservation: observation,
+          observation: observation,
           userNotes: userNotes
         ) {
           if Task.isCancelled || !isStreaming { break }
@@ -246,34 +245,6 @@ final class GrokAIViewModel {
   func userFriendlyStormError(for error: Error) -> String {
     if weatherStore.isOffline {
       return "No internet connection. Check your Wi-Fi or cellular and try again."
-    }
-
-    if let apiError = error as? GrokAPIError {
-      switch apiError {
-      case .missingAPIKey:
-        return "Add an xAI developer key in Settings to use AI features."
-      case .networkError(let underlying):
-        if let urlError = underlying as? URLError, urlError.code == .timedOut {
-          return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
-        }
-        return apiError.errorDescription ?? "Network error. Please try again."
-      case .apiError(let statusCode, let message) where statusCode == 400 || statusCode == 422:
-        let lower = message.lowercased()
-        if lower.contains("incorrect api key") || lower.contains("invalid api key")
-          || lower.contains("unauthorized")
-        {
-          return "AI key isn’t valid. Add a working xAI key in Settings (starts with xai-)."
-        }
-        if lower.contains("image") || lower.contains("vision") || lower.contains("format")
-          || lower.contains("base64")
-        {
-          return "That photo couldn't be analyzed. Try a clearer sky image (JPEG/PNG)."
-        }
-        // Never append raw API bodies (can be JSON) — App Review / user-facing.
-        return "Storm analysis couldn’t be completed. Try another photo or try again later."
-      default:
-        return apiError.errorDescription ?? "Storm analysis failed. Please try again."
-      }
     }
 
     if let urlError = error as? URLError, urlError.code == .timedOut {
@@ -445,7 +416,7 @@ final class GrokAIViewModel {
     await historyLoadTask?.value
     guard !isStreaming && !isGeneratingImage else { return }
 
-    guard weatherStore.xaiService.hasValidKey else {
+    guard weatherStore.canUseGrok else {
       handleMissingDeveloperKey()
       return
     }
@@ -469,7 +440,7 @@ final class GrokAIViewModel {
 
     do {
       let prompt = buildImagePrompt(userDescription: description)
-      let url = try await weatherStore.xaiService.generateDayImage(prompt: prompt)
+      let url = try await GrokBuildService.generateImage(prompt: prompt)
 
       let assistantMsg = ChatMessage(
         role: .assistant,
@@ -644,16 +615,8 @@ final class GrokAIViewModel {
   private func completeChat(
     messages: [GrokBuildMessage], feature: GrokFeature, maxTokens: Int
   ) async throws -> String {
-    guard grokAIService.hasValidKey else {
-      throw GrokBuildError.missingAPIKey
-    }
-
-    var result = ""
-    for try await token in grokAIService.streamResponse(messages: messages, feature: feature) {
-      result += token
-    }
-
-    let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
+    let trimmed = try await GrokBuildService.complete(
+      messages: messages, feature: feature, maxTokens: maxTokens)
     guard !trimmed.isEmpty else { throw StructuredFetchError.emptyResponse }
     return trimmed
   }

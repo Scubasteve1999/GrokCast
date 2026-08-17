@@ -284,11 +284,12 @@ final class WeatherStore {
 
   /// Secure Grok/xAI API configuration (developer key mode)
   let grokConfig = GrokAPIConfiguration(mode: .developerKey)
-  let xaiService: XAIService
-  // A long-lived `GrokBuildService` used to live here, built from an embedded key
-  // against a hardcoded api.x.ai. Callers now resolve credentials per request via
-  // `GrokAuthResolver` and construct the service from that, so there is no path to
-  // Grok that skips the entitlement check and the daily cap.
+
+  /// Pro + proxy, or a pasted/DEBUG key. All Grok HTTP goes through `GrokBuildService`.
+  var canUseGrok: Bool {
+    GrokAuthResolver.canAccessGrok(
+      configuration: grokConfig, subscription: SubscriptionManager.shared)
+  }
   let openWeatherMapService = OpenWeatherMapService()
   private let keychain = KeychainService.shared
 
@@ -399,9 +400,6 @@ final class WeatherStore {
   }
 
   init() {
-    // Initialize XAIService with the secure developer-key configuration
-    self.xaiService = XAIService(configuration: grokConfig)
-
     WidgetDataStore.migrateLegacySavedLocationsIfNeeded()
     WidgetDataStore.migrateLegacySnapshotIfNeeded()
     loadSavedLocations()
@@ -566,7 +564,7 @@ final class WeatherStore {
     let brief: String?
     if EntitlementChecker.canUseWidgetGrokBrief(
       subscription: SubscriptionManager.shared,
-      hasDeveloperKey: xaiService.hasValidKey
+      hasDeveloperKey: grokConfig.hasValidDeveloperKey
     ) {
       brief =
         grokBriefOneLiner

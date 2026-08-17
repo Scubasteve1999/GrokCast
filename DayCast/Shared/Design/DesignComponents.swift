@@ -276,7 +276,7 @@ struct MoreHubSheet: View {
       GrokAccessRules.moreHubGrokSubtitle(
         canUseAI: EntitlementChecker.canUseGrokAI(
           subscription: SubscriptionManager.shared,
-          hasDeveloperKey: store.xaiService.hasValidKey
+          hasDeveloperKey: store.grokConfig.hasValidDeveloperKey
         )
       )
     case .locations:

@@ -42,7 +42,7 @@ private struct GrokAIViewContent: View {
             ScrollView {
               VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
                 headerSection
-                if !weatherStore.xaiService.hasValidKey {
+                if !weatherStore.canUseGrok {
                   GrokAPIKeyEmptyStateView(
                     store: weatherStore,
                     subscription: SubscriptionManager.shared
@@ -283,7 +283,7 @@ private struct GrokAIViewContent: View {
 
           Button {
             Task {
-              guard weatherStore.xaiService.hasValidKey else {
+              guard weatherStore.canUseGrok else {
                 if PaywallCoordinator.shared.canUnlockGrokViaPro {
                   PaywallCoordinator.shared.present(.grokAI)
                 }
@@ -324,7 +324,7 @@ private struct GrokAIViewContent: View {
   }
 
   private var aiActionsDisabled: Bool {
-    !weatherStore.xaiService.hasValidKey
+    !weatherStore.canUseGrok
       || weatherStore.grokAIViewModel.isStreaming
       || weatherStore.grokAIViewModel.isGeneratingImage
   }
@@ -430,7 +430,7 @@ private struct GrokAIViewContent: View {
           .disabled(aiActionsDisabled)
           GrokStormSpotterButton {
             Task {
-              guard weatherStore.xaiService.hasValidKey else {
+              guard weatherStore.canUseGrok else {
                 if PaywallCoordinator.shared.canUnlockGrokViaPro {
                   PaywallCoordinator.shared.present(.grokAI)
                 }

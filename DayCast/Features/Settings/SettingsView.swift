@@ -16,7 +16,7 @@ struct SettingsView: View {
   @State private var connectionTestSuccess = false
 
   private var hasKey: Bool {
-    store.xaiService.hasDeveloperAPIKey
+    store.grokConfig.hasValidDeveloperKey
   }
 
   var body: some View {
@@ -432,7 +432,7 @@ struct SettingsView: View {
             .padding(.bottom, DesignTokens.Spacing.space8)
         }
 
-        if !store.xaiService.isUsingEmbeddedDeveloperKey {
+        if !store.grokConfig.isUsingEmbeddedDeveloperKey {
           Button("Clear Key") {
             store.clearXAIApiKey()
             connectionTestResult = nil
@@ -448,7 +448,7 @@ struct SettingsView: View {
   }
 
   private var developerKeySubtitle: String {
-    if store.xaiService.isUsingEmbeddedDeveloperKey {
+    if store.grokConfig.isUsingEmbeddedDeveloperKey {
       return "Embedded · Debug"
     }
     if hasKey {
@@ -655,9 +655,13 @@ struct SettingsView: View {
 
     Task {
       do {
-        let testMessages = [ChatMessage.user("Reply with exactly: 'DayCast connection OK'")]
-        let response = try await store.xaiService.sendMessage(
-          messages: testMessages, context: nil, feature: .connectionTest)
+        let response = try await GrokBuildService.complete(
+          messages: [
+            GrokBuildMessage(
+              role: "user", content: "Reply with exactly: 'DayCast connection OK'")
+          ],
+          feature: .connectionTest,
+          maxTokens: 32)
         isTestingConnection = false
         connectionTestSuccess = response.lowercased().contains("ok")
         connectionTestResult =

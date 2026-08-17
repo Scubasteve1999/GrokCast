@@ -26,7 +26,7 @@ struct ExplainRadarSheet: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
           contextCard
 
-          if !store.xaiService.hasValidKey {
+          if !store.canUseGrok {
             GrokAPIKeyEmptyStateView(store: store, subscription: SubscriptionManager.shared)
           } else if isLoading {
             HStack(spacing: 10) {
@@ -100,7 +100,7 @@ struct ExplainRadarSheet: View {
   }
 
   private func loadExplanation() async {
-    guard explanation == nil, !isLoading, store.xaiService.hasValidKey else { return }
+    guard explanation == nil, !isLoading, store.canUseGrok else { return }
     isLoading = true
     errorMessage = nil
     defer { isLoading = false }

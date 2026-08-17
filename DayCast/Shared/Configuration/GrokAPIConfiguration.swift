@@ -80,8 +80,19 @@ struct GrokAPIConfiguration {
 
   var hasValidDeveloperKey: Bool {
     guard let key = developerAPIKey, !key.isEmpty else { return false }
-    // Basic developer key format check for xAI keys
     return key.hasPrefix("xai-") && key.count > 20
+  }
+
+  /// True when the active key is the compiled-in DEBUG embed, not a Keychain paste.
+  var isUsingEmbeddedDeveloperKey: Bool {
+    guard Self.allowsEmbeddedDeveloperKey else { return false }
+    guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }
+    return developerAPIKey == embedded
+  }
+
+  var maskedDeveloperKey: String {
+    guard let key = developerAPIKey, key.count > 8 else { return "••••••••" }
+    return "\(key.prefix(7))••••••\(key.suffix(4))"
   }
 
   /// Saves a new developer key securely to the Keychain.

@@ -292,7 +292,7 @@ extension TodayView {
 
     Task {
       do {
-        let url = try await store.xaiService.generateDayImage(prompt: prompt)
+        let url = try await GrokBuildService.generateImage(prompt: prompt)
         isGeneratingImage = false
         generatedImageURL = url
         showImagineResult = true

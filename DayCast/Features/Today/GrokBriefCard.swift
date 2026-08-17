@@ -53,7 +53,7 @@ struct GrokBriefCard: View {
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
 
-        if !store.xaiService.hasValidKey {
+        if !store.canUseGrok {
           Button(
             PaywallCoordinator.shared.canUnlockGrokViaPro
               ? "Upgrade to DayCast Pro" : "Add Key in Settings"
@@ -91,7 +91,7 @@ struct GrokBriefCard: View {
           }
           .buttonStyle(.borderedProminent)
           .tint(DesignTokens.Palette.accent)
-          .disabled(!store.xaiService.hasValidKey || isLoading)
+          .disabled(!store.canUseGrok || isLoading)
         }
       }
     }
@@ -124,7 +124,7 @@ struct GrokBriefCard: View {
         return
       }
       briefText = acceptedCachedBrief()
-      if briefText == nil, store.xaiService.hasValidKey, !isLoading {
+      if briefText == nil, store.canUseGrok, !isLoading {
         await fetchBrief(force: false)
       }
     }
@@ -288,7 +288,7 @@ struct GrokBriefCard: View {
   @MainActor
   private func fetchBrief(force: Bool) async {
     guard !safety.isFeatureHidden else { return }
-    guard store.xaiService.hasValidKey else {
+    guard store.canUseGrok else {
       errorMessage = "Add your xAI developer key in Settings to unlock Today's Take."
       return
     }

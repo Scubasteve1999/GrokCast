@@ -55,11 +55,11 @@ struct AlertsGrokSummaryCard: View {
         Text(errorMessage)
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
-        if store.xaiService.hasValidKey {
+        if store.canUseGrok {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
             .font(DesignTokens.Typography.caption())
         }
-      } else if !store.xaiService.hasValidKey {
+      } else if !store.canUseGrok {
         Text("Add an xAI key in Settings for AI alert summaries.")
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
@@ -129,11 +129,11 @@ struct AlertsGrokSummaryCard: View {
         Text(errorMessage)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
-        if store.xaiService.hasValidKey {
+        if store.canUseGrok {
           Button("Try Again") { Task { await fetchSummary(force: true) } }
             .font(DesignTokens.Typography.caption())
         }
-      } else if !store.xaiService.hasValidKey {
+      } else if !store.canUseGrok {
         Text("Add an xAI key in Settings for AI alert summaries.")
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
@@ -155,7 +155,7 @@ struct AlertsGrokSummaryCard: View {
 
   @MainActor
   private func fetchSummary(force: Bool) async {
-    guard store.xaiService.hasValidKey else { return }
+    guard store.canUseGrok else { return }
     if !force, summary != nil { return }
 
     isLoading = true
