@@ -436,18 +436,6 @@ private struct GrokAIViewContent: View {
                 }
                 return
               }
-              let targetLocation =
-                weatherStore.savedLocations.first(where: {
-                  $0.name.localizedCaseInsensitiveContains("Olive Branch")
-                })
-                ?? weatherStore.savedLocations.first(where: { !$0.isCurrent })
-              if let location = targetLocation {
-                await weatherStore.refreshWeather(for: location)
-              } else if let current = weatherStore.savedLocations.first(where: { $0.isCurrent }) {
-                await weatherStore.refreshWeather(for: current)
-              } else {
-                await weatherStore.useCurrentDeviceLocation()
-              }
               showPhotoPicker = true
             }
           }
