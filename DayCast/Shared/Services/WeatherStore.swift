@@ -49,6 +49,12 @@ final class WeatherStore {
   var isLoadingWeather = false
   var weatherError: String?
 
+  /// Weather that belongs to the selected city. Nil while a switch is in flight
+  /// so Today/Forecast never pair a new name with the previous city's numbers.
+  var displayedWeather: DayCastWeather? {
+    Self.weatherMatchingSelection(currentWeather, location: currentLocation)
+  }
+
   var selectedTab: Tab = .today
 
   // Connectivity for offline-aware error UI (banner uses wifi.slash icon + specific copy).
@@ -801,6 +807,10 @@ final class WeatherStore {
 
   func selectLocation(_ location: SavedLocation) {
     currentLocation = location
+    if currentWeather?.location.id != location.id {
+      isLoadingWeather = true
+      weatherError = nil
+    }
     Task { await refreshWeather() }
   }
 
@@ -896,7 +906,7 @@ final class WeatherStore {
   @MainActor
   func refreshWeather() async {
     guard let loc = currentLocation else { return }
-    let showLoadingIndicator = currentWeather == nil
+    let showLoadingIndicator = displayedWeather == nil
     if showLoadingIndicator {
       isLoadingWeather = true
     }
@@ -1232,8 +1242,17 @@ final class WeatherStore {
   nonisolated static func lastGoodOpenMeteo(
     _ weather: DayCastWeather?, for location: SavedLocation
   ) -> DayCastWeather? {
-    guard let weather, weather.location.id == location.id else { return nil }
-    return weather
+    weatherMatchingSelection(weather, location: location)
+  }
+
+  /// Hero/Forecast weather must match the selected city. A location-only mismatch
+  /// is treated as "not ready" rather than showing the previous city's numbers.
+  nonisolated static func weatherMatchingSelection(
+    _ weather: DayCastWeather?, location: SavedLocation?
+  ) -> DayCastWeather? {
+    guard let weather else { return nil }
+    guard let location else { return weather }
+    return weather.location.id == location.id ? weather : nil
   }
 
   /// Updates widgets + Live Activity from a background fetch without changing the selected city.

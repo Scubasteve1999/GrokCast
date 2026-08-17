@@ -13,11 +13,11 @@ struct ForecastView: View {
     NavigationStack {
       ZStack {
         WeatherBackgroundLayer(
-          conditionCode: store.currentWeather?.conditionCode,
-          isDay: store.currentWeather.map {
+          conditionCode: store.displayedWeather?.conditionCode,
+          isDay: store.displayedWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
           } ?? WeatherBackgroundView.inferredIsDay(
-            timeZone: store.currentWeather?.locationTimeZone ?? .current
+            timeZone: store.displayedWeather?.locationTimeZone ?? .current
           ),
           intensity: .staticOnly,
           extraOpacity: 1.0
@@ -56,7 +56,7 @@ private struct ForecastAdaptiveBody: View {
 
   var body: some View {
     Group {
-      if store.currentWeather == nil && store.isLoadingWeather {
+      if store.displayedWeather == nil && store.isLoadingWeather {
         if awaitsWidthMeasurement {
           neutralForecastSkeleton
         } else if prefersWideLayout {
@@ -64,7 +64,7 @@ private struct ForecastAdaptiveBody: View {
         } else {
           compactForecastSkeleton
         }
-      } else if let weather = store.currentWeather {
+      } else if let weather = store.displayedWeather {
         if awaitsWidthMeasurement {
           neutralForecastContent(for: weather)
         } else if prefersWideLayout {
@@ -95,8 +95,8 @@ private struct ForecastAdaptiveBody: View {
     .sheet(item: $selectedDay) { day in
       ForecastDayDetailSheet(
         forecast: day,
-        calendar: store.currentWeather?.locationCalendar ?? .current,
-        timeZone: store.currentWeather?.locationTimeZone ?? .current
+        calendar: store.displayedWeather?.locationCalendar ?? .current,
+        timeZone: store.displayedWeather?.locationTimeZone ?? .current
       )
     }
   }

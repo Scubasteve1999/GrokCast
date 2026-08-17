@@ -6,7 +6,7 @@ private let todayContentTopPadding = DesignTokens.Spacing.space16
 struct TodayView: View {
   @Environment(WeatherStore.self) private var store
 
-  var weather: DayCastWeather? { store.currentWeather }
+  var weather: DayCastWeather? { store.displayedWeather }
   var locationName: String { store.currentLocation?.name ?? "—" }
 
   // Grok Imagine state
@@ -25,11 +25,11 @@ struct TodayView: View {
     NavigationStack {
       ZStack {
         WeatherBackgroundLayer(
-          conditionCode: store.currentWeather?.conditionCode,
-          isDay: store.currentWeather.map {
+          conditionCode: store.displayedWeather?.conditionCode,
+          isDay: store.displayedWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
           } ?? WeatherBackgroundView.inferredIsDay(
-            timeZone: store.currentWeather?.locationTimeZone ?? .current
+            timeZone: store.displayedWeather?.locationTimeZone ?? .current
           ),
           intensity: .staticOnly,
           extraOpacity: 1.0

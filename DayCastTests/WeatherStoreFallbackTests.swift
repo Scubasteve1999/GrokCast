@@ -23,6 +23,16 @@ final class WeatherStoreFallbackTests: XCTestCase {
     XCTAssertNil(WeatherStore.lastGoodOpenMeteo(nil, for: olive))
   }
 
+  func testDisplayedWeatherHidesOtherCityNumbers() {
+    let weather = makeWeather(location: olive)
+    XCTAssertNil(WeatherStore.weatherMatchingSelection(weather, location: seattle))
+    XCTAssertEqual(
+      WeatherStore.weatherMatchingSelection(weather, location: olive)?.currentTemp, 72)
+    XCTAssertEqual(
+      WeatherStore.weatherMatchingSelection(weather, location: nil)?.location.id, olive.id)
+    XCTAssertNil(WeatherStore.weatherMatchingSelection(nil, location: olive))
+  }
+
   func testFormatWindUsesUnitLabel() {
     XCTAssertEqual(TemperatureUnit.fahrenheit.formatWind(12.4), "12 mph")
     XCTAssertEqual(TemperatureUnit.celsius.formatWind(18.6), "19 km/h")

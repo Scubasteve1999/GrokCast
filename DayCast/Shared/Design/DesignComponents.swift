@@ -247,7 +247,7 @@ struct MoreHubSheet: View {
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
-      if let w = store.currentWeather {
+      if let w = store.displayedWeather {
         HStack(alignment: .bottom, spacing: DesignTokens.Spacing.space8) {
           Text(store.formatTemperatureShort(w.currentTemp))
             .font(DesignTokens.Typography.compactTemp())
