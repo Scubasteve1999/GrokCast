@@ -46,4 +46,20 @@ enum TemperatureUnit: String, CaseIterable, Codable, Identifiable {
     case .celsius: "\(Int(round(value))) km/h"
     }
   }
+
+  /// NWS observations are °F. Convert when the app is in Celsius.
+  func formatFromFahrenheit(_ fahrenheit: Double) -> String {
+    switch self {
+    case .fahrenheit: format(fahrenheit)
+    case .celsius: format((fahrenheit - 32) * 5 / 9)
+    }
+  }
+
+  /// NWS observations are mph. Convert when the app is in Celsius.
+  func formatWindFromMph(_ mph: Double) -> String {
+    switch self {
+    case .fahrenheit: formatWind(mph)
+    case .celsius: formatWind(mph * 1.609_34)
+    }
+  }
 }

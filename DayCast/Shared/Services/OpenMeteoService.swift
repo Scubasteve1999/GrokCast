@@ -265,28 +265,49 @@ final class OpenMeteoService {
       }
     }
 
-    // Air quality extraction (current hour)
+    // Air quality: nearest hour to now, not midnight (hourly[0]).
     var aqi: Int? = nil
     var pm25: Double? = nil
-    var pollen = "Low"
+    var pollen: String? = nil
 
     if let aq = airQuality?.hourly, !aq.time.isEmpty {
-      aqi = aq.us_aqi?.first ?? nil
-      pm25 = aq.pm2_5?.first ?? nil
-      // Simple pollen aggregation
-      let g: Double = aq.grass_pollen?.compactMap { $0 }.first ?? 0.0
-      let b: Double = aq.birch_pollen?.compactMap { $0 }.first ?? 0.0
-      let a: Double = aq.alder_pollen?.compactMap { $0 }.first ?? 0.0
-      let maxPollen = max(g, b, a)
-      if maxPollen > 50 { pollen = "High" } else if maxPollen > 20 { pollen = "Moderate" }
+      let aqTimeZone =
+        airQuality?.timezone.flatMap { TimeZone(identifier: $0) } ?? responseTimeZone
+      var aqCalendar = Calendar(identifier: .gregorian)
+      aqCalendar.timeZone = aqTimeZone
+      let aqHourFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = aqTimeZone
+        return f
+      }()
+      let aqDates = aq.time.map { aqHourFormatter.date(from: $0) ?? isoFallback.date(from: $0) }
+      let aqHourStart = aqCalendar.dateInterval(of: .hour, for: Date())?.start ?? Date()
+      if let idx = OpenMeteoHourIndex.nearest(in: aqDates, to: aqHourStart) {
+        aqi = openMeteoValue(aq.us_aqi, at: idx)
+        pm25 = openMeteoValue(aq.pm2_5, at: idx)
+        let pollenValues = [
+          openMeteoValue(aq.grass_pollen, at: idx),
+          openMeteoValue(aq.birch_pollen, at: idx),
+          openMeteoValue(aq.alder_pollen, at: idx),
+        ].compactMap { $0 }
+        if let maxPollen = pollenValues.max() {
+          if maxPollen > 50 {
+            pollen = "High"
+          } else if maxPollen > 20 {
+            pollen = "Moderate"
+          } else {
+            pollen = "Low"
+          }
+        }
+      }
     }
 
     let high = dailyForecasts.first?.high ?? currentTemp + 5
     let low = dailyForecasts.first?.low ?? currentTemp - 8
     let precip = hourlyForecasts.first?.precipChance ?? 0
-    let uv: Double =
-      dailyForecasts.first?.uvMax
-      ?? (hourly?.uv_index?.compactMap { $0 }.first ?? 3.0)
+    let uv: Double = dailyForecasts.first?.uvMax ?? 0
 
     // Minutecast: parse the full minutely_15 series, then keep the next ~2 hours.
     // Taking only the first 8 slots left the strip empty after morning (those slots are past).

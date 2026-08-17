@@ -64,6 +64,7 @@ struct Daily: Decodable {
 // Air Quality
 struct AirQualityResponse: Decodable {
   let hourly: AirQualityHourly?
+  let timezone: String?
 }
 
 struct AirQualityHourly: Decodable {
@@ -135,6 +136,21 @@ struct MinutelyForecast: Equatable, Codable, Identifiable {
 func openMeteoValue<T>(_ array: [T?]?, at index: Int) -> T? {
   guard let array, array.indices.contains(index) else { return nil }
   return array[index]
+}
+
+enum OpenMeteoHourIndex {
+  /// Index of the timestamp nearest `target`. Nil entries are skipped.
+  static func nearest(in times: [Date?], to target: Date) -> Int? {
+    var best: (index: Int, delta: TimeInterval)?
+    for (index, time) in times.enumerated() {
+      guard let time else { continue }
+      let delta = abs(time.timeIntervalSince(target))
+      if best == nil || delta < best!.delta {
+        best = (index, delta)
+      }
+    }
+    return best?.index
+  }
 }
 
 // MARK: - Daily forecast derivation (hourly → daily precip % + representative code)

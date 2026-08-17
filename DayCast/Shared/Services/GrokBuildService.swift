@@ -162,7 +162,8 @@ final class GrokBuildService {
     severeContext: SevereWeatherContext?,
     shortTermContext: ShortTermPrecipContext?,
     observation: NWSObservation?,
-    userNotes: String?
+    userNotes: String?,
+    unit: TemperatureUnit
   ) throws -> AsyncThrowingStream<String, Error> {
     let jpeg = imageData.compressedForVision() ?? imageData
     var system = GrokPrompts.stormSpotterSystemPrompt
@@ -171,6 +172,7 @@ final class GrokBuildService {
         "\n\n"
         + GrokPrompts.buildTechnicalStormContext(
           for: weather,
+          unit: unit,
           alerts: alerts ?? [],
           severeContext: severeContext,
           shortTermContext: shortTermContext,

@@ -35,30 +35,36 @@ enum GrokPrompts {
     - Use standard meteorological terminology without becoming overly academic.
     """
 
+  /// Shared current-conditions block for chat, Imagine, and Storm Spotter.
+  static func currentConditionsBlock(
+    weather: DayCastWeather,
+    locationName: String,
+    unit: TemperatureUnit
+  ) -> String {
+    """
+    Current conditions for \(locationName):
+    - Temperature: \(unit.format(weather.currentTemp))
+    - Condition: \(weather.conditionText)
+    - Feels like: \(unit.format(weather.feelsLike))
+    - Humidity: \(weather.humidity)%
+    - Wind: \(unit.formatWind(weather.windSpeed))
+    """
+  }
+
   /// Builds a focused technical weather context for storm analysis.
   /// Prefers `severeContext` (alerts + SPC products); falls back to `alerts` alone.
   static func buildTechnicalStormContext(
     for weather: DayCastWeather,
+    unit: TemperatureUnit = .fahrenheit,
     alerts: [NWSAlert] = [],
     severeContext: SevereWeatherContext? = nil,
     shortTermContext: ShortTermPrecipContext? = nil,
     nearestStationObservation: NWSObservation? = nil,
     userNotes: String? = nil
   ) -> String {
-    let temp = Int(round(weather.currentTemp))
-    let feels = Int(round(weather.feelsLike))
-    let humidity = weather.humidity
-    let wind = Int(round(weather.windSpeed))
-    let precip = weather.precipitationChance
-
-    var context = """
-      Current conditions — \(weather.location.name):
-      Temperature: \(temp)°F (feels \(feels)°F)
-      Humidity: \(humidity)%
-      Wind: \(wind) mph
-      Conditions: \(weather.conditionText)
-      Precipitation chance: \(precip)%
-      """
+    var context = currentConditionsBlock(
+      weather: weather, locationName: weather.location.name, unit: unit)
+    context += "\n- Precipitation chance: \(weather.precipitationChance)%"
 
     if let obs = nearestStationObservation {
       let timeFormatter: DateFormatter = {
@@ -71,10 +77,10 @@ enum GrokPrompts {
       context +=
         "\n\n**Nearest official NWS station observation (\(obs.stationId) as of \(timeStr)):**"
       if let t = obs.temperatureF {
-        context += "\nTemperature: \(Int(round(t)))°F"
+        context += "\nTemperature: \(unit.formatFromFahrenheit(t))"
       }
       if let w = obs.windSpeedMph {
-        context += "\nWind: \(Int(round(w))) mph"
+        context += "\nWind: \(unit.formatWindFromMph(w))"
         if let dir = obs.windDirectionDegrees {
           context += " from \(dir)°"
         }
@@ -199,6 +205,7 @@ enum GrokPrompts {
   /// nearestStationObservation + alerts forwarded so the technical context includes official NWS ground truth + warnings.
   static func stormSpotterVisionPrompt(
     for weather: DayCastWeather,
+    unit: TemperatureUnit = .fahrenheit,
     alerts: [NWSAlert] = [],
     severeContext: SevereWeatherContext? = nil,
     shortTermContext: ShortTermPrecipContext? = nil,
@@ -208,6 +215,7 @@ enum GrokPrompts {
     var prompt = stormSpotterSystemPrompt + "\n\n"
     prompt += buildTechnicalStormContext(
       for: weather,
+      unit: unit,
       alerts: alerts,
       severeContext: severeContext,
       shortTermContext: shortTermContext,

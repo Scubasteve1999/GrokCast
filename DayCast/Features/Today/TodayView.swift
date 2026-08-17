@@ -304,13 +304,13 @@ extension TodayView {
   }
 
   private func buildImaginePrompt(for w: DayCastWeather) -> String {
-    let temp = Int(round(w.currentTemp))
     let condition = w.conditionText.lowercased()
     let location = w.location.name
+    let temp = store.temperatureUnit.format(w.currentTemp)
 
     return """
       A cinematic, photorealistic image of the current weather in \(location): 
-      \(condition) skies, temperature around \(temp)°F. 
+      \(condition) skies, temperature around \(temp). 
       Beautiful natural lighting, high detail, realistic photography style, 
       no text, no people unless it enhances the scene.
       """

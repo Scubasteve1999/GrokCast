@@ -28,6 +28,27 @@ final class WeatherStoreFallbackTests: XCTestCase {
     XCTAssertEqual(TemperatureUnit.celsius.formatWind(18.6), "19 km/h")
   }
 
+  func testFormatFromFahrenheitConvertsInCelsius() {
+    XCTAssertEqual(TemperatureUnit.fahrenheit.formatFromFahrenheit(68), "68°F")
+    XCTAssertEqual(TemperatureUnit.celsius.formatFromFahrenheit(68), "20°C")
+  }
+
+  func testFormatWindFromMphConvertsInCelsius() {
+    XCTAssertEqual(TemperatureUnit.fahrenheit.formatWindFromMph(10), "10 mph")
+    XCTAssertEqual(TemperatureUnit.celsius.formatWindFromMph(10), "16 km/h")
+  }
+
+  func testNearestHourPrefersCurrentHourNotMidnight() {
+    let midnight = Date(timeIntervalSince1970: 1_767_225_600)  // 2026-01-01 00:00 UTC
+    let times: [Date?] = [
+      midnight,
+      midnight.addingTimeInterval(12 * 3600),
+      midnight.addingTimeInterval(13 * 3600),
+    ]
+    let noon = midnight.addingTimeInterval(12 * 3600 + 10 * 60)
+    XCTAssertEqual(OpenMeteoHourIndex.nearest(in: times, to: noon), 1)
+  }
+
   private func makeWeather(location: SavedLocation) -> DayCastWeather {
     DayCastWeather(
       location: location,

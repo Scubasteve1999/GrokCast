@@ -825,20 +825,6 @@ final class WeatherStore {
     }
   }
 
-  /// NWS fallback with the same 8s cap so a slow grid lookup can't block launch.
-  private func fetchNWSFallback(for location: SavedLocation) async -> WeatherFetchResult {
-    await raceWeatherFetch(timeoutNanoseconds: 8_000_000_000) {
-      do {
-        let data = try await self.nwsService.fetchForecast(for: location)
-        return .success(data)
-      } catch is CancellationError {
-        return .timedOut
-      } catch {
-        return .failure(error)
-      }
-    }
-  }
-
   /// Races a weather fetch against a timeout, preferring a completed fetch over timeout
   /// when both finish in the same window (avoids false timeouts from dequeue order).
   private func raceWeatherFetch(
@@ -872,7 +858,8 @@ final class WeatherStore {
     }
   }
 
-  /// Open-Meteo first. Last-good for this city beats NWS-as-hero. NWS grid is first-load only.
+  /// Open-Meteo only for hero numbers. Last-good for this city if OM fails.
+  /// NWS stays additive (alerts / station obs) — never mapped into `DayCastWeather`.
   private enum ForecastResolution {
     case fetched(DayCastWeather)
     case lastGood(DayCastWeather)
@@ -883,18 +870,16 @@ final class WeatherStore {
     switch await fetchPrimaryWeather(for: location) {
     case .success(let forecast):
       return .fetched(forecast)
-    case .timedOut, .failure:
+    case .timedOut:
       if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
         return .lastGood(lastGood)
       }
-      switch await fetchNWSFallback(for: location) {
-      case .success(let forecast):
-        return .fetched(forecast)
-      case .timedOut:
-        return .failed(URLError(.timedOut))
-      case .failure(let error):
-        return .failed(error)
+      return .failed(URLError(.timedOut))
+    case .failure(let error):
+      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
+        return .lastGood(lastGood)
       }
+      return .failed(error)
     }
   }
 

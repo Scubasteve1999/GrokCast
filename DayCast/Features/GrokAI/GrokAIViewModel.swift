@@ -182,7 +182,8 @@ final class GrokAIViewModel {
           shortTermContext: shortTerm.locationID == locationKey && shortTerm.hasHRRRSlots
             ? shortTerm : nil,
           observation: observation,
-          userNotes: userNotes
+          userNotes: userNotes,
+          unit: weatherStore.temperatureUnit
         ) {
           if Task.isCancelled || !isStreaming { break }
           self.responseText += token
@@ -334,8 +335,9 @@ final class GrokAIViewModel {
     }
 
     let location = weatherStore.currentLocation?.name ?? "your location"
-    let temp = Int(current.currentTemp)
-    let condition = current.conditionText
+    let unit = weatherStore.temperatureUnit
+    let conditions = GrokPrompts.currentConditionsBlock(
+      weather: current, locationName: location, unit: unit)
 
     let alerts = weatherStore.displayableActiveAlerts.prefix(5)
     var alertLines = ""
@@ -356,12 +358,7 @@ final class GrokAIViewModel {
       for storm spotters and severe-weather watchers. Prioritize hazards, timing, radar cues, \
       and actionable monitoring. Lifestyle advice (outfits, walks) only if the user asks.
 
-      Current conditions for \(location):
-      - Temperature: \(temp)°F
-      - Condition: \(condition)
-      - Feels like: \(Int(current.feelsLike))°F
-      - Humidity: \(current.humidity)%
-      - Wind: \(Int(current.windSpeed)) mph
+      \(conditions)
       \(alertLines)\(severeExtra)
       Be concise and practical. Lead with risk and what to watch next. Do not invent warnings.
       """
@@ -381,15 +378,8 @@ final class GrokAIViewModel {
       return "\(base), photorealistic, high detail, atmospheric lighting, no text or logos"
     }
 
-    let temp = Int(round(current.currentTemp))
-    let feels = Int(round(current.feelsLike))
-    let condition = current.conditionText
+    let unit = weatherStore.temperatureUnit
     let location = current.location.name
-    let wind = Int(round(current.windSpeed))
-    let humidity = current.humidity
-    let high = Int(round(current.high))
-    let low = Int(round(current.low))
-
     let base = userDescription?.isEmpty == false ? "\(userDescription!). " : ""
     let timeOfDay =
       (current.symbolName.contains("sun") || current.symbolName.contains("day"))
@@ -397,8 +387,8 @@ final class GrokAIViewModel {
 
     return """
       \(base)Create a highly detailed, cinematic weather visualization for \(location) right now.
-      Conditions: \(condition), \(temp)°F (feels like \(feels)°F), wind \(wind) mph, humidity \(humidity)%.
-      Today's range \(high)° / \(low)°. \(timeOfDay) lighting.
+      Conditions: \(current.conditionText), \(unit.format(current.currentTemp)) (feels like \(unit.format(current.feelsLike))), wind \(unit.formatWind(current.windSpeed)), humidity \(current.humidity)%.
+      Today's range \(unit.formatShort(current.high)) / \(unit.formatShort(current.low)). \(timeOfDay) lighting.
       Photorealistic or atmospheric digital art style, dramatic natural light, rich colors, 
       moody and immersive, no text, no logos, no people unless they naturally enhance the scene.
       """
