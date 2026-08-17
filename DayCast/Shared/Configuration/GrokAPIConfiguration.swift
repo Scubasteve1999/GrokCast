@@ -1,5 +1,4 @@
 import Foundation
-import StoreKit
 
 /// Configuration for the xAI Grok API in developer-key mode.
 /// Keys are always loaded from the secure Keychain via KeychainService.
@@ -43,39 +42,23 @@ struct GrokAPIConfiguration {
 
   // MARK: - Secure Key Access
 
-  /// DEBUG or TestFlight (sandbox environment). Never true for App Store production.
-  ///
-  /// TestFlight uses the same Release configuration as the store build, so we
-  /// cannot rely on `#if DEBUG` alone for internal AI smoke tests. App Store
-  /// installs keep the embedded key inert: Pro goes through the metered proxy,
-  /// and free users must paste their own key in Settings.
+  /// DEBUG only. Release binaries (TestFlight and App Store) compile
+  /// `DeveloperAPIKey.xai` as nil so the IPA contains no `xai-` string.
+  /// Pro goes through the metered proxy; everyone else pastes a Keychain key.
   static var allowsEmbeddedDeveloperKey: Bool {
     #if DEBUG
       return true
     #else
-      return _isTestFlight
+      return false
     #endif
   }
-
-  // Populated once by a detached Task on first access. Written before any caller
-  // reads the final value in normal app flow, so the unsafe annotation is safe.
-  nonisolated(unsafe) private static var _isTestFlight: Bool = {
-    Task.detached(priority: .utility) {
-      if let result = try? await AppTransaction.shared,
-        case .verified(let tx) = result
-      {
-        _isTestFlight = tx.environment == .sandbox
-      }
-    }
-    return false
-  }()
 
   /// Returns the current developer API key.
   ///
   /// Order: Keychain (user-pasted) first, then the embedded key when allowed
-  /// (DEBUG / TestFlight only). App Store production never falls back to the
-  /// embedded key — that would bill every call to us ungated. Pro users reach
-  /// Grok through the hosted proxy instead.
+  /// (DEBUG only). Release never falls back to the embedded key — that would
+  /// bill every call to us ungated, and the literal is compiled out. Pro users
+  /// reach Grok through the hosted proxy instead.
   ///
   /// If Settings shows "invalid API key", clear the Keychain key first: a stale
   /// saved key always wins over the embedded fallback.

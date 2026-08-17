@@ -19,7 +19,7 @@ final class XAIService {
       configuration: configuration, subscription: SubscriptionManager.shared)
   }
 
-  /// True when the active key is the embedded development key (DEBUG / TestFlight).
+  /// True when the active key is the embedded DEBUG key.
   var isUsingEmbeddedDeveloperKey: Bool {
     guard GrokAPIConfiguration.allowsEmbeddedDeveloperKey else { return false }
     guard let embedded = DeveloperAPIKey.xai, !embedded.isEmpty else { return false }

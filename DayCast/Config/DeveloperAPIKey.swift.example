@@ -13,8 +13,14 @@
 import Foundation
 
 enum DeveloperAPIKey {
-  // Replace with your actual key for TestFlight builds
+  // DEBUG-only. Release / TestFlight / App Store must compile this as nil so
+  // the binary contains no `xai-` string. Pro uses the hosted proxy; testers
+  // use sandbox Pro or a pasted Keychain key.
+#if DEBUG
   static let xai: String? = nil  // "YOUR_XAI_API_KEY"
+#else
+  static let xai: String? = nil
+#endif
 
   /// Grok Build (SSE streaming) key; falls back to `xai` when unset.
   static let grokBuild: String? = nil  // "YOUR_GROK_BUILD_API_KEY"

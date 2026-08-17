@@ -54,6 +54,40 @@ is_archive_build() {
   [ "${CI_XCODEBUILD_ACTION:-}" = "archive" ]
 }
 
+# Force DeveloperAPIKey.xai to nil on archive so the IPA matches App Review
+# notes (no `xai-` string). Does not touch Mapbox / Xweather / proxy values.
+strip_embedded_xai_key_for_archive() {
+  _xai_file="DayCast/Config/DeveloperAPIKey.swift"
+  if ! is_archive_build || [ ! -f "$_xai_file" ]; then
+    return 0
+  fi
+  python3 - "$_xai_file" <<'PY'
+import pathlib
+import re
+import sys
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+updated, count = re.subn(
+    r'(static let xai:\s*String\?\s*=\s*)"[^"]*"',
+    r"\1nil",
+    text,
+    count=1,
+)
+if count:
+    path.write_text(updated)
+    print("🔒 Stripped embedded xAI key from DeveloperAPIKey.swift (archive build)")
+else:
+    print("🔒 DeveloperAPIKey.xai is already nil or not a string literal")
+PY
+  if grep -qE 'xai-[A-Za-z0-9]' "$_xai_file"; then
+    echo "❌ $_xai_file still contains an xai- string after strip." >&2
+    echo "   Archive builds must not compile a live xAI key. Wrap it in #if DEBUG" >&2
+    echo "   or set static let xai = nil, then re-set DEVELOPER_API_KEY_SWIFT_BASE64." >&2
+    exit 1
+  fi
+}
+
 # The gate above is only as good as this variable being populated this early —
 # post-clone runs before xcodebuild, so if Xcode Cloud sets it later the gate is
 # silently inert and a placeholder archive sails through exactly as before.
@@ -240,6 +274,12 @@ restore_config \
   DEVELOPER_API_KEY_SWIFT_BASE64 \
   validate_swift \
   required
+
+# Archive / TestFlight / App Store: never compile a live xAI key into the IPA.
+# Mapbox / Xweather stay. AI goes through the Pro proxy or a pasted Keychain key.
+# Xcode Cloud injects this file from DEVELOPER_API_KEY_SWIFT_BASE64, which may
+# still hold a Debug-era xai- literal — strip it after restore.
+strip_embedded_xai_key_for_archive
 
 # Optional: no real OpenWeatherMap key exists yet, so the committed placeholder
 # is the current state of the world rather than a misconfiguration. Promote this

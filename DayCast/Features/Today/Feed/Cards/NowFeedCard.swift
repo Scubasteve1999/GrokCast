@@ -167,7 +167,7 @@ struct NowDetailView: View {
       spacing: DesignTokens.Spacing.space16
     ) {
       TacticalCard(label: "Humidity", value: "\(weather.humidity)%", icon: "humidity")
-      TacticalCard(label: "Wind", value: "\(Int(weather.windSpeed)) mph", icon: "wind")
+      TacticalCard(label: "Wind", value: store.formatWindSpeed(weather.windSpeed), icon: "wind")
       TacticalCard(label: "UV Index", value: "\(Int(weather.uvIndex))", icon: "sun.max")
       TacticalCard(label: "Precip", value: precipValue, icon: weather.symbolName)
       if let aqi = weather.airQualityIndex {

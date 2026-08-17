@@ -896,19 +896,28 @@ final class WeatherStore {
 
     do {
       // Primary: OpenMeteo for accurate numeric weather_code + real precipitation_probability (no fake 40% or text heuristics).
-      // NWS fallback only (for non-US or rare OpenMeteo outage). NWS is still used for alerts + station observations.
+      // NWS fallback is first-load only. Last-good Open-Meteo for this location
+      // beats the heuristic NWS grid (hardcoded humidity/UV, text-matched precip).
       let data: DayCastWeather
+      let reusedLastGood: Bool
       switch await fetchPrimaryWeather(for: loc) {
       case .success(let forecast):
         data = forecast
+        reusedLastGood = false
       case .timedOut, .failure:
-        switch await fetchNWSFallback(for: loc) {
-        case .success(let forecast):
-          data = forecast
-        case .timedOut:
-          throw URLError(.timedOut)
-        case .failure(let error):
-          throw error
+        if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: loc) {
+          data = lastGood
+          reusedLastGood = true
+        } else {
+          reusedLastGood = false
+          switch await fetchNWSFallback(for: loc) {
+          case .success(let forecast):
+            data = forecast
+          case .timedOut:
+            throw URLError(.timedOut)
+          case .failure(let error):
+            throw error
+          }
         }
       }
       // A location switch during the (up to 16s) fetch supersedes this result —
@@ -930,7 +939,7 @@ final class WeatherStore {
         _ = await (alerts, nws, owm, brief)
       }
 
-      if rainAlertsEnabled {
+      if rainAlertsEnabled, !reusedLastGood {
         Task {
           await RainAlertService.checkAndNotify(weather: data, units: temperatureUnit)
         }
@@ -1259,6 +1268,9 @@ final class WeatherStore {
     case .success(let forecast):
       return forecast
     case .timedOut, .failure:
+      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
+        return lastGood
+      }
       switch await fetchNWSFallback(for: location) {
       case .success(let forecast):
         return forecast
@@ -1266,6 +1278,15 @@ final class WeatherStore {
         return nil
       }
     }
+  }
+
+  /// Last-good Open-Meteo (or previously installed forecast) for this location only.
+  /// Never reuse another city's numbers as a fallback.
+  nonisolated static func lastGoodOpenMeteo(
+    _ weather: DayCastWeather?, for location: SavedLocation
+  ) -> DayCastWeather? {
+    guard let weather, weather.location.id == location.id else { return nil }
+    return weather
   }
 
   /// Updates widgets + Live Activity from a background fetch without changing the selected city.
