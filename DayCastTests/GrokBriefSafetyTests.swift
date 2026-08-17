@@ -74,6 +74,26 @@ final class GrokContentFilterTests: XCTestCase {
     XCTAssertEqual(GrokContentFilter.screen(finalized!), .allowed)
     XCTAssertTrue(finalized!.contains("Forecast-only take"))
   }
+
+  func testAlertsSummaryFallbackIsAllowed() {
+    let alert = NWSAlert(
+      id: "test-alert",
+      event: "Tornado Warning",
+      severity: "Extreme",
+      headline: "Tornado Warning for Test County",
+      description: nil,
+      instruction: nil,
+      expires: nil,
+      areaDesc: "Test County",
+      latitude: nil,
+      longitude: nil
+    )
+    let text = LocalWeatherBrief.alertsSummary(
+      locationName: "Test City", alerts: [alert])
+    XCTAssertEqual(GrokContentFilter.screen(text), .allowed)
+    XCTAssertTrue(text.contains("Tornado Warning"))
+    XCTAssertTrue(text.contains("NWS"))
+  }
 }
 
 @MainActor

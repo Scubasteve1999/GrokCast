@@ -5,6 +5,7 @@ struct WeatherShareCard: View {
   let score: DayCastScore
   let locationName: String
   let grokBrief: String?
+  var unit: TemperatureUnit = .fahrenheit
 
   var body: some View {
     VStack(spacing: 0) {
@@ -42,7 +43,7 @@ struct WeatherShareCard: View {
           .font(DesignTokens.Typography.compactTemp())
           .symbolRenderingMode(.multicolor)
 
-        Text("\(Int(weather.currentTemp.rounded()))°")
+        Text(unit.format(weather.currentTemp))
           .font(DesignTokens.Typography.widgetTemp(72))
           .foregroundStyle(.white)
       }
@@ -52,8 +53,8 @@ struct WeatherShareCard: View {
         .foregroundStyle(.white.opacity(0.9))
 
       HStack(spacing: 16) {
-        Label("H:\(Int(weather.high.rounded()))°", systemImage: "arrow.up")
-        Label("L:\(Int(weather.low.rounded()))°", systemImage: "arrow.down")
+        Label("H:\(unit.formatShort(weather.high))", systemImage: "arrow.up")
+        Label("L:\(unit.formatShort(weather.low))", systemImage: "arrow.down")
       }
       .font(DesignTokens.Typography.subsection())
       .foregroundStyle(.white.opacity(0.75))

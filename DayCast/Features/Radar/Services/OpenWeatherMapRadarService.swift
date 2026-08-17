@@ -26,7 +26,13 @@ final class OpenWeatherMapRadarService {
   }
 
   static var apiKeyConfigured: Bool {
-    !OpenWeatherMapKeys.currentKey.isEmpty
+    isUsableAPIKey(OpenWeatherMapKeys.currentKey)
+  }
+
+  /// Placeholder templates (`YOUR_…`) are not real keys.
+  static func isUsableAPIKey(_ key: String) -> Bool {
+    let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+    return !trimmed.isEmpty && !trimmed.hasPrefix("YOUR_")
   }
 
   static var userFacingUnavailableMessage: String? {

@@ -55,6 +55,18 @@ enum GrokBriefCache {
 /// A deterministic, forecast-only brief used when Grok completes without any text.
 /// Keeping this separate from the AI prompt makes the fallback honest, useful, and testable.
 enum LocalWeatherBrief {
+  /// Deterministic alert copy when Grok's summary is blocked by the 4.7 filter.
+  static func alertsSummary(locationName: String, alerts: [NWSAlert]) -> String {
+    let events = alerts.prefix(5).map(\.event)
+    guard !events.isEmpty else {
+      return "No active alerts to summarize for \(locationName)."
+    }
+    let list = events.joined(separator: ", ")
+    let noun = events.count == 1 ? "alert is" : "alerts are"
+    return
+      "Official take: \(events.count) active \(noun) in effect for \(locationName), including \(list). Check the Alerts tab and follow NWS guidance."
+  }
+
   static func make(
     weather: DayCastWeather,
     unit: TemperatureUnit,

@@ -32,7 +32,11 @@ struct AlertsGrokSummaryCard: View {
       }
     }
     .task(id: cacheKey) {
-      summary = UserDefaults.standard.string(forKey: cacheKey)
+      if let cached = UserDefaults.standard.string(forKey: cacheKey),
+        let accepted = GrokContentFilter.acceptedText(cached)
+      {
+        summary = accepted
+      }
     }
   }
 

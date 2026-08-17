@@ -38,6 +38,13 @@ final class WeatherStoreFallbackTests: XCTestCase {
     XCTAssertEqual(TemperatureUnit.celsius.formatWindFromMph(10), "16 km/h")
   }
 
+  func testOWMPlaceholderKeyIsNotConfigured() {
+    XCTAssertFalse(OpenWeatherMapRadarService.isUsableAPIKey(""))
+    XCTAssertFalse(OpenWeatherMapRadarService.isUsableAPIKey("YOUR_OPENWEATHERMAP_API_KEY"))
+    XCTAssertFalse(OpenWeatherMapRadarService.isUsableAPIKey("  YOUR_KEY  "))
+    XCTAssertTrue(OpenWeatherMapRadarService.isUsableAPIKey("abc123realkey"))
+  }
+
   func testNearestHourPrefersCurrentHourNotMidnight() {
     let midnight = Date(timeIntervalSince1970: 1_767_225_600)  // 2026-01-01 00:00 UTC
     let times: [Date?] = [

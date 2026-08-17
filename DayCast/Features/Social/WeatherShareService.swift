@@ -8,13 +8,15 @@ enum WeatherShareService {
     weather: DayCastWeather,
     score: DayCastScore,
     locationName: String,
-    grokBrief: String?
+    grokBrief: String?,
+    unit: TemperatureUnit
   ) -> UIImage? {
     let card = WeatherShareCard(
       weather: weather,
       score: score,
       locationName: locationName,
-      grokBrief: grokBrief
+      grokBrief: grokBrief,
+      unit: unit
     )
 
     let renderer = ImageRenderer(content: card)
@@ -26,7 +28,8 @@ enum WeatherShareService {
     weather: DayCastWeather,
     score: DayCastScore,
     locationName: String,
-    grokBrief: String?
+    grokBrief: String?,
+    unit: TemperatureUnit
   ) -> [Any] {
     var items: [Any] = []
 
@@ -34,14 +37,15 @@ enum WeatherShareService {
       weather: weather,
       score: score,
       locationName: locationName,
-      grokBrief: grokBrief
+      grokBrief: grokBrief,
+      unit: unit
     ) {
       items.append(image)
     }
 
     let text = ShareableBriefText.weatherBrief(
       locationName: locationName,
-      temperatureLine: "\(Int(weather.currentTemp.rounded()))°F",
+      temperatureLine: unit.format(weather.currentTemp),
       condition: weather.conditionText,
       brief: grokBrief ?? "Score: \(score.value) — \(score.label)"
     )

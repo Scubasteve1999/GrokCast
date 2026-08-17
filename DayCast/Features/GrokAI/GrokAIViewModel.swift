@@ -558,7 +558,7 @@ final class GrokAIViewModel {
       No markdown. If uncertain, say so plainly.
       """
 
-    return try await completeChat(
+    let raw = try await completeChat(
       messages: [
         GrokBuildMessage(role: "system", content: system),
         GrokBuildMessage(role: "user", content: "Explain this radar view in plain English."),
@@ -566,6 +566,11 @@ final class GrokAIViewModel {
       feature: .explainRadar,
       maxTokens: 320
     )
+    guard let accepted = GrokContentFilter.acceptedText(raw) else {
+      return
+        "Radar explanation unavailable. Use the map labels and official NWS products."
+    }
+    return accepted
   }
 
   func fetchAlertsPlainEnglishSummary(alerts: [NWSAlert]) async throws -> String {
@@ -584,7 +589,7 @@ final class GrokAIViewModel {
       \(bulletList)
       """
 
-    return try await completeChat(
+    let raw = try await completeChat(
       messages: [
         GrokBuildMessage(role: "system", content: system),
         GrokBuildMessage(role: "user", content: "Summarize these alerts for a regular person."),
@@ -592,6 +597,10 @@ final class GrokAIViewModel {
       feature: .alertsSummary,
       maxTokens: 360
     )
+    if let accepted = GrokContentFilter.acceptedText(raw) {
+      return accepted
+    }
+    return LocalWeatherBrief.alertsSummary(locationName: location, alerts: alerts)
   }
 
   private func completeChat(
