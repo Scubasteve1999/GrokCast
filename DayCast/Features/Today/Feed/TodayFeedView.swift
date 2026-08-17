@@ -264,9 +264,6 @@ struct TodayFeedView: View {
   }
 
   private func refreshAll() async {
-    await withTaskGroup(of: Void.self) { group in
-      group.addTask { await store.refreshWeather() }
-      group.addTask { await store.refreshAlerts() }
-    }
+    await store.refreshWeather()
   }
 }

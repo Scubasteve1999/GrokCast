@@ -734,12 +734,7 @@ final class WeatherStore {
         return
       }
       lastSignificantRefreshDate = now
-
-      async let w = refreshWeather()
-      async let a = refreshAlerts()
-      async let o = refreshNWSObservation()
-      async let owm = refreshOpenWeatherMap()
-      _ = await (w, a, o, owm)
+      await refreshWeather()
     }
   }
 
@@ -806,13 +801,7 @@ final class WeatherStore {
 
   func selectLocation(_ location: SavedLocation) {
     currentLocation = location
-    // Structured concurrency: independent NWS fetches (alerts + obs) now overlap with weather.
-    Task {
-      async let _ = refreshWeather()
-      async let _ = refreshAlerts()
-      async let _ = refreshNWSObservation()
-      async let _ = refreshOpenWeatherMap()
-    }
+    Task { await refreshWeather() }
   }
 
   private enum WeatherFetchResult {
@@ -883,6 +872,42 @@ final class WeatherStore {
     }
   }
 
+  /// Open-Meteo first. Last-good for this city beats NWS-as-hero. NWS grid is first-load only.
+  private enum ForecastResolution {
+    case fetched(DayCastWeather)
+    case lastGood(DayCastWeather)
+    case failed(Error)
+  }
+
+  private func resolveForecast(for location: SavedLocation) async -> ForecastResolution {
+    switch await fetchPrimaryWeather(for: location) {
+    case .success(let forecast):
+      return .fetched(forecast)
+    case .timedOut, .failure:
+      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
+        return .lastGood(lastGood)
+      }
+      switch await fetchNWSFallback(for: location) {
+      case .success(let forecast):
+        return .fetched(forecast)
+      case .timedOut:
+        return .failed(URLError(.timedOut))
+      case .failure(let error):
+        return .failed(error)
+      }
+    }
+  }
+
+  /// NWS / OWM / morning brief. Started once from `refreshWeather()` — callers
+  /// must not also kick `refreshAlerts()` unless they need `force: true`.
+  private func refreshAdditiveSources() async {
+    async let alerts = refreshAlerts()
+    async let nws = refreshNWSObservation()
+    async let owm = refreshOpenWeatherMap()
+    async let brief: () = MorningBriefGenerator.generateIfStale(weatherStore: self)
+    _ = await (alerts, nws, owm, brief)
+  }
+
   @MainActor
   func refreshWeather() async {
     guard let loc = currentLocation else { return }
@@ -892,59 +917,22 @@ final class WeatherStore {
     }
     weatherError = nil
 
-    do {
-      // Primary: OpenMeteo for accurate numeric weather_code + real precipitation_probability (no fake 40% or text heuristics).
-      // NWS fallback is first-load only. Last-good Open-Meteo for this location
-      // beats the heuristic NWS grid (hardcoded humidity/UV, text-matched precip).
-      let data: DayCastWeather
-      let reusedLastGood: Bool
-      switch await fetchPrimaryWeather(for: loc) {
-      case .success(let forecast):
-        data = forecast
-        reusedLastGood = false
-      case .timedOut, .failure:
-        if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: loc) {
-          data = lastGood
-          reusedLastGood = true
-        } else {
-          reusedLastGood = false
-          switch await fetchNWSFallback(for: loc) {
-          case .success(let forecast):
-            data = forecast
-          case .timedOut:
-            throw URLError(.timedOut)
-          case .failure(let error):
-            throw error
-          }
-        }
-      }
-      // A location switch during the (up to 16s) fetch supersedes this result —
-      // installing it would show the old city's weather under the new city's name.
-      guard currentLocation?.id == loc.id else {
-        if showLoadingIndicator { isLoadingWeather = false }
-        return
-      }
+    // Additives start with Open-Meteo so city-switch alerts are not stuck behind the 8s race.
+    Task { await refreshAdditiveSources() }
+
+    switch await resolveForecast(for: loc) {
+    case .fetched(let data):
+      guard currentLocation?.id == loc.id else { break }
       currentWeather = data
       syncScoreSurfacesFromCurrentWeather()
-      // TODO: Cache to SwiftData here
-
-      // Fire-and-forget NWS + OpenWeatherMap hybrid refresh (additive, non-fatal).
-      Task {
-        async let alerts = refreshAlerts()
-        async let nws = refreshNWSObservation()
-        async let owm = refreshOpenWeatherMap()
-        async let brief: () = MorningBriefGenerator.generateIfStale(weatherStore: self)
-        _ = await (alerts, nws, owm, brief)
+      if rainAlertsEnabled {
+        Task { await RainAlertService.checkAndNotify(weather: data, units: temperatureUnit) }
       }
-
-      if rainAlertsEnabled, !reusedLastGood {
-        Task {
-          await RainAlertService.checkAndNotify(weather: data, units: temperatureUnit)
-        }
-      }
-    } catch {
-      // Keep showing cached weather on refresh failure; only surface errors when nothing to
-      // display, and only if this fetch is still for the selected location.
+    case .lastGood(let data):
+      guard currentLocation?.id == loc.id else { break }
+      currentWeather = data
+      syncScoreSurfacesFromCurrentWeather()
+    case .failed(let error):
       if currentWeather == nil, currentLocation?.id == loc.id {
         weatherError =
           isOffline
@@ -952,22 +940,17 @@ final class WeatherStore {
           : OpenMeteoService.userFriendlyMessage(for: error)
       }
     }
+
     if showLoadingIndicator {
       isLoadingWeather = false
     }
   }
 
-  /// Convenience to force refresh for a specific location (used by Storm Spotter for reliable "my location" data).
-  /// Also refreshes NWS alerts + nearest station observation so analyses get full hybrid context.
+  /// Select `location` then run the single refresh path (weather + additives once).
   @MainActor
   func refreshWeather(for location: SavedLocation) async {
     currentLocation = location
-    // Parallel refreshes for the three independent data sources.
-    async let w = refreshWeather()
-    async let a = refreshAlerts()
-    async let o = refreshNWSObservation()
-    async let owm = refreshOpenWeatherMap()
-    _ = await (w, a, o, owm)
+    await refreshWeather()
   }
 
   /// Explicitly updates (or creates) the "Current Location" entry using the device's
@@ -999,12 +982,7 @@ final class WeatherStore {
 
       // Set currentLocation to the (now unique) isCurrent entry, or fall back
       currentLocation = savedLocations.first(where: { $0.isCurrent }) ?? savedLocations.first
-      // Parallel refreshes (structured concurrency for independent calls).
-      async let w = refreshWeather()
-      async let a = refreshAlerts()
-      async let o = refreshNWSObservation()
-      async let owm = refreshOpenWeatherMap()
-      _ = await (w, a, o, owm)
+      await refreshWeather()
 
       lastSignificantRefreshDate = Date()  // mark fresh so a near-term sig delivery doesn't re-fetch
     } catch {
@@ -1060,12 +1038,6 @@ final class WeatherStore {
       isLoadingWeather = true  // ensure loading state for UI
       await refreshWeather()
     }
-
-    // Parallel for additive hybrid calls (recovery path).
-    async let a = refreshAlerts()
-    async let o = refreshNWSObservation()
-    async let owm = refreshOpenWeatherMap()
-    _ = await (a, o, owm)
   }
 
   // MARK: - NWS Alerts + Observations (hybrid, additive to Open-Meteo)
@@ -1262,19 +1234,11 @@ final class WeatherStore {
   /// Primary/NWS weather fetch that never mutates `currentLocation` or loading UI.
   @MainActor
   private func fetchWeatherWithoutSelecting(location: SavedLocation) async -> DayCastWeather? {
-    switch await fetchPrimaryWeather(for: location) {
-    case .success(let forecast):
-      return forecast
-    case .timedOut, .failure:
-      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
-        return lastGood
-      }
-      switch await fetchNWSFallback(for: location) {
-      case .success(let forecast):
-        return forecast
-      case .timedOut, .failure:
-        return nil
-      }
+    switch await resolveForecast(for: location) {
+    case .fetched(let weather), .lastGood(let weather):
+      return weather
+    case .failed:
+      return nil
     }
   }
 
