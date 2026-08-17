@@ -7,9 +7,8 @@ struct SettingsView: View {
   @Environment(SubscriptionManager.self) private var subscription
   @Environment(GrokBriefSafety.self) private var briefSafety
   @Environment(\.scenePhase) private var scenePhase
-  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-  @State private var apiKeyInput: String = ""
+  @State private var apiKeyInput = ""
   @State private var isEditingKey = false
   @State private var showSaveConfirmation = false
   @State private var isTestingConnection = false
@@ -20,631 +19,51 @@ struct SettingsView: View {
     store.xaiService.hasDeveloperAPIKey
   }
 
-  private var maskedKey: String {
-    store.xaiService.maskedAPIKey
-  }
-
-  private var prefersFigmaLayout: Bool {
-    horizontalSizeClass == .compact
-  }
-
   var body: some View {
     NavigationStack {
-      Group {
-        if prefersFigmaLayout {
-          figmaSettingsScroll
-        } else {
-          settingsForm
+      settingsScroll
+        .readableContentWidth(ReadableContentWidth.wide)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Key Saved", isPresented: $showSaveConfirmation) {
+          Button("OK") {}
+        } message: {
+          Text("xAI API key securely stored in the iOS Keychain.")
         }
-      }
-      .readableContentWidth(ReadableContentWidth.wide)
-      .navigationTitle(prefersFigmaLayout ? "" : "Settings")
-      .navigationBarTitleDisplayMode(prefersFigmaLayout ? .inline : .large)
-      .alert("Key Saved", isPresented: $showSaveConfirmation) {
-        Button("OK") {}
-      } message: {
-        Text("xAI API key securely stored in the iOS Keychain.")
-      }
-      .task {
-        await store.refreshAlertNotificationAuthorizationStatus()
-      }
-      .onChange(of: scenePhase) { _, newPhase in
-        if newPhase == .active {
-          Task { await store.refreshAlertNotificationAuthorizationStatus() }
+        .task {
+          await store.refreshAlertNotificationAuthorizationStatus()
         }
-      }
-    }
-  }
-
-  private var settingsForm: some View {
-    Form {
-        // MARK: - DayCast Pro
-        Section {
-          if subscription.isPro {
-            Label("DayCast Pro is active", systemImage: "checkmark.seal.fill")
-              .foregroundStyle(DesignTokens.Palette.success)
-            Button("Manage Subscription") {
-              if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-                UIApplication.shared.open(url)
-              }
-            }
-          } else {
-            VStack(alignment: .leading, spacing: 8) {
-              Text(
-                "Unlock AI features, forecast radar, Live Activity, and unlimited locations."
-              )
-                .font(DesignTokens.Typography.callout())
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-              Button("View DayCast Pro") {
-                PaywallCoordinator.shared.present(.locations)
-              }
-              .buttonStyle(.borderedProminent)
-              .accessibilityIdentifier(DayCastAccessibility.Settings.proEntry)
-            }
-            .padding(.vertical, 4)
+        .onChange(of: scenePhase) { _, newPhase in
+          if newPhase == .active {
+            Task { await store.refreshAlertNotificationAuthorizationStatus() }
           }
-
-          Button("Restore Purchases") {
-            Task { await subscription.restorePurchases() }
-          }
-          .disabled(subscription.purchaseInFlight)
-
-          if let error = subscription.lastErrorMessage {
-            Text(error)
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.danger)
-          }
-        } header: {
-          Text("DAYCAST PRO")
-        } footer: {
-          Text(
-            "Pro unlocks AI chat, Today's Take, Storm Spotter, forecast radar (FUTURE), Live Activity, and unlimited locations. Live Activity updates when DayCast refreshes weather. AI has a daily limit that resets at midnight UTC. Bringing your own xAI developer key below also works and is not limited."
-          )
-        }
-
-        // MARK: - Grok API Configuration (Developer Key Mode)
-        Section {
-          VStack(alignment: .leading, spacing: 12) {
-            HStack {
-              Image(systemName: "key.fill")
-                .foregroundStyle(.tint)
-              Text("xAI Developer Key")
-                .font(DesignTokens.Typography.headline())
-              Spacer()
-              Text("SECURE")
-                .font(DesignTokens.Typography.micro())
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(DesignTokens.Palette.success.opacity(0.2), in: Capsule())
-                .foregroundStyle(DesignTokens.Palette.success)
-            }
-
-            if !isEditingKey {
-              HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                  if store.xaiService.isUsingEmbeddedDeveloperKey {
-                    Text("Using embedded developer key")
-                      .font(DesignTokens.Typography.monoBody())
-                    Text("This build includes a developer key for TestFlight")
-                      .font(DesignTokens.Typography.caption())
-                      .foregroundStyle(DesignTokens.Palette.success)
-                  } else if hasKey {
-                    Text(maskedKey)
-                      .font(DesignTokens.Typography.monoBody())
-                    Text("Stored in iOS Keychain • Developer Mode")
-                      .font(DesignTokens.Typography.caption())
-                      .foregroundStyle(DesignTokens.Palette.textSecondary)
-                  } else {
-                    Text("No developer key configured")
-                      .foregroundStyle(DesignTokens.Palette.textSecondary)
-                    Text("Optional — DayCast Pro already includes AI. Add your own key to skip the daily limit.")
-                      .font(DesignTokens.Typography.caption())
-                      .foregroundStyle(DesignTokens.Palette.textSecondary)
-                  }
-                }
-                Spacer()
-                VStack(spacing: 8) {
-                  Button(hasKey ? "Change Key" : "Add Developer Key") {
-                    apiKeyInput = ""
-                    isEditingKey = true
-                    connectionTestResult = nil
-                  }
-                  .buttonStyle(.bordered)
-
-                  if hasKey, !store.xaiService.isUsingEmbeddedDeveloperKey {
-                    Button("Clear Key") {
-                      store.clearXAIApiKey()
-                      connectionTestResult = nil
-                      Haptic.notification(.success)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(DesignTokens.Palette.danger)
-                  }
-                }
-              }
-            } else {
-              // Developer key input
-              VStack(alignment: .leading, spacing: 8) {
-                SecureField("xai-XXXXXXXXXXXXXXXXXXXXXXXX", text: $apiKeyInput)
-                  .textInputAutocapitalization(.never)
-                  .autocorrectionDisabled()
-                  .font(DesignTokens.Typography.monoBody())
-                  .padding(DesignTokens.Spacing.space12)
-                  .background(
-                    DesignTokens.Palette.cardElevated, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
-
-                Text("Paste your key from console.x.ai. It will be saved directly to the Keychain.")
-                  .font(DesignTokens.Typography.micro())
-                  .foregroundStyle(DesignTokens.Palette.textSecondary)
-              }
-
-              HStack {
-                Button("Cancel") {
-                  isEditingKey = false
-                  apiKeyInput = ""
-                }
-                .buttonStyle(.bordered)
-
-                Spacer()
-
-                Button("Save Securely") {
-                  saveDeveloperKey()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!isValidDeveloperKeyFormat(apiKeyInput))
-              }
-            }
-
-            // Test Connection (only when we have a key)
-            if hasKey && !isEditingKey {
-              Divider()
-              Button {
-                testGrokConnection()
-              } label: {
-                HStack {
-                  if isTestingConnection {
-                    ProgressView()
-                      .scaleEffect(0.8)
-                    Text("Testing API connection...")
-                  } else {
-                    Label("Test API Connection", systemImage: "network")
-                  }
-                }
-              }
-              .disabled(isTestingConnection)
-
-              if let result = connectionTestResult {
-                HStack {
-                  Image(
-                    systemName: connectionTestSuccess
-                      ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
-                  )
-                  .foregroundStyle(
-                    connectionTestSuccess
-                      ? DesignTokens.Palette.success : DesignTokens.Palette.danger
-                  )
-                  Text(result)
-                    .font(DesignTokens.Typography.caption())
-                }
-                .padding(.top, 4)
-              }
-            }
-          }
-          .padding(.vertical, 4)
-        } header: {
-          Text("AI API — DEVELOPER KEY")
-        } footer: {
-          Text(
-            "Keys are stored exclusively in the iOS Keychain with the highest protection level. Never transmitted except to api.x.ai."
-          )
-        }
-
-        // MARK: - Severe Weather Alert Notifications
-        Section {
-          Toggle(
-            "Severe Weather Alerts",
-            isOn: Binding(
-              get: { store.alertNotificationsEnabled },
-              set: { store.alertNotificationsEnabled = $0 }
-            )
-          )
-          .onChange(of: store.alertNotificationsEnabled) { _, _ in
-            Haptic.impact(.light)
-          }
-
-          if store.alertNotificationsEnabled {
-            alertNotificationStatusRow
-          }
-        } header: {
-          Text("WEATHER ALERTS")
-        } footer: {
-          Text(
-            "Receive local notifications when new NWS Warnings or Watches are issued for your location. Alerts are also saved in the Alerts tab for offline viewing."
-          )
-        }
-
-        Section {
-          Toggle(
-            "Hyper-Local Rain Alerts",
-            isOn: Binding(
-              get: { store.rainAlertsEnabled },
-              set: { store.rainAlertsEnabled = $0 }
-            )
-          )
-          .onChange(of: store.rainAlertsEnabled) { _, enabled in
-            Haptic.impact(.light)
-            if enabled {
-              Task { await store.requestAlertNotificationPermissionIfNeeded() }
-            }
-          }
-        } header: {
-          Text("RAIN ALERTS")
-        } footer: {
-          Text(
-            "Get notified when rain is about to start or stop at your location from Minutecast (15-minute precip). Uses local notifications and background refresh — keep Background App Refresh on for best results."
-          )
-        }
-
-        Section {
-          Toggle(
-            "Nearby Fire Alerts",
-            isOn: Binding(
-              get: { store.fireProximityNotificationsEnabled },
-              set: { store.fireProximityNotificationsEnabled = $0 }
-            )
-          )
-          .onChange(of: store.fireProximityNotificationsEnabled) { _, enabled in
-            Haptic.impact(.light)
-            if enabled {
-              Task { await store.requestAlertNotificationPermissionIfNeeded() }
-            }
-          }
-
-          if store.fireProximityNotificationsEnabled {
-            Picker(
-              "Notify within",
-              selection: Binding(
-                get: { Int(store.fireProximityRadiusMiles) },
-                set: { store.fireProximityRadiusMiles = Double($0) }
-              )
-            ) {
-              Text("10 miles").tag(10)
-              Text("25 miles").tag(25)
-              Text("50 miles").tag(50)
-            }
-          }
-        } header: {
-          Text("FIRE ALERTS")
-        } footer: {
-          Text(
-            "Opt-in notifications when a new wildfire or heat detection appears near your location. Red Flag and Fire Weather Watches still use Severe Weather Alerts."
-          )
-        }
-
-        Section {
-          Picker(
-            "Temperature",
-            selection: Binding(
-              get: { store.temperatureUnit },
-              set: { store.temperatureUnit = $0 }
-            )
-          ) {
-            ForEach(TemperatureUnit.allCases) { unit in
-              Text(unit.displayName).tag(unit)
-            }
-          }
-
-          Toggle(
-            "Live Activity",
-            isOn: Binding(
-              get: { store.liveActivityEnabled },
-              set: { newValue in
-                if newValue, !EntitlementChecker.canUseLiveActivity(subscription: subscription) {
-                  PaywallCoordinator.shared.present(.liveActivity)
-                  return
-                }
-                store.liveActivityEnabled = newValue
-              }
-            )
-          )
-
-          if !subscription.isPro {
-            Text("Live Activity requires DayCast Pro.")
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-          }
-
-          Toggle(
-            "Morning AI Brief",
-            isOn: Binding(
-              get: { store.morningBriefEnabled },
-              set: { newValue in
-                // Previously ungated: a free user could switch this on and then
-                // get silence every morning, since the brief is a Grok call.
-                if newValue,
-                  !EntitlementChecker.canUseMorningBrief(
-                    subscription: subscription,
-                    hasDeveloperKey: hasKey
-                  )
-                {
-                  PaywallCoordinator.shared.present(.grokAI)
-                  return
-                }
-                store.morningBriefEnabled = newValue
-              }
-            )
-          )
-
-          if !subscription.isPro, !hasKey {
-            Text("Morning AI Brief requires DayCast Pro.")
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-          }
-
-          Toggle(
-            "Today's Take",
-            isOn: Binding(
-              get: { !briefSafety.isFeatureHidden },
-              set: { isOn in
-                briefSafety.isFeatureHidden = !isOn
-                store.refreshGrokBriefSurfaces()
-              }
-            )
-          )
-
-          if store.morningBriefEnabled {
-            Picker(
-              "Brief time",
-              selection: Binding(
-                get: { store.morningBriefHour },
-                set: { store.morningBriefHour = $0 }
-              )
-            ) {
-              ForEach(7...11, id: \.self) { hour in
-                Text("\(hour):00 AM").tag(hour)
-              }
-            }
-          }
-
-          Toggle(
-            "Notification Sounds",
-            isOn: Binding(
-              get: { store.notificationSoundsEnabled },
-              set: { store.notificationSoundsEnabled = $0 }
-            )
-          )
-        } header: {
-          Text("DISPLAY & NOTIFICATIONS")
-        } footer: {
-          Text(
-            "Live Activity (Pro) shows Score + Minutecast on the Lock Screen, switches to a severe-alert or rain-event layout when those are active, and updates when the app refreshes weather — not a continuous background push feed yet. Morning brief notifies from your cached Today's Take when scheduled. Turn off Today's Take to hide the AI brief on Today, widgets, and the morning notification body."
-          )
-        }
-
-        // MARK: - Significant Location Changes (not continuous GPS)
-        Section {
-          Toggle(
-            "Travel Weather Refresh",
-            isOn: Binding(
-              get: { store.significantLocationUpdatesEnabled },
-              set: { store.significantLocationUpdatesEnabled = $0 }
-            )
-          )
-          .onChange(of: store.significantLocationUpdatesEnabled) { _, _ in
-            Haptic.impact(.light)
-          }
-        } header: {
-          Text("LOCATION UPDATES")
-        } footer: {
-          Text(
-            "When enabled and Always location access is granted, DayCast uses Apple’s low-power Significant Location Changes to refresh weather after you travel a significant distance. This is not continuous GPS tracking. Turn off anytime."
-          )
-        }
-
-        // MARK: - Tools
-        Section("TOOLS") {
-          NavigationLink {
-            TripPlannerView()
-          } label: {
-            Label("Trip Weather Planner", systemImage: "airplane.departure")
-          }
-        }
-
-        // MARK: - App Information
-        Section("APP") {
-          LabeledContent("Version") {
-            Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-          }
-
-          LabeledContent("Build") {
-            Text(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-          }
-
-          Button {
-            Haptic.impact(.light)
-            AppReviewPrompt.openWriteReview()
-          } label: {
-            Label("Rate DayCast", systemImage: "star.fill")
-          }
-
-          Button {
-            Haptic.impact(.light)
-            store.clearLocalWeatherCache()
-          } label: {
-            Label("Clear Local Weather Cache", systemImage: "trash")
-          }
-          .foregroundStyle(DesignTokens.Palette.danger)
-        }
-
-        Section {
-          Toggle(isOn: Binding(
-            get: { !PostHogAnalytics.isOptedOut },
-            set: { PostHogAnalytics.setOptedOut(!$0) }
-          )) {
-            VStack(alignment: .leading, spacing: 2) {
-              Text("Share analytics")
-              Text(
-                PostHogAnalytics.isConfigured
-                  ? "Anonymous usage helps improve DayCast. On-device counts always stay local."
-                  : "Analytics is off until POSTHOG_API_KEY is set in this build."
-              )
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-            }
-          }
-          .disabled(!PostHogAnalytics.isConfigured)
-        } header: {
-          Text("PRIVACY")
-        } footer: {
-          Text(
-            PostHogAnalytics.isConfigured
-              ? "No session replay or screen capture. You can turn this off anytime."
-              : "Set POSTHOG_API_KEY in Config/Secrets.xcconfig to enable product analytics."
-          )
-        }
-
-        Section {
-          Link(destination: AppLinks.privacyPolicy) {
-            Label("Privacy Policy", systemImage: "hand.raised")
-          }
-          Link(destination: AppLinks.termsOfUse) {
-            Label("Terms of Use", systemImage: "doc.text")
-          }
-          Link(destination: AppLinks.support) {
-            Label("Support", systemImage: "questionmark.circle")
-          }
-          Link(destination: AppLinks.supportEmail) {
-            Label("Contact", systemImage: "envelope")
-          }
-        } header: {
-          Text("LEGAL & SUPPORT")
-        }
-
-        // MARK: - About / Links
-        Section {
-          Link(destination: AppLinks.xAIConsole) {
-            Label("Get xAI API Key", systemImage: "link")
-          }
-
-          Link(destination: AppLinks.openMeteo) {
-            Label("Weather Data: Open-Meteo", systemImage: "link")
-          }
-
-          Text("DayCast uses free Open-Meteo for forecasts and AI models for intelligence.")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-        } header: {
-          Text("DATA & CREDITS")
         }
     }
   }
 
-  private var figmaSettingsScroll: some View {
+  private var settingsScroll: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Settings")
 
         FigmaSectionLabel(title: "DAYCAST PRO")
-        figmaProCard
+        proCard
 
         FigmaSectionLabel(title: "NOTIFICATIONS")
-        SettingsGroupCard {
-          figmaToggleRow(
-            title: "Morning Brief",
-            subtitle: store.morningBriefEnabled
-              ? "Daily at \(store.morningBriefHour):00 AM" : "Off",
-            icon: "bell.fill",
-            isOn: Binding(
-              get: { store.morningBriefEnabled },
-              set: { store.morningBriefEnabled = $0 }
-            )
-          )
-          SettingsDivider()
-          figmaToggleRow(
-            title: "Severe Weather Alerts",
-            subtitle: store.alertNotificationsEnabled ? "Push when active" : "Off",
-            icon: "exclamationmark.triangle.fill",
-            isOn: Binding(
-              get: { store.alertNotificationsEnabled },
-              set: { store.alertNotificationsEnabled = $0 }
-            )
-          )
-          if store.alertNotificationsEnabled {
-            SettingsDivider()
-            alertNotificationStatusRow
-              .padding(.horizontal, DesignTokens.Spacing.space16)
-              .padding(.vertical, DesignTokens.Spacing.space8)
-          }
-          SettingsDivider()
-          figmaToggleRow(
-            title: "Nearby Fire Alerts",
-            subtitle: store.fireProximityNotificationsEnabled
-              ? "Within \(Int(store.fireProximityRadiusMiles)) mi" : "Off",
-            icon: "flame.fill",
-            isOn: Binding(
-              get: { store.fireProximityNotificationsEnabled },
-              set: { store.fireProximityNotificationsEnabled = $0 }
-            )
-          )
-        }
+        notificationsCard
 
         FigmaSectionLabel(title: "DISPLAY")
-        SettingsGroupCard {
-          figmaPickerRow(title: "Temperature", value: store.temperatureUnit.displayName)
-          SettingsDivider()
-          figmaToggleRow(
-            title: "Live Activity",
-            subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires DayCast Pro",
-            icon: "lock.rectangle.stack.fill",
-            isOn: Binding(
-              get: { store.liveActivityEnabled },
-              set: { newValue in
-                if newValue, !EntitlementChecker.canUseLiveActivity(subscription: subscription) {
-                  PaywallCoordinator.shared.present(.liveActivity)
-                  return
-                }
-                store.liveActivityEnabled = newValue
-              }
-            )
-          )
-          SettingsDivider()
-          figmaToggleRow(
-            title: "Notification Sounds",
-            subtitle: store.notificationSoundsEnabled ? "On" : "Off",
-            icon: "speaker.wave.2.fill",
-            isOn: Binding(
-              get: { store.notificationSoundsEnabled },
-              set: { store.notificationSoundsEnabled = $0 }
-            )
-          )
-          SettingsDivider()
-          figmaToggleRow(
-            title: "Today's Take",
-            subtitle: briefSafety.isFeatureHidden
-              ? "Hidden — tap to restore" : "AI brief on Today",
-            icon: "sparkles",
-            isOn: Binding(
-              get: { !briefSafety.isFeatureHidden },
-              set: { isOn in
-                briefSafety.isFeatureHidden = !isOn
-                store.refreshGrokBriefSurfaces()
-              }
-            )
-          )
-        }
+        displayCard
 
         FigmaSectionLabel(title: "DEVELOPER")
-        SettingsGroupCard {
-          figmaDeveloperKeySection
-        }
+        SettingsGroupCard { developerKeySection }
 
         FigmaSectionLabel(title: "LOCATION UPDATES")
         SettingsGroupCard {
-          figmaToggleRow(
+          toggleRow(
             title: "Travel Weather Refresh",
-            subtitle: store.significantLocationUpdatesEnabled ? "Significant location changes" : "Off",
+            subtitle: store.significantLocationUpdatesEnabled
+              ? "Significant location changes" : "Off",
             icon: "location.circle.fill",
             isOn: Binding(
               get: { store.significantLocationUpdatesEnabled },
@@ -653,49 +72,22 @@ struct SettingsView: View {
           )
         }
 
-        FigmaSectionLabel(title: "APP")
+        FigmaSectionLabel(title: "TOOLS")
         SettingsGroupCard {
-          figmaInfoRow(title: "Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-          SettingsDivider()
-          figmaInfoRow(title: "Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
-          SettingsDivider()
-          Button {
-            Haptic.impact(.light)
-            AppReviewPrompt.openWriteReview()
+          NavigationLink {
+            TripPlannerView()
           } label: {
-            HStack {
-              Label("Rate DayCast", systemImage: "star.fill")
-                .foregroundStyle(DesignTokens.Palette.textPrimary)
-              Spacer()
-              Image(systemName: "arrow.up.right")
-                .font(DesignTokens.Typography.caption())
-                .foregroundStyle(DesignTokens.Palette.textTertiary)
-            }
-            .padding(.horizontal, DesignTokens.Spacing.space16)
-            .padding(.vertical, DesignTokens.Spacing.space12)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          SettingsDivider()
-          Button {
-            Haptic.impact(.light)
-            store.clearLocalWeatherCache()
-          } label: {
-            HStack {
-              Label("Clear Local Weather Cache", systemImage: "trash")
-                .foregroundStyle(DesignTokens.Palette.danger)
-              Spacer()
-            }
-            .padding(.horizontal, DesignTokens.Spacing.space16)
-            .padding(.vertical, DesignTokens.Spacing.space12)
-            .contentShape(Rectangle())
+            settingsChevronRow(title: "Trip Weather Planner", icon: "airplane.departure")
           }
           .buttonStyle(.plain)
         }
 
+        FigmaSectionLabel(title: "APP")
+        appCard
+
         FigmaSectionLabel(title: "PRIVACY")
         SettingsGroupCard {
-          figmaToggleRow(
+          toggleRow(
             title: "Share analytics",
             subtitle: PostHogAnalytics.isConfigured
               ? "Anonymous usage · no session replay"
@@ -719,6 +111,13 @@ struct SettingsView: View {
           SettingsDivider()
           SettingsLinkRow(title: "Contact", icon: "envelope", url: AppLinks.supportEmail)
         }
+
+        FigmaSectionLabel(title: "DATA & CREDITS")
+        SettingsGroupCard {
+          SettingsLinkRow(title: "Get xAI API Key", icon: "link", url: AppLinks.xAIConsole)
+          SettingsDivider()
+          SettingsLinkRow(title: "Weather Data: Open-Meteo", icon: "link", url: AppLinks.openMeteo)
+        }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, DesignTokens.Spacing.space16)
@@ -728,7 +127,7 @@ struct SettingsView: View {
     .background(DesignTokens.Palette.bgPrimary)
   }
 
-  private var figmaProCard: some View {
+  private var proCard: some View {
     SettingsGroupCard {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         if subscription.isPro {
@@ -743,9 +142,7 @@ struct SettingsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
         } else {
-          Text(
-            "Unlock AI features, forecast radar, Live Activity, and unlimited locations."
-          )
+          Text("Unlock AI features, forecast radar, Live Activity, and unlimited locations.")
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -758,7 +155,9 @@ struct SettingsView: View {
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, DesignTokens.Spacing.space12)
-          .background(DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
+          .background(
+            DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
+          )
           .padding(.horizontal, DesignTokens.Spacing.space16)
           .accessibilityIdentifier(DayCastAccessibility.Settings.proEntry)
         }
@@ -782,8 +181,167 @@ struct SettingsView: View {
     }
   }
 
+  private var notificationsCard: some View {
+    SettingsGroupCard {
+      toggleRow(
+        title: "Morning Brief",
+        subtitle: store.morningBriefEnabled
+          ? "Daily at \(store.morningBriefHour):00 AM" : "Off",
+        icon: "bell.fill",
+        isOn: Binding(
+          get: { store.morningBriefEnabled },
+          set: { newValue in
+            if newValue,
+              !EntitlementChecker.canUseMorningBrief(
+                subscription: subscription, hasDeveloperKey: hasKey)
+            {
+              PaywallCoordinator.shared.present(.grokAI)
+              return
+            }
+            store.morningBriefEnabled = newValue
+          }
+        )
+      )
+      if store.morningBriefEnabled {
+        SettingsDivider()
+        hourPickerRow
+      }
+      SettingsDivider()
+      toggleRow(
+        title: "Severe Weather Alerts",
+        subtitle: store.alertNotificationsEnabled ? "Push when active" : "Off",
+        icon: "exclamationmark.triangle.fill",
+        isOn: Binding(
+          get: { store.alertNotificationsEnabled },
+          set: { store.alertNotificationsEnabled = $0 }
+        )
+      )
+      if store.alertNotificationsEnabled {
+        SettingsDivider()
+        alertNotificationStatusRow
+          .padding(.horizontal, DesignTokens.Spacing.space16)
+          .padding(.vertical, DesignTokens.Spacing.space8)
+      }
+      SettingsDivider()
+      toggleRow(
+        title: "Hyper-Local Rain Alerts",
+        subtitle: store.rainAlertsEnabled ? "Minutecast start/stop" : "Off",
+        icon: "cloud.rain.fill",
+        isOn: Binding(
+          get: { store.rainAlertsEnabled },
+          set: { enabled in
+            store.rainAlertsEnabled = enabled
+            if enabled {
+              Task { await store.requestAlertNotificationPermissionIfNeeded() }
+            }
+          }
+        )
+      )
+      SettingsDivider()
+      toggleRow(
+        title: "Nearby Fire Alerts",
+        subtitle: store.fireProximityNotificationsEnabled
+          ? "Within \(Int(store.fireProximityRadiusMiles)) mi" : "Off",
+        icon: "flame.fill",
+        isOn: Binding(
+          get: { store.fireProximityNotificationsEnabled },
+          set: { enabled in
+            store.fireProximityNotificationsEnabled = enabled
+            if enabled {
+              Task { await store.requestAlertNotificationPermissionIfNeeded() }
+            }
+          }
+        )
+      )
+      if store.fireProximityNotificationsEnabled {
+        SettingsDivider()
+        fireRadiusRow
+      }
+    }
+  }
+
+  private var displayCard: some View {
+    SettingsGroupCard {
+      temperatureRow
+      SettingsDivider()
+      toggleRow(
+        title: "Live Activity",
+        subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires DayCast Pro",
+        icon: "lock.rectangle.stack.fill",
+        isOn: Binding(
+          get: { store.liveActivityEnabled },
+          set: { newValue in
+            if newValue, !EntitlementChecker.canUseLiveActivity(subscription: subscription) {
+              PaywallCoordinator.shared.present(.liveActivity)
+              return
+            }
+            store.liveActivityEnabled = newValue
+          }
+        )
+      )
+      SettingsDivider()
+      toggleRow(
+        title: "Notification Sounds",
+        subtitle: store.notificationSoundsEnabled ? "On" : "Off",
+        icon: "speaker.wave.2.fill",
+        isOn: Binding(
+          get: { store.notificationSoundsEnabled },
+          set: { store.notificationSoundsEnabled = $0 }
+        )
+      )
+      SettingsDivider()
+      toggleRow(
+        title: "Today's Take",
+        subtitle: briefSafety.isFeatureHidden ? "Hidden — tap to restore" : "AI brief on Today",
+        icon: "sparkles",
+        isOn: Binding(
+          get: { !briefSafety.isFeatureHidden },
+          set: { isOn in
+            briefSafety.isFeatureHidden = !isOn
+            store.refreshGrokBriefSurfaces()
+          }
+        )
+      )
+    }
+  }
+
+  private var appCard: some View {
+    SettingsGroupCard {
+      infoRow(
+        title: "Version",
+        value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+      SettingsDivider()
+      infoRow(
+        title: "Build",
+        value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+      SettingsDivider()
+      Button {
+        Haptic.impact(.light)
+        AppReviewPrompt.openWriteReview()
+      } label: {
+        settingsChevronRow(title: "Rate DayCast", icon: "star.fill", trailing: "arrow.up.right")
+      }
+      .buttonStyle(.plain)
+      SettingsDivider()
+      Button {
+        Haptic.impact(.light)
+        store.clearLocalWeatherCache()
+      } label: {
+        HStack {
+          Label("Clear Local Weather Cache", systemImage: "trash")
+            .foregroundStyle(DesignTokens.Palette.danger)
+          Spacer()
+        }
+        .padding(.horizontal, DesignTokens.Spacing.space16)
+        .padding(.vertical, DesignTokens.Spacing.space12)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
   @ViewBuilder
-  private var figmaDeveloperKeySection: some View {
+  private var developerKeySection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Button {
         if !isEditingKey {
@@ -801,7 +359,7 @@ struct SettingsView: View {
             Text("xAI Developer Key")
               .font(DesignTokens.Typography.subsection())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
-            Text(figmaDeveloperKeySubtitle)
+            Text(developerKeySubtitle)
               .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
@@ -868,7 +426,8 @@ struct SettingsView: View {
         if let result = connectionTestResult {
           Text(result)
             .font(DesignTokens.Typography.caption())
-            .foregroundStyle(connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
+            .foregroundStyle(
+              connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.bottom, DesignTokens.Spacing.space8)
         }
@@ -888,9 +447,9 @@ struct SettingsView: View {
     }
   }
 
-  private var figmaDeveloperKeySubtitle: String {
+  private var developerKeySubtitle: String {
     if store.xaiService.isUsingEmbeddedDeveloperKey {
-      return "Embedded · TestFlight"
+      return "Embedded · Debug"
     }
     if hasKey {
       return "Configured · Secure"
@@ -898,7 +457,49 @@ struct SettingsView: View {
     return "Not configured"
   }
 
-  private func figmaToggleRow(
+  private var hourPickerRow: some View {
+    Menu {
+      ForEach(7...11, id: \.self) { hour in
+        Button("\(hour):00 AM") { store.morningBriefHour = hour }
+      }
+    } label: {
+      settingsChevronRow(
+        title: "Brief time",
+        icon: "clock",
+        value: "\(store.morningBriefHour):00 AM"
+      )
+    }
+  }
+
+  private var fireRadiusRow: some View {
+    Menu {
+      ForEach([10, 25, 50], id: \.self) { miles in
+        Button("\(miles) miles") { store.fireProximityRadiusMiles = Double(miles) }
+      }
+    } label: {
+      settingsChevronRow(
+        title: "Notify within",
+        icon: "circle.dashed",
+        value: "\(Int(store.fireProximityRadiusMiles)) mi"
+      )
+    }
+  }
+
+  private var temperatureRow: some View {
+    Menu {
+      ForEach(TemperatureUnit.allCases) { unit in
+        Button(unit.displayName) { store.temperatureUnit = unit }
+      }
+    } label: {
+      settingsChevronRow(
+        title: "Temperature",
+        icon: "thermometer.medium",
+        value: store.temperatureUnit.displayName
+      )
+    }
+  }
+
+  private func toggleRow(
     title: String,
     subtitle: String,
     icon: String,
@@ -926,37 +527,7 @@ struct SettingsView: View {
     .padding(.vertical, DesignTokens.Spacing.space12)
   }
 
-  private func figmaPickerRow(title: String, value: String) -> some View {
-    Menu {
-      ForEach(TemperatureUnit.allCases) { unit in
-        Button(unit.displayName) {
-          store.temperatureUnit = unit
-        }
-      }
-    } label: {
-      HStack(spacing: DesignTokens.Spacing.space12) {
-        Image(systemName: "thermometer.medium")
-          .font(DesignTokens.Typography.symbol(16))
-          .foregroundStyle(DesignTokens.Palette.accent)
-          .frame(width: 24)
-        Text(title)
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-        Spacer()
-        Text(value)
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-        Image(systemName: "chevron.right")
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-      .padding(.horizontal, DesignTokens.Spacing.space16)
-      .padding(.vertical, DesignTokens.Spacing.space12)
-      .contentShape(Rectangle())
-    }
-  }
-
-  private func figmaInfoRow(title: String, value: String) -> some View {
+  private func infoRow(title: String, value: String) -> some View {
     HStack {
       Text(title)
         .font(DesignTokens.Typography.subsection())
@@ -968,6 +539,35 @@ struct SettingsView: View {
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
     .padding(.vertical, DesignTokens.Spacing.space12)
+  }
+
+  private func settingsChevronRow(
+    title: String,
+    icon: String,
+    value: String? = nil,
+    trailing: String = "chevron.right"
+  ) -> some View {
+    HStack(spacing: DesignTokens.Spacing.space12) {
+      Image(systemName: icon)
+        .font(DesignTokens.Typography.symbol(16))
+        .foregroundStyle(DesignTokens.Palette.accent)
+        .frame(width: 24)
+      Text(title)
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+      Spacer()
+      if let value {
+        Text(value)
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+      }
+      Image(systemName: trailing)
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+    }
+    .padding(.horizontal, DesignTokens.Spacing.space16)
+    .padding(.vertical, DesignTokens.Spacing.space12)
+    .contentShape(Rectangle())
   }
 
   @ViewBuilder
@@ -999,62 +599,47 @@ struct SettingsView: View {
 
   private func notificationStatusIcon(for status: UNAuthorizationStatus) -> String {
     switch status {
-    case .authorized, .provisional, .ephemeral:
-      return "checkmark.circle.fill"
-    case .denied:
-      return "bell.slash.fill"
-    case .notDetermined:
-      return "bell.badge"
-    @unknown default:
-      return "bell"
+    case .authorized, .provisional, .ephemeral: "checkmark.circle.fill"
+    case .denied: "bell.slash.fill"
+    case .notDetermined: "bell.badge"
+    @unknown default: "bell"
     }
   }
 
   private func notificationStatusColor(for status: UNAuthorizationStatus) -> Color {
     switch status {
-    case .authorized, .provisional, .ephemeral:
-      return DesignTokens.Palette.success
-    case .denied:
-      return DesignTokens.Palette.danger
-    case .notDetermined:
-      return DesignTokens.Palette.warning
-    @unknown default:
-      return DesignTokens.Palette.textSecondary
+    case .authorized, .provisional, .ephemeral: DesignTokens.Palette.success
+    case .denied: DesignTokens.Palette.danger
+    case .notDetermined: DesignTokens.Palette.warning
+    @unknown default: DesignTokens.Palette.textSecondary
     }
   }
 
   private func notificationStatusTitle(for status: UNAuthorizationStatus) -> String {
     switch status {
-    case .authorized, .provisional, .ephemeral:
-      return "Notifications enabled"
-    case .denied:
-      return "Notifications disabled in Settings"
-    case .notDetermined:
-      return "Permission not requested yet"
-    @unknown default:
-      return "Notification status unknown"
+    case .authorized, .provisional, .ephemeral: "Notifications enabled"
+    case .denied: "Notifications disabled in Settings"
+    case .notDetermined: "Permission not requested yet"
+    @unknown default: "Notification status unknown"
     }
   }
 
   private func notificationStatusDetail(for status: UNAuthorizationStatus) -> String {
     switch status {
     case .authorized, .provisional, .ephemeral:
-      return "You will receive alerts for new Warnings and Watches."
+      "You will receive alerts for new Warnings and Watches."
     case .denied:
-      return "Enable notifications in iOS Settings to receive severe weather alerts."
+      "Enable notifications in iOS Settings to receive severe weather alerts."
     case .notDetermined:
-      return "DayCast will ask for permission when you enable alerts."
+      "DayCast will ask for permission when you enable alerts."
     @unknown default:
-      return ""
+      ""
     }
   }
-
-  // MARK: - Actions
 
   private func saveDeveloperKey() {
     let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
     guard isValidDeveloperKeyFormat(trimmed) else { return }
-
     store.saveXAIApiKey(trimmed)
     isEditingKey = false
     apiKeyInput = ""
@@ -1065,31 +650,24 @@ struct SettingsView: View {
 
   private func testGrokConnection() {
     guard hasKey else { return }
-
     isTestingConnection = true
     connectionTestResult = nil
 
     Task {
       do {
-        // Lightweight test: ask Grok for a very short response
         let testMessages = [ChatMessage.user("Reply with exactly: 'DayCast connection OK'")]
         let response = try await store.xaiService.sendMessage(
           messages: testMessages, context: nil, feature: .connectionTest)
-
-        Task { @MainActor in
-          isTestingConnection = false
-          connectionTestSuccess = response.lowercased().contains("ok") || response.contains("OK")
-          connectionTestResult =
-            connectionTestSuccess
-            ? "Connection successful • API responded correctly"
-            : "Unexpected response: \(response)"
-        }
+        isTestingConnection = false
+        connectionTestSuccess = response.lowercased().contains("ok")
+        connectionTestResult =
+          connectionTestSuccess
+          ? "Connection successful • API responded correctly"
+          : "Unexpected response: \(response)"
       } catch {
-        Task { @MainActor in
-          isTestingConnection = false
-          connectionTestSuccess = false
-          connectionTestResult = "Connection failed: \(error.localizedDescription)"
-        }
+        isTestingConnection = false
+        connectionTestSuccess = false
+        connectionTestResult = "Connection failed: \(error.localizedDescription)"
       }
     }
   }
@@ -1103,5 +681,6 @@ struct SettingsView: View {
 #Preview {
   SettingsView()
     .environment(WeatherStore())
+    .environment(SubscriptionManager.shared)
     .environment(GrokBriefSafety())
 }
