@@ -79,6 +79,25 @@ final class RadarPreferencesTests: XCTestCase {
     )
   }
 
+  func testRasterColorSchemeIsHiddenWhenMapsGLRainIsOn() {
+    XCTAssertFalse(
+      MapsGLRadarPalette.showsRasterColorScheme(
+        overlayOn: true, isSiteProduct: false, keysPresent: true)
+    )
+    XCTAssertTrue(
+      MapsGLRadarPalette.showsRasterColorScheme(
+        overlayOn: true, isSiteProduct: false, keysPresent: false)
+    )
+    XCTAssertFalse(
+      MapsGLRadarPalette.showsRasterColorScheme(
+        overlayOn: true, isSiteProduct: true, keysPresent: false)
+    )
+    XCTAssertFalse(
+      MapsGLRadarPalette.showsRasterColorScheme(
+        overlayOn: false, isSiteProduct: false, keysPresent: false)
+    )
+  }
+
   func testLegendTicksReuseMapsGLPaletteStops() {
     XCTAssertEqual(MapsGLRadarPalette.legendTickDbz, [5, 20, 35, 50, 65])
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)

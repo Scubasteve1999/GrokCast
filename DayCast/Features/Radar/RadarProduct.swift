@@ -86,10 +86,8 @@ enum RadarTipStore {
   }
 }
 
-/// Client-side color treatment for the Mapbox radar raster layer.
-/// Provider tiles (RainViewer/Xweather/IEM) ship fixed palettes, so schemes
-/// are implemented with Mapbox raster paint properties. We cannot add color
-/// stops the tile does not have — contrast/sat/hue/fade only soften the PNG.
+/// Leftover PNG-only paint. MapsGL rain uses NWS dBZ stops instead; IEM site
+/// products already ship their own scale. Do not offer this as a Doppler theme.
 enum RadarColorScheme: String, CaseIterable {
   case vibrant
   case balanced

@@ -494,13 +494,15 @@ private struct RadarDisplayOptionsSheet: View {
           }
         }
 
-        Section("Colors") {
-          Picker("Palette", selection: $radarState.colorScheme) {
-            ForEach(RadarColorScheme.allCases, id: \.self) { scheme in
-              Text(scheme.displayName).tag(scheme)
+        if showsRasterColorScheme {
+          Section("Colors") {
+            Picker("Palette", selection: $radarState.colorScheme) {
+              ForEach(RadarColorScheme.allCases, id: \.self) { scheme in
+                Text(scheme.displayName).tag(scheme)
+              }
             }
+            .pickerStyle(.segmented)
           }
-          .pickerStyle(.segmented)
         }
 
         Section("Legend") {
@@ -558,6 +560,15 @@ private struct RadarDisplayOptionsSheet: View {
 
   private var showsVelocityLegend: Bool {
     radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
+  }
+
+  /// PNG-only fallback. MapsGL rain and IEM site tiles already have a real scale.
+  private var showsRasterColorScheme: Bool {
+    MapsGLRadarPalette.showsRasterColorScheme(
+      overlayOn: radarState.showRadarOverlay,
+      isSiteProduct: radarState.selectedProduct.isSiteProduct,
+      keysPresent: MapsGLRadarHost.keysPresent
+    )
   }
 
   private func namedSwitch(_ title: String, isOn: Binding<Bool>) -> some View {

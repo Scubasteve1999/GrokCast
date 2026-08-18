@@ -46,4 +46,12 @@ enum MapsGLRadarPalette {
   {
     overlayOn && !isSiteProduct && keysPresent
   }
+
+  /// Vibrant/Balanced only retints leftover PNG. Hide it when MapsGL NWS rain
+  /// is the paint, or when a site product already ships its own NWS scale.
+  static func showsRasterColorScheme(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool)
+    -> Bool
+  {
+    overlayOn && !isSiteProduct && !keysPresent
+  }
 }
