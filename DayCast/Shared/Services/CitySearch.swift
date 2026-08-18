@@ -245,6 +245,22 @@ enum CitySearch {
     abs(lhs.latitude - rhs.latitude) < 0.01 && abs(lhs.longitude - rhs.longitude) < 0.01
   }
 
+  /// Saved list rows that are not already the Current section's city.
+  /// GPS pins (`isCurrent`) stay out of Saved; the selected city is matched
+  /// by id or the same ~0.01° place so Seattle/Denver do not appear twice.
+  static func listedSavedLocations(
+    from saved: [SavedLocation],
+    current: SavedLocation?
+  ) -> [SavedLocation] {
+    saved.filter { loc in
+      if loc.isCurrent { return false }
+      guard let current else { return true }
+      if loc.id == current.id { return false }
+      if isNear(loc, current) { return false }
+      return true
+    }
+  }
+
   private static func formattedAddress(from placemark: CLPlacemark) -> String? {
     var seen = Set<String>()
     let parts = [placemark.name, placemark.locality, placemark.administrativeArea, placemark.country]

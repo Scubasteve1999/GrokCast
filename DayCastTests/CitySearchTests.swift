@@ -96,4 +96,30 @@ final class CitySearchTests: XCTestCase {
       .selectExisting(seattle)
     )
   }
+
+  func testListedSavedOmitsTheSelectedCityByID() {
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    let listed = CitySearch.listedSavedLocations(from: [seattle, denver], current: seattle)
+    XCTAssertEqual(listed.map(\.id), [denver.id])
+  }
+
+  func testListedSavedOmitsANearDuplicateOfTheCurrentPin() {
+    let gps = SavedLocation(
+      name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321, isCurrent: true)
+    let savedSeattle = SavedLocation(
+      name: "Seattle, WA", latitude: 47.61, longitude: -122.33, isCurrent: false)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    let listed = CitySearch.listedSavedLocations(
+      from: [gps, savedSeattle, denver], current: gps)
+    XCTAssertEqual(listed.map(\.id), [denver.id])
+  }
+
+  func testListedSavedKeepsOtherCitiesWhenCurrentIsEmpty() {
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    XCTAssertEqual(
+      CitySearch.listedSavedLocations(from: [seattle], current: nil).map(\.id),
+      [seattle.id]
+    )
+  }
 }

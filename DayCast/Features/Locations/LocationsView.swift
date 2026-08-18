@@ -188,7 +188,8 @@ struct LocationsView: View {
       FigmaSectionLabel(title: "SAVED LOCATIONS")
 
       SettingsGroupCard {
-        let saved = store.savedLocations.filter { !$0.isCurrent }
+        let saved = CitySearch.listedSavedLocations(
+          from: store.savedLocations, current: store.currentLocation)
         if saved.isEmpty {
           Text("No saved cities yet. Search above to add one.")
             .font(DesignTokens.Typography.callout())
@@ -249,7 +250,10 @@ struct LocationsView: View {
 
   private var savedLocationsSection: some View {
     Section("Saved Locations") {
-      ForEach(store.savedLocations.filter { !$0.isCurrent }) { loc in
+      ForEach(
+        CitySearch.listedSavedLocations(
+          from: store.savedLocations, current: store.currentLocation)
+      ) { loc in
         LocationRow(location: loc, isSelected: store.currentLocation?.id == loc.id) {
           store.selectLocation(loc)
         }
@@ -342,7 +346,8 @@ struct LocationsView: View {
   }
 
   private func deleteLocations(at offsets: IndexSet) {
-    let saved = store.savedLocations.filter { !$0.isCurrent }
+    let saved = CitySearch.listedSavedLocations(
+      from: store.savedLocations, current: store.currentLocation)
     for index in offsets {
       store.removeLocation(saved[index])
     }
