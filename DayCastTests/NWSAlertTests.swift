@@ -171,4 +171,33 @@ final class NWSAlertTests: XCTestCase {
         currentLocationID: seattle, attemptedLocationID: seattle, lastSucceeded: false),
       .failed)
   }
+
+  // MARK: - Alert history is per city
+
+  func testAlertHistoryForOneCityIsNotShownOnAnother() {
+    let olive = UUID()
+    let seattle = UUID()
+    let heat = makeAlert(event: "Extreme Heat Warning")
+    AlertHistoryStore.saveHistory([heat], for: olive)
+
+    XCTAssertEqual(AlertHistoryStore.loadHistory(for: olive).map(\.event), [
+      "Extreme Heat Warning"
+    ])
+    XCTAssertTrue(AlertHistoryStore.loadHistory(for: seattle).isEmpty)
+  }
+
+  func testLegacyUnscopedAlertHistoryIsDiscarded() throws {
+    let mixed = [makeAlert(event: "Severe Thunderstorm Warning")]
+    let data = try JSONEncoder().encode(mixed)
+    UserDefaults.standard.set(data, forKey: AlertHistoryStore.historyKey)
+
+    XCTAssertTrue(AlertHistoryStore.loadHistory(for: UUID()).isEmpty)
+    XCTAssertNil(UserDefaults.standard.data(forKey: AlertHistoryStore.historyKey))
+  }
+
+  override func tearDown() {
+    UserDefaults.standard.removeObject(forKey: AlertHistoryStore.historyKey)
+    UserDefaults.standard.removeObject(forKey: AlertHistoryStore.historyByLocationKey)
+    super.tearDown()
+  }
 }

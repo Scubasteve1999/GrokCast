@@ -42,6 +42,7 @@ final class WeatherStore {
     didSet {
       guard currentLocation != oldValue else { return }
       PushRegistrationService.shared.scheduleSync()
+      alertHistory = AlertHistoryStore.loadHistory(for: currentLocation?.id)
     }
   }
   var currentWeather: DayCastWeather?
@@ -459,7 +460,6 @@ final class WeatherStore {
 
     applySignificantLocationPreference()
 
-    alertHistory = AlertHistoryStore.loadHistory()
     if UserDefaults.standard.object(forKey: Self.alertNotificationsEnabledKey) == nil {
       _alertNotificationsEnabled = true
       UserDefaults.standard.set(true, forKey: Self.alertNotificationsEnabledKey)
@@ -1062,8 +1062,11 @@ final class WeatherStore {
       do {
         let alerts = try await nwsService.fetchActiveAlerts(for: loc)
         activeAlerts = alerts
-        alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
-        AlertHistoryStore.saveHistory(alertHistory)
+        alertHistory = AlertHistoryStore.merge(
+          fetched: alerts,
+          into: AlertHistoryStore.loadHistory(for: loc.id)
+        )
+        AlertHistoryStore.saveHistory(alertHistory, for: loc.id)
         lastAlertsFetch = Date()
         alertsForLocation = loc.id
         alertsAttemptedForLocation = loc.id
@@ -1177,8 +1180,14 @@ final class WeatherStore {
           alertsAttemptedForLocation = loc.id
           lastAlertsFetchSucceeded = true
         }
-        alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
-        AlertHistoryStore.saveHistory(alertHistory)
+        let merged = AlertHistoryStore.merge(
+          fetched: alerts,
+          into: AlertHistoryStore.loadHistory(for: loc.id)
+        )
+        AlertHistoryStore.saveHistory(merged, for: loc.id)
+        if loc.id == currentLocation?.id {
+          alertHistory = merged
+        }
         persistWidgetAlertSummary(for: loc, alerts: alerts)
 
         await AlertNotificationService.shared.notifyIfNeeded(
