@@ -64,7 +64,7 @@ enum LocalWeatherBrief {
     let list = events.joined(separator: ", ")
     let noun = events.count == 1 ? "alert is" : "alerts are"
     return
-      "Official take: \(events.count) active \(noun) in effect for \(locationName), including \(list). Check the Alerts tab and follow NWS guidance."
+      "\(events.count) active \(noun) in effect for \(locationName), including \(list). Check the Alerts tab and follow NWS guidance."
   }
 
   static func make(

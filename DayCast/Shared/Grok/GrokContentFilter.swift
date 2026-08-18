@@ -72,12 +72,15 @@ enum GrokBriefText {
     )
   }
 
-  /// User-facing Today's Take: drop pipeline tags, keep weather meaning.
+  /// User-facing brief/summary: drop pipeline tags, keep weather meaning.
   static func visible(_ text: String) -> String {
     var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    let prefix = "Forecast-only take:"
-    if let range = result.range(of: prefix, options: [.caseInsensitive, .anchored]) {
-      result = String(result[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+    let prefixes = ["Forecast-only take:", "Official take:"]
+    for prefix in prefixes {
+      if let range = result.range(of: prefix, options: [.caseInsensitive, .anchored]) {
+        result = String(result[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+        break
+      }
     }
     result = result.replacingOccurrences(
       of: "SEVERE CONTEXT", with: "Severe weather", options: .caseInsensitive)

@@ -33,7 +33,7 @@ struct AlertsGrokSummaryCard: View {
     }
     .task(id: cacheKey) {
       if let cached = UserDefaults.standard.string(forKey: cacheKey),
-        let accepted = GrokContentFilter.acceptedText(cached)
+        let accepted = GrokContentFilter.acceptedText(GrokBriefText.visible(cached))
       {
         summary = accepted
       }
@@ -51,7 +51,7 @@ struct AlertsGrokSummaryCard: View {
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       } else if let summary {
-        Text(summary)
+        Text(GrokBriefText.visible(summary))
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
@@ -106,7 +106,7 @@ struct AlertsGrokSummaryCard: View {
       }
 
       if let summary {
-        Text(summary)
+        Text(GrokBriefText.visible(summary))
           .font(DesignTokens.Typography.body())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .fixedSize(horizontal: false, vertical: true)
@@ -166,8 +166,9 @@ struct AlertsGrokSummaryCard: View {
     errorMessage = nil
     do {
       let text = try await store.grokAIViewModel.fetchAlertsPlainEnglishSummary(alerts: alerts)
-      summary = text
-      UserDefaults.standard.set(text, forKey: cacheKey)
+      let visible = GrokBriefText.visible(text)
+      summary = visible
+      UserDefaults.standard.set(visible, forKey: cacheKey)
     } catch {
       errorMessage = error.localizedDescription
     }

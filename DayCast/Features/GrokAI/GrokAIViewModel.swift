@@ -637,9 +637,10 @@ final class GrokAIViewModel {
       maxTokens: 360
     )
     if let accepted = GrokContentFilter.acceptedText(raw) {
-      return accepted
+      return GrokBriefText.visible(accepted)
     }
-    return LocalWeatherBrief.alertsSummary(locationName: location, alerts: alerts)
+    return GrokBriefText.visible(
+      LocalWeatherBrief.alertsSummary(locationName: location, alerts: alerts))
   }
 
   private func completeChat(

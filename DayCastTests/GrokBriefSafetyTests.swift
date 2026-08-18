@@ -115,6 +115,18 @@ final class GrokContentFilterTests: XCTestCase {
     XCTAssertEqual(GrokContentFilter.screen(text), .allowed)
     XCTAssertTrue(text.contains("Tornado Warning"))
     XCTAssertTrue(text.contains("NWS"))
+    XCTAssertFalse(text.localizedCaseInsensitiveContains("Official take"))
+    XCTAssertEqual(text, GrokBriefText.visible(text))
+  }
+
+  func testVisibleDropsOfficialTakePrefixAndKeepsNWSHeadline() {
+    let raw =
+      "Official take: 1 active alert is in effect for Memphis, including Tornado Warning. Officials urge residents to take shelter."
+    let visible = GrokBriefText.visible(raw)
+    XCTAssertFalse(visible.localizedCaseInsensitiveContains("Official take:"))
+    XCTAssertTrue(visible.hasPrefix("1 active alert"))
+    XCTAssertTrue(visible.contains("Tornado Warning"))
+    XCTAssertTrue(visible.contains("Officials urge residents to take shelter"))
   }
 }
 
