@@ -124,4 +124,32 @@ final class AirQualityAndMoonTests: XCTestCase {
       XCTAssertFalse(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
   }
+
+  func testDailyRowVoiceOverIsOneControlWithWeatherMeaning() {
+    let label = DailyRow.accessibilityLabel(
+      day: "Today",
+      condition: WeatherCondition.mainlyClear.displayText,
+      high: 96,
+      low: 76,
+      precipChance: 26
+    )
+    XCTAssertTrue(label.contains("Today"))
+    XCTAssertTrue(label.contains("Mainly Clear"))
+    XCTAssertTrue(label.contains("High 96 degrees"))
+    XCTAssertTrue(label.contains("low 76 degrees"))
+    XCTAssertTrue(label.contains("26 percent"))
+    XCTAssertFalse(label.localizedCaseInsensitiveContains("Brightness"))
+  }
+
+  func testDailyRowVoiceOverOmitsZeroPrecip() {
+    let label = DailyRow.accessibilityLabel(
+      day: "Tue",
+      condition: "Overcast",
+      high: 81,
+      low: 57,
+      precipChance: 0
+    )
+    XCTAssertEqual(label, "Tue, Overcast. High 81 degrees, low 57 degrees")
+    XCTAssertFalse(label.contains("percent"))
+  }
 }

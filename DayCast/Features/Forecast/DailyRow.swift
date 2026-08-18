@@ -52,7 +52,35 @@ struct DailyRow: View {
       Haptic.selection()
       onSelect()
     }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(rowAccessibilityLabel)
     .accessibilityAddTraits(onSelect == nil ? [] : .isButton)
+    .accessibilityHint(onSelect == nil ? "" : "Opens day details")
+  }
+
+  /// One VoiceOver string for the whole row. Children stay visual-only.
+  var rowAccessibilityLabel: String {
+    Self.accessibilityLabel(
+      day: dayLabel,
+      condition: condition.displayText,
+      high: Int(round(forecast.high)),
+      low: Int(round(forecast.low)),
+      precipChance: forecast.precipChance
+    )
+  }
+
+  static func accessibilityLabel(
+    day: String,
+    condition: String,
+    high: Int,
+    low: Int,
+    precipChance: Int
+  ) -> String {
+    var label = "\(day), \(condition). High \(high) degrees, low \(low) degrees"
+    if precipChance > 0 {
+      label += ". \(precipChance) percent chance of precipitation"
+    }
+    return label
   }
 
   private var figmaLayout: some View {
