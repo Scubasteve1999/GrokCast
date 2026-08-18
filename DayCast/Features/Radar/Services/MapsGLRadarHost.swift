@@ -128,7 +128,7 @@ final class MapsGLRadarHost {
         ColorStop(stop.dbz, Self.color(hex: stop.hex, alpha: stop.alpha))
       }
     )
-    options.interpolate = true
+    options.interpolate = MapsGLRadarPalette.interpolatesStops
     return options
   }
 

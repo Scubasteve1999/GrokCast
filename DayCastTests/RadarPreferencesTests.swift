@@ -53,7 +53,18 @@ final class RadarPreferencesTests: XCTestCase {
     let first = MapsGLRadarPalette.reflectivityStops.first
     XCTAssertEqual(first?.dbz, 0)
     XCTAssertEqual(first?.alpha, 0)
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
     XCTAssertGreaterThan(MapsGLRadarPalette.reflectivityStops.count, 4)
+
+    func stop(_ dbz: Double) -> MapsGLRadarPalette.Stop? {
+      MapsGLRadarPalette.reflectivityStops.first { $0.dbz == dbz }
+    }
+    XCTAssertEqual(stop(5)?.hex, "#04E9E7")
+    XCTAssertEqual(stop(20)?.hex, "#02FD02")
+    XCTAssertEqual(stop(50)?.hex, "#FD0000")
+    XCTAssertEqual(stop(65)?.hex, "#F800FD")
+    XCTAssertEqual(stop(75)?.hex, "#FFFFFF")
+
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: false, keysPresent: true)
