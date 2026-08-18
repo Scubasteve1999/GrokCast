@@ -186,6 +186,7 @@
 		AA862232A4E751761D5652B4 /* DayCastApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9731ED57B0861C58475901 /* DayCastApp.swift */; };
 		AAEB6D04ECF909FD4A5D7856 /* GrokAIResponseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 334BC8580E6CF91E81EA9BA3 /* GrokAIResponseView.swift */; };
 		AB115549C752869FBC8C90D9 /* GrokAuthResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA7A41096F01DF0C5EDA8F96 /* GrokAuthResolver.swift */; };
+		AC2125AA2CD18AD4C917FD6C /* BriefingThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8CD09B18AEB31753F1D0FC /* BriefingThreadTests.swift */; };
 		AFC7DFF0F12239A86525F883 /* FireFeedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC0538ACB315A9F0D6F5D96 /* FireFeedCard.swift */; };
 		B0F2ECF86356CC7DD59F3AA2 /* AirNowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6131D15BC17ADFF672723A4 /* AirNowService.swift */; };
 		B1124D3F95CBF88367A602DF /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DCAC0710F528EB769BB289CD /* UserNotifications.framework */; };
@@ -391,6 +392,7 @@
 		57C92B09F887E849F7816F65 /* WeatherCondition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherCondition.swift; sourceTree = "<group>"; };
 		5AEEA6290A57B074770F52FC /* OpenWeatherMapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapModels.swift; sourceTree = "<group>"; };
 		5AF349C645E2E7155588DBC1 /* BackgroundTasks.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BackgroundTasks.framework; path = System/Library/Frameworks/BackgroundTasks.framework; sourceTree = SDKROOT; };
+		5B8CD09B18AEB31753F1D0FC /* BriefingThreadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingThreadTests.swift; sourceTree = "<group>"; };
 		5C4B6406B6F1FEAABD93AE9F /* SunriseSunsetCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SunriseSunsetCard.swift; sourceTree = "<group>"; };
 		5C8EA2119040603711FCED49 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		5CD6A5850A09B7C3A8BFB699 /* RadarTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarTimelineTests.swift; sourceTree = "<group>"; };
@@ -783,6 +785,7 @@
 				7C66B6B55D978BA67FACD2C5 /* AirQualityAndMoonTests.swift */,
 				F5968B2DDDFA5030234844E4 /* AnalyticsTests.swift */,
 				4DC2649897A5248798FC2528 /* AskGrokPendingPromptTests.swift */,
+				5B8CD09B18AEB31753F1D0FC /* BriefingThreadTests.swift */,
 				F60D608DE9EA7A334FA814A2 /* ChaseRadarHUDTests.swift */,
 				5DD83018EBE88DE442F9A1A8 /* CitySearchTests.swift */,
 				C1788DDA014C0E918894B23D /* DayCastScoreCalculatorTests.swift */,
@@ -1401,6 +1404,7 @@
 				662FB7A56C20251F3670FDDF /* AirQualityAndMoonTests.swift in Sources */,
 				6B7C8626026ADAEA876BEB22 /* AnalyticsTests.swift in Sources */,
 				E7EBF7B5BEC2B76F5F481583 /* AskGrokPendingPromptTests.swift in Sources */,
+				AC2125AA2CD18AD4C917FD6C /* BriefingThreadTests.swift in Sources */,
 				9A26AC1AA263838091C4112E /* ChaseRadarHUDTests.swift in Sources */,
 				E9831ED24E1B81A3916DB131 /* CitySearchTests.swift in Sources */,
 				CD0C13D01F7F4EE2A3B075CD /* DayCastScoreCalculatorTests.swift in Sources */,

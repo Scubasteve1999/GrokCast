@@ -11,28 +11,33 @@ final class ChatMessageEntity {
   var content: String
   var timestamp: Date
   var generatedImageURLString: String?  // stored as String for simplicity / Codable
+  /// Selected city this turn belongs to. Nil = legacy unscoped row; discarded on load.
+  var locationID: UUID?
 
   init(
     id: UUID = UUID(),
     role: String,
     content: String,
     timestamp: Date = Date(),
-    generatedImageURLString: String? = nil
+    generatedImageURLString: String? = nil,
+    locationID: UUID? = nil
   ) {
     self.id = id
     self.role = role
     self.content = content
     self.timestamp = timestamp
     self.generatedImageURLString = generatedImageURLString
+    self.locationID = locationID
   }
 
-  convenience init(from message: ChatMessage) {
+  convenience init(from message: ChatMessage, locationID: UUID) {
     self.init(
       id: message.id,
       role: message.role.rawValue,
       content: message.content,
       timestamp: message.timestamp,
-      generatedImageURLString: message.generatedImageURL?.absoluteString
+      generatedImageURLString: message.generatedImageURL?.absoluteString,
+      locationID: locationID
     )
   }
 

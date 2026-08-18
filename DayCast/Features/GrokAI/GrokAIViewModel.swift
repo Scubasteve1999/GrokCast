@@ -26,11 +26,41 @@ final class GrokAIViewModel {
   private(set) var conversationHistory: [ChatMessage] = []
   private let maxContextMessages = 16  // simple limit for context window (~8 turns)
   @ObservationIgnored private var historyLoadTask: Task<Void, Never>?
+  /// Selected city whose thread is currently in `conversationHistory`.
+  private var boundLocationID: UUID?
 
   init(weatherStore: WeatherStore) {
     self.weatherStore = weatherStore
+    boundLocationID = weatherStore.currentLocation?.id
 
     // Load persisted history before accepting new messages (prevents async overwrite race).
+    historyLoadTask = Task { @MainActor in
+      await loadPersistedHistory()
+    }
+  }
+
+  /// Swap the visible thread when the selected city identity changes.
+  /// Same-city refresh / reopen is a no-op so that city's thread stays.
+  func syncThread(to selectedLocationID: UUID?) {
+    guard BriefingThreadScope.shouldReplace(
+      boundLocationID: boundLocationID,
+      selectedLocationID: selectedLocationID
+    ) else { return }
+
+    if let boundLocationID {
+      persistCurrentHistory(for: boundLocationID)
+    }
+    if isStreaming || isGeneratingImage {
+      stopGeneration()
+    }
+    responseText = ""
+    errorMessage = nil
+    stormThumbnailData = nil
+    stormAnalysisMode = false
+    lastStormImageData = nil
+    lastStormNotes = nil
+    boundLocationID = selectedLocationID
+    conversationHistory = []
     historyLoadTask = Task { @MainActor in
       await loadPersistedHistory()
     }
@@ -52,6 +82,7 @@ final class GrokAIViewModel {
   }
 
   func askGrok(question: String) async {
+    syncThread(to: weatherStore.currentLocation?.id)
     await historyLoadTask?.value
 
     guard !question.trimmingCharacters(in: .whitespaces).isEmpty else { return }
@@ -135,6 +166,8 @@ final class GrokAIViewModel {
   }
 
   func analyzeStormPhoto(imageData: Data, userNotes: String?) async {
+    syncThread(to: weatherStore.currentLocation?.id)
+    await historyLoadTask?.value
     generationTask?.cancel()
     generationWasCancelled = false
     stormAnalysisMode = true
@@ -213,11 +246,12 @@ final class GrokAIViewModel {
     stormThumbnailData = nil
     stormAnalysisMode = false
     isGeneratingImage = false
-    conversationHistory.removeAll()  // start fresh conversation
+    conversationHistory.removeAll()  // start fresh conversation for this city
 
-    // Also clear persisted data so it doesn't come back on next launch.
-    Task {
-      try? conversationStore.deleteAll()
+    if let boundLocationID {
+      Task {
+        try? conversationStore.deleteAll(for: boundLocationID)
+      }
     }
   }
 
@@ -395,6 +429,7 @@ final class GrokAIViewModel {
   }
 
   func generateWeatherImage(description: String? = nil) async {
+    syncThread(to: weatherStore.currentLocation?.id)
     await historyLoadTask?.value
     guard !isStreaming && !isGeneratingImage else { return }
 
@@ -458,7 +493,7 @@ final class GrokAIViewModel {
 
   private func loadPersistedHistory() async {
     do {
-      var loaded = try conversationStore.loadHistory()
+      var loaded = try conversationStore.loadHistory(for: boundLocationID)
       loaded = trimHistory(loaded)
       conversationHistory = loaded
     } catch {
@@ -469,11 +504,16 @@ final class GrokAIViewModel {
   }
 
   private func persistCurrentHistory() {
+    persistCurrentHistory(for: boundLocationID)
+  }
+
+  private func persistCurrentHistory(for locationID: UUID?) {
+    guard let locationID else { return }
     // Snapshot to avoid capturing mutable state across the Task boundary
     let snapshot = conversationHistory
     Task {
       do {
-        try conversationStore.saveHistory(snapshot)
+        try conversationStore.saveHistory(snapshot, for: locationID)
       } catch {
         // Silent fail is acceptable; history is in-memory for this session.
       }

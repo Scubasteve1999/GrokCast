@@ -43,6 +43,7 @@ final class WeatherStore {
       guard currentLocation != oldValue else { return }
       PushRegistrationService.shared.scheduleSync()
       alertHistory = AlertHistoryStore.loadHistory(for: currentLocation?.id)
+      _grokAIViewModel?.syncThread(to: currentLocation?.id)
     }
   }
   var currentWeather: DayCastWeather?

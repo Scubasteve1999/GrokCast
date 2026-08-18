@@ -176,6 +176,7 @@ private struct GrokAIViewContent: View {
     .preference(key: TabBarSuppressionPreferenceKey.self, value: isInputFocused)
     .preferredColorScheme(.dark)
     .onAppear {
+      viewModel.syncThread(to: weatherStore.currentLocation?.id)
       viewModel.recoverFromStaleActionStateIfNeeded()
       consumePendingAskGrok(viewModel: viewModel)
       Task {
@@ -186,8 +187,12 @@ private struct GrokAIViewContent: View {
     }
     .onChange(of: weatherStore.selectedTab) { _, tab in
       if tab == .grok {
+        viewModel.syncThread(to: weatherStore.currentLocation?.id)
         consumePendingAskGrok(viewModel: viewModel)
       }
+    }
+    .onChange(of: weatherStore.currentLocation?.id) { _, locationID in
+      viewModel.syncThread(to: locationID)
     }
     .onReceive(NotificationCenter.default.publisher(for: AskGrokPendingPrompt.didChange)) { _ in
       consumePendingAskGrok(viewModel: viewModel)
@@ -543,6 +548,15 @@ private struct GrokAIViewContent: View {
       .clipShape(RoundedRectangle(cornerRadius: 14))
   }
 
+  @ViewBuilder
+  private func assistantMessageText(_ content: String) -> some View {
+    if let attributed = try? AttributedString(markdown: content) {
+      Text(attributed)
+    } else {
+      Text(content)
+    }
+  }
+
   private func messageBubble(for message: ChatMessage) -> some View {
     HStack {
       if message.role == .user {
@@ -602,7 +616,7 @@ private struct GrokAIViewContent: View {
         Spacer(minLength: 60)
       } else {
         VStack(alignment: .leading, spacing: 4) {
-          Text(message.content)
+          assistantMessageText(message.content)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.vertical, DesignTokens.Spacing.space12)

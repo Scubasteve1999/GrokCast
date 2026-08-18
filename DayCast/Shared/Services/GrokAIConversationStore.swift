@@ -1,14 +1,26 @@
 import Foundation
 import SwiftData
 
+/// Whether Briefing Studio must swap the visible thread.
+/// Same selected-city identity keeps the thread; a new identity does not inherit it.
+enum BriefingThreadScope {
+  static func shouldReplace(boundLocationID: UUID?, selectedLocationID: UUID?) -> Bool {
+    boundLocationID != selectedLocationID
+  }
+}
+
 /// Dedicated SwiftData store for persisting Grok AI conversation history.
-/// Keeps its own ModelContainer (separate from any future weather/other data).
-/// In-memory history in the ViewModel remains the source of truth at runtime.
+/// Threads are keyed by selected `SavedLocation.id`. In-memory history in the
+/// ViewModel remains the source of truth at runtime for the bound city.
 final class GrokAIConversationStore {
   private let modelContainer: ModelContainer
   private let modelContext: ModelContext
 
-  init() {
+  convenience init() {
+    self.init(inMemory: false)
+  }
+
+  init(inMemory: Bool) {
     do {
       let schema = Schema([ChatMessageEntity.self])
 
@@ -23,7 +35,9 @@ final class GrokAIConversationStore {
       try? FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
       let storeURL = supportDir.appendingPathComponent("GrokAIConversations.store")
 
-      let configuration = ModelConfiguration(url: storeURL)
+      let configuration = inMemory
+        ? ModelConfiguration(isStoredInMemoryOnly: true)
+        : ModelConfiguration(url: storeURL)
       modelContainer = try ModelContainer(for: schema, configurations: configuration)
       modelContext = ModelContext(modelContainer)
     } catch {
@@ -35,42 +49,56 @@ final class GrokAIConversationStore {
     }
   }
 
-  /// Loads all persisted messages, sorted chronologically.
-  func loadHistory() throws -> [ChatMessage] {
+  /// Loads messages for one selected city. Legacy rows with no location are dropped.
+  func loadHistory(for locationID: UUID?) throws -> [ChatMessage] {
+    try discardUnscopedMessages()
+    guard let locationID else { return [] }
     let descriptor = FetchDescriptor<ChatMessageEntity>(
+      predicate: #Predicate { $0.locationID == locationID },
       sortBy: [SortDescriptor(\.timestamp, order: .forward)]
     )
     let entities = try modelContext.fetch(descriptor)
     return entities.map { $0.toChatMessage() }
   }
 
-  /// Persists the provided (already trimmed) history by replacing previous entries.
-  /// This keeps the persisted set in sync with the current context window.
-  func saveHistory(_ messages: [ChatMessage]) throws {
-    // Remove all existing for this feature (lightweight n~<20)
-    try deleteAllPersisted(withoutSaving: true)
+  /// Replaces the persisted thread for one city. Other cities are left intact.
+  func saveHistory(_ messages: [ChatMessage], for locationID: UUID) throws {
+    try discardUnscopedMessages()
+    try deleteAllPersisted(for: locationID, withoutSaving: true)
 
     for message in messages {
-      let entity = ChatMessageEntity(from: message)
-      modelContext.insert(entity)
+      modelContext.insert(ChatMessageEntity(from: message, locationID: locationID))
     }
     try modelContext.save()
   }
 
   /// Append a single message (used optionally for incremental saves).
-  func append(_ message: ChatMessage) throws {
-    let entity = ChatMessageEntity(from: message)
+  func append(_ message: ChatMessage, locationID: UUID) throws {
+    let entity = ChatMessageEntity(from: message, locationID: locationID)
     modelContext.insert(entity)
     try modelContext.save()
   }
 
-  /// Clears all persisted Grok AI messages.
-  func deleteAll() throws {
-    try deleteAllPersisted(withoutSaving: false)
+  /// Clears the persisted thread for one city.
+  func deleteAll(for locationID: UUID) throws {
+    try deleteAllPersisted(for: locationID, withoutSaving: false)
   }
 
-  private func deleteAllPersisted(withoutSaving: Bool) throws {
+  private func discardUnscopedMessages() throws {
     let descriptor = FetchDescriptor<ChatMessageEntity>()
+    let entities = try modelContext.fetch(descriptor)
+    let unscoped = entities.filter { $0.locationID == nil }
+    guard !unscoped.isEmpty else { return }
+    for entity in unscoped {
+      modelContext.delete(entity)
+    }
+    try modelContext.save()
+  }
+
+  private func deleteAllPersisted(for locationID: UUID, withoutSaving: Bool) throws {
+    let descriptor = FetchDescriptor<ChatMessageEntity>(
+      predicate: #Predicate { $0.locationID == locationID }
+    )
     let entities = try modelContext.fetch(descriptor)
     for entity in entities {
       modelContext.delete(entity)
