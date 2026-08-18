@@ -219,6 +219,7 @@ schemes:
         DayCastUITests: [test]
     run:
       config: Debug
+      storeKitConfiguration: DayCast/Configuration/GrokProducts.storekit
     test:
       config: Debug
       targets:

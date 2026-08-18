@@ -127,11 +127,11 @@
             ReferencedContainer = "container:DayCast.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+      </CommandLineArguments>
       <StoreKitConfigurationFileReference
          identifier = "../../DayCast/Configuration/GrokProducts.storekit">
       </StoreKitConfigurationFileReference>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
