@@ -693,7 +693,9 @@ struct RadarMiniLegend: View {
       }
     }
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Reflectivity legend, dBZ 5 to 75")
+    .accessibilityLabel(
+      "Reflectivity legend, dBZ \(Int(stops.first?.dbz ?? 20)) to \(Int(stops.last?.dbz ?? 65))"
+    )
   }
 
   private var legendCaptionColor: Color {

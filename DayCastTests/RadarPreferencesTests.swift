@@ -54,16 +54,20 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(first?.dbz, 0)
     XCTAssertEqual(first?.alpha, 0)
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
+    XCTAssertEqual(MapsGLRadarPalette.bandIntervalDbz, 5)
     XCTAssertGreaterThan(MapsGLRadarPalette.reflectivityStops.count, 4)
 
     func stop(_ dbz: Double) -> MapsGLRadarPalette.Stop? {
       MapsGLRadarPalette.reflectivityStops.first { $0.dbz == dbz }
     }
-    XCTAssertEqual(stop(5)?.hex, "#04E9E7")
-    XCTAssertEqual(stop(20)?.hex, "#02FD02")
-    XCTAssertEqual(stop(50)?.hex, "#FD0000")
-    XCTAssertEqual(stop(65)?.hex, "#F800FD")
-    XCTAssertEqual(stop(75)?.hex, "#FFFFFF")
+    XCTAssertEqual(stop(15)?.alpha, 0)
+    XCTAssertEqual(stop(20)?.hex, "#0B7A2B")
+    XCTAssertEqual(stop(20)?.alpha, 1)
+    XCTAssertEqual(stop(35)?.hex, "#F5E000")
+    XCTAssertEqual(stop(50)?.hex, "#FF3D00")
+    XCTAssertEqual(stop(65)?.hex, "#D400C8")
+    XCTAssertNil(stop(5))
+    XCTAssertFalse((stop(20)?.hex ?? "").localizedCaseInsensitiveContains("04E9E7"))
 
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
@@ -99,13 +103,16 @@ final class RadarPreferencesTests: XCTestCase {
   }
 
   func testLegendTicksReuseMapsGLPaletteStops() {
-    XCTAssertEqual(MapsGLRadarPalette.legendTickDbz, [5, 20, 35, 50, 65])
+    XCTAssertEqual(MapsGLRadarPalette.legendTickDbz, [20, 35, 50, 65])
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
 
     let visible = MapsGLRadarPalette.visibleReflectivityStops
-    XCTAssertEqual(visible.count, MapsGLRadarPalette.reflectivityStops.count - 1)
+    XCTAssertEqual(
+      visible.count,
+      MapsGLRadarPalette.reflectivityStops.filter { $0.alpha > 0 }.count
+    )
     XCTAssertTrue(visible.allSatisfy { $0.alpha > 0 })
-    XCTAssertFalse(visible.contains { $0.dbz == 0 })
+    XCTAssertFalse(visible.contains { $0.dbz < 20 })
 
     for tick in MapsGLRadarPalette.legendTickDbz {
       let stop = visible.first { $0.dbz == tick }

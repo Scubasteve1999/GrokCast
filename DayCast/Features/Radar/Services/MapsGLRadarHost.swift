@@ -100,6 +100,8 @@ final class MapsGLRadarHost {
     do {
       var config = WeatherService.Radar(service: controller.service)
       config.layer.paint.sample.colorScale = .colorScale(Self.colorScale)
+      config.layer.paint.sample.smoothing = 0
+      config.layer.paint.sample.interpolation = .none
       config.layer.paint.opacity = Opacity(value: Float(pendingOpacity))
       config.layer.quality = .high
       try controller.addWeatherLayer(config: config)
@@ -129,6 +131,7 @@ final class MapsGLRadarHost {
       }
     )
     options.interpolate = MapsGLRadarPalette.interpolatesStops
+    options.interval = MapsGLRadarPalette.bandIntervalDbz
     return options
   }
 
