@@ -33,6 +33,7 @@ enum DayCastAccessibility {
     static let location = "daycast.today.location"
     static let temperature = "daycast.today.temperature"
     static let root = "daycast.today.root"
+    static let takeOptions = "daycast.today.takeOptions"
   }
 
   enum Radar {

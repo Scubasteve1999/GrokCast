@@ -102,26 +102,26 @@ struct TodayFeedView: View {
 
   var body: some View {
     ScrollView {
-      LazyVStack(spacing: DesignTokens.Spacing.space16, pinnedViews: [.sectionHeaders]) {
-        Section {
-          ForEach(feedItems) { item in
-            feedCard(for: item)
-              .padding(.horizontal, DesignTokens.Spacing.space20)
-          }
+      LazyVStack(spacing: DesignTokens.Spacing.space16) {
+        ForEach(feedItems) { item in
+          feedCard(for: item)
+            .padding(.horizontal, DesignTokens.Spacing.space20)
+        }
 
-          if let error = store.weatherError, !error.isEmpty {
-            errorBanner(error)
-              .padding(.horizontal, DesignTokens.Spacing.space20)
-          }
-        } header: {
-          LocationChipBar()
-            .padding(.bottom, DesignTokens.Spacing.space8)
-            .padding(.top, DesignTokens.Spacing.space16)
-            .background(DesignTokens.Palette.bgPrimary.opacity(0.92))
+        if let error = store.weatherError, !error.isEmpty {
+          errorBanner(error)
+            .padding(.horizontal, DesignTokens.Spacing.space20)
         }
       }
       .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
       .adaptiveContainerWidth(AdaptiveLayout.contentCap)
+    }
+    .safeAreaInset(edge: .top, spacing: 0) {
+      LocationChipBar()
+        .padding(.top, DesignTokens.Spacing.space8)
+        .padding(.bottom, DesignTokens.Spacing.space8)
+        .frame(maxWidth: .infinity)
+        .background(DesignTokens.Palette.bgPrimary)
     }
     .refreshable {
       await refreshAll()

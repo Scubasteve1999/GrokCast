@@ -8,6 +8,8 @@ enum GrokBriefPresentation {
 }
 
 struct GrokBriefCard: View {
+  static let optionsAccessibilityLabel = "Today's Take options"
+
   @Environment(WeatherStore.self) private var store
   @Environment(GrokBriefSafety.self) private var safety
   var presentation: GrokBriefPresentation = .full
@@ -18,6 +20,7 @@ struct GrokBriefCard: View {
   @State private var isExpanded = false
   @State private var showingReport = false
   @State private var showingReportThanks = false
+  @State private var showingOptions = false
   @State private var hiddenThisBrief = false
 
   private var cacheKey: String {
@@ -149,26 +152,31 @@ struct GrokBriefCard: View {
   }
 
   private var safetyMenu: some View {
-    Menu {
-      if let briefText {
-        Button("Report…", systemImage: "flag") {
-          showingReport = true
-        }
-        Button("Hide this take", systemImage: "eye.slash") {
-          hideThisBrief(briefText)
-        }
-      }
-      Button("Turn off Today's Take", systemImage: "minus.circle") {
-        turnOffFeature()
-      }
+    Button {
+      showingOptions = true
     } label: {
-      Image(systemName: "ellipsis.circle")
+      Label(Self.optionsAccessibilityLabel, systemImage: "ellipsis.circle")
+        .labelStyle(.iconOnly)
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .frame(minWidth: 32, minHeight: 32)
         .contentShape(Rectangle())
     }
-    .accessibilityLabel("Today's Take options")
+    .buttonStyle(.plain)
+    .accessibilityLabel(Self.optionsAccessibilityLabel)
+    .accessibilityIdentifier(DayCastAccessibility.Today.takeOptions)
+    .confirmationDialog(
+      Self.optionsAccessibilityLabel,
+      isPresented: $showingOptions,
+      titleVisibility: .visible
+    ) {
+      if let briefText {
+        Button("Report…") { showingReport = true }
+        Button("Hide this take") { hideThisBrief(briefText) }
+      }
+      Button("Turn off Today's Take") { turnOffFeature() }
+      Button("Cancel", role: .cancel) {}
+    }
   }
 
   private var hiddenBriefBody: some View {

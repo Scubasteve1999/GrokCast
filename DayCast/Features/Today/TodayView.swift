@@ -113,6 +113,10 @@ struct TodayView: View {
         }
       }
       .navigationTitle("")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbarTitleDisplayMode(.inline)
+      .toolbarBackground(DesignTokens.Palette.bgPrimary, for: .navigationBar)
+      .toolbarBackground(.visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           if weather != nil {
@@ -122,6 +126,7 @@ struct TodayView: View {
             } label: {
               Image(systemName: "square.and.arrow.up")
             }
+            .accessibilityLabel("Share")
           }
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -131,6 +136,7 @@ struct TodayView: View {
           } label: {
             Image(systemName: "location.circle.fill")
           }
+          .accessibilityLabel("Use current location")
         }
       }
       .sheet(isPresented: $showShareSheet) {

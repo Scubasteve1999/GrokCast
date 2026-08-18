@@ -125,6 +125,13 @@ final class GrokBriefSafetyTests: XCTestCase {
     XCTAssertTrue(safety.isBriefHidden("Bring a jacket."))
     XCTAssertFalse(safety.isBriefHidden("A different take."))
   }
+
+  func testTakeOptionsAccessibilityLabelNamesTheAction() {
+    let label = GrokBriefCard.optionsAccessibilityLabel
+    XCTAssertFalse(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    XCTAssertTrue(label.localizedCaseInsensitiveContains("Today's Take"))
+    XCTAssertEqual(DayCastAccessibility.Today.takeOptions, "daycast.today.takeOptions")
+  }
 }
 
 final class GrokBriefReportTests: XCTestCase {

@@ -50,6 +50,7 @@ struct LocationChipBar: View {
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
     }
+    .fixedSize(horizontal: false, vertical: true)
   }
 
   private func isSelected(_ location: SavedLocation) -> Bool {
