@@ -10,7 +10,8 @@ final class ChaseRadarHUDTests: XCTestCase {
       futureFrameLabel: "4:30 PM",
       ageMinutes: 99
     )
-    XCTAssertEqual(line, "FUT 4:30 PM")
+    XCTAssertEqual(line, "24-hr 4:30 PM")
+    XCTAssertFalse(line.contains("FUT"))
   }
 
   func testScanDateFollowsTheVisibleFrameEvenWhilePlaying() {

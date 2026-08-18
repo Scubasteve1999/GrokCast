@@ -31,7 +31,7 @@ enum ChaseRadarHUDLogic {
     futureFrameLabel: String,
     ageMinutes: Int?
   ) -> String {
-    if showsFuture { return "FUT \(futureFrameLabel)" }
+    if showsFuture { return "24-hr \(futureFrameLabel)" }
     guard let age = ageMinutes else { return "SCAN —" }
     if age < 0 { return "SCAN now" }
     if age == 0 { return "SCAN <1m" }
