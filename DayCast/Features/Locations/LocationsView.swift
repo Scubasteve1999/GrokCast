@@ -17,6 +17,12 @@ struct LocationsView: View {
     !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
+  /// Observed on this view so Saved empty/list is not stuck on first paint.
+  private var listedSaved: [SavedLocation] {
+    CitySearch.listedSavedLocations(
+      from: store.savedLocations, current: store.currentLocation)
+  }
+
   private var prefersFigmaLayout: Bool {
     horizontalSizeClass == .compact
   }
@@ -155,7 +161,7 @@ struct LocationsView: View {
 
       SettingsGroupCard {
         if let current = store.currentLocation {
-          LocationRow(location: current, isSelected: true, layout: .figma) {}
+          LocationRow(location: current, isSelected: true, layout: .figma)
             .padding(.horizontal, DesignTokens.Spacing.space16)
         }
 
@@ -188,15 +194,13 @@ struct LocationsView: View {
       FigmaSectionLabel(title: "SAVED LOCATIONS")
 
       SettingsGroupCard {
-        let saved = CitySearch.listedSavedLocations(
-          from: store.savedLocations, current: store.currentLocation)
-        if saved.isEmpty {
+        if listedSaved.isEmpty {
           Text("No saved cities yet. Search above to add one.")
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(DesignTokens.Spacing.space16)
         } else {
-          ForEach(Array(saved.enumerated()), id: \.element.id) { index, loc in
+          ForEach(Array(listedSaved.enumerated()), id: \.element.id) { index, loc in
             if index > 0 { SettingsDivider() }
             LocationRow(
               location: loc,
@@ -206,6 +210,7 @@ struct LocationsView: View {
               store.selectLocation(loc)
             }
             .padding(.horizontal, DesignTokens.Spacing.space16)
+            .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
             .contextMenu {
               Button("Delete", role: .destructive) {
                 store.removeLocation(loc)
@@ -238,7 +243,7 @@ struct LocationsView: View {
   private var currentLocationSection: some View {
     Section("Current Location") {
       if let current = store.currentLocation {
-        LocationRow(location: current, isSelected: true) {}
+        LocationRow(location: current, isSelected: true)
       }
       Button {
         Task { await store.useCurrentDeviceLocation() }
@@ -250,13 +255,11 @@ struct LocationsView: View {
 
   private var savedLocationsSection: some View {
     Section("Saved Locations") {
-      ForEach(
-        CitySearch.listedSavedLocations(
-          from: store.savedLocations, current: store.currentLocation)
-      ) { loc in
+      ForEach(listedSaved) { loc in
         LocationRow(location: loc, isSelected: store.currentLocation?.id == loc.id) {
           store.selectLocation(loc)
         }
+        .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
       }
       .onDelete(perform: deleteLocations)
     }
@@ -451,18 +454,35 @@ struct LocationRow: View {
   let location: SavedLocation
   let isSelected: Bool
   var layout: LocationRowLayout = .standard
-  let onTap: () -> Void
+  var onTap: (() -> Void)? = nil
 
   var body: some View {
-    Button(action: onTap) {
-      switch layout {
-      case .standard:
-        standardRow
-      case .figma:
-        figmaRow
+    Group {
+      if let onTap {
+        Button(action: onTap) { rowContent }
+          .buttonStyle(.plain)
+      } else {
+        rowContent
       }
     }
-    .buttonStyle(.plain)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Self.accessibilityLabel(for: location, isSelected: isSelected))
+    .accessibilityAddTraits(onTap == nil ? [] : .isButton)
+    .accessibilityHint(onTap == nil ? "" : "Shows weather for this city")
+  }
+
+  static func accessibilityLabel(for location: SavedLocation, isSelected: Bool) -> String {
+    location.name
+  }
+
+  @ViewBuilder
+  private var rowContent: some View {
+    switch layout {
+    case .standard:
+      standardRow
+    case .figma:
+      figmaRow
+    }
   }
 
   private var figmaRow: some View {

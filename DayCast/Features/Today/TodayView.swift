@@ -112,7 +112,7 @@ struct TodayView: View {
           .padding(.bottom, bottomTabClearance)
         }
       }
-      .navigationTitle("")
+      .navigationTitle("Today")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarTitleDisplayMode(.inline)
       .toolbarBackground(DesignTokens.Palette.bgPrimary, for: .navigationBar)

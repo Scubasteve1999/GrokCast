@@ -122,4 +122,27 @@ final class CitySearchTests: XCTestCase {
       [seattle.id]
     )
   }
+
+  func testChipTitleNamesTheCityAndUsesNearMeForGPS() {
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    let gps = SavedLocation(
+      name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295, isCurrent: true)
+    XCTAssertEqual(LocationChipBar.chipTitle(for: seattle), "Seattle, WA")
+    XCTAssertEqual(LocationChipBar.chipTitle(for: gps), "Near Me")
+  }
+
+  func testSavedRowVoiceOverNamesTheCity() {
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    XCTAssertEqual(LocationRow.accessibilityLabel(for: seattle, isSelected: false), "Seattle, WA")
+  }
+
+  func testListedSavedIsEmptyOnlyWhenTheOnlyCityIsCurrent() {
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    XCTAssertTrue(CitySearch.listedSavedLocations(from: [seattle], current: seattle).isEmpty)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    XCTAssertEqual(
+      CitySearch.listedSavedLocations(from: [seattle, denver], current: seattle).map(\.name),
+      ["Denver, CO"]
+    )
+  }
 }
