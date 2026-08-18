@@ -10,9 +10,12 @@ enum MapsGLRadarPalette {
     let alpha: Double
   }
 
-  /// Discrete 5 dBZ steps. Do not interpolate — that smears into watercolor.
+  /// Discrete 5 dBZ steps. Do not interpolate the colorscale — that smears
+  /// into watercolor. Spatial sample interpolation is a separate knob.
   static let interpolatesStops = false
   static let bandIntervalDbz: Double = 5
+  /// 0 = native radar bins (Minecraft). Modest value rounds storm edges.
+  static let sampleSmoothing: Double = 0.4
 
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#0B7A2B", alpha: 0),

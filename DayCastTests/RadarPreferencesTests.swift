@@ -55,6 +55,8 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(first?.alpha, 0)
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
     XCTAssertEqual(MapsGLRadarPalette.bandIntervalDbz, 5)
+    XCTAssertGreaterThan(MapsGLRadarPalette.sampleSmoothing, 0)
+    XCTAssertLessThan(MapsGLRadarPalette.sampleSmoothing, 1)
     XCTAssertGreaterThan(MapsGLRadarPalette.reflectivityStops.count, 4)
 
     func stop(_ dbz: Double) -> MapsGLRadarPalette.Stop? {
