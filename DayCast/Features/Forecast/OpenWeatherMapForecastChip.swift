@@ -31,6 +31,7 @@ struct OpenWeatherMapForecastChip: View {
       Image(systemName: entry.symbolName)
         .font(DesignTokens.Typography.metric())
         .symbolRenderingMode(.multicolor)
+        .accessibilityLabel(entry.condition)
 
       Text("\(Int(round(entry.temperatureF)))°")
         .font(DesignTokens.Typography.metric())
@@ -60,6 +61,7 @@ struct OpenWeatherMapForecastChip: View {
       Image(systemName: entry.symbolName)
         .font(DesignTokens.Typography.title())
         .foregroundStyle(DesignTokens.Palette.accentCool)
+        .accessibilityLabel(entry.condition)
 
       Text("\(Int(round(entry.temperatureF)))°")
         .font(DesignTokens.Typography.metric())

@@ -108,4 +108,19 @@ final class AirQualityAndMoonTests: XCTestCase {
       minutely15: []
     )
   }
+
+  func testClearIconMeaningIsNotSFSymbolBrightnessName() {
+    let condition = WeatherCondition.clear
+    XCTAssertEqual(condition.symbolName(isDay: true), "sun.max.fill")
+    XCTAssertEqual(condition.displayText, "Clear")
+    XCTAssertFalse(condition.displayText.localizedCaseInsensitiveContains("Brightness"))
+  }
+
+  func testEveryConditionHasANonEmptyWeatherMeaning() {
+    let codes = [0, 1, 3, 45, 51, 61, 66, 71, 77, 80, 85, 95, 999]
+    for code in codes {
+      let text = WeatherCondition(fromWMO: code).displayText
+      XCTAssertFalse(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+  }
 }

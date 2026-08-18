@@ -70,6 +70,7 @@ struct DailyRow: View {
         .font(DesignTokens.Typography.metric())
         .symbolRenderingMode(.multicolor)
         .frame(width: 28, alignment: .center)
+        .accessibilityLabel(condition.displayText)
 
       DailyTempRangeBar(
         low: forecast.low,
@@ -132,6 +133,7 @@ struct DailyRow: View {
         .font(DesignTokens.Typography.title())
         .symbolRenderingMode(.multicolor)
         .frame(width: 32, alignment: .center)
+        .accessibilityLabel(condition.displayText)
 
       DailyTempRangeBar(
         low: forecast.low,

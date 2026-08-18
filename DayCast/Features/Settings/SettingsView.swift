@@ -510,6 +510,7 @@ struct SettingsView: View {
         .font(DesignTokens.Typography.symbol(16))
         .foregroundStyle(DesignTokens.Palette.accent)
         .frame(width: 24)
+        .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
           .font(DesignTokens.Typography.subsection())
@@ -518,13 +519,13 @@ struct SettingsView: View {
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
+      .accessibilityHidden(true)
       Spacer()
-      Toggle("", isOn: isOn)
-        .labelsHidden()
-        .tint(DesignTokens.Palette.accent)
+      NamedSettingsSwitch(isOn: isOn, label: title)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
     .padding(.vertical, DesignTokens.Spacing.space12)
+    .accessibilityElement(children: .contain)
   }
 
   private func infoRow(title: String, value: String) -> some View {
@@ -679,6 +680,47 @@ struct SettingsView: View {
   private func isValidDeveloperKeyFormat(_ key: String) -> Bool {
     let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.hasPrefix("xai-") && trimmed.count > 25
+  }
+}
+
+/// System switch with an explicit VoiceOver name and On/Off value.
+/// SwiftUI `Toggle("")` exposes an unnamed 0/1 control.
+private struct NamedSettingsSwitch: UIViewRepresentable {
+  @Binding var isOn: Bool
+  var label: String
+
+  func makeCoordinator() -> Coordinator { Coordinator(isOn: $isOn) }
+
+  func makeUIView(context: Context) -> LabeledUISwitch {
+    let control = LabeledUISwitch()
+    control.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
+    return control
+  }
+
+  func updateUIView(_ uiView: LabeledUISwitch, context: Context) {
+    context.coordinator.isOn = $isOn
+    uiView.onTintColor = UIColor(DesignTokens.Palette.accent)
+    uiView.accessibilityLabel = label
+    uiView.spokenValue = isOn ? "On" : "Off"
+    if uiView.isOn != isOn {
+      uiView.setOn(isOn, animated: false)
+    }
+  }
+
+  final class Coordinator: NSObject {
+    var isOn: Binding<Bool>
+    init(isOn: Binding<Bool>) { self.isOn = isOn }
+    @objc func changed(_ sender: UISwitch) {
+      isOn.wrappedValue = sender.isOn
+    }
+  }
+}
+
+private final class LabeledUISwitch: UISwitch {
+  var spokenValue: String = "Off"
+  override var accessibilityValue: String? {
+    get { spokenValue }
+    set { }
   }
 }
 

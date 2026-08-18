@@ -51,6 +51,7 @@ struct HourlyRow: View {
       Image(systemName: rowSymbol)
         .font(DesignTokens.Typography.symbol(24))
         .symbolRenderingMode(.multicolor)
+        .accessibilityLabel(condition.displayText)
 
       Text("\(Int(round(forecast.temp)))°")
         .font(DesignTokens.Typography.metric())
@@ -114,6 +115,7 @@ struct HourlyRow: View {
       Image(systemName: rowSymbol)
         .font(DesignTokens.Typography.widgetTemp(32))
         .symbolRenderingMode(.multicolor)
+        .accessibilityLabel(condition.displayText)
 
       Text("\(Int(round(forecast.temp)))°")
         .font(DesignTokens.Typography.metric())

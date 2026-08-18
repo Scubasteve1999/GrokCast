@@ -64,6 +64,7 @@ struct ForecastDayDetailSheet: View {
       Image(systemName: condition.rowSymbolName(precipChance: forecast.precipChance))
         .font(DesignTokens.Typography.compactTemp())
         .symbolRenderingMode(.multicolor)
+        .accessibilityLabel(condition.displayText)
       VStack(alignment: .leading, spacing: 4) {
         Text(condition.displayText)
           .font(DesignTokens.Typography.metric())
