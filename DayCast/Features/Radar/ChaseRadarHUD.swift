@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Pure helpers (unit-tested)
 
-/// Scan-age labels, alert shorthand, and urgency colors for the chase strip.
+/// Scan-age labels, spoken warning names, and urgency colors for the chase strip.
 /// Kept free of SwiftUI so tests don't need a view host.
 enum ChaseRadarHUDLogic {
   /// Site products update every few minutes; mosaics lag more. Thresholds in minutes.
@@ -62,17 +62,18 @@ enum ChaseRadarHUDLogic {
     return .fresh
   }
 
+  /// NWS event as a person would say it. Warning vs watch stays; no TOR/SVR teletype.
   static func shortEvent(_ event: String) -> String {
-    let lower = event.lowercased()
-    if lower.contains("tornado warning") { return "TOR WARN" }
-    if lower.contains("tornado watch") { return "TOR WATCH" }
-    if lower.contains("severe thunderstorm warning") { return "SVR WARN" }
-    if lower.contains("severe thunderstorm watch") { return "SVR WATCH" }
-    if lower.contains("flash flood warning") { return "FF WARN" }
-    if lower.contains("flash flood watch") { return "FF WATCH" }
-    if lower.contains("special weather") { return "SPS" }
-    let words = event.split(separator: " ").prefix(2).joined(separator: " ")
-    return words.uppercased()
+    let trimmed = event.trimmingCharacters(in: .whitespacesAndNewlines)
+    let lower = trimmed.lowercased()
+    if lower.contains("tornado warning") { return "Tornado Warning" }
+    if lower.contains("tornado watch") { return "Tornado Watch" }
+    if lower.contains("severe thunderstorm warning") { return "Severe Thunderstorm Warning" }
+    if lower.contains("severe thunderstorm watch") { return "Severe Thunderstorm Watch" }
+    if lower.contains("flash flood warning") { return "Flash Flood Warning" }
+    if lower.contains("flash flood watch") { return "Flash Flood Watch" }
+    if lower.contains("special weather") { return "Special Weather Statement" }
+    return trimmed
   }
 
   /// Life-threatening first, then covering polygons, then nearest by distance.
@@ -171,7 +172,8 @@ struct ChaseRadarHUD: View {
         Text(alert.text)
           .font(DesignTokens.Typography.micro())
           .foregroundStyle(alertColor(alert))
-          .lineLimit(1)
+          .multilineTextAlignment(.trailing)
+          .lineLimit(2)
       }
     }
     .padding(.horizontal, 12)
@@ -205,7 +207,8 @@ struct ChaseRadarHUD: View {
         Text(alert.text)
           .font(DesignTokens.Typography.micro())
           .foregroundStyle(alertColor(alert))
-          .lineLimit(1)
+          .multilineTextAlignment(.trailing)
+          .lineLimit(2)
       }
 
       if let day1Summary, !day1Summary.isEmpty {

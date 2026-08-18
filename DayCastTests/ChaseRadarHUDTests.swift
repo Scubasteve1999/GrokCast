@@ -87,10 +87,17 @@ final class ChaseRadarHUDTests: XCTestCase {
     XCTAssertFalse(rain.contains("RAIN"))
   }
 
-  func testShortEventAbbreviations() {
-    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Tornado Warning"), "TOR WARN")
-    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Severe Thunderstorm Watch"), "SVR WATCH")
-    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Flash Flood Warning"), "FF WARN")
+  func testShortEventSpeaksTheWarning() {
+    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Tornado Warning"), "Tornado Warning")
+    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Severe Thunderstorm Watch"), "Severe Thunderstorm Watch")
+    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Flash Flood Warning"), "Flash Flood Warning")
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.shortEvent("Special Weather Statement"),
+      "Special Weather Statement"
+    )
+    XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Winter Storm Warning"), "Winter Storm Warning")
+    XCTAssertFalse(ChaseRadarHUDLogic.shortEvent("Tornado Warning").contains("TOR"))
+    XCTAssertFalse(ChaseRadarHUDLogic.shortEvent("Severe Thunderstorm Warning").contains("SVR"))
   }
 
   func testCoveringAlertTakesPriorityOverDistance() {
@@ -124,7 +131,7 @@ final class ChaseRadarHUDTests: XCTestCase {
       alerts: [distant, covering],
       mapCenter: CLLocationCoordinate2D(latitude: 34.96, longitude: -89.83)
     )
-    XCTAssertEqual(result?.text, "IN TOR WARN")
+    XCTAssertEqual(result?.text, "IN Tornado Warning")
     XCTAssertEqual(result?.isCovering, true)
     XCTAssertEqual(result?.isLifeThreatening, true)
   }
@@ -147,8 +154,8 @@ final class ChaseRadarHUDTests: XCTestCase {
       alerts: [alert],
       mapCenter: CLLocationCoordinate2D(latitude: 34.96, longitude: -89.83)
     )
-    XCTAssertNotNil(result?.text)
-    XCTAssertTrue(result?.text.contains("SVR WARN") == true)
+    XCTAssertEqual(result?.text.contains("Severe Thunderstorm Warning"), true)
+    XCTAssertFalse(result?.text.contains("SVR") == true)
     XCTAssertEqual(result?.isCovering, false)
   }
 }
