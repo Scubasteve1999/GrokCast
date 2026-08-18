@@ -94,7 +94,11 @@ struct RadarControlPanel: View {
           frameLabel: currentFrameLabel,
           productName: radarState.selectedProduct.displayName,
           productTechnicalName: radarState.selectedProduct.technicalName,
-          locationName: store.currentLocation?.name ?? "Map"
+          locationName: store.currentLocation?.name
+            ?? store.displayedWeather?.location.name ?? "Map",
+          locationID: store.currentLocation?.id,
+          conditionText: store.displayedWeather?.conditionText,
+          precipitationChance: store.displayedWeather?.precipitationChance
         )
       )
       .environment(store)

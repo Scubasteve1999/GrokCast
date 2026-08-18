@@ -591,24 +591,23 @@ final class GrokAIViewModel {
   func fetchRadarExplanation(context: RadarExplainContext) async throws -> String {
     guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
 
-    let system = """
-      You are a helpful weather assistant explaining weather radar to a non-meteorologist inside DayCast.
-      Location: \(context.locationName). Product: \(context.productTechnicalName) (shown to the user as "\(context.productName)"). Mode: \(context.modeLabel). Frame: \(context.frameLabel).
-      In 3–5 short sentences, describe what the radar likely shows, movement/trends if inferable, and practical impacts.
-      No markdown. If uncertain, say so plainly.
-      """
+    if RadarExplainCopy.shouldUseLocalExplanation(context) {
+      return RadarExplainCopy.localExplanation(for: context)
+    }
 
     let raw = try await completeChat(
       messages: [
-        GrokBuildMessage(role: "system", content: system),
+        GrokBuildMessage(role: "system", content: RadarExplainCopy.systemPrompt(for: context)),
         GrokBuildMessage(role: "user", content: "Explain this radar view in plain English."),
       ],
       feature: .explainRadar,
       maxTokens: 320
     )
     guard let accepted = GrokContentFilter.acceptedText(raw) else {
-      return
-        "Radar explanation unavailable. Use the map labels and official NWS products."
+      return RadarExplainCopy.localExplanation(for: context)
+    }
+    if RadarExplainCopy.inventsPrecipitationAtPin(accepted, context: context) {
+      return RadarExplainCopy.localExplanation(for: context)
     }
     return accepted
   }

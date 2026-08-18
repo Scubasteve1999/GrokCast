@@ -177,3 +177,72 @@ final class RadarTimelineTests: XCTestCase {
     XCTAssertTrue(frame.tileKey.hasPrefix("iem:12:"))
   }
 }
+
+final class RadarExplainCopyTests: XCTestCase {
+  private func context(
+    location: String = "Seattle",
+    condition: String? = "Clear",
+    precip: Int? = 0
+  ) -> RadarExplainContext {
+    RadarExplainContext(
+      modeLabel: "Live",
+      frameLabel: "Now",
+      productName: "Rain",
+      productTechnicalName: "composite reflectivity",
+      locationName: location,
+      locationID: UUID(),
+      conditionText: condition,
+      precipitationChance: precip
+    )
+  }
+
+  func testZeroPrecipUsesLocalCopyAndDoesNotInventRainAtThePin() {
+    let ctx = context(condition: "Clear", precip: 0)
+    XCTAssertTrue(RadarExplainCopy.shouldUseLocalExplanation(ctx))
+    let copy = RadarExplainCopy.localExplanation(for: ctx)
+    XCTAssertTrue(copy.contains("Seattle"))
+    XCTAssertTrue(copy.contains("Clear"))
+    XCTAssertTrue(copy.contains("0%"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("showers"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("raining"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("downpour"))
+  }
+
+  func testLocalCopyUsesTheSelectedConditionNotAHardcodedClear() {
+    let copy = RadarExplainCopy.localExplanation(
+      for: context(location: "Denver", condition: "Fog", precip: 0))
+    XCTAssertTrue(copy.contains("currently Fog"))
+    XCTAssertFalse(copy.contains("currently Clear"))
+    XCTAssertTrue(copy.contains("Denver"))
+  }
+
+  func testMissingForecastDoesNotGuessPrecipitation() {
+    let ctx = context(condition: nil, precip: nil)
+    XCTAssertTrue(RadarExplainCopy.shouldUseLocalExplanation(ctx))
+    let copy = RadarExplainCopy.localExplanation(for: ctx)
+    XCTAssertTrue(copy.localizedCaseInsensitiveContains("will not guess"))
+  }
+
+  func testActivePrecipKeepsGrokPath() {
+    XCTAssertFalse(
+      RadarExplainCopy.shouldUseLocalExplanation(context(condition: "Rain", precip: 80)))
+  }
+
+  func testPromptIncludesSelectedCityForecast() {
+    let prompt = RadarExplainCopy.systemPrompt(for: context(condition: "Clear", precip: 0))
+    XCTAssertTrue(prompt.contains("Clear"))
+    XCTAssertTrue(prompt.contains("0%"))
+    XCTAssertTrue(prompt.contains("Do not invent precipitation"))
+  }
+
+  func testDetectsInventedRainWhenForecastIsDry() {
+    let ctx = context(condition: "Clear", precip: 0)
+    XCTAssertTrue(
+      RadarExplainCopy.inventsPrecipitationAtPin(
+        "Showers are moving into Seattle this hour.", context: ctx))
+    XCTAssertFalse(
+      RadarExplainCopy.inventsPrecipitationAtPin(
+        "The Rain product is a reflectivity layer. No precipitation is forecast here.",
+        context: ctx))
+  }
+}
