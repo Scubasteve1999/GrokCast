@@ -11,21 +11,15 @@ struct RadarPreviewCard: View {
   }
 
   var body: some View {
-    Button {
-      Haptic.impact(.medium)
-      store.selectedTab = .radar
-    } label: {
-      VStack(alignment: .leading, spacing: 0) {
-        radarMapSection
-        radarInfoBar
-      }
-      .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
-      .overlay(
-        RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
-          .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
-      )
+    VStack(alignment: .leading, spacing: 0) {
+      radarMapSection
+      radarInfoBar
     }
-    .buttonStyle(.plain)
+    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
+    .overlay(
+      RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
+        .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
+    )
     .task { await loadLatestRadarFrame() }
   }
 

@@ -15,6 +15,7 @@ struct SettingsView: View {
   @State private var connectionTestResult: String?
   @State private var connectionTestSuccess = false
   @State private var showTemperatureUnits = false
+  @State private var showBriefTimePicker = false
 
   private var hasKey: Bool {
     store.grokConfig.hasValidDeveloperKey
@@ -459,17 +460,32 @@ struct SettingsView: View {
   }
 
   private var hourPickerRow: some View {
-    Menu {
-      ForEach(7...11, id: \.self) { hour in
-        Button("\(hour):00 AM") { store.morningBriefHour = hour }
-      }
+    Button {
+      showBriefTimePicker = true
     } label: {
       settingsChevronRow(
         title: "Brief time",
         icon: "clock",
         value: "\(store.morningBriefHour):00 AM"
       )
+      .accessibilityHidden(true)
     }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Self.briefTimeAccessibilityLabel(hour: store.morningBriefHour))
+    .confirmationDialog(
+      "Brief time",
+      isPresented: $showBriefTimePicker,
+      titleVisibility: .visible
+    ) {
+      ForEach(7...11, id: \.self) { hour in
+        Button("\(hour):00 AM") { store.morningBriefHour = hour }
+      }
+    }
+  }
+
+  /// One VoiceOver name for the Brief time row. The Menu chevron sibling stays visual-only.
+  static func briefTimeAccessibilityLabel(hour: Int) -> String {
+    "Brief time, \(hour):00 AM"
   }
 
   private var fireRadiusRow: some View {

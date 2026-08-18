@@ -32,11 +32,10 @@ struct SunMoonFeedCard: View {
       }
       .padding(DesignTokens.Spacing.space16)
       .cardStyle()
+      .accessibilityHidden(true)
     }
     .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
     .accessibilityLabel(accessibilitySummary)
-    .accessibilityAddTraits(.isButton)
   }
 
   private var sunColumn: some View {
@@ -76,11 +75,22 @@ struct SunMoonFeedCard: View {
   }
 
   private var accessibilitySummary: String {
-    let rise = formatTime(sunrise)
-    let set = formatTime(sunset)
-    let lit = Int(round(moon.illumination * 100))
-    return
-      "Sun and moon. Sunrise \(rise), sunset \(set). \(moon.phase.displayName), \(lit) percent illuminated. Opens details."
+    Self.accessibilityLabel(
+      sunrise: formatTime(sunrise),
+      sunset: formatTime(sunset),
+      phase: moon.phase.displayName,
+      litPercent: Int(round(moon.illumination * 100))
+    )
+  }
+
+  /// One VoiceOver string for the whole card. Children stay visual-only.
+  static func accessibilityLabel(
+    sunrise: String,
+    sunset: String,
+    phase: String,
+    litPercent: Int
+  ) -> String {
+    "Sun and moon. Sunrise \(sunrise), sunset \(sunset). \(phase), \(litPercent) percent illuminated. Opens details."
   }
 }
 

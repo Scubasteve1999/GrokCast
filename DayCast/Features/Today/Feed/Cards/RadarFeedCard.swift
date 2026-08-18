@@ -1,16 +1,29 @@
 import SwiftUI
 
 struct RadarFeedCard: View {
-  var body: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("Radar")
-        .font(DesignTokens.Figma.Typography.subsectionLabel)
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
+  @Environment(WeatherStore.self) private var store
+  var onTap: (() -> Void)? = nil
 
-      RadarPreviewCard()
+  var body: some View {
+    Button {
+      Haptic.impact(.medium)
+      onTap?()
+      store.selectedTab = .radar
+    } label: {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+        Text("Radar")
+          .font(DesignTokens.Figma.Typography.subsectionLabel)
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .tracking(DesignTokens.Typography.cardLabelTracking)
+
+        RadarPreviewCard()
+      }
+      .accessibilityHidden(true)
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("Live radar preview. Opens the Radar tab.")
+    .buttonStyle(.plain)
+    .accessibilityLabel(Self.accessibilityLabel)
   }
+
+  /// One VoiceOver string for the whole card. Children stay visual-only.
+  static let accessibilityLabel = "Live radar preview. Opens the Radar tab."
 }

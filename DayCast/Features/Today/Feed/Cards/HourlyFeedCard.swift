@@ -42,22 +42,32 @@ struct HourlyFeedCard: View {
       }
       .padding(DesignTokens.Spacing.space16)
       .cardStyle()
+      .accessibilityHidden(true)
     }
     .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
     .accessibilityLabel(accessibilitySummary)
-    .accessibilityAddTraits(.isButton)
   }
 
   private var accessibilitySummary: String {
     guard let first = hours.first else {
-      return "Hourly forecast. Opens full forecast."
+      return Self.accessibilityLabel(hourLabel: nil, temp: nil, precipChance: nil)
     }
     let cal = weather.locationCalendar
     let now = Date()
     let isNow = cal.isDate(first.time, equalTo: now, toGranularity: .hour)
-    let label = isNow ? "Now" : "Next hour"
+    return Self.accessibilityLabel(
+      hourLabel: isNow ? "Now" : "Next hour",
+      temp: Int(round(first.temp)),
+      precipChance: first.precipChance
+    )
+  }
+
+  /// One VoiceOver string for the whole card. Children stay visual-only.
+  static func accessibilityLabel(hourLabel: String?, temp: Int?, precipChance: Int?) -> String {
+    guard let hourLabel, let temp, let precipChance else {
+      return "Hourly forecast. Opens full forecast."
+    }
     return
-      "Hourly forecast. \(label) \(Int(round(first.temp))) degrees, \(first.precipChance) percent chance of precipitation. Opens full forecast."
+      "Hourly forecast. \(hourLabel) \(temp) degrees, \(precipChance) percent chance of precipitation. Opens full forecast."
   }
 }

@@ -183,4 +183,41 @@ final class AirQualityAndMoonTests: XCTestCase {
       "Temperature, Celsius (°C)"
     )
   }
+
+  func testHourlyFeedCardVoiceOverIsOneLabeledControl() {
+    let label = HourlyFeedCard.accessibilityLabel(
+      hourLabel: "Now",
+      temp: 66,
+      precipChance: 0
+    )
+    XCTAssertEqual(
+      label,
+      "Hourly forecast. Now 66 degrees, 0 percent chance of precipitation. Opens full forecast."
+    )
+  }
+
+  func testRadarFeedCardVoiceOverIsOneLabeledControl() {
+    XCTAssertEqual(
+      RadarFeedCard.accessibilityLabel,
+      "Live radar preview. Opens the Radar tab."
+    )
+  }
+
+  func testSunMoonFeedCardVoiceOverIsOneLabeledControl() {
+    let label = SunMoonFeedCard.accessibilityLabel(
+      sunrise: "6:08 AM",
+      sunset: "8:18 PM",
+      phase: "Waxing Crescent",
+      litPercent: 25
+    )
+    XCTAssertEqual(
+      label,
+      "Sun and moon. Sunrise 6:08 AM, sunset 8:18 PM. Waxing Crescent, 25 percent illuminated. Opens details."
+    )
+  }
+
+  func testSettingsBriefTimeRowVoiceOverHasAName() {
+    XCTAssertEqual(SettingsView.briefTimeAccessibilityLabel(hour: 7), "Brief time, 7:00 AM")
+    XCTAssertEqual(SettingsView.briefTimeAccessibilityLabel(hour: 11), "Brief time, 11:00 AM")
+  }
 }
