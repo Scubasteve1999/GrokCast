@@ -472,10 +472,10 @@ private struct RadarDisplayOptionsSheet: View {
     NavigationStack {
       Form {
         Section {
-          Toggle("Auto-resume after scrub", isOn: $radarState.autoResumeAfterScrub)
-          Toggle("Map only", isOn: $isDecluttered)
+          namedSwitch(RadarChromeCopy.autoResumeSwitch, isOn: $radarState.autoResumeAfterScrub)
+          namedSwitch(RadarChromeCopy.mapOnlySwitch, isOn: $isDecluttered)
         } footer: {
-          Text("Map only hides this sheet so the radar fills the screen. Scan age stays on.")
+          Text("Map only keeps SCAN and hides the extra chase lines. Live, 24-hr, and Layers stay on.")
         }
 
         Section {
@@ -511,14 +511,17 @@ private struct RadarDisplayOptionsSheet: View {
         }
 
         Section("Map") {
-          Toggle("Radar overlay", isOn: $radarState.showRadarOverlay)
-          Toggle("Fire layer", isOn: Binding(
-            get: { radarState.showFireLayer },
-            set: { newValue in
-              radarState.showFireLayer = newValue
-              Analytics.track(.fireLayerToggle, parameters: ["on": newValue ? "1" : "0"])
-            }
-          ))
+          namedSwitch(RadarChromeCopy.radarOverlaySwitch, isOn: $radarState.showRadarOverlay)
+          namedSwitch(
+            RadarChromeCopy.fireLayerSwitch,
+            isOn: Binding(
+              get: { radarState.showFireLayer },
+              set: { newValue in
+                radarState.showFireLayer = newValue
+                Analytics.track(.fireLayerToggle, parameters: ["on": newValue ? "1" : "0"])
+              }
+            )
+          )
           Picker("Base map", selection: $radarState.baseMapStyle) {
             ForEach(RadarBaseMapStyle.allCases) { style in
               Label(style.displayName, systemImage: style.systemImage).tag(style)
@@ -555,6 +558,16 @@ private struct RadarDisplayOptionsSheet: View {
 
   private var showsVelocityLegend: Bool {
     radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
+  }
+
+  private func namedSwitch(_ title: String, isOn: Binding<Bool>) -> some View {
+    HStack {
+      Text(title)
+        .accessibilityHidden(true)
+      Spacer()
+      NamedSettingsSwitch(isOn: isOn, label: title)
+    }
+    .accessibilityElement(children: .contain)
   }
 
   private func productRow(_ product: RadarProduct) -> some View {

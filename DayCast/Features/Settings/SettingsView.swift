@@ -714,7 +714,7 @@ struct SettingsView: View {
 
 /// System switch with an explicit VoiceOver name and On/Off value.
 /// SwiftUI `Toggle("")` exposes an unnamed 0/1 control.
-private struct NamedSettingsSwitch: UIViewRepresentable {
+struct NamedSettingsSwitch: UIViewRepresentable {
   @Binding var isOn: Bool
   var label: String
 
@@ -745,7 +745,7 @@ private struct NamedSettingsSwitch: UIViewRepresentable {
   }
 }
 
-private final class LabeledUISwitch: UISwitch {
+final class LabeledUISwitch: UISwitch {
   var spokenValue: String = "Off"
   override var accessibilityValue: String? {
     get { spokenValue }

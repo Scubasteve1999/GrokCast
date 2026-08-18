@@ -214,9 +214,9 @@ struct RadarView: View {
       )
       .padding(.horizontal)
       .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
-      .opacity(chaseDecluttered ? 0 : 1)
-      .allowsHitTesting(!chaseDecluttered)
-      .accessibilityHidden(chaseDecluttered)
+      .opacity(RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered) ? 1 : 0)
+      .allowsHitTesting(RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered))
+      .accessibilityHidden(!RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered))
     }
     .overlay {
       if radarState.showModeSwitchOverlay {

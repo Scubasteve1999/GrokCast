@@ -106,9 +106,6 @@ struct ChaseRadarHUD: View {
   let day1Summary: String?
   @Binding var isDecluttered: Bool
 
-  /// Product chip currently loading site frames (DETAIL / SRV).
-  @State private var busyProduct: RadarProduct?
-
   var body: some View {
     VStack(alignment: .trailing, spacing: 8) {
       // Tick often enough that SCAN age feels live in the field (was 30s).
@@ -120,9 +117,7 @@ struct ChaseRadarHUD: View {
         }
       }
 
-      if isDecluttered {
-        actionChips
-      }
+      // Map-only slims this strip to SCAN. The Live/24-hr sheet stays up.
     }
     .accessibilityElement(children: .contain)
   }
@@ -233,100 +228,6 @@ struct ChaseRadarHUD: View {
     }()
     return RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
       .stroke(color, lineWidth: urgency == .stale || urgency == .aging ? 1.5 : 1)
-  }
-
-  // MARK: Action chips
-
-  /// Only shown in Map-only mode so DETAIL/SRV/MAP don't compete with the tab bar.
-  private var actionChips: some View {
-    HStack(spacing: 8) {
-      Button {
-        Haptic.selection()
-        radarState.togglePlayback()
-      } label: {
-        Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.radarAccent)
-          .frame(width: 32, height: 28)
-          .background(DesignTokens.Palette.radarCardBackground.opacity(0.92), in: Capsule())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
-
-      Button {
-        Haptic.selection()
-        withAnimation(.easeInOut(duration: 0.2)) {
-          isDecluttered.toggle()
-        }
-      } label: {
-        Text("HUD")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-          .padding(.horizontal, 10)
-          .padding(.vertical, 6)
-          .background(DesignTokens.Palette.radarCardBackground.opacity(0.92), in: Capsule())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Show radar controls")
-    }
-  }
-
-  private func productChip(
-    _ product: RadarProduct,
-    label: String,
-    a11yOn: String,
-    a11yOff: String
-  ) -> some View {
-    let isSelected = radarState.selectedProduct == product
-    let isBusy = busyProduct == product
-    let unavailable = radarState.showsFuture || radarState.nearestSite == nil
-
-    return Button {
-      Haptic.selection()
-      Task { await toggleSiteProduct(product) }
-    } label: {
-      HStack(spacing: 4) {
-        if isBusy {
-          ProgressView()
-            .controlSize(.mini)
-            .tint(
-              isSelected
-                ? DesignTokens.Palette.radarCardBackground
-                : DesignTokens.Palette.radarAccent
-            )
-        }
-        Text(label)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(
-            isSelected
-              ? DesignTokens.Palette.radarCardBackground
-              : DesignTokens.Palette.radarAccent
-          )
-      }
-      .padding(.horizontal, 10)
-      .padding(.vertical, 6)
-      .background(
-        isSelected
-          ? DesignTokens.Palette.radarAccent
-          : DesignTokens.Palette.radarAccent.opacity(0.22),
-        in: Capsule()
-      )
-    }
-    .buttonStyle(.plain)
-    .disabled(unavailable || busyProduct != nil)
-    .opacity(unavailable ? 0.45 : 1)
-    .accessibilityLabel(isSelected ? a11yOn : a11yOff)
-    .accessibilityAddTraits(isSelected ? .isSelected : [])
-  }
-
-  private func toggleSiteProduct(_ product: RadarProduct) async {
-    busyProduct = product
-    defer { busyProduct = nil }
-    if radarState.selectedProduct == product {
-      await radarState.setProduct(.reflectivity)
-    } else {
-      await radarState.setProduct(product)
-    }
   }
 
   // MARK: Derived text / color

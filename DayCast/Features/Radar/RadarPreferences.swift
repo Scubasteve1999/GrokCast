@@ -85,8 +85,7 @@ enum RadarPreferences {
     set { store.set(clampedRadarOpacity(newValue), forKey: radarOpacityKey) }
   }
 
-  /// Field "MAP" mode: hide the bottom control panel. Defaults off so first launch
-  /// still shows full chrome; chasers who flip it keep it across launches.
+  /// Map-only: slims the chase HUD to SCAN. Does not hide the Live/24-hr sheet.
   static var chaseDecluttered: Bool {
     get { store.bool(forKey: chaseDeclutteredKey) }
     set { store.set(newValue, forKey: chaseDeclutteredKey) }

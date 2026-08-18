@@ -30,6 +30,18 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertLessThan(RadarColorScheme.vibrant.rasterHueRotate, 0)
   }
 
+  func testControlSheetStaysUpWhenMapOnlyIsPersisted() {
+    XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: false))
+    XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: true))
+  }
+
+  func testLayersSwitchesHaveSpokenNames() {
+    XCTAssertEqual(RadarChromeCopy.autoResumeSwitch, "Auto-resume after scrub")
+    XCTAssertEqual(RadarChromeCopy.mapOnlySwitch, "Map only")
+    XCTAssertEqual(RadarChromeCopy.radarOverlaySwitch, "Radar overlay")
+    XCTAssertEqual(RadarChromeCopy.fireLayerSwitch, "Fire layer")
+  }
+
   func testRadarModeChipsAreNotNamedForecast() {
     XCTAssertEqual(RadarChromeCopy.liveChip, "Live")
     XCTAssertEqual(RadarChromeCopy.futureChip, "24-hr")

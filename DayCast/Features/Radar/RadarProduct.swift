@@ -149,4 +149,17 @@ enum RadarChromeCopy {
   static let layers = "Layers"
   static let liveAccessibility = "Live radar"
   static let futureAccessibility = "24-hour radar"
+
+  static let autoResumeSwitch = "Auto-resume after scrub"
+  static let mapOnlySwitch = "Map only"
+  static let radarOverlaySwitch = "Radar overlay"
+  static let fireLayerSwitch = "Fire layer"
+}
+
+/// After the one-sheet chrome, Map-only must never hide Live / 24-hr / Layers.
+enum RadarChromeVisibility {
+  static func showsControlSheet(mapOnly: Bool) -> Bool {
+    _ = mapOnly
+    return true
+  }
 }
