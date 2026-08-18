@@ -131,6 +131,11 @@ final class CitySearchTests: XCTestCase {
     XCTAssertEqual(LocationChipBar.chipTitle(for: gps), "Near Me")
   }
 
+  func testChipBarEmptyStripDoesNotCatchTaps() {
+    XCTAssertTrue(LocationChipBar.emptyStripPassesHitsThrough)
+    XCTAssertEqual(RadarFeedCard.accessibilityLabel, "Live radar preview. Opens the Radar tab.")
+  }
+
   func testSavedRowVoiceOverNamesTheCity() {
     let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
     XCTAssertEqual(LocationRow.accessibilityLabel(for: seattle, isSelected: false), "Seattle, WA")

@@ -17,6 +17,7 @@ struct TodayFeedView: View {
   @State private var showAirQualityDetail = false
   @State private var showSunMoonDetail = false
   @State private var showFireDetail = false
+  @State private var chipBarHeight: CGFloat = LocationChipBar.reservedHeight
 
   private var fireWeatherAlerts: [NWSAlert] {
     store.displayableActiveAlerts.filter(FireFeedVisibility.isFireWeatherAlert)
@@ -113,18 +114,23 @@ struct TodayFeedView: View {
             .padding(.horizontal, DesignTokens.Spacing.space20)
         }
       }
+      .padding(.top, chipBarHeight)
       .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
       .adaptiveContainerWidth(AdaptiveLayout.contentCap)
     }
-    .safeAreaInset(edge: .top, spacing: 0) {
+    .overlay(alignment: .topLeading) {
       LocationChipBar()
         .padding(.top, DesignTokens.Spacing.space8)
         .padding(.bottom, DesignTokens.Spacing.space8)
-        .frame(maxWidth: .infinity)
-        // Inset stays so Hourly/Daily cannot slide under the chips.
-        // No page-fill / material slab — sky from TodayView shows through.
-        .background(Color.clear)
+        .background {
+          GeometryReader { proxy in
+            Color.clear
+              .preference(key: ChipBarHeightKey.self, value: proxy.size.height)
+              .allowsHitTesting(false)
+          }
+        }
     }
+    .onPreferenceChange(ChipBarHeightKey.self) { chipBarHeight = $0 }
     .refreshable {
       await refreshAll()
     }

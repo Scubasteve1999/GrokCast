@@ -5,23 +5,24 @@ struct RadarFeedCard: View {
   var onTap: (() -> Void)? = nil
 
   var body: some View {
-    Button {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text("Radar")
+        .font(DesignTokens.Figma.Typography.subsectionLabel)
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+
+      RadarPreviewCard()
+        .allowsHitTesting(false)
+    }
+    .contentShape(Rectangle())
+    .onTapGesture {
       Haptic.impact(.medium)
       onTap?()
       store.selectedTab = .radar
-    } label: {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        Text("Radar")
-          .font(DesignTokens.Figma.Typography.subsectionLabel)
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-          .tracking(DesignTokens.Typography.cardLabelTracking)
-
-        RadarPreviewCard()
-      }
-      .accessibilityHidden(true)
     }
-    .buttonStyle(.plain)
+    .accessibilityElement(children: .ignore)
     .accessibilityLabel(Self.accessibilityLabel)
+    .accessibilityAddTraits(.isButton)
   }
 
   /// One VoiceOver string for the whole card. Children stay visual-only.

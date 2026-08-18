@@ -53,11 +53,13 @@ struct LocationChipBar: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier(DayCastAccessibility.Locations.chip(title))
+        .contentShape(Capsule())
       }
-      Spacer(minLength: 0)
     }
     .padding(.horizontal, DesignTokens.Spacing.space20)
-    .fixedSize(horizontal: false, vertical: true)
+    // Hug the chips. A full-width Spacer + clear fill sat above the feed
+    // and stole taps from Live Radar when the card scrolled under the inset.
+    .fixedSize(horizontal: true, vertical: true)
   }
 
   private func isSelected(_ location: SavedLocation) -> Bool {
@@ -66,5 +68,18 @@ struct LocationChipBar: View {
 
   static func chipTitle(for location: SavedLocation) -> String {
     location.isCurrent ? "Near Me" : location.name
+  }
+
+  /// Overlay hugs the chips; empty strip does not eat card taps.
+  static let emptyStripPassesHitsThrough = true
+
+  /// First-layout stand-in until the overlay reports its measured height.
+  static let reservedHeight: CGFloat = 52
+}
+
+struct ChipBarHeightKey: PreferenceKey {
+  static var defaultValue: CGFloat = LocationChipBar.reservedHeight
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = max(value, nextValue())
   }
 }
