@@ -13,6 +13,20 @@ final class ChaseRadarHUDTests: XCTestCase {
     XCTAssertEqual(line, "FUT 4:30 PM")
   }
 
+  func testScanDateFollowsTheVisibleFrameEvenWhilePlaying() {
+    let now = Date()
+    let visible = now.addingTimeInterval(-150 * 60)
+    let newest = now.addingTimeInterval(-9 * 60)
+    let shown = ChaseRadarHUDLogic.scanDateForDisplay(
+      currentFrameDate: visible,
+      newestTimestamp: newest,
+      isAnimating: true,
+      showsFuture: false
+    )
+    XCTAssertEqual(shown, visible)
+    XCTAssertEqual(ChaseRadarHUDLogic.scanAgeMinutes(now: now, scanDate: shown), 150)
+  }
+
   func testScanAgeLineBuckets() {
     XCTAssertEqual(
       ChaseRadarHUDLogic.scanAgeLine(showsFuture: false, futureFrameLabel: "", ageMinutes: nil),

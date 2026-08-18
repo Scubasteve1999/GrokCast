@@ -12,6 +12,20 @@ enum ChaseRadarHUDLogic {
     return Int(now.timeIntervalSince(scanDate) / 60)
   }
 
+  /// Age the frame on screen. Using the newest live volume while the loop
+  /// shows an older time made SCAN say "9m" over a 2-hour-old picture.
+  static func scanDateForDisplay(
+    currentFrameDate: Date?,
+    newestTimestamp: Date?,
+    isAnimating: Bool,
+    showsFuture: Bool
+  ) -> Date? {
+    _ = newestTimestamp
+    _ = isAnimating
+    _ = showsFuture
+    return currentFrameDate
+  }
+
   static func scanAgeLine(
     showsFuture: Bool,
     futureFrameLabel: String,
@@ -257,15 +271,13 @@ struct ChaseRadarHUD: View {
     }
   }
 
-  /// While Live is animating, report freshness of the newest volume — not the
-  /// mid-loop frame the scrubber is briefly on (which incorrectly read as "41m").
   private func scanFreshnessDate() -> Date? {
-    if radarState.isAnimating, !radarState.showsFuture,
-      let newest = radarState.activeTimestamps.last
-    {
-      return newest
-    }
-    return radarState.currentFrameDate
+    ChaseRadarHUDLogic.scanDateForDisplay(
+      currentFrameDate: radarState.currentFrameDate,
+      newestTimestamp: radarState.activeTimestamps.last,
+      isAnimating: radarState.isAnimating,
+      showsFuture: radarState.showsFuture
+    )
   }
 
   private var siteProductLine: String {
