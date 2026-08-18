@@ -28,6 +28,36 @@ final class RadarPlaybackTests: XCTestCase {
     return steps
   }
 
+  func testLandOnNewestLiveFrame() {
+    let playback = makePlayback(frames: 18)
+    playback.currentIndex = 0
+    playback.landOnNewestLiveFrame(count: 18)
+    XCTAssertEqual(playback.currentIndex, 17)
+  }
+
+  func testStartAfterLandingOnNewestKeepsTheNewestFrame() {
+    let playback = makePlayback(frames: 18)
+    playback.currentIndex = 0
+    playback.landOnNewestLiveFrame(count: 18)
+    playback.start()
+    XCTAssertEqual(playback.currentIndex, 17, "open must not jump back to the oldest scan")
+    XCTAssertTrue(playback.isAnimating)
+  }
+
+  func testPlayAfterLandingOnNewestStillWalksTheLoop() {
+    let playback = makePlayback(frames: 18)
+    playback.landOnNewestLiveFrame(count: 18)
+    playback.start()
+    playback.advance()
+    XCTAssertEqual(playback.currentIndex, 0, "Play still wraps so the loop can run")
+  }
+
+  func testLandOnNewestWithNoFramesStaysAtZero() {
+    let playback = makePlayback(frames: 0)
+    playback.landOnNewestLiveFrame(count: 0)
+    XCTAssertEqual(playback.currentIndex, 0)
+  }
+
   func testAdvanceWrapsWithinTheLoopCap() {
     let playback = makePlayback(frames: 4)
     playback.start()

@@ -43,7 +43,7 @@ struct RadarView: View {
         await store.refreshAlerts()
         fireStore.refresh(around: selectedMapCenter)
         if store.selectedTab == .radar, radarState.showContent {
-          radarState.start()
+          radarState.presentLiveNow()
         }
       }
       .task(id: store.currentLocation?.id) {
@@ -62,7 +62,7 @@ struct RadarView: View {
           await radarState.reloadIfStale(for: center)
           recenterOnSelectedLocation()
           if radarState.showContent {
-            radarState.start()
+            radarState.presentLiveNow()
           }
         }
       }
@@ -104,7 +104,7 @@ struct RadarView: View {
             // switcher costs nothing while a long absence rebuilds.
             await radarState.reloadIfStale(for: selectedMapCenter)
             if radarState.showContent {
-              radarState.start()
+              radarState.presentLiveNow()
             }
           }
         case .background:

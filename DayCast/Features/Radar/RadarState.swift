@@ -249,6 +249,15 @@ final class RadarState {
 
   func stop() { playback.stop() }
 
+  /// Tab entry and resume: newest live scan so SCAN is about now, not a 2-hour-old
+  /// loop start. Leaves playback paused — Play still walks the loop, and SCAN
+  /// keeps aging whichever frame is on screen.
+  func presentLiveNow() {
+    guard !showsFuture, timeline.hasLive else { return }
+    playback.landOnNewestLiveFrame(count: timeline.live.count)
+    playback.stop()
+  }
+
   func setPlaybackSpeed(_ speedMultiplier: Double) {
     playback.setPlaybackSpeed(speedMultiplier)
     // Persist what playback actually adopted, not the raw request — the two differ
@@ -314,8 +323,7 @@ final class RadarState {
     activateCurrentForCommittedMode()
     // Auto-play FUTURE so switching into it animates the forecast immediately
     // instead of sitting paused on frame 1 (beginTransition stopped playback).
-    // NOW is intentionally left alone — it gets its start() from RadarView on
-    // tab entry and should rest on the latest live frame, not reset to frame 0.
+    // Live open/resume goes through `presentLiveNow()` so SCAN starts on now.
     if committedIsFuture, activeFrameCount > 0 {
       playback.start()
     }

@@ -58,6 +58,15 @@ final class RadarPlayback {
   /// frame, so playback looks frozen. Caps every mode to a watchable cadence.
   private static let maxScreenInterval: TimeInterval = 3.0
 
+  /// Live open/re-entry: last index is the newest scan. Playing still wraps to 0.
+  func landOnNewestLiveFrame(count: Int) {
+    guard count > 0 else {
+      currentIndex = 0
+      return
+    }
+    currentIndex = count - 1
+  }
+
   func start() {
     let count = frameCount()
     guard count > 1 else {
