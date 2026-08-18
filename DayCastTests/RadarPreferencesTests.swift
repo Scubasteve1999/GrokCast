@@ -30,6 +30,25 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertLessThan(RadarColorScheme.vibrant.rasterHueRotate, 0)
   }
 
+  func testMapsGLRadarPaletteIsTransparentAtZero() {
+    let first = MapsGLRadarPalette.reflectivityStops.first
+    XCTAssertEqual(first?.dbz, 0)
+    XCTAssertEqual(first?.alpha, 0)
+    XCTAssertGreaterThan(MapsGLRadarPalette.reflectivityStops.count, 4)
+    XCTAssertTrue(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: false, keysPresent: true)
+    )
+    XCTAssertFalse(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: true, keysPresent: true)
+    )
+    XCTAssertFalse(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: false, keysPresent: false)
+    )
+  }
+
   func testControlSheetStaysUpWhenMapOnlyIsPersisted() {
     XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: false))
     XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: true))

@@ -183,8 +183,14 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       mapView.mapboxMap.onStyleLoaded.observe { [weak self, weak mapView] _ in
         guard let self, let mapView else { return }
         MapViewHostingSanitizer.sanitize(mapView)
+        try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
         self.layersInstalled = false
         self.lastAppliedFireSignature = nil
+        self.mapsGLHost.onLayerStateChange = { [weak self, weak mapView] in
+          guard let self, let mapView else { return }
+          self.refreshDesiredState(on: mapView)
+        }
+        self.mapsGLHost.attach(to: mapView)
         self.flushPendingDesiredState(on: mapView)
       }.store(in: &cancelables)
     }
@@ -193,6 +199,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var lastShowFireLayer: Bool?
     private var pendingFireSnapshot = FireSnapshot()
     private var pendingShowFireLayer = false
+    private let mapsGLHost = MapsGLRadarHost()
+    private var lastRadarState: RadarState?
+    private var lastSyncOpacity: Double = 0.85
 
     func update(
       mapView: MapView,
@@ -204,6 +213,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       fireSnapshot: FireSnapshot
     ) {
       MapViewHostingSanitizer.sanitize(mapView)
+      lastRadarState = radarState
+      lastSyncOpacity = opacity
       pendingFireSnapshot = fireSnapshot
       pendingShowFireLayer = radarState.showFireLayer
 
@@ -273,6 +284,16 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     }
 
     private func resolveDesiredState(from radarState: RadarState, opacity: Double) -> DesiredRasterState {
+      mapsGLHost.sync(radarState: radarState, opacity: opacity)
+      let mapsGLRain = MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: radarState.showRadarOverlay,
+        isSiteProduct: radarState.selectedProduct.isSiteProduct,
+        keysPresent: MapsGLRadarHost.keysPresent
+      )
+      // Encoded MapsGL rain replaces baked PNG only after the Metal layer is up.
+      // If add fails, the existing Xweather PNG path stays visible.
+      if mapsGLRain, mapsGLHost.isReady { return .hidden }
+
       guard radarState.showRadarOverlay,
         radarState.activeShowsTiles,
         let frame = radarState.currentFrame,
@@ -369,6 +390,23 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           radarLog("[Mapbox] Style load failed: \(error)")
         }
       }
+    }
+
+    private func refreshDesiredState(on mapView: MapView) {
+      guard mapView.mapboxMap.isStyleLoaded else { return }
+      MapViewHostingSanitizer.sanitize(mapView)
+      guard let radarState = lastRadarState else {
+        flushPendingDesiredState(on: mapView)
+        return
+      }
+      let desired = resolveDesiredState(from: radarState, opacity: lastSyncOpacity)
+      pendingDesiredState = desired.visible ? desired : nil
+      reconcile(mapView: mapView, desired: desired)
+      reconcileFireOverlay(
+        mapView: mapView,
+        snapshot: pendingFireSnapshot,
+        showFireLayer: pendingShowFireLayer
+      )
     }
 
     private func flushPendingDesiredState(on mapView: MapView) {

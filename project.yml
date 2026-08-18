@@ -26,6 +26,9 @@ packages:
   PostHog:
     url: https://github.com/PostHog/posthog-ios.git
     majorVersion: 3.0.0
+  MapsGL:
+    url: https://github.com/vaisala-xweather/mapsgl-apple-sdk
+    from: 1.6.1
 
 targetTemplates:
   AppTarget:
@@ -119,6 +122,8 @@ targets:
       - target: DayCastWidgets
         embed: true
       - package: MapboxMaps
+      - package: MapsGL
+        product: MapsGL
       - package: firebase-ios-sdk
         product: FirebaseMessaging
       - package: PostHog

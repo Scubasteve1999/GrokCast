@@ -1,5 +1,5 @@
 {
-  "originHash" : "fd012e72d14ae568943943f6c875eca25c94ca72e2e875ca28216e8429abdc8c",
+  "originHash" : "85669f9904b64d5c830825bc58f802df7b78ff29f47d97cf4ece526a9354b544",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -125,6 +125,15 @@
       "state" : {
         "revision" : "311d1829115928c83b5a7111a07f1f37b8377053",
         "version" : "11.28.2"
+      }
+    },
+    {
+      "identity" : "mapsgl-apple-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vaisala-xweather/mapsgl-apple-sdk",
+      "state" : {
+        "revision" : "0d04f7987353d52380087d0793da2c7d0d599014",
+        "version" : "1.6.1"
       }
     },
     {
