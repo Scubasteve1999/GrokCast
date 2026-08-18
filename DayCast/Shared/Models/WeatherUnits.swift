@@ -13,6 +13,11 @@ enum TemperatureUnit: String, CaseIterable, Codable, Identifiable {
     }
   }
 
+  /// One VoiceOver name for the Settings units row. The chevron sibling stays visual-only.
+  var settingsRowAccessibilityLabel: String {
+    "Temperature, \(displayName)"
+  }
+
   var openMeteoTemperatureUnit: String {
     switch self {
     case .fahrenheit: "fahrenheit"

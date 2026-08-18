@@ -14,6 +14,7 @@ struct SettingsView: View {
   @State private var isTestingConnection = false
   @State private var connectionTestResult: String?
   @State private var connectionTestSuccess = false
+  @State private var showTemperatureUnits = false
 
   private var hasKey: Bool {
     store.grokConfig.hasValidDeveloperKey
@@ -486,16 +487,26 @@ struct SettingsView: View {
   }
 
   private var temperatureRow: some View {
-    Menu {
-      ForEach(TemperatureUnit.allCases) { unit in
-        Button(unit.displayName) { store.temperatureUnit = unit }
-      }
+    Button {
+      showTemperatureUnits = true
     } label: {
       settingsChevronRow(
         title: "Temperature",
         icon: "thermometer.medium",
         value: store.temperatureUnit.displayName
       )
+      .accessibilityHidden(true)
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(store.temperatureUnit.settingsRowAccessibilityLabel)
+    .confirmationDialog(
+      "Temperature",
+      isPresented: $showTemperatureUnits,
+      titleVisibility: .visible
+    ) {
+      ForEach(TemperatureUnit.allCases) { unit in
+        Button(unit.displayName) { store.temperatureUnit = unit }
+      }
     }
   }
 
@@ -553,6 +564,7 @@ struct SettingsView: View {
         .font(DesignTokens.Typography.symbol(16))
         .foregroundStyle(DesignTokens.Palette.accent)
         .frame(width: 24)
+        .accessibilityHidden(true)
       Text(title)
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
@@ -565,6 +577,7 @@ struct SettingsView: View {
       Image(systemName: trailing)
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .accessibilityHidden(true)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
     .padding(.vertical, DesignTokens.Spacing.space12)

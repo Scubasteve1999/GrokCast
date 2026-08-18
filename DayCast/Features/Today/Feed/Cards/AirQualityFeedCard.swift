@@ -13,7 +13,7 @@ struct AirQualityFeedCard: View {
           Text("Air Quality")
             .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .tracking(DesignTokens.Typography.cardLabelTracking)
+            .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
           Image(systemName: "chevron.right")
             .font(DesignTokens.Typography.caption())
@@ -40,13 +40,17 @@ struct AirQualityFeedCard: View {
       }
       .padding(DesignTokens.Spacing.space16)
       .cardStyle()
+      .accessibilityHidden(true)
     }
     .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
     .accessibilityLabel(
-      "Air quality \(aqi), \(category.title). \(category.guidance) Opens details."
+      Self.accessibilityLabel(aqi: aqi, title: category.title, guidance: category.guidance)
     )
-    .accessibilityAddTraits(.isButton)
+  }
+
+  /// One VoiceOver string for the whole card. Children stay visual-only.
+  static func accessibilityLabel(aqi: Int, title: String, guidance: String) -> String {
+    "Air quality \(aqi), \(title). \(guidance) Opens details."
   }
 }
 

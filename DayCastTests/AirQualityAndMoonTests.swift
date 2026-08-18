@@ -152,4 +152,35 @@ final class AirQualityAndMoonTests: XCTestCase {
     XCTAssertEqual(label, "Tue, Overcast. High 81 degrees, low 57 degrees")
     XCTAssertFalse(label.contains("percent"))
   }
+
+  func testFireFeedCardVoiceOverIsOneLabeledControl() {
+    let label = FireFeedCard.accessibilityLabel(
+      title: "Active fire nearby",
+      subtitle: "2 mi away · 3 nearby"
+    )
+    XCTAssertEqual(label, "Fire. Active fire nearby. 2 mi away · 3 nearby Opens details.")
+  }
+
+  func testAirQualityFeedCardVoiceOverIsOneLabeledControl() {
+    let category = AirQualityCategory(usAQI: 42)
+    let label = AirQualityFeedCard.accessibilityLabel(
+      aqi: 42,
+      title: category.title,
+      guidance: category.guidance
+    )
+    XCTAssertTrue(label.hasPrefix("Air quality 42, \(category.title)."))
+    XCTAssertTrue(label.contains(category.guidance))
+    XCTAssertTrue(label.hasSuffix("Opens details."))
+  }
+
+  func testSettingsUnitsRowVoiceOverHasAName() {
+    XCTAssertEqual(
+      TemperatureUnit.fahrenheit.settingsRowAccessibilityLabel,
+      "Temperature, Fahrenheit (°F)"
+    )
+    XCTAssertEqual(
+      TemperatureUnit.celsius.settingsRowAccessibilityLabel,
+      "Temperature, Celsius (°C)"
+    )
+  }
 }

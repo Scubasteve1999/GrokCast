@@ -12,7 +12,7 @@ struct FireFeedCard: View {
           Label("Fire", systemImage: "flame.fill")
             .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
-                .tracking(DesignTokens.Typography.cardLabelTracking)
+            .tracking(DesignTokens.Typography.cardLabelTracking)
             .labelStyle(.titleAndIcon)
           Spacer()
           Image(systemName: "chevron.right")
@@ -49,13 +49,15 @@ struct FireFeedCard: View {
       }
       .padding(DesignTokens.Spacing.space16)
       .cardStyle()
+      .accessibilityHidden(true)
     }
     .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(
-      "Fire. \(summary.title). \(summary.subtitle) Opens details."
-    )
-    .accessibilityAddTraits(.isButton)
+    .accessibilityLabel(Self.accessibilityLabel(title: summary.title, subtitle: summary.subtitle))
+  }
+
+  /// One VoiceOver string for the whole card. Children stay visual-only.
+  static func accessibilityLabel(title: String, subtitle: String) -> String {
+    "Fire. \(title). \(subtitle) Opens details."
   }
 
   private func metricChip(icon: String, text: String) -> some View {
