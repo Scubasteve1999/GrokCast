@@ -193,6 +193,34 @@ final class FireProximityDedupeTests: XCTestCase {
     )
   }
 
+  func testDetailListIsTheSameLocalRadiusAsTheCard() {
+    var snap = FireSnapshot()
+    snap.hotspots = [
+      hotspot(id: "3mi", latitude: 34.99, longitude: -89.83),
+      hotspot(id: "7mi", latitude: 35.06, longitude: -89.83),
+      hotspot(id: "26mi", latitude: 35.34, longitude: -89.83),
+      hotspot(id: "42mi", latitude: 35.57, longitude: -89.83),
+      hotspot(id: "45mi", latitude: 35.61, longitude: -89.83),
+    ]
+    let local = FireFeedVisibility.localDetections(in: snap, origin: origin, radiusMiles: 25)
+    let summary = FireFeedVisibility.summary(snapshot: snap, origin: origin, radiusMiles: 25)
+    XCTAssertEqual(local.hotspots.count, 2)
+    XCTAssertEqual(summary?.hotspotCount, local.hotspots.count)
+    XCTAssertEqual(
+      FireFeedVisibility.nearbyDetectionsHeader(count: local.hotspots.count),
+      "2 detections nearby"
+    )
+    XCTAssertTrue(local.hotspots.allSatisfy { $0.1 <= 25 })
+    XCTAssertEqual(Set(local.hotspots.map(\.0.id)), ["3mi", "7mi"])
+  }
+
+  func testNearbyDetectionsHeaderMatchesListCount() {
+    XCTAssertEqual(FireFeedVisibility.nearbyDetectionsHeader(count: 1), "1 detection nearby")
+    XCTAssertEqual(FireFeedVisibility.nearbyDetectionsHeader(count: 5), "5 detections nearby")
+    XCTAssertEqual(FireFeedVisibility.nearbyIncidentsHeader(count: 1), "1 incident nearby")
+    XCTAssertEqual(FireFeedVisibility.nearbyIncidentsHeader(count: 3), "3 incidents nearby")
+  }
+
   private func hotspot(id: String, latitude: Double, longitude: Double) -> FireHotspot {
     FireHotspot(
       id: id,

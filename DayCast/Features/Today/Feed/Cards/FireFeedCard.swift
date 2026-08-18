@@ -70,34 +70,30 @@ struct FireDetailView: View {
   let snapshot: FireSnapshot
   let origin: CLLocationCoordinate2D?
   let fireWeatherAlerts: [NWSAlert]
+  var radiusMiles: Double = FireNotifyConfig.default.radiusMiles
 
   @State private var smokeObservation: AirNowService.Observation?
   @State private var didLoadSmoke = false
 
+  /// Same 25 mi (or Settings radius) set as the Today card. Not the FIRMS fetch box.
+  private var local: (hotspots: [(FireHotspot, Double)], incidents: [(FireIncident, Double)]) {
+    guard let origin else { return ([], []) }
+    return FireFeedVisibility.localDetections(
+      in: snapshot,
+      origin: origin,
+      radiusMiles: radiusMiles
+    )
+  }
+
   private var rankedIncidents: [(FireIncident, Double?)] {
-    guard let origin else {
-      return snapshot.incidents.map { ($0, nil) }
+    if origin != nil {
+      return local.incidents.map { ($0.0, Optional($0.1)) }
     }
-    return snapshot.incidents
-      .map { incident -> (FireIncident, Double?) in
-        guard let coordinate = incident.coordinate else { return (incident, nil) }
-        return (incident, FireProximityDedupe.distanceMiles(from: origin, to: coordinate))
-      }
-      .sorted { lhs, rhs in
-        switch (lhs.1, rhs.1) {
-        case let (l?, r?): return l < r
-        case (_?, nil): return true
-        case (nil, _?): return false
-        case (nil, nil): return lhs.0.displayName < rhs.0.displayName
-        }
-      }
+    return snapshot.incidents.map { ($0, nil) }
   }
 
   private var rankedHotspots: [(FireHotspot, Double)] {
-    guard let origin else { return [] }
-    return snapshot.hotspots
-      .map { ($0, FireProximityDedupe.distanceMiles(from: origin, to: $0.coordinate)) }
-      .sorted { $0.1 < $1.1 }
+    local.hotspots
   }
 
   var body: some View {
@@ -112,15 +108,21 @@ struct FireDetailView: View {
         }
 
         if !rankedIncidents.isEmpty {
-          sectionHeader("Incidents")
-          ForEach(rankedIncidents.prefix(12), id: \.0.id) { item in
+          sectionHeader(
+            origin == nil
+              ? "Incidents"
+              : FireFeedVisibility.nearbyIncidentsHeader(count: rankedIncidents.count)
+          )
+          ForEach(rankedIncidents, id: \.0.id) { item in
             incidentRow(item.0, miles: item.1)
           }
         }
 
         if !rankedHotspots.isEmpty {
-          sectionHeader("Satellite heat detections")
-          ForEach(rankedHotspots.prefix(20), id: \.0.id) { item in
+          sectionHeader(
+            FireFeedVisibility.nearbyDetectionsHeader(count: rankedHotspots.count)
+          )
+          ForEach(rankedHotspots, id: \.0.id) { item in
             hotspotRow(item.0, miles: item.1)
           }
         }

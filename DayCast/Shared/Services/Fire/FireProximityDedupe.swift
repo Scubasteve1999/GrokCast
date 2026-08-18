@@ -236,6 +236,15 @@ enum FireFeedVisibility {
     return String(format: "%.0f mi away · %d nearby", nearestMiles, localCount)
   }
 
+  /// Section title for Fire detail. Count is the filtered list, not the FIRMS box.
+  static func nearbyDetectionsHeader(count: Int) -> String {
+    count == 1 ? "1 detection nearby" : "\(count) detections nearby"
+  }
+
+  static func nearbyIncidentsHeader(count: Int) -> String {
+    count == 1 ? "1 incident nearby" : "\(count) incidents nearby"
+  }
+
   static func localDetections(
     in snapshot: FireSnapshot,
     origin: CLLocationCoordinate2D,

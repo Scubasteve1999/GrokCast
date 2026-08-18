@@ -153,7 +153,8 @@ struct TodayFeedView: View {
       FireDetailView(
         snapshot: fireStore.snapshot,
         origin: store.currentLocation?.coordinate,
-        fireWeatherAlerts: fireWeatherAlerts
+        fireWeatherAlerts: fireWeatherAlerts,
+        radiusMiles: store.fireProximityRadiusMiles
       )
     }
   }
