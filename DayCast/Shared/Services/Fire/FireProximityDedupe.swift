@@ -180,38 +180,30 @@ enum FireFeedVisibility {
   }
 
   /// Best summary row for the feed card (nearest named incident, else nearest hotspot).
+  /// Counts are detections within `radiusMiles` of the selected pin — not the FIRMS fetch box.
   static func summary(
     snapshot: FireSnapshot,
-    origin: CLLocationCoordinate2D?
+    origin: CLLocationCoordinate2D?,
+    radiusMiles: Double = FireNotifyConfig.default.radiusMiles
   ) -> FireFeedSummary? {
     if let origin {
-      let rankedIncidents: [(FireIncident, Double)] = snapshot.incidents.compactMap { incident in
-        guard let coordinate = incident.coordinate else { return nil }
-        let miles = FireProximityDedupe.distanceMiles(from: origin, to: coordinate)
-        return (incident, miles)
-      }
-      .sorted { $0.1 < $1.1 }
-
-      if let best = rankedIncidents.first {
+      let local = localDetections(in: snapshot, origin: origin, radiusMiles: radiusMiles)
+      if let best = local.incidents.first {
         return FireFeedSummary(
           title: best.0.displayName,
           subtitle: String(format: "%.0f mi away", best.1),
           distanceMiles: best.1,
-          hotspotCount: snapshot.hotspots.count,
-          incidentCount: snapshot.incidents.count
+          hotspotCount: local.hotspots.count,
+          incidentCount: local.incidents.count
         )
       }
-
-      let rankedHotspots = snapshot.hotspots
-        .map { ($0, FireProximityDedupe.distanceMiles(from: origin, to: $0.coordinate)) }
-        .sorted { $0.1 < $1.1 }
-      if let best = rankedHotspots.first {
+      if let best = local.hotspots.first {
         return FireFeedSummary(
           title: "Active heat detection",
-          subtitle: String(format: "%.0f mi away · %d nearby", best.1, snapshot.hotspots.count),
+          subtitle: hotspotSubtitle(nearestMiles: best.1, localCount: local.hotspots.count),
           distanceMiles: best.1,
-          hotspotCount: snapshot.hotspots.count,
-          incidentCount: snapshot.incidents.count
+          hotspotCount: local.hotspots.count,
+          incidentCount: local.incidents.count
         )
       }
     }
@@ -221,20 +213,46 @@ enum FireFeedVisibility {
         title: named.displayName,
         subtitle: "Active wildfire in the region",
         distanceMiles: nil,
-        hotspotCount: snapshot.hotspots.count,
+        hotspotCount: 0,
         incidentCount: snapshot.incidents.count
       )
     }
     if !snapshot.hotspots.isEmpty {
       return FireFeedSummary(
         title: "Active heat detections",
-        subtitle: "\(snapshot.hotspots.count) satellite detections nearby",
+        subtitle: "\(snapshot.hotspots.count) satellite detections in the region",
         distanceMiles: nil,
         hotspotCount: snapshot.hotspots.count,
-        incidentCount: snapshot.incidents.count
+        incidentCount: 0
       )
     }
     return nil
+  }
+
+  static func hotspotSubtitle(nearestMiles: Double, localCount: Int) -> String {
+    if localCount <= 1 {
+      return String(format: "%.0f mi away", nearestMiles)
+    }
+    return String(format: "%.0f mi away · %d nearby", nearestMiles, localCount)
+  }
+
+  static func localDetections(
+    in snapshot: FireSnapshot,
+    origin: CLLocationCoordinate2D,
+    radiusMiles: Double
+  ) -> (hotspots: [(FireHotspot, Double)], incidents: [(FireIncident, Double)]) {
+    let hotspots = snapshot.hotspots
+      .map { ($0, FireProximityDedupe.distanceMiles(from: origin, to: $0.coordinate)) }
+      .filter { $0.1 <= radiusMiles }
+      .sorted { $0.1 < $1.1 }
+    let incidents = snapshot.incidents.compactMap { incident -> (FireIncident, Double)? in
+      guard let coordinate = incident.coordinate else { return nil }
+      let miles = FireProximityDedupe.distanceMiles(from: origin, to: coordinate)
+      guard miles <= radiusMiles else { return nil }
+      return (incident, miles)
+    }
+    .sorted { $0.1 < $1.1 }
+    return (hotspots, incidents)
   }
 }
 

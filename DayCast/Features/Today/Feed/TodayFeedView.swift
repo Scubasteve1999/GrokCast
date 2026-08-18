@@ -25,7 +25,8 @@ struct TodayFeedView: View {
   private var fireSummary: FireFeedSummary? {
     FireFeedVisibility.summary(
       snapshot: fireStore.snapshot,
-      origin: store.currentLocation?.coordinate
+      origin: store.currentLocation?.coordinate,
+      radiusMiles: store.fireProximityRadiusMiles
     )
   }
 
@@ -229,8 +230,8 @@ struct TodayFeedView: View {
             subtitle: fireWeatherAlerts[0].headline
               ?? "Fire weather conditions for your area",
             distanceMiles: nil,
-            hotspotCount: fireStore.snapshot.hotspots.count,
-            incidentCount: fireStore.snapshot.incidents.count
+            hotspotCount: fireSummary?.hotspotCount ?? 0,
+            incidentCount: fireSummary?.incidentCount ?? 0
           )
         ) {
           Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])

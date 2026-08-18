@@ -159,6 +159,55 @@ final class FireProximityDedupeTests: XCTestCase {
     )
   }
 
+  func testFeedSummaryNearbyCountIsLocalRadiusNotTheFetchBox() {
+    var snap = FireSnapshot()
+    snap.hotspots = [
+      hotspot(id: "near", latitude: 34.97, longitude: -89.84),  // ~1 mi
+      hotspot(id: "also-near", latitude: 34.98, longitude: -89.85),
+      hotspot(id: "box", latitude: 36.20, longitude: -89.83),  // ~85 mi, inside a 150 km FIRMS box
+    ]
+    let summary = FireFeedVisibility.summary(snapshot: snap, origin: origin, radiusMiles: 25)
+    XCTAssertEqual(summary?.hotspotCount, 2)
+    XCTAssertEqual(summary?.subtitle, FireFeedVisibility.hotspotSubtitle(nearestMiles: 1, localCount: 2))
+    XCTAssertFalse(summary?.subtitle.contains("196") ?? false)
+    XCTAssertTrue(summary?.subtitle.contains("2 nearby") ?? false)
+  }
+
+  func testFeedSummarySingleLocalHotspotDoesNotInventABoxCount() {
+    var snap = FireSnapshot()
+    snap.hotspots = [
+      hotspot(id: "near", latitude: 34.97, longitude: -89.84),
+      hotspot(id: "box", latitude: 36.20, longitude: -89.83),
+    ]
+    let summary = FireFeedVisibility.summary(snapshot: snap, origin: origin, radiusMiles: 25)
+    XCTAssertEqual(summary?.hotspotCount, 1)
+    XCTAssertEqual(summary?.subtitle.contains("nearby"), false)
+    XCTAssertTrue(summary?.subtitle.contains("mi away") ?? false)
+  }
+
+  func testHotspotSubtitleMatchesLocalCount() {
+    XCTAssertEqual(FireFeedVisibility.hotspotSubtitle(nearestMiles: 2, localCount: 1), "2 mi away")
+    XCTAssertEqual(
+      FireFeedVisibility.hotspotSubtitle(nearestMiles: 2, localCount: 196),
+      "2 mi away · 196 nearby"
+    )
+  }
+
+  private func hotspot(id: String, latitude: Double, longitude: Double) -> FireHotspot {
+    FireHotspot(
+      id: id,
+      latitude: latitude,
+      longitude: longitude,
+      brightness: nil,
+      frp: 10,
+      confidence: "nominal",
+      acqDate: nil,
+      acqTime: nil,
+      satellite: nil,
+      detectedAt: now
+    )
+  }
+
   func testDistanceRoughlyCorrectForKnownSpan() {
     // ~69 miles per degree latitude
     let north = CLLocationCoordinate2D(latitude: 35.96, longitude: -89.83)
