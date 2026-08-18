@@ -47,4 +47,10 @@ enum DayCastAccessibility {
   enum Settings {
     static let proEntry = "daycast.settings.pro"
   }
+
+  enum Locations {
+    static let searchField = "daycast.locations.searchField"
+    static let searchSubmit = "daycast.locations.searchSubmit"
+    static func result(_ name: String) -> String { "daycast.locations.result.\(name)" }
+  }
 }

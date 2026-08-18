@@ -1,4 +1,3 @@
-import MapKit
 import SwiftUI
 
 private let locationsContentTopPadding = DesignTokens.Spacing.space16
@@ -9,8 +8,9 @@ struct LocationsView: View {
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
   @State private var searchText = ""
-  @State private var searchResults: [MKMapItem] = []
+  @State private var searchResults: [CitySearchResult] = []
   @State private var isSearching = false
+  @State private var searchError: String?
   @State private var searchTask: Task<Void, Never>?
 
   private var isShowingSearch: Bool {
@@ -69,17 +69,38 @@ struct LocationsView: View {
       Image(systemName: "magnifyingglass")
         .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .accessibilityHidden(true)
       TextField("Search cities...", text: $searchText)
         .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .textFieldStyle(.plain)
         .textInputAutocapitalization(.words)
         .autocorrectionDisabled()
+        .submitLabel(.search)
+        .accessibilityLabel("Search cities")
+        .accessibilityIdentifier(DayCastAccessibility.Locations.searchField)
         .onChange(of: searchText) { _, newValue in
           scheduleSearch(newValue)
         }
+        .onSubmit {
+          commitSearch()
+        }
+      if !searchText.isEmpty {
+        Button {
+          commitSearch()
+        } label: {
+          Text("Search")
+            .font(DesignTokens.Typography.caption().weight(.semibold))
+            .foregroundStyle(DesignTokens.Palette.accent)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(DayCastAccessibility.Locations.searchSubmit)
+        .accessibilityLabel("Search cities")
+      }
     }
     .padding(.horizontal, DesignTokens.Spacing.space12)
     .padding(.vertical, DesignTokens.Spacing.space12)
+    .contentShape(Rectangle())
     .cardStyle(
       background: DesignTokens.Palette.cardElevated,
       stroke: DesignTokens.Palette.cardStroke,
@@ -102,22 +123,27 @@ struct LocationsView: View {
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
         .padding(DesignTokens.Spacing.space16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Searching for cities")
+      } else if let searchError {
+        searchFailureRow(searchError)
       } else if searchResults.isEmpty {
-        Text("No locations found. Try Memphis or Nashville.")
+        Text(CitySearch.emptyMessage(for: searchText))
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .padding(DesignTokens.Spacing.space16)
       } else {
-        ForEach(Array(searchResults.enumerated()), id: \.offset) { index, item in
+        ForEach(Array(searchResults.enumerated()), id: \.element.id) { index, item in
           if index > 0 { SettingsDivider() }
           Button {
             selectSearchResult(item)
           } label: {
-            SearchResultRow(item: item)
+            SearchResultRow(result: item)
               .padding(.horizontal, DesignTokens.Spacing.space16)
               .padding(.vertical, DesignTokens.Spacing.space12)
           }
           .buttonStyle(.plain)
+          .accessibilityIdentifier(DayCastAccessibility.Locations.result(item.name))
         }
       }
     }
@@ -203,6 +229,9 @@ struct LocationsView: View {
     .onChange(of: searchText) { _, newValue in
       scheduleSearch(newValue)
     }
+    .onSubmit(of: .search) {
+      commitSearch()
+    }
   }
 
   private var currentLocationSection: some View {
@@ -238,21 +267,26 @@ struct LocationsView: View {
           Text("Searching…")
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Searching for cities")
+      } else if let searchError {
+        searchFailureRow(searchError)
       } else if searchResults.isEmpty {
         ContentUnavailableView(
-          "No locations found",
+          "No cities found",
           systemImage: "magnifyingglass",
-          description: Text("Try a city name like Memphis or Nashville.")
+          description: Text(CitySearch.emptyMessage(for: searchText))
         )
         .listRowBackground(Color.clear)
       } else {
-        ForEach(searchResults, id: \.self) { item in
+        ForEach(searchResults) { item in
           Button {
             selectSearchResult(item)
           } label: {
-            SearchResultRow(item: item)
+            SearchResultRow(result: item)
           }
           .buttonStyle(.plain)
+          .accessibilityIdentifier(DayCastAccessibility.Locations.result(item.name))
         }
       }
     }
@@ -260,6 +294,7 @@ struct LocationsView: View {
 
   private func scheduleSearch(_ query: String) {
     searchTask?.cancel()
+    searchError = nil
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
       searchResults = []
@@ -267,11 +302,43 @@ struct LocationsView: View {
       return
     }
 
+    isSearching = true
     searchTask = Task {
-      try? await Task.sleep(for: .milliseconds(300))
+      try? await Task.sleep(for: .milliseconds(350))
       guard !Task.isCancelled else { return }
       await searchLocations(trimmed)
     }
+  }
+
+  private func commitSearch() {
+    searchTask?.cancel()
+    searchError = nil
+    let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else {
+      searchResults = []
+      isSearching = false
+      return
+    }
+    isSearching = true
+    searchTask = Task {
+      await searchLocations(trimmed)
+    }
+  }
+
+  @ViewBuilder
+  private func searchFailureRow(_ message: String) -> some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text(message)
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+      Button("Try Again") {
+        commitSearch()
+      }
+      .font(DesignTokens.Typography.caption().weight(.semibold))
+      .foregroundStyle(DesignTokens.Palette.accent)
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .frame(maxWidth: .infinity, alignment: .leading)
   }
 
   private func deleteLocations(at offsets: IndexSet) {
@@ -281,87 +348,82 @@ struct LocationsView: View {
     }
   }
 
-  private func selectSearchResult(_ item: MKMapItem) {
-    let candidate = savedLocation(from: item)
-    if let existing = store.savedLocations.first(where: { isNear($0, candidate) }) {
+  private func selectSearchResult(_ item: CitySearchResult) {
+    let candidate = SavedLocation(
+      name: item.name,
+      latitude: item.latitude,
+      longitude: item.longitude
+    )
+    let decision = CitySearch.selection(
+      candidate: candidate,
+      saved: store.savedLocations,
+      canAdd: EntitlementChecker.canAddLocation(
+        currentCount: store.savedLocations.count,
+        subscription: SubscriptionManager.shared
+      )
+    )
+    switch decision {
+    case .selectExisting(let existing):
       store.selectLocation(existing)
-    } else {
-      if !store.addLocation(candidate) {
+    case .add:
+      guard store.addLocation(candidate) else {
         PaywallCoordinator.shared.present(.locations)
         return
       }
       store.selectLocation(candidate)
+    case .replace(let current):
+      store.removeLocation(current)
+      guard store.addLocation(candidate) else {
+        PaywallCoordinator.shared.present(.locations)
+        return
+      }
+      store.selectLocation(candidate)
+    case .paywall:
+      PaywallCoordinator.shared.present(.locations)
+      return
     }
     searchText = ""
     searchResults = []
+    searchError = nil
     isSearching = false
-  }
-
-  private func isNear(_ lhs: SavedLocation, _ rhs: SavedLocation) -> Bool {
-    abs(lhs.latitude - rhs.latitude) < 0.01 && abs(lhs.longitude - rhs.longitude) < 0.01
-  }
-
-  private func savedLocation(from item: MKMapItem) -> SavedLocation {
-    let coordinate = item.placemark.coordinate
-    return SavedLocation(
-      name: locationName(from: item),
-      latitude: coordinate.latitude,
-      longitude: coordinate.longitude
-    )
-  }
-
-  private func locationName(from item: MKMapItem) -> String {
-    let placemark = item.placemark
-    if let city = placemark.locality {
-      if let state = placemark.administrativeArea {
-        return "\(city), \(state)"
-      }
-      if let country = placemark.country {
-        return "\(city), \(country)"
-      }
-      return city
-    }
-    return item.name ?? placemark.name ?? placemark.title ?? "Unknown Location"
   }
 
   @MainActor
   private func searchLocations(_ query: String) async {
     isSearching = true
-    defer { isSearching = false }
-
-    let request = MKLocalSearch.Request()
-    request.naturalLanguageQuery = query
-    request.resultTypes = [.address, .pointOfInterest]
-
-    if let current = store.currentLocation {
-      request.region = MKCoordinateRegion(
-        center: current.coordinate,
-        latitudinalMeters: 800_000,
-        longitudinalMeters: 800_000
-      )
+    defer {
+      let stillThisQuery =
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query
+      if stillThisQuery {
+        isSearching = false
+      }
     }
 
     do {
-      let response = try await MKLocalSearch(request: request).start()
+      let results = try await CitySearch.search(query: query)
       guard !Task.isCancelled else { return }
-      searchResults = response.mapItems
+      searchResults = results
+      searchError = nil
+    } catch is CancellationError {
+      return
     } catch {
       guard !Task.isCancelled else { return }
       searchResults = []
+      searchError = CitySearch.errorMessage(for: error)
     }
   }
 }
 
 private struct SearchResultRow: View {
-  let item: MKMapItem
+  let result: CitySearchResult
 
   var body: some View {
     HStack {
       VStack(alignment: .leading, spacing: 2) {
-        Text(primaryTitle)
+        Text(result.name)
           .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
-        if let subtitle {
+        if let subtitle = result.subtitle {
           Text(subtitle)
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
@@ -371,23 +433,12 @@ private struct SearchResultRow: View {
       Spacer()
       Image(systemName: "plus.circle")
         .foregroundStyle(DesignTokens.Palette.accent)
+        .accessibilityHidden(true)
     }
     .contentShape(Rectangle())
-  }
-
-  private var primaryTitle: String {
-    if let city = item.placemark.locality, let state = item.placemark.administrativeArea {
-      return "\(city), \(state)"
-    }
-    return item.name ?? item.placemark.name ?? item.placemark.title ?? "Unknown Location"
-  }
-
-  private var subtitle: String? {
-    if item.placemark.locality != nil {
-      return item.placemark.title
-    }
-    let coordinate = item.placemark.coordinate
-    return String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("Add \(result.name)")
+    .accessibilityAddTraits(.isButton)
   }
 }
 
