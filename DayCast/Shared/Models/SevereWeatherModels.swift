@@ -105,6 +105,12 @@ struct SPCMesoscaleDiscussion: Identifiable, Codable, Equatable, Hashable, Senda
     guard let info, !info.isEmpty else { return nil }
     return info
   }
+
+  /// Today card line: weather meaning, not the raw MD number.
+  var todayCardLine: String {
+    if let detail = detailLine { return detail }
+    return "Storm Prediction Center update"
+  }
 }
 
 struct SPCLocalStormReport: Identifiable, Codable, Equatable, Hashable, Sendable {

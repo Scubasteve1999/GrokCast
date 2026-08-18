@@ -57,17 +57,39 @@ enum GrokBriefText {
     locationName: String,
     activeAlerts: [String]
   ) -> String? {
-    if let accepted = GrokContentFilter.acceptedText(raw) {
+    if let accepted = GrokContentFilter.acceptedText(visible(raw)) {
       return accepted
     }
     return GrokContentFilter.acceptedText(
-      LocalWeatherBrief.make(
-        weather: weather,
-        unit: unit,
-        locationName: locationName,
-        activeAlerts: activeAlerts
+      visible(
+        LocalWeatherBrief.make(
+          weather: weather,
+          unit: unit,
+          locationName: locationName,
+          activeAlerts: activeAlerts
+        )
       )
     )
+  }
+
+  /// User-facing Today's Take: drop pipeline tags, keep weather meaning.
+  static func visible(_ text: String) -> String {
+    var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    let prefix = "Forecast-only take:"
+    if let range = result.range(of: prefix, options: [.caseInsensitive, .anchored]) {
+      result = String(result[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+    }
+    result = result.replacingOccurrences(
+      of: "SEVERE CONTEXT", with: "Severe weather", options: .caseInsensitive)
+    result = result.replacingOccurrences(
+      of: #"\bMD\s*#?\s*\d+\b"#,
+      with: "storm discussion",
+      options: [.regularExpression, .caseInsensitive]
+    )
+    while result.contains("  ") {
+      result = result.replacingOccurrences(of: "  ", with: " ")
+    }
+    return result.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }
 

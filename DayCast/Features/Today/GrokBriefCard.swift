@@ -41,7 +41,7 @@ struct GrokBriefCard: View {
       } else if hiddenThisBrief {
         hiddenBriefBody
       } else if let briefText {
-        Text(briefText)
+        Text(GrokBriefText.visible(briefText))
           .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .lineLimit(isExpanded ? nil : (presentation == .figma ? 6 : 3))

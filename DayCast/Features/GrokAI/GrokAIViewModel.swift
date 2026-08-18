@@ -552,7 +552,7 @@ final class GrokAIViewModel {
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
       Active alerts: \(alertLine.isEmpty ? "none" : alertLine).
-      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
+      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags. Do not use internal labels such as "Forecast-only take", "SEVERE CONTEXT", or MD numbers.
       """
 
     let raw: String

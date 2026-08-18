@@ -72,7 +72,29 @@ final class GrokContentFilterTests: XCTestCase {
     )
     XCTAssertNotNil(finalized)
     XCTAssertEqual(GrokContentFilter.screen(finalized!), .allowed)
-    XCTAssertTrue(finalized!.contains("Forecast-only take"))
+    XCTAssertFalse(finalized!.localizedCaseInsensitiveContains("Forecast-only take"))
+    XCTAssertTrue(finalized!.contains("Test City"))
+  }
+
+  func testVisibleTakeDropsPipelineTagsAndKeepsWeatherMeaning() {
+    let raw =
+      "Forecast-only take: Seattle is 72° and clear. SEVERE CONTEXT MD 2020 notes damaging wind."
+    let visible = GrokBriefText.visible(raw)
+    XCTAssertFalse(visible.localizedCaseInsensitiveContains("Forecast-only take"))
+    XCTAssertFalse(visible.contains("MD 2020"))
+    XCTAssertFalse(visible.contains("SEVERE CONTEXT"))
+    XCTAssertTrue(visible.contains("Seattle is 72°"))
+    XCTAssertTrue(visible.localizedCaseInsensitiveContains("damaging wind"))
+    XCTAssertTrue(visible.localizedCaseInsensitiveContains("storm discussion"))
+  }
+
+  func testMesoscaleDiscussionTodayLineDropsMDNumber() {
+    let numbered = SPCMesoscaleDiscussion(
+      id: "1", number: "MD 2020", info: "Damaging wind possible this afternoon.", linkHTML: nil)
+    XCTAssertEqual(numbered.todayCardLine, "Damaging wind possible this afternoon.")
+    let bare = SPCMesoscaleDiscussion(id: "2", number: "2020", info: nil, linkHTML: nil)
+    XCTAssertEqual(bare.todayCardLine, "Storm Prediction Center update")
+    XCTAssertFalse(bare.todayCardLine.contains("MD"))
   }
 
   func testAlertsSummaryFallbackIsAllowed() {

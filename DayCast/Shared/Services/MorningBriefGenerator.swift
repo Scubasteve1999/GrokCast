@@ -36,7 +36,7 @@ enum GrokBriefCache {
     // Legacy entries without a weather token — force refresh against live conditions.
     guard let savedToken, savedToken == refreshToken(for: store) else { return nil }
 
-    return text
+    return GrokBriefText.visible(text)
   }
 
   static func save(_ text: String, for store: WeatherStore) {
@@ -75,7 +75,7 @@ enum LocalWeatherBrief {
     now: Date = Date()
   ) -> String {
     let current =
-      "Forecast-only take: \(locationName) is \(unit.format(weather.currentTemp)) and \(weather.conditionText.lowercased()), with a high of \(unit.formatShort(weather.high)) and low of \(unit.formatShort(weather.low))."
+      "\(locationName) is \(unit.format(weather.currentTemp)) and \(weather.conditionText.lowercased()), with a high of \(unit.formatShort(weather.high)) and low of \(unit.formatShort(weather.low))."
 
     let outfit = outfitGuidance(
       feelsLike: weather.feelsLike,
@@ -216,7 +216,7 @@ enum MorningBriefGenerator {
       Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
       Precip chance now: \(weather.precipitationChance)%.
       Active alerts: \(alerts.isEmpty ? "none" : alerts).\(severeBlock)\(shortTermBlock)
-      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags.
+      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags. Do not use internal labels such as "Forecast-only take", "SEVERE CONTEXT", or MD numbers.
       """
 
     do {

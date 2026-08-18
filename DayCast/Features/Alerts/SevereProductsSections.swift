@@ -143,7 +143,7 @@ struct SevereContextCard: View {
         Image(systemName: "exclamationmark.triangle.fill")
           .font(DesignTokens.Typography.metric())
           .foregroundStyle(DesignTokens.Palette.warning)
-        Text("SEVERE CONTEXT")
+        Text("Severe weather")
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer()
@@ -156,7 +156,7 @@ struct SevereContextCard: View {
       }
 
       if let md = context.mesoscaleDiscussions.first {
-        Text(md.title + (md.detailLine.map { " — \($0)" } ?? ""))
+        Text(md.todayCardLine)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .lineLimit(2)
