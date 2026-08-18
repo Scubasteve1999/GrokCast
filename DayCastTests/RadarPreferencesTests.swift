@@ -30,6 +30,17 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertLessThan(RadarColorScheme.vibrant.rasterHueRotate, 0)
   }
 
+  func testTodayRadarPreviewUsesXweatherNotRainViewer() {
+    guard XweatherRadarService.mapsAuthConfigured else {
+      XCTAssertNil(RadarPreviewSource.latestLiveTileTemplate())
+      return
+    }
+    let template = RadarPreviewSource.latestLiveTileTemplate()
+    XCTAssertNotNil(template)
+    XCTAssertTrue(template?.contains("xweather.com") == true)
+    XCTAssertFalse(template?.contains("rainviewer") == true)
+  }
+
   func testMapsGLRadarPaletteIsTransparentAtZero() {
     let first = MapsGLRadarPalette.reflectivityStops.first
     XCTAssertEqual(first?.dbz, 0)

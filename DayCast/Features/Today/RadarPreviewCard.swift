@@ -20,7 +20,7 @@ struct RadarPreviewCard: View {
       RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
         .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
     )
-    .task { await loadLatestRadarFrame() }
+    .task(id: store.currentLocation?.id) { await loadLatestRadarFrame() }
   }
 
   private var radarMapSection: some View {
@@ -86,10 +86,21 @@ struct RadarPreviewCard: View {
   }
 
   private func loadLatestRadarFrame() async {
-    let live = await RainViewerRadarService.loadLiveFrames()
-    if let latest = live.last, let template = latest.tileURLTemplates.first {
-      radarTileTemplate = template
+    radarTileTemplate = RadarPreviewSource.latestLiveTileTemplate()
+  }
+}
+
+/// Today’s snapshot uses the same Xweather live mosaic as Radar. RainViewer’s
+/// public JSON is dead, so a RainViewer preview would stay blank in a storm.
+enum RadarPreviewSource {
+  static func latestLiveTileTemplate() -> String? {
+    guard XweatherRadarService.mapsAuthConfigured else { return nil }
+    guard let frame = XweatherRadarService.loadRecentFrames(maxFrames: 1).last else {
+      return nil
     }
+    return XweatherRadarService.tileURLs(
+      layer: frame.layer, offset: frame.offset, retina: false
+    )?.first
   }
 }
 
@@ -101,7 +112,7 @@ private struct RadarSnapshotMap: UIViewRepresentable {
     let mapView = MKMapView()
     mapView.isUserInteractionEnabled = false
     mapView.showsUserLocation = false
-    mapView.mapType = .mutedStandard
+    mapView.mapType = .hybrid
     mapView.overrideUserInterfaceStyle = .dark
     mapView.pointOfInterestFilter = .excludingAll
     mapView.delegate = context.coordinator
