@@ -97,8 +97,33 @@ final class RadarTimelineTests: XCTestCase {
 
   func testForecastLabelNilAnchorReturnsDisplayTime() {
     let frame = makeFrame(timestamp: Date(timeIntervalSince1970: 0))
-    // displayTime is locale-dependent, so just check it doesn't crash and is non-empty.
-    XCTAssertFalse(frame.forecastLabel(anchor: nil).isEmpty)
+    XCTAssertFalse(
+      frame.forecastLabel(anchor: nil, timeZone: TimeZone(identifier: "UTC")!).isEmpty)
+  }
+
+  func testLiveFrameClockUsesCityTimezoneNotDevice() {
+    var utc = Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(secondsFromGMT: 0)!
+    let date = utc.date(
+      from: DateComponents(year: 2026, month: 8, day: 18, hour: 18, minute: 40))!
+    let chicago = TimeZone(identifier: "America/Chicago")!
+    let losAngeles = TimeZone(identifier: "America/Los_Angeles")!
+
+    XCTAssertEqual(
+      RadarDataset.displayTimeString(from: date, timeZone: chicago),
+      "1:40 PM")
+    XCTAssertEqual(
+      RadarDataset.displayTimeString(from: date, timeZone: losAngeles),
+      "11:40 AM")
+
+    var timeline = RadarTimeline()
+    timeline.live = [makeFrame(timestamp: date)]
+    XCTAssertEqual(
+      timeline.activeFrameLabels(showingFuture: false, timeZone: losAngeles),
+      ["11:40 AM"])
+    XCTAssertEqual(
+      timeline.activeFrameLabels(showingFuture: false, timeZone: chicago),
+      ["1:40 PM"])
   }
 
   func testForecastLabelAtOrBeforeAnchorReturnsNow() {

@@ -50,8 +50,8 @@ struct RadarFrame: Equatable {
     }
   }
 
-  func forecastLabel(anchor: Date?) -> String {
-    guard let anchor else { return displayTime }
+  func forecastLabel(anchor: Date?, timeZone: TimeZone = .current) -> String {
+    guard let anchor else { return displayTime(timeZone: timeZone) }
     let minutes = Int(timestamp.timeIntervalSince(anchor) / 60)
     if minutes <= 0 { return "Now" }
     if minutes < 60 { return "+\(minutes)m" }
@@ -61,14 +61,16 @@ struct RadarFrame: Equatable {
     return "+\(hours)h \(rem)m"
   }
 
-  var displayTime: String {
-    RadarDataset.displayTimeString(from: timestamp)
+  func displayTime(timeZone: TimeZone) -> String {
+    RadarDataset.displayTimeString(from: timestamp, timeZone: timeZone)
   }
 
-  func timelineLabel(showingFuture: Bool, forecastAnchor: Date?) -> String {
+  func timelineLabel(
+    showingFuture: Bool, forecastAnchor: Date?, timeZone: TimeZone
+  ) -> String {
     if showingFuture {
-      return forecastLabel(anchor: forecastAnchor)
+      return forecastLabel(anchor: forecastAnchor, timeZone: timeZone)
     }
-    return RadarDataset.displayTimeString(from: timestamp)
+    return RadarDataset.displayTimeString(from: timestamp, timeZone: timeZone)
   }
 }

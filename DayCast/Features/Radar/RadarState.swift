@@ -180,8 +180,11 @@ final class RadarState {
 
   var currentFrameDate: Date? { currentFrame?.timestamp }
 
+  /// Selected city's timezone (Open-Meteo `timezone=auto`), same as Hourly.
+  var displayTimeZone: TimeZone = .current
+
   var activeFrameLabels: [String] {
-    timeline.activeFrameLabels(showingFuture: showsFuture)
+    timeline.activeFrameLabels(showingFuture: showsFuture, timeZone: displayTimeZone)
   }
 
   var currentFrameDisplayTime: String {
@@ -192,7 +195,8 @@ final class RadarState {
       let idx = min(max(currentIndex, 0), labels.count - 1)
       return labels[idx]
     }
-    return frame.timelineLabel(showingFuture: false, forecastAnchor: nil)
+    return frame.timelineLabel(
+      showingFuture: false, forecastAnchor: nil, timeZone: displayTimeZone)
   }
 
   var statusFooterContent: RadarStatusFooter {

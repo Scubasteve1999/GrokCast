@@ -46,6 +46,10 @@ struct RadarView: View {
           radarState.presentLiveNow()
         }
       }
+      .task(id: store.displayedWeather?.timezoneIdentifier) {
+        radarState.displayTimeZone =
+          store.displayedWeather?.locationTimeZone ?? .current
+      }
       .task(id: store.currentLocation?.id) {
         fireStore.refresh(around: selectedMapCenter)
       }

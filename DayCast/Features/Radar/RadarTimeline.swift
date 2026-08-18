@@ -29,14 +29,14 @@ struct RadarTimeline: Equatable {
     }
   }
 
-  func activeFrameLabels(showingFuture: Bool) -> [String] {
+  func activeFrameLabels(showingFuture: Bool, timeZone: TimeZone) -> [String] {
     let frames = frames(showingFuture: showingFuture)
     guard !frames.isEmpty else { return [] }
     if showingFuture {
       return futureRelativeLabels(count: frames.count)
     }
     return frames.map {
-      $0.timelineLabel(showingFuture: false, forecastAnchor: nil)
+      $0.timelineLabel(showingFuture: false, forecastAnchor: nil, timeZone: timeZone)
     }
   }
 }
