@@ -108,6 +108,19 @@ enum CompactTab: String, CaseIterable, Identifiable {
       return weatherTab == selection
     }
   }
+
+  /// Compact `TabView` may only have these five pages. Extra destinations
+  /// (Storm Spotter, Locations, Settings) share the More page so UIKit
+  /// never installs its own More navigation stack and back button.
+  static func primary(for tab: WeatherStore.Tab) -> CompactTab {
+    switch tab {
+    case .today: .today
+    case .forecast: .forecast
+    case .radar: .radar
+    case .alerts: .alerts
+    case .grok, .locations, .settings: .more
+    }
+  }
 }
 
 extension WeatherStore.Tab {

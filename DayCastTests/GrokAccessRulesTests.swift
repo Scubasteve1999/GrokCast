@@ -58,6 +58,16 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertNil(CompactTab.more.weatherTab)
   }
 
+  func testCompactPrimaryTabDoesNotCreateASixthPage() {
+    XCTAssertEqual(CompactTab.primary(for: .today), .today)
+    XCTAssertEqual(CompactTab.primary(for: .forecast), .forecast)
+    XCTAssertEqual(CompactTab.primary(for: .radar), .radar)
+    XCTAssertEqual(CompactTab.primary(for: .alerts), .alerts)
+    XCTAssertEqual(CompactTab.primary(for: .grok), .more)
+    XCTAssertEqual(CompactTab.primary(for: .locations), .more)
+    XCTAssertEqual(CompactTab.primary(for: .settings), .more)
+  }
+
   // MARK: - Tier resolution
 
   func testProRoutesThroughTheProxyEvenWithAnOwnKey() {
