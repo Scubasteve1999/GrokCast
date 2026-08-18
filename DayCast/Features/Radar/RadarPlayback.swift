@@ -58,7 +58,7 @@ final class RadarPlayback {
   /// frame, so playback looks frozen. Caps every mode to a watchable cadence.
   private static let maxScreenInterval: TimeInterval = 3.0
 
-  /// Live open/re-entry: last index is the newest scan. Playing still wraps to 0.
+  /// Live open/re-entry: last index is the newest scan. Play does not call this.
   func landOnNewestLiveFrame(count: Int) {
     guard count > 0 else {
       currentIndex = 0
@@ -67,14 +67,23 @@ final class RadarPlayback {
     currentIndex = count - 1
   }
 
+  /// Play from the newest scan starts at the oldest frame and walks toward now.
+  /// Mid-loop resume (not on newest) keeps the current frame.
+  static func playheadIndexForStart(currentIndex: Int, count: Int) -> Int {
+    guard count > 1 else { return max(0, currentIndex) }
+    if currentIndex >= count - 1 { return 0 }
+    return currentIndex
+  }
+
   func start() {
     let count = frameCount()
     guard count > 1 else {
       isAnimating = false
       return
     }
-    // Stay on the current frame (usually newest after load). Looping wraps in
-    // `advance()` — do not jump to the oldest frame when opening / resuming Live.
+    // Play from newest used to sit one tick on now, then wrap — a 2-hour jump
+    // that looked like Play broke radar. Begin the loop at the oldest scan.
+    currentIndex = Self.playheadIndexForStart(currentIndex: currentIndex, count: count)
     timer?.invalidate()
     completedLoops = 0
     isAnimating = true

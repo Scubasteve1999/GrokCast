@@ -250,8 +250,8 @@ final class RadarState {
   func stop() { playback.stop() }
 
   /// Tab entry and resume: newest live scan so SCAN is about now, not a 2-hour-old
-  /// loop start. Leaves playback paused — Play still walks the loop, and SCAN
-  /// keeps aging whichever frame is on screen.
+  /// loop start. Leaves playback paused — Play from newest starts at the oldest
+  /// frame and walks toward now. SCAN still ages whichever frame is on screen.
   func presentLiveNow() {
     guard !showsFuture, timeline.hasLive else { return }
     playback.landOnNewestLiveFrame(count: timeline.live.count)

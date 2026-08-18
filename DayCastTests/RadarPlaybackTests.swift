@@ -35,21 +35,40 @@ final class RadarPlaybackTests: XCTestCase {
     XCTAssertEqual(playback.currentIndex, 17)
   }
 
-  func testStartAfterLandingOnNewestKeepsTheNewestFrame() {
-    let playback = makePlayback(frames: 18)
-    playback.currentIndex = 0
-    playback.landOnNewestLiveFrame(count: 18)
-    playback.start()
-    XCTAssertEqual(playback.currentIndex, 17, "open must not jump back to the oldest scan")
-    XCTAssertTrue(playback.isAnimating)
+  func testPlayheadIndexForStartRewindsNewestAndKeepsMidLoop() {
+    XCTAssertEqual(RadarPlayback.playheadIndexForStart(currentIndex: 17, count: 18), 0)
+    XCTAssertEqual(RadarPlayback.playheadIndexForStart(currentIndex: 5, count: 18), 5)
+    XCTAssertEqual(RadarPlayback.playheadIndexForStart(currentIndex: 0, count: 18), 0)
+    XCTAssertEqual(RadarPlayback.playheadIndexForStart(currentIndex: 0, count: 1), 0)
   }
 
-  func testPlayAfterLandingOnNewestStillWalksTheLoop() {
+  func testStartFromNewestBeginsTheLoopAtOldest() {
     let playback = makePlayback(frames: 18)
     playback.landOnNewestLiveFrame(count: 18)
+    XCTAssertEqual(playback.currentIndex, 17)
+
     playback.start()
+    XCTAssertEqual(playback.currentIndex, 0, "Play from newest must not sit on now then jump")
+    XCTAssertTrue(playback.isAnimating)
+
     playback.advance()
-    XCTAssertEqual(playback.currentIndex, 0, "Play still wraps so the loop can run")
+    XCTAssertEqual(playback.currentIndex, 1, "the loop walks toward now")
+  }
+
+  func testStartFromMidLoopKeepsTheCurrentFrame() {
+    let playback = makePlayback(frames: 18)
+    playback.currentIndex = 7
+    playback.start()
+    XCTAssertEqual(playback.currentIndex, 7)
+    playback.advance()
+    XCTAssertEqual(playback.currentIndex, 8)
+  }
+
+  func testLandOnNewestWithoutStartStaysOnNewest() {
+    let playback = makePlayback(frames: 18)
+    playback.landOnNewestLiveFrame(count: 18)
+    XCTAssertEqual(playback.currentIndex, 17)
+    XCTAssertFalse(playback.isAnimating)
   }
 
   func testLandOnNewestWithNoFramesStaysAtZero() {
@@ -104,30 +123,27 @@ final class RadarPlaybackTests: XCTestCase {
     runUntilStopped(playback)
     XCTAssertFalse(playback.isAnimating)
 
-    // `start()` deliberately keeps the current frame, and the cap leaves that on the
-    // last one — so rewind first to measure the allowance rather than the position.
-    playback.currentIndex = 0
+    // Cap leaves the playhead on newest. Play from there starts a full loop
+    // at the oldest frame — do not measure from the resting newest scan.
     playback.start()
+    XCTAssertEqual(playback.currentIndex, 0)
     XCTAssertTrue(playback.isAnimating)
 
-    // Tapping play again must give a full allowance, not immediately re-stop.
     let steps = runUntilStopped(playback)
     XCTAssertEqual(steps, 9 * frames)
   }
 
-  func testResumingAtTheEndOfALoopDoesNotGrantAnExtraPass() {
+  func testStartFromNewestAfterCapBeginsAFullLoop() {
     let frames = 3
     let playback = makePlayback(frames: frames)
     playback.start()
     runUntilStopped(playback)
+    XCTAssertEqual(playback.currentIndex, frames - 1)
 
-    // Resuming where the cap left off (the final frame) means the next advance
-    // immediately completes a loop, so the fresh allowance is 9 loops from there —
-    // not 9 full passes plus the partial one already on screen.
     playback.start()
+    XCTAssertEqual(playback.currentIndex, 0)
     let steps = runUntilStopped(playback)
-
-    XCTAssertEqual(steps, 1 + (8 * frames))
+    XCTAssertEqual(steps, 9 * frames)
   }
 
   func testStopLeavesTheIndexAlone() {
