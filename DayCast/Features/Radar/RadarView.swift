@@ -176,9 +176,6 @@ struct RadarView: View {
     .overlay(alignment: .topLeading) {
       if store.selectedTab == .radar {
         VStack(alignment: .leading, spacing: 8) {
-          if !chaseDecluttered {
-            radarModeBadge
-          }
           // Keep offline cue even when decluttered — it's safety-critical chrome.
           if store.isOffline {
             Text("Offline — showing last loaded tiles if available")
@@ -212,7 +209,8 @@ struct RadarView: View {
         radarState: radarState,
         opacity: $radarOpacity,
         recenterDefaultTrigger: $recenterDefaultTrigger,
-        recenterUserCoordinate: $recenterUserCoordinate
+        recenterUserCoordinate: $recenterUserCoordinate,
+        isDecluttered: $chaseDecluttered
       )
       .padding(.horizontal)
       .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
@@ -230,16 +228,6 @@ struct RadarView: View {
         .allowsHitTesting(false)
       }
     }
-  }
-
-  private var radarModeBadge: some View {
-    Text(radarState.showsFuture ? "FUTURE" : "LIVE")
-      .font(DesignTokens.Typography.micro())
-      .foregroundStyle(DesignTokens.Palette.accent)
-      .padding(.horizontal, DesignTokens.Spacing.space12)
-      .padding(.vertical, 6)
-      .background(DesignTokens.Palette.accent.opacity(0.25), in: Capsule())
-      .accessibilityIdentifier(DayCastAccessibility.Radar.liveBadge)
   }
 
   private func runModeTransitionIfNeeded() async {

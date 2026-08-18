@@ -125,6 +125,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var appliedOpacity: Double?
     private var appliedSaturation: Double?
     private var appliedContrast: Double?
+    private var appliedBrightnessMin: Double?
+    private var appliedHueRotate: Double?
+    private var appliedEmissive: Double?
 
     private var pendingDesiredState: DesiredRasterState?
     private var crossfadeTask: Task<Void, Never>?
@@ -138,6 +141,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       var opacity: Double
       var saturation: Double
       var contrast: Double
+      var brightnessMin: Double
+      var hueRotate: Double
+      var emissive: Double
       var showsFuture: Bool
       var isAnimating: Bool
       var visible: Bool
@@ -154,6 +160,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         opacity: 0,
         saturation: 0,
         contrast: 0,
+        brightnessMin: 0,
+        hueRotate: 0,
+        emissive: 1,
         showsFuture: false,
         isAnimating: false,
         visible: false,
@@ -275,27 +284,37 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       let isFuture = radarState.showsFuture
       // Xweather live + forecast use @2x retina templates (512px).
       let isXweatherRetina = frame.provider == .xweather
+      // Longer fades than the tile cadence so frames blend instead of popping.
       let fadeDuration: Double
       if radarState.isAnimating {
-        fadeDuration = isFuture ? 450 : 400
+        fadeDuration = isFuture ? 850 : 700
       } else if isFuture {
-        fadeDuration = 250
+        fadeDuration = 400
       } else {
-        fadeDuration = 180
+        fadeDuration = 320
       }
 
       // IEM single-site Super-Res/SRV ship NWS palettes with clear-air clutter and
-      // range-fold purple at the scan edge. Vibrant sat/contrast makes that noise
-      // look broken — keep paint neutral for site products.
+      // range-fold purple at the scan edge. Glow paint makes that noise look broken.
       let useNeutralPaint = radarState.selectedProduct.isSiteProduct && frame.provider == .iem
+      let scheme = radarState.colorScheme
       let saturation: Double
       let contrast: Double
+      let brightnessMin: Double
+      let hueRotate: Double
+      let emissive: Double
       if useNeutralPaint {
         saturation = 0
         contrast = 0
+        brightnessMin = 0
+        hueRotate = 0
+        emissive = 1
       } else {
-        saturation = radarState.colorScheme.rasterSaturation + (isFuture ? 0.15 : 0.0)
-        contrast = radarState.colorScheme.rasterContrast + (isFuture ? 0.08 : 0.0)
+        saturation = scheme.rasterSaturation
+        contrast = scheme.rasterContrast
+        brightnessMin = scheme.rasterBrightnessMin
+        hueRotate = scheme.rasterHueRotate
+        emissive = scheme.rasterEmissiveStrength
       }
 
       return DesiredRasterState(
@@ -306,6 +325,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         opacity: opacity,
         saturation: saturation,
         contrast: contrast,
+        brightnessMin: brightnessMin,
+        hueRotate: hueRotate,
+        emissive: emissive,
         showsFuture: isFuture,
         isAnimating: radarState.isAnimating,
         visible: true,
@@ -423,10 +445,12 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
           var layer = RasterLayer(id: slot.layerId, source: slot.sourceId)
           layer.rasterFadeDuration = .constant(desired.fadeDuration)
-          layer.rasterEmissiveStrength = .constant(1)
+          layer.rasterEmissiveStrength = .constant(desired.emissive)
           layer.rasterOpacity = .constant(slot == frontSlot ? desired.opacity : 0)
           layer.rasterSaturation = .constant(desired.saturation)
           layer.rasterContrast = .constant(desired.contrast)
+          layer.rasterBrightnessMin = .constant(desired.brightnessMin)
+          layer.rasterHueRotate = .constant(desired.hueRotate)
           layer.rasterResampling = .constant(.linear)
           try mapView.mapboxMap.addLayer(layer)
         }
@@ -438,6 +462,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         appliedOpacity = desired.opacity
         appliedSaturation = desired.saturation
         appliedContrast = desired.contrast
+        appliedBrightnessMin = desired.brightnessMin
+        appliedHueRotate = desired.hueRotate
+        appliedEmissive = desired.emissive
       } catch {
         radarLog("[Mapbox] Dual layer setup failed: \(error)")
         resetRasterTracking()
@@ -460,6 +487,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       appliedOpacity = desired.opacity
       appliedSaturation = desired.saturation
       appliedContrast = desired.contrast
+      appliedBrightnessMin = desired.brightnessMin
+      appliedHueRotate = desired.hueRotate
+      appliedEmissive = desired.emissive
 
       #if DEBUG
       let zoom = Int(mapView.mapboxMap.cameraState.zoom.rounded())
@@ -503,7 +533,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         setLayerOpacity(mapView: mapView, slot: opacitySlot, opacity: desired.opacity)
         appliedOpacity = desired.opacity
       }
-      if appliedSaturation != desired.saturation || appliedContrast != desired.contrast {
+      let paintChanged =
+        appliedSaturation != desired.saturation
+        || appliedContrast != desired.contrast
+        || appliedBrightnessMin != desired.brightnessMin
+        || appliedHueRotate != desired.hueRotate
+        || appliedEmissive != desired.emissive
+      if paintChanged {
         for slot in [BufferSlot.a, BufferSlot.b] {
           guard mapView.mapboxMap.layerExists(withId: slot.layerId) else { continue }
           try? mapView.mapboxMap.setLayerProperty(
@@ -516,9 +552,27 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
             property: "raster-contrast",
             value: desired.contrast
           )
+          try? mapView.mapboxMap.setLayerProperty(
+            for: slot.layerId,
+            property: "raster-brightness-min",
+            value: desired.brightnessMin
+          )
+          try? mapView.mapboxMap.setLayerProperty(
+            for: slot.layerId,
+            property: "raster-hue-rotate",
+            value: desired.hueRotate
+          )
+          try? mapView.mapboxMap.setLayerProperty(
+            for: slot.layerId,
+            property: "raster-emissive-strength",
+            value: desired.emissive
+          )
         }
         appliedSaturation = desired.saturation
         appliedContrast = desired.contrast
+        appliedBrightnessMin = desired.brightnessMin
+        appliedHueRotate = desired.hueRotate
+        appliedEmissive = desired.emissive
       }
     }
 
@@ -610,6 +664,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       appliedOpacity = nil
       appliedSaturation = nil
       appliedContrast = nil
+      appliedBrightnessMin = nil
+      appliedHueRotate = nil
+      appliedEmissive = nil
     }
   }
 }

@@ -9,6 +9,7 @@ struct RadarControlPanel: View {
   @Binding var opacity: Double
   @Binding var recenterDefaultTrigger: UUID?
   @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
+  @Binding var isDecluttered: Bool
 
   @State private var showExplainRadar = false
   @State private var showDisplayOptions = false
@@ -27,70 +28,30 @@ struct RadarControlPanel: View {
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
-      if !prefersFigmaHUD {
-        collapseHandle
-      }
-
-      figmaHeaderRow
-
-      if !prefersFigmaHUD, let updatedText {
-        HStack {
-          Text(updatedText)
-            .font(DesignTokens.Typography.micro())
-            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-          Spacer()
-        }
-      }
-
-      if prefersFigmaHUD {
-        RadarTimelineScrubber(radarState: radarState, layout: .figma)
-        compactPlaybackRow
-        compactOpacityRow
-        if radarState.showRadarOverlay {
-          RadarMiniLegend(
-            showsVelocity: radarState.selectedProduct.isVelocityProduct
-              && !radarState.showsFuture
-          )
-        }
-        // Phone layout previously had no product chips — SRV from the chase HUD was one-way.
-        productChips
-        compactStatusFooter
-      } else {
-        RadarPlaybackControls(
-          radarState: radarState,
-          recenterDefaultTrigger: $recenterDefaultTrigger,
-          recenterUserCoordinate: $recenterUserCoordinate
-        )
-
-        RadarTimelineScrubber(radarState: radarState)
-
-        if !isCollapsed {
-          liveForecastPicker
-          productChips
-          if radarState.showRadarOverlay {
-            RadarMiniLegend(
-              showsVelocity: radarState.selectedProduct.isVelocityProduct
-                && !radarState.showsFuture
-            )
-          }
-          compactStatusFooter
-        }
-      }
+      slimModeRow
+      RadarTimelineScrubber(radarState: radarState, layout: prefersFigmaHUD ? .figma : .standard)
+      compactPlaybackRow
+      compactStatusFooter
     }
-    .padding(prefersFigmaHUD ? DesignTokens.Spacing.space16 : DesignTokens.Spacing.space12)
+    .padding(DesignTokens.Spacing.space12)
     .glassCardStyle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
     .sheet(isPresented: $showDisplayOptions) {
       RadarDisplayOptionsSheet(
         radarState: radarState,
-        opacity: $opacity
+        opacity: $opacity,
+        isDecluttered: $isDecluttered,
+        onExplain: {
+          showDisplayOptions = false
+          showExplainRadar = true
+        }
       )
     }
     .sheet(isPresented: $showExplainRadar) {
       ExplainRadarSheet(
         context: RadarExplainContext(
-          modeLabel: radarState.showsFuture ? "Forecast" : "Live",
+          modeLabel: radarState.showsFuture ? RadarChromeCopy.futureChip : RadarChromeCopy.liveChip,
           frameLabel: currentFrameLabel,
           productName: radarState.selectedProduct.displayName,
           productTechnicalName: radarState.selectedProduct.technicalName,
@@ -105,52 +66,29 @@ struct RadarControlPanel: View {
     }
   }
 
-  private var figmaHeaderRow: some View {
+  /// One mode row: Live / 24-hr plus Layers. Advanced products live in the sheet.
+  private var slimModeRow: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      Image(systemName: "cloud.rain.fill")
-        .font(DesignTokens.Typography.symbol())
-        .foregroundStyle(DesignTokens.Palette.radarAccent)
-      Text("Radar · \(radarState.selectedProduct.displayName)")
-        .font(DesignTokens.Typography.symbol())
-        .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-        .lineLimit(1)
-
-      if !prefersFigmaHUD {
-        Text(sourceBadgeText)
-          .font(DesignTokens.Typography.micro())
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
-          .background(DesignTokens.Palette.radarTrack)
-          .clipShape(Capsule())
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-          .lineLimit(1)
-      }
-
+      liveForecastPicker
       Spacer(minLength: 0)
-
-      if prefersFigmaHUD {
-        liveForecastPicker
-      }
-
       Button {
         Haptic.impact(.light)
         showDisplayOptions = true
       } label: {
-        Image(systemName: "slider.horizontal.3")
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        HStack(spacing: 4) {
+          Image(systemName: "slider.horizontal.3")
+            .font(DesignTokens.Typography.micro())
+          Text(RadarChromeCopy.layers)
+            .font(DesignTokens.Typography.micro())
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(DesignTokens.Palette.radarTrack)
+        .clipShape(Capsule())
+        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
       }
-      .accessibilityLabel("Radar display options")
-
-      Button {
-        Haptic.impact(.light)
-        showExplainRadar = true
-      } label: {
-        Image(systemName: "sparkles")
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.radarAccent)
-      }
-      .accessibilityLabel("Explain radar with AI")
+      .buttonStyle(.plain)
+      .accessibilityLabel(RadarChromeCopy.layers)
     }
   }
 
@@ -261,7 +199,7 @@ struct RadarControlPanel: View {
         guard radarState.hasFutureFrames else { return }
         radarState.setFutureMode(false)
       } label: {
-        Text("Live")
+        Text(RadarChromeCopy.liveChip)
           .font(DesignTokens.Typography.micro())
           .padding(.horizontal, 10)
           .padding(.vertical, 3)
@@ -275,14 +213,14 @@ struct RadarControlPanel: View {
           )
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("Live radar")
+      .accessibilityLabel(RadarChromeCopy.liveAccessibility)
       .accessibilityAddTraits(!radarState.showsFuture ? .isSelected : [])
 
       Button {
         guard radarState.hasFutureFrames else { return }
         radarState.setFutureMode(true)
       } label: {
-        Text("Forecast")
+        Text(RadarChromeCopy.futureChip)
           .font(DesignTokens.Typography.micro())
           .padding(.horizontal, 10)
           .padding(.vertical, 3)
@@ -296,7 +234,7 @@ struct RadarControlPanel: View {
           )
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("Forecast radar")
+      .accessibilityLabel(RadarChromeCopy.futureAccessibility)
       .accessibilityAddTraits(radarState.showsFuture ? .isSelected : [])
       .disabled(!radarState.hasFutureFrames)
     }
@@ -527,12 +465,33 @@ private struct RadarDisplayOptionsSheet: View {
   @Environment(\.dismiss) private var dismiss
   @Bindable var radarState: RadarState
   @Binding var opacity: Double
+  @Binding var isDecluttered: Bool
+  var onExplain: () -> Void
 
   var body: some View {
     NavigationStack {
       Form {
         Section {
           Toggle("Auto-resume after scrub", isOn: $radarState.autoResumeAfterScrub)
+          Toggle("Map only", isOn: $isDecluttered)
+        } footer: {
+          Text("Map only hides this sheet so the radar fills the screen. Scan age stays on.")
+        }
+
+        Section {
+          productRow(.reflectivity)
+          productRow(.superResReflectivity)
+          productRow(.stormRelativeVelocity)
+        } header: {
+          Text("Products")
+        } footer: {
+          Text("Detail rain and storm winds are live NEXRAD only.")
+        }
+
+        Section {
+          Button("Explain radar") {
+            onExplain()
+          }
         }
 
         Section("Colors") {
@@ -596,6 +555,25 @@ private struct RadarDisplayOptionsSheet: View {
 
   private var showsVelocityLegend: Bool {
     radarState.selectedProduct.isVelocityProduct && !radarState.showsFuture
+  }
+
+  private func productRow(_ product: RadarProduct) -> some View {
+    let siteLocked = product.isSiteProduct && (radarState.showsFuture || !radarState.siteProductsAvailable)
+    return Button {
+      Task { await radarState.setProduct(product) }
+    } label: {
+      HStack {
+        Text(product.displayName)
+        Spacer()
+        if radarState.selectedProduct == product {
+          Image(systemName: "checkmark")
+            .foregroundStyle(DesignTokens.Palette.radarAccent)
+        }
+      }
+    }
+    .disabled(siteLocked)
+    .foregroundStyle(siteLocked ? .secondary : DesignTokens.Palette.radarTextPrimary)
+    .accessibilityAddTraits(radarState.selectedProduct == product ? .isSelected : [])
   }
 }
 

@@ -88,7 +88,8 @@ enum RadarTipStore {
 
 /// Client-side color treatment for the Mapbox radar raster layer.
 /// Provider tiles (RainViewer/Xweather/IEM) ship fixed palettes, so schemes
-/// are implemented with Mapbox raster paint properties.
+/// are implemented with Mapbox raster paint properties. We cannot add color
+/// stops the tile does not have — contrast/sat/hue/fade only soften the PNG.
 enum RadarColorScheme: String, CaseIterable {
   case vibrant
   case balanced
@@ -100,19 +101,52 @@ enum RadarColorScheme: String, CaseIterable {
     }
   }
 
-  /// `raster-saturation` (-1...1). Vibrant slightly boosts precip readability.
+  /// `raster-saturation` (-1...1). Glow needs a lift without posterizing.
   var rasterSaturation: Double {
     switch self {
-    case .vibrant: 0.15
-    case .balanced: -0.35
+    case .vibrant: 0.28
+    case .balanced: -0.2
     }
   }
 
-  /// `raster-contrast` (-1...1).
+  /// `raster-contrast` (-1...1). Negative contrast melts the harsh pixel edges.
   var rasterContrast: Double {
     switch self {
-    case .vibrant: 0.08
-    case .balanced: -0.1
+    case .vibrant: -0.22
+    case .balanced: -0.12
     }
   }
+
+  /// `raster-brightness-min` (0...1). Lifts dark greens so light precip glows.
+  var rasterBrightnessMin: Double {
+    switch self {
+    case .vibrant: 0.06
+    case .balanced: 0.02
+    }
+  }
+
+  /// Degrees. Xweather mosaics lean cyan; a small rotate reads closer to TWC green.
+  var rasterHueRotate: Double {
+    switch self {
+    case .vibrant: -18
+    case .balanced: 0
+    }
+  }
+
+  /// `raster-emissive-strength`. >1 makes precip self-lit on a dark/hybrid map.
+  var rasterEmissiveStrength: Double {
+    switch self {
+    case .vibrant: 1.45
+    case .balanced: 1.1
+    }
+  }
+}
+
+/// Phone Radar chrome copy. Live/24-hr are product chips, not a Forecast mode.
+enum RadarChromeCopy {
+  static let liveChip = "Live"
+  static let futureChip = "24-hr"
+  static let layers = "Layers"
+  static let liveAccessibility = "Live radar"
+  static let futureAccessibility = "24-hour radar"
 }

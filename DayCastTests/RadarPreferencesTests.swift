@@ -23,6 +23,20 @@ final class RadarPreferencesTests: XCTestCase {
     super.tearDown()
   }
 
+  func testVibrantPaintSoftensHarshTiles() {
+    XCTAssertLessThan(RadarColorScheme.vibrant.rasterContrast, 0)
+    XCTAssertGreaterThan(RadarColorScheme.vibrant.rasterSaturation, 0)
+    XCTAssertGreaterThan(RadarColorScheme.vibrant.rasterEmissiveStrength, 1)
+    XCTAssertLessThan(RadarColorScheme.vibrant.rasterHueRotate, 0)
+  }
+
+  func testRadarModeChipsAreNotNamedForecast() {
+    XCTAssertEqual(RadarChromeCopy.liveChip, "Live")
+    XCTAssertEqual(RadarChromeCopy.futureChip, "24-hr")
+    XCTAssertFalse(RadarChromeCopy.futureChip.localizedCaseInsensitiveContains("Forecast"))
+    XCTAssertEqual(RadarChromeCopy.layers, "Layers")
+  }
+
   func testDefaultsApplyWhenNothingIsStored() {
     XCTAssertEqual(RadarPreferences.colorScheme, .vibrant)
     XCTAssertEqual(RadarPreferences.baseMapStyle, .satelliteStreets)

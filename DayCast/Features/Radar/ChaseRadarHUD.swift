@@ -120,7 +120,9 @@ struct ChaseRadarHUD: View {
         }
       }
 
-      actionChips
+      if isDecluttered {
+        actionChips
+      }
     }
     .accessibilityElement(children: .contain)
   }
@@ -235,36 +237,21 @@ struct ChaseRadarHUD: View {
 
   // MARK: Action chips
 
+  /// Only shown in Map-only mode so DETAIL/SRV/MAP don't compete with the tab bar.
   private var actionChips: some View {
     HStack(spacing: 8) {
-      if isDecluttered {
-        // Play without expanding the full bottom panel.
-        Button {
-          Haptic.selection()
-          radarState.togglePlayback()
-        } label: {
-          Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-            .font(DesignTokens.Typography.micro())
-            .foregroundStyle(DesignTokens.Palette.radarAccent)
-            .frame(width: 32, height: 28)
-            .background(DesignTokens.Palette.radarCardBackground.opacity(0.92), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
-      } else {
-        productChip(
-          .superResReflectivity,
-          label: "DETAIL",
-          a11yOn: "Exit detail rain",
-          a11yOff: "Detail rain super-resolution"
-        )
-        productChip(
-          .stormRelativeVelocity,
-          label: "SRV",
-          a11yOn: "Exit storm-relative velocity",
-          a11yOff: "Storm-relative velocity"
-        )
+      Button {
+        Haptic.selection()
+        radarState.togglePlayback()
+      } label: {
+        Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
+          .font(DesignTokens.Typography.micro())
+          .foregroundStyle(DesignTokens.Palette.radarAccent)
+          .frame(width: 32, height: 28)
+          .background(DesignTokens.Palette.radarCardBackground.opacity(0.92), in: Capsule())
       }
+      .buttonStyle(.plain)
+      .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
 
       Button {
         Haptic.selection()
@@ -272,7 +259,7 @@ struct ChaseRadarHUD: View {
           isDecluttered.toggle()
         }
       } label: {
-        Text(isDecluttered ? "HUD" : "MAP")
+        Text("HUD")
           .font(DesignTokens.Typography.micro())
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
           .padding(.horizontal, 10)
@@ -280,7 +267,7 @@ struct ChaseRadarHUD: View {
           .background(DesignTokens.Palette.radarCardBackground.opacity(0.92), in: Capsule())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel(isDecluttered ? "Show radar controls" : "Declutter radar")
+      .accessibilityLabel("Show radar controls")
     }
   }
 

@@ -51,7 +51,8 @@ final class RadarPlayback {
   private static let baselineScreenInterval: TimeInterval = 2.8
   private static let referenceDataGap: TimeInterval = 5 * 60
   /// Minimum time a frame stays on screen during playback so tiles can crossfade in.
-  private static let minAnimatingInterval: TimeInterval = 0.45
+  /// Must stay at or above the live animating fade (700ms) or the blend never lands.
+  private static let minAnimatingInterval: TimeInterval = 0.72
   /// Upper bound on a single frame's screen time (before speed). Without this,
   /// wide real gaps — hourly FUTURE frames are 60 min apart — scale to ~30s per
   /// frame, so playback looks frozen. Caps every mode to a watchable cadence.
