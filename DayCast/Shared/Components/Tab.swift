@@ -61,6 +61,69 @@ final class SystemTabBarHiderController: UIViewController {
   }
 }
 
+extension View {
+  /// iOS 26 glass still paints an opaque nav even when SwiftUI asks for
+  /// material. Hide the fill and clear the UIKit appearances so a sky
+  /// behind the stack can show through.
+  func weatherShowsThroughNavigationBar() -> some View {
+    toolbarBackground(.hidden, for: .navigationBar)
+      .toolbarColorScheme(.dark, for: .navigationBar)
+      .background { TransparentNavigationBar() }
+  }
+}
+
+/// Makes the enclosing `UINavigationBar` a clear glass so Today’s weather
+/// plate can paint under the status bar and title.
+struct TransparentNavigationBar: UIViewControllerRepresentable {
+  func makeUIViewController(context: Context) -> TransparentNavigationBarController {
+    TransparentNavigationBarController()
+  }
+
+  func updateUIViewController(
+    _ uiViewController: TransparentNavigationBarController, context: Context
+  ) {
+    uiViewController.clearNavigationBar()
+  }
+}
+
+final class TransparentNavigationBarController: UIViewController {
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    clearNavigationBar()
+  }
+
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    clearNavigationBar()
+  }
+
+  func clearNavigationBar() {
+    guard let bar = enclosingNavigationController()?.navigationBar else { return }
+    let appearance = UINavigationBarAppearance()
+    appearance.configureWithTransparentBackground()
+    appearance.backgroundColor = .clear
+    appearance.backgroundEffect = nil
+    appearance.shadowColor = .clear
+    appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+    bar.standardAppearance = appearance
+    bar.scrollEdgeAppearance = appearance
+    bar.compactAppearance = appearance
+    bar.compactScrollEdgeAppearance = appearance
+    bar.isTranslucent = true
+    bar.backgroundColor = .clear
+  }
+
+  private func enclosingNavigationController() -> UINavigationController? {
+    var current: UIViewController? = parent ?? self
+    while let controller = current {
+      if let nav = controller as? UINavigationController { return nav }
+      if let nav = controller.navigationController { return nav }
+      current = controller.parent
+    }
+    return nil
+  }
+}
+
 enum CompactTab: String, CaseIterable, Identifiable {
   case today
   case forecast

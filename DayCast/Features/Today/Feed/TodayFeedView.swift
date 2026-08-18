@@ -121,7 +121,9 @@ struct TodayFeedView: View {
         .padding(.top, DesignTokens.Spacing.space8)
         .padding(.bottom, DesignTokens.Spacing.space8)
         .frame(maxWidth: .infinity)
-        .background(DesignTokens.Palette.bgPrimary)
+        // Inset stays so Hourly/Daily cannot slide under the chips.
+        // No page-fill / material slab — sky from TodayView shows through.
+        .background(Color.clear)
     }
     .refreshable {
       await refreshAll()

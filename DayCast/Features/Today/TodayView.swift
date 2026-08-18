@@ -24,17 +24,6 @@ struct TodayView: View {
   var body: some View {
     NavigationStack {
       ZStack {
-        WeatherBackgroundLayer(
-          conditionCode: store.displayedWeather?.conditionCode,
-          isDay: store.displayedWeather.map {
-            WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay(
-            timeZone: store.displayedWeather?.locationTimeZone ?? .current
-          ),
-          intensity: .staticOnly,
-          extraOpacity: 1.0
-        )
-
         let status = store.locationService.authorizationStatus
         if !store.hasRequestedLocationPermission {
           firstLaunchWelcome()
@@ -112,11 +101,23 @@ struct TodayView: View {
           .padding(.bottom, bottomTabClearance)
         }
       }
+      .background {
+        WeatherBackgroundLayer(
+          conditionCode: store.displayedWeather?.conditionCode,
+          isDay: store.displayedWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          } ?? WeatherBackgroundView.inferredIsDay(
+            timeZone: store.displayedWeather?.locationTimeZone ?? .current
+          ),
+          intensity: .staticOnly,
+          extraOpacity: 1.0
+        )
+        .ignoresSafeArea()
+      }
       .navigationTitle("Today")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarTitleDisplayMode(.inline)
-      .toolbarBackground(DesignTokens.Palette.bgPrimary, for: .navigationBar)
-      .toolbarBackground(.visible, for: .navigationBar)
+      .weatherShowsThroughNavigationBar()
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           if weather != nil {
