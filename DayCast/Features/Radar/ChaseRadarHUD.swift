@@ -108,14 +108,36 @@ enum ChaseRadarHUDLogic {
       false
     )
   }
+
+  /// City before the comma so the strip stays one line. Empty → “This location”.
+  static func hudCityLine(locationName: String?) -> String {
+    guard let raw = locationName?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !raw.isEmpty
+    else {
+      return "This location"
+    }
+    if let comma = raw.firstIndex(of: ",") {
+      let city = raw[..<comma].trimmingCharacters(in: .whitespaces)
+      if !city.isEmpty { return String(city) }
+    }
+    return raw
+  }
+
+  /// What the map is showing — Rain / Detail rain / Storm winds, not XWEATHER.
+  static func lookingAtLine(product: RadarProduct, showsFuture: Bool) -> String {
+    let name = product.displayName
+    if showsFuture { return "24-hr · \(name)" }
+    return name
+  }
 }
 
 // MARK: - View
 
-/// Compact chase strip: scan age, site/product, coords, nearest alert, product + declutter.
+/// Compact strip: SCAN age, city, what you’re looking at, nearest alert.
 struct ChaseRadarHUD: View {
   var radarState: RadarState
   let mapCenter: CLLocationCoordinate2D
+  var cityName: String?
   let alerts: [NWSAlert]
   let day1Summary: String?
   @Binding var isDecluttered: Bool
@@ -164,13 +186,20 @@ struct ChaseRadarHUD: View {
         .font(DesignTokens.Typography.micro().monospaced())
         .foregroundStyle(scanAgeColor(at: now))
 
-      Text(siteProductLine)
-        .font(DesignTokens.Typography.micro().monospaced())
+      Text(ChaseRadarHUDLogic.hudCityLine(locationName: cityName))
+        .font(DesignTokens.Typography.micro())
         .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+        .lineLimit(1)
 
-      Text(coordLine)
-        .font(DesignTokens.Typography.micro().monospaced())
-        .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.75))
+      Text(
+        ChaseRadarHUDLogic.lookingAtLine(
+          product: radarState.selectedProduct,
+          showsFuture: radarState.showsFuture
+        )
+      )
+      .font(DesignTokens.Typography.micro())
+      .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.85))
+      .lineLimit(1)
 
       if let alert = nearestAlertPresentation {
         Text(alert.text)
@@ -278,33 +307,6 @@ struct ChaseRadarHUD: View {
       isAnimating: radarState.isAnimating,
       showsFuture: radarState.showsFuture
     )
-  }
-
-  private var siteProductLine: String {
-    // shortCode, not displayName — "STORM WINDS" overflows the compact strip.
-    let product = radarState.selectedProduct.shortCode
-    // Prefer the site actually serving tiles (neighbor fallback) over nearest-only.
-    if radarState.selectedProduct.isSiteProduct {
-      if let serving = radarState.activeSiteProductSite {
-        if let home = radarState.nearestSite, home.id != serving.id {
-          return "\(serving.id) · \(product)*"
-        }
-        return "\(serving.id) · \(product)"
-      }
-      if let site = radarState.nearestSite {
-        return "\(site.id) · \(product)"
-      }
-    }
-    if radarState.showsFuture {
-      let name = radarState.activeForecastProvider?.hudSourceLabel ?? "FORECAST"
-      return "\(name) · \(product)"
-    }
-    let name = radarState.activeLiveProvider?.hudSourceLabel ?? "LIVE"
-    return "\(name) · \(product)"
-  }
-
-  private var coordLine: String {
-    String(format: "%.3f, %.3f", mapCenter.latitude, mapCenter.longitude)
   }
 
   private var nearestAlertPresentation:

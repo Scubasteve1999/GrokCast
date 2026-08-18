@@ -63,6 +63,30 @@ final class ChaseRadarHUDTests: XCTestCase {
     )
   }
 
+  func testHudCityAndProductArePlainLanguage() {
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.hudCityLine(locationName: "San Francisco, CA"),
+      "San Francisco"
+    )
+    XCTAssertEqual(ChaseRadarHUDLogic.hudCityLine(locationName: "Seattle, WA"), "Seattle")
+    XCTAssertEqual(ChaseRadarHUDLogic.hudCityLine(locationName: nil), "This location")
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: false),
+      "Rain"
+    )
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: true),
+      "24-hr · Rain"
+    )
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtLine(product: .stormRelativeVelocity, showsFuture: false),
+      "Storm winds"
+    )
+    let rain = ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: false)
+    XCTAssertFalse(rain.localizedCaseInsensitiveContains("XWEATHER"))
+    XCTAssertFalse(rain.contains("RAIN"))
+  }
+
   func testShortEventAbbreviations() {
     XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Tornado Warning"), "TOR WARN")
     XCTAssertEqual(ChaseRadarHUDLogic.shortEvent("Severe Thunderstorm Watch"), "SVR WATCH")

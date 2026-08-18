@@ -195,6 +195,7 @@ struct RadarView: View {
         ChaseRadarHUD(
           radarState: radarState,
           mapCenter: selectedMapCenter,
+          cityName: store.currentLocation?.name,
           alerts: store.displayableActiveAlerts,
           day1Summary: matchingDay1Summary,
           isDecluttered: $chaseDecluttered
