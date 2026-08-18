@@ -133,7 +133,7 @@ final class CitySearchTests: XCTestCase {
 
   func testChipBarEmptyStripDoesNotCatchTaps() {
     XCTAssertTrue(LocationChipBar.emptyStripPassesHitsThrough)
-    XCTAssertEqual(RadarFeedCard.accessibilityLabel, "Live radar preview. Opens the Radar tab.")
+    XCTAssertEqual(RadarFeedCard.accessibilityLabel, RadarFeedCopy.accessibilityLabel)
   }
 
   func testSavedRowVoiceOverNamesTheCity() {

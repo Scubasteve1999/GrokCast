@@ -11,20 +11,18 @@ struct RadarPreviewCard: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      radarMapSection
-      radarInfoBar
-    }
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
-    .overlay(
-      RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
-        .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
-    )
-    .task(id: store.currentLocation?.id) { await loadLatestRadarFrame() }
+    radarMap
+      .frame(height: 160)
+      .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
+      .overlay(
+        RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
+          .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
+      )
+      .task(id: store.currentLocation?.id) { await loadLatestRadarFrame() }
   }
 
-  private var radarMapSection: some View {
-    ZStack(alignment: .topLeading) {
+  private var radarMap: some View {
+    Group {
       if let coord = coordinate {
         RadarSnapshotMap(
           center: coord,
@@ -35,54 +33,7 @@ struct RadarPreviewCard: View {
         Rectangle()
           .fill(DesignTokens.Palette.bgSecondary)
       }
-
-      VStack {
-        Spacer()
-        LinearGradient(
-          colors: [.clear, DesignTokens.Palette.bgPrimary.opacity(0.8)],
-          startPoint: .top,
-          endPoint: .bottom
-        )
-        .frame(height: 40)
-      }
-
-      Text("Live Radar")
-        .font(DesignTokens.Typography.micro())
-        .foregroundStyle(.white)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(.ultraThinMaterial, in: Capsule())
-        .padding(DesignTokens.Spacing.space12)
     }
-    .frame(height: 160)
-  }
-
-  private var radarInfoBar: some View {
-    HStack {
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: "dot.radiowaves.left.and.right")
-          .font(DesignTokens.Typography.callout())
-          .foregroundStyle(DesignTokens.Palette.accent)
-
-        Text("Radar")
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-      }
-
-      Spacer()
-
-      HStack(spacing: DesignTokens.Spacing.space4) {
-        Text("Open")
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-        Image(systemName: "chevron.right")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-    }
-    .padding(.horizontal, DesignTokens.Spacing.space16)
-    .padding(.vertical, DesignTokens.Spacing.space12)
-    .background(DesignTokens.Palette.cardBackground)
   }
 
   private func loadLatestRadarFrame() async {

@@ -199,7 +199,7 @@ final class AirQualityAndMoonTests: XCTestCase {
   func testRadarFeedCardVoiceOverIsOneLabeledControl() {
     XCTAssertEqual(
       RadarFeedCard.accessibilityLabel,
-      "Live radar preview. Opens the Radar tab."
+      RadarFeedCopy.accessibilityLabel
     )
   }
 

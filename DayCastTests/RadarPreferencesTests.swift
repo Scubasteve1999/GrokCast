@@ -30,6 +30,14 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertLessThan(RadarColorScheme.vibrant.rasterHueRotate, 0)
   }
 
+  func testTodayRadarCardUsesOneRadarLabel() {
+    XCTAssertEqual(RadarFeedCopy.title, "Radar")
+    XCTAssertEqual(RadarFeedCopy.accessibilityLabel, "Radar. Opens the Radar tab.")
+    XCTAssertFalse(RadarFeedCopy.title.localizedCaseInsensitiveContains("Live Radar"))
+    XCTAssertFalse(RadarFeedCopy.title.localizedCaseInsensitiveContains("Open"))
+    XCTAssertFalse(RadarFeedCopy.accessibilityLabel.localizedCaseInsensitiveContains("Live Radar"))
+  }
+
   func testTodayRadarPreviewUsesXweatherNotRainViewer() {
     guard XweatherRadarService.mapsAuthConfigured else {
       XCTAssertNil(RadarPreviewSource.latestLiveTileTemplate())
