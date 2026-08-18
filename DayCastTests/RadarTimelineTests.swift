@@ -223,6 +223,37 @@ final class RadarExplainCopyTests: XCTestCase {
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("will not guess"))
   }
 
+  func testLowPrecipUsesLocalCopyAndDoesNotInventRain() {
+    let ctx = context(condition: "Clear", precip: 2)
+    XCTAssertTrue(RadarExplainCopy.shouldUseLocalExplanation(ctx))
+    let copy = RadarExplainCopy.localExplanation(for: ctx)
+    XCTAssertTrue(copy.contains("Clear"))
+    XCTAssertTrue(copy.contains("2%"))
+    XCTAssertTrue(copy.contains("labeled \"Rain\""))
+    XCTAssertTrue(copy.contains("slight chance"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("showers"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("raining"))
+  }
+
+  func testFourteenPercentStillUsesLocalCopy() {
+    XCTAssertTrue(
+      RadarExplainCopy.shouldUseLocalExplanation(context(condition: "Overcast", precip: 14)))
+  }
+
+  func testMeaningfulPrecipKeepsGrokPath() {
+    XCTAssertFalse(
+      RadarExplainCopy.shouldUseLocalExplanation(context(condition: "Rain", precip: 20)))
+    XCTAssertFalse(
+      RadarExplainCopy.shouldUseLocalExplanation(context(condition: "Rain", precip: 80)))
+  }
+
+  func testLocalCopyUsesTheSelectedConditionAtLowPrecip() {
+    let copy = RadarExplainCopy.localExplanation(
+      for: context(location: "Olive Branch, MS", condition: "Fog", precip: 2))
+    XCTAssertTrue(copy.contains("currently Fog"))
+    XCTAssertFalse(copy.contains("currently Clear"))
+  }
+
   func testActivePrecipKeepsGrokPath() {
     XCTAssertFalse(
       RadarExplainCopy.shouldUseLocalExplanation(context(condition: "Rain", precip: 80)))

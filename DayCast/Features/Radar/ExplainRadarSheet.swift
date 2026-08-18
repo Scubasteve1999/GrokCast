@@ -29,10 +29,14 @@ struct RadarExplainContext: Equatable {
 
 /// Deterministic radar copy keyed to the selected city's forecast.
 enum RadarExplainCopy {
-  /// No precip at the pin, or no forecast yet — do not ask a model to invent echoes.
+  /// PoP at or above this is worth a model brief. Below it, the "Rain" layer
+  /// name is more likely to invent echoes than the pin's forecast supports.
+  static let meaningfulPrecipChance = 20
+
+  /// Low/zero precip at the pin, or no forecast yet — do not ask a model to invent echoes.
   static func shouldUseLocalExplanation(_ context: RadarExplainContext) -> Bool {
     guard let chance = context.precipitationChance else { return true }
-    return chance == 0
+    return chance < meaningfulPrecipChance
   }
 
   static func localExplanation(for context: RadarExplainContext) -> String {
@@ -45,6 +49,10 @@ enum RadarExplainCopy {
       if chance == 0 {
         return
           "\(forecast) \(product) That layer lights up liquid when it is present. There is no precipitation in the forecast for this pin, so color on the map is not rain here — it is returns away from the city or clear-air clutter."
+      }
+      if chance < meaningfulPrecipChance {
+        return
+          "\(forecast) \(product) That layer lights up liquid when it is present. A \(chance)% chance is only a slight chance at this pin, so color on the map is not rain here — it is returns away from the city or clear-air clutter."
       }
       return
         "\(forecast) \(product) \(context.modeLabel) · \(context.frameLabel)."
@@ -73,7 +81,7 @@ enum RadarExplainCopy {
   }
 
   static func inventsPrecipitationAtPin(_ text: String, context: RadarExplainContext) -> Bool {
-    guard context.precipitationChance == 0 else { return false }
+    guard shouldUseLocalExplanation(context) else { return false }
     let lower = text.lowercased()
     let claims = [
       "raining", "it's raining", "it is raining", "showers", "downpour",
