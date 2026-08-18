@@ -33,6 +33,14 @@ enum MapsGLRadarPalette {
     Stop(dbz: 75, hex: "#FFFFFF", alpha: 1),
   ]
 
+  /// Painted bands only — skip the clear-air stop so the key matches the map.
+  static var visibleReflectivityStops: [Stop] {
+    reflectivityStops.filter { $0.alpha > 0 }
+  }
+
+  /// Compact ticks a phone can read. Every value is a real palette stop.
+  static let legendTickDbz: [Double] = [5, 20, 35, 50, 65]
+
   static func shouldUseMapsGL(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool)
     -> Bool
   {

@@ -79,6 +79,25 @@ final class RadarPreferencesTests: XCTestCase {
     )
   }
 
+  func testLegendTicksReuseMapsGLPaletteStops() {
+    XCTAssertEqual(MapsGLRadarPalette.legendTickDbz, [5, 20, 35, 50, 65])
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
+
+    let visible = MapsGLRadarPalette.visibleReflectivityStops
+    XCTAssertEqual(visible.count, MapsGLRadarPalette.reflectivityStops.count - 1)
+    XCTAssertTrue(visible.allSatisfy { $0.alpha > 0 })
+    XCTAssertFalse(visible.contains { $0.dbz == 0 })
+
+    for tick in MapsGLRadarPalette.legendTickDbz {
+      let stop = visible.first { $0.dbz == tick }
+      XCTAssertNotNil(stop, "legend tick \(tick) must be a painted palette stop")
+      XCTAssertEqual(
+        stop?.hex,
+        MapsGLRadarPalette.reflectivityStops.first { $0.dbz == tick }?.hex
+      )
+    }
+  }
+
   func testControlSheetStaysUpWhenMapOnlyIsPersisted() {
     XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: false))
     XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: true))

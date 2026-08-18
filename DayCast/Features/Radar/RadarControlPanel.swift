@@ -592,8 +592,8 @@ private struct RadarDisplayOptionsSheet: View {
 
 // MARK: - Mini legend (panel + Display sheet)
 
-/// Compact intensity / velocity key. Panel uses a tight strip; the sheet adds
-/// the range-fold note for SRV.
+/// Compact dBZ / velocity key. Rain uses the MapsGL NWS stops, not a second scale.
+/// Panel uses a tight strip; the sheet adds the range-fold note for SRV.
 struct RadarMiniLegend: View {
   enum Style {
     case panel
@@ -651,34 +651,38 @@ struct RadarMiniLegend: View {
     }
   }
 
+  /// Same RGB stops MapsGL paints, discrete (no gradient). Ticks sit under
+  /// the matching band so the key agrees with the map.
   private var reflectivityLegend: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      GeometryReader { geo in
-        HStack(spacing: 0) {
-          Rectangle().fill(DesignTokens.Palette.accentCool)
-            .frame(width: geo.size.width * 0.25)
-          Rectangle().fill(DesignTokens.Palette.warning)
-            .frame(width: geo.size.width * 0.25)
-          Rectangle().fill(DesignTokens.Palette.accentWarm)
-            .frame(width: geo.size.width * 0.25)
-          Rectangle().fill(DesignTokens.Palette.danger)
-            .frame(width: geo.size.width * 0.25)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 2))
-      }
-      .frame(height: style == .panel ? 6 : 8)
-      .accessibilityLabel("Reflectivity legend: light to extreme precipitation intensity")
+    let stops = MapsGLRadarPalette.visibleReflectivityStops
+    let ticks = Set(MapsGLRadarPalette.legendTickDbz)
+    return VStack(alignment: .leading, spacing: 4) {
+      Text("dBZ")
+        .font(DesignTokens.Typography.micro())
+        .foregroundStyle(legendCaptionColor)
 
-      HStack {
-        Text("Light").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
-        Spacer()
-        Text("Mod").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
-        Spacer()
-        Text("Heavy").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
-        Spacer()
-        Text("Extreme").font(DesignTokens.Typography.micro()).foregroundStyle(legendCaptionColor)
+      HStack(spacing: 0) {
+        ForEach(stops, id: \.dbz) { stop in
+          Rectangle()
+            .fill(Color(hex: stop.hex))
+        }
+      }
+      .frame(height: style == .panel ? 8 : 12)
+      .clipShape(RoundedRectangle(cornerRadius: 2))
+
+      HStack(spacing: 0) {
+        ForEach(stops, id: \.dbz) { stop in
+          Text(ticks.contains(stop.dbz) ? String(Int(stop.dbz)) : "")
+            .font(DesignTokens.Typography.micro().monospacedDigit())
+            .foregroundStyle(legendCaptionColor)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .frame(maxWidth: .infinity)
+        }
       }
     }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("Reflectivity legend, dBZ 5 to 75")
   }
 
   private var legendCaptionColor: Color {
