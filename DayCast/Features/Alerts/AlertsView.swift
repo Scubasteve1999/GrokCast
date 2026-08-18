@@ -43,14 +43,25 @@ struct AlertsView: View {
       && severeStore.isRefreshing
   }
 
+  private var hasNoAlertContent: Bool {
+    activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts
+  }
+
+  private var alertsFetchFailed: Bool {
+    store.alertsLoadState == .failed
+  }
+
   var body: some View {
     NavigationStack {
       Group {
-        if (store.isLoadingWeather || isWaitingOnSevereProducts)
-          && activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts
+        if (store.isLoadingWeather || isWaitingOnSevereProducts
+          || store.alertsLoadState == .pending)
+          && hasNoAlertContent
         {
           alertsSkeleton
-        } else if activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts {
+        } else if alertsFetchFailed && hasNoAlertContent {
+          errorState
+        } else if hasNoAlertContent {
           emptyState
         } else {
           alertsList
@@ -95,6 +106,10 @@ struct AlertsView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Alerts")
+
+        if alertsFetchFailed {
+          alertsErrorBanner
+        }
 
         VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
           FigmaAccentSectionLabel(
@@ -313,6 +328,64 @@ struct AlertsView: View {
       return "Expires \(expires.formatted(date: .abbreviated, time: .shortened))"
     }
     return alert.sortDate.formatted(date: .abbreviated, time: .shortened)
+  }
+
+  private var alertsErrorBanner: some View {
+    HStack(spacing: 8) {
+      Image(systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill")
+        .foregroundStyle(DesignTokens.Palette.danger)
+      Text("Couldn't refresh alerts. Showing last known warnings.")
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.danger)
+        .lineLimit(2)
+      Spacer(minLength: 8)
+      Button("Retry") {
+        Haptic.impact(.medium)
+        Task { await store.refreshAlerts(force: true) }
+      }
+      .font(DesignTokens.Typography.caption())
+      .buttonStyle(.bordered)
+      .tint(DesignTokens.Palette.danger)
+      .controlSize(.small)
+      .accessibilityIdentifier(DayCastAccessibility.Alerts.retry)
+    }
+    .padding(DesignTokens.Spacing.space8)
+    .background(DesignTokens.Palette.danger.opacity(0.15))
+    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
+  }
+
+  private var errorState: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        FigmaScreenTitle(title: "Alerts")
+
+        ContentUnavailableView {
+          Label(
+            "Unable to Load Alerts",
+            systemImage: store.isOffline ? "wifi.slash" : "exclamationmark.triangle"
+          )
+        } description: {
+          Text(
+            "Couldn't check NWS alerts for \(store.currentLocation?.name ?? "this location"). Try again."
+          )
+        } actions: {
+          Button("Try Again") {
+            Haptic.impact(.medium)
+            Task { await store.refreshAlerts(force: true) }
+          }
+          .buttonStyle(.borderedProminent)
+          .accessibilityIdentifier(DayCastAccessibility.Alerts.retry)
+        }
+      }
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.top, alertsContentTopPadding)
+      .padding(.bottom, bottomTabClearance)
+    }
+    .refreshable {
+      await store.refreshAlerts(force: true)
+    }
+    .scrollContentBackground(.hidden)
+    .background(DesignTokens.Palette.bgPrimary)
   }
 
   private var emptyState: some View {

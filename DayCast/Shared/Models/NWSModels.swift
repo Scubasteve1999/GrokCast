@@ -193,6 +193,25 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
   }
 }
 
+/// Distinguishes "no alerts" from "couldn't check" so the Alerts tab never
+/// shows a checkmark all-clear when NWS never answered for this city.
+enum AlertsLoadState: Equatable {
+  case pending
+  case loaded
+  case failed
+
+  static func resolve(
+    currentLocationID: UUID?,
+    attemptedLocationID: UUID?,
+    lastSucceeded: Bool
+  ) -> AlertsLoadState {
+    guard let currentLocationID, attemptedLocationID == currentLocationID else {
+      return .pending
+    }
+    return lastSucceeded ? .loaded : .failed
+  }
+}
+
 // MARK: - NWS API raw response models (Decodable only; not exposed in app model)
 
 struct NWSAlertsResponse: Decodable {

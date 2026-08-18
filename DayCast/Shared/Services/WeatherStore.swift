@@ -309,6 +309,17 @@ final class WeatherStore {
   private var alertsForLocation: UUID?
   /// True when the most recent alerts fetch for the current location succeeded authoritatively.
   private var lastAlertsFetchSucceeded = false
+  /// Location of the last alerts attempt, success or failure. Distinct from
+  /// `alertsForLocation`, which only advances on a successful fetch.
+  private var alertsAttemptedForLocation: UUID?
+
+  var alertsLoadState: AlertsLoadState {
+    AlertsLoadState.resolve(
+      currentLocationID: currentLocation?.id,
+      attemptedLocationID: alertsAttemptedForLocation,
+      lastSucceeded: lastAlertsFetchSucceeded
+    )
+  }
 
   nonisolated static let alertNotificationsEnabledKey = "daycast_alert_notifications_enabled"
 
@@ -1055,6 +1066,7 @@ final class WeatherStore {
         AlertHistoryStore.saveHistory(alertHistory)
         lastAlertsFetch = Date()
         alertsForLocation = loc.id
+        alertsAttemptedForLocation = loc.id
         lastAlertsFetchSucceeded = true
         persistWidgetAlertSummary(for: loc, alerts: alerts)
         syncScoreSurfacesFromCurrentWeather()
@@ -1068,6 +1080,7 @@ final class WeatherStore {
       } catch {
         // Non-fatal: retain last-known active alerts so offline UI stays accurate.
         // Only a successful fetch with an empty list authoritatively clears activeAlerts.
+        alertsAttemptedForLocation = loc.id
         lastAlertsFetchSucceeded = false
         // foreground-alerts fetch failed (log removed for release)
       }
@@ -1161,6 +1174,7 @@ final class WeatherStore {
           activeAlerts = alerts
           lastAlertsFetch = Date()
           alertsForLocation = loc.id
+          alertsAttemptedForLocation = loc.id
           lastAlertsFetchSucceeded = true
         }
         alertHistory = AlertHistoryStore.merge(fetched: alerts, into: alertHistory)
@@ -1176,6 +1190,7 @@ final class WeatherStore {
         return false
       } catch {
         if loc.id == currentLocation?.id {
+          alertsAttemptedForLocation = loc.id
           lastAlertsFetchSucceeded = false
         }
         alertOK = false
@@ -1442,6 +1457,7 @@ final class WeatherStore {
     currentWeather = nil
     lastAlertsFetch = nil
     lastAlertsFetchSucceeded = false
+    alertsAttemptedForLocation = nil
     WeatherLiveActivityManager.end()
     WidgetTimelineReloader.requestReload()
   }

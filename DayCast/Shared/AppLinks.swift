@@ -49,6 +49,10 @@ enum DayCastAccessibility {
     static let proEntry = "daycast.settings.pro"
   }
 
+  enum Alerts {
+    static let retry = "daycast.alerts.retry"
+  }
+
   enum Locations {
     static let searchField = "daycast.locations.searchField"
     static let searchSubmit = "daycast.locations.searchSubmit"

@@ -141,4 +141,34 @@ final class NWSAlertTests: XCTestCase {
     let future = Date(timeIntervalSinceNow: 3600)
     XCTAssertFalse(makeAlert(expires: future).isExpired)
   }
+
+  // MARK: - AlertsLoadState
+
+  func testAlertsLoadStatePendingUntilThisCityIsAttempted() {
+    let seattle = UUID()
+    XCTAssertEqual(
+      AlertsLoadState.resolve(
+        currentLocationID: seattle, attemptedLocationID: nil, lastSucceeded: false),
+      .pending)
+    XCTAssertEqual(
+      AlertsLoadState.resolve(
+        currentLocationID: seattle, attemptedLocationID: UUID(), lastSucceeded: true),
+      .pending)
+  }
+
+  func testAlertsLoadStateLoadedOnlyAfterSuccessForThisCity() {
+    let seattle = UUID()
+    XCTAssertEqual(
+      AlertsLoadState.resolve(
+        currentLocationID: seattle, attemptedLocationID: seattle, lastSucceeded: true),
+      .loaded)
+  }
+
+  func testAlertsLoadStateFailedDoesNotLookLikeAllClear() {
+    let seattle = UUID()
+    XCTAssertEqual(
+      AlertsLoadState.resolve(
+        currentLocationID: seattle, attemptedLocationID: seattle, lastSucceeded: false),
+      .failed)
+  }
 }
