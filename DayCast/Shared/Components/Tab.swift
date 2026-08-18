@@ -125,6 +125,7 @@ struct TabBarSuppressionPreferenceKey: PreferenceKey {
 
 struct CompactTabBar: View {
   @Binding var selection: WeatherStore.Tab
+  @Binding var showMoreHub: Bool
   private let tabs = CompactTab.allCases
 
   private(set) var pillCornerRadius: CGFloat
@@ -133,10 +134,9 @@ struct CompactTabBar: View {
   private(set) var inactiveColor: Color
   private(set) var backgroundMaterial: Material
 
-  @State private var showMoreSheet = false
-
   init(
     selection: Binding<WeatherStore.Tab>,
+    showMoreHub: Binding<Bool>,
     namespace: Namespace.ID,
     pillCornerRadius: CGFloat = 12,
     animation: Animation = .easeInOut(duration: 0.2),
@@ -145,6 +145,7 @@ struct CompactTabBar: View {
     backgroundMaterial: Material = .bar
   ) {
     _selection = selection
+    _showMoreHub = showMoreHub
     self.namespace = namespace
     self.pillCornerRadius = pillCornerRadius
     self.animation = animation
@@ -161,7 +162,7 @@ struct CompactTabBar: View {
         Button {
           if tab == .more {
             Haptic.selection()
-            showMoreSheet = true
+            showMoreHub = true
           } else if let target = tab.weatherTab, target != selection {
             Haptic.selection()
             withAnimation(animation) {
@@ -173,6 +174,7 @@ struct CompactTabBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(tab.title)
+        .accessibilityHint(tab == .more ? "Opens Locations, Settings, and Storm Spotter" : "")
         .accessibilityIdentifier(DayCastAccessibility.Tabs.item(tab))
         .frame(maxWidth: .infinity)
       }
@@ -189,10 +191,6 @@ struct CompactTabBar: View {
         .frame(height: 0.5)
     }
     .ignoresSafeArea(.keyboard)
-    .sheet(isPresented: $showMoreSheet) {
-      MoreHubSheet()
-        .environment(WeatherStore.shared)
-    }
   }
 
   private func tabContent(for tab: CompactTab) -> some View {

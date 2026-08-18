@@ -236,8 +236,9 @@ struct MoreHubSheet: View {
       }
     }
     .preferredColorScheme(.dark)
-    .presentationDetents([.medium, .large])
     .presentationDragIndicator(.visible)
+    .presentationContentInteraction(.scrolls)
+    .accessibilityIdentifier(DayCastAccessibility.MoreHub.root)
   }
 
   private var hubHeader: some View {

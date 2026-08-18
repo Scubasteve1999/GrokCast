@@ -25,6 +25,7 @@ enum DayCastAccessibility {
 
   /// Rows inside `MoreHubSheet`, keyed by the destination tab.
   enum MoreHub {
+    static let root = "daycast.moreHub.root"
     static func row(_ tab: WeatherStore.Tab) -> String { "daycast.moreHub.\(tab.rawValue)" }
   }
 

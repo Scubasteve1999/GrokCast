@@ -50,6 +50,14 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
   }
 
+  func testMoreTabStaysSelectedOnHubDestinations() {
+    XCTAssertTrue(CompactTab.more.isSelected(for: .locations))
+    XCTAssertTrue(CompactTab.more.isSelected(for: .settings))
+    XCTAssertTrue(CompactTab.more.isSelected(for: .grok))
+    XCTAssertFalse(CompactTab.more.isSelected(for: .today))
+    XCTAssertNil(CompactTab.more.weatherTab)
+  }
+
   // MARK: - Tier resolution
 
   func testProRoutesThroughTheProxyEvenWithAnOwnKey() {
