@@ -159,7 +159,8 @@ struct RadarView: View {
                 defaultMapCenter: selectedMapCenter,
                 recenterDefaultTrigger: recenterDefaultTrigger,
                 recenterUserCoordinate: recenterUserCoordinate,
-                fireSnapshot: fireStore.snapshot
+                fireSnapshot: fireStore.snapshot,
+                alerts: store.displayableActiveAlerts
               )
               .frame(width: geo.size.width, height: geo.size.height)
               .frame(minWidth: 400, minHeight: 400)
@@ -201,6 +202,11 @@ struct RadarView: View {
         }
         .padding(.top, 8)
         .padding(.leading, DesignTokens.Spacing.space20)
+      }
+    }
+    .overlay(alignment: .topLeading) {
+      if store.selectedTab == .radar {
+        warningPolygonVoiceOver
       }
     }
     .overlay(alignment: .topTrailing) {
@@ -250,6 +256,21 @@ struct RadarView: View {
         .allowsHitTesting(false)
       }
     }
+  }
+
+  /// VoiceOver names for painted boxes. GeoJSON layers don't eat pan; this overlay doesn't either.
+  private var warningPolygonVoiceOver: some View {
+    let boxes = RadarWarningPolygon.drawn(from: store.displayableActiveAlerts)
+    return Color.clear
+      .frame(width: 1, height: 1)
+      .allowsHitTesting(false)
+      .accessibilityElement(children: .contain)
+      .accessibilityChildren {
+        ForEach(boxes) { box in
+          Text(box.accessibilityLabel)
+            .accessibilityLabel(box.accessibilityLabel)
+        }
+      }
   }
 
   private func runModeTransitionIfNeeded() async {

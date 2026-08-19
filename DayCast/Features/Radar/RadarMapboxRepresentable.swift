@@ -11,6 +11,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
   var recenterUserCoordinate: CLLocationCoordinate2D?
   /// Fire overlay payload (independent refresh from precip tiles).
   var fireSnapshot: FireSnapshot = FireSnapshot()
+  /// Same NWS alerts the HUD uses. Overlay filters to warning polygons only.
+  var alerts: [NWSAlert] = []
 
   func makeUIView(context: Context) -> MapView {
     if let token = DeveloperAPIKey.mapbox, !token.isEmpty {
@@ -41,7 +43,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       defaultMapCenter: defaultMapCenter,
       recenterDefaultTrigger: recenterDefaultTrigger,
       recenterUserCoordinate: recenterUserCoordinate,
-      fireSnapshot: fireSnapshot
+      fireSnapshot: fireSnapshot,
+      alerts: alerts
     )
   }
 
@@ -186,6 +189,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
         self.layersInstalled = false
         self.lastAppliedFireSignature = nil
+        self.lastAppliedWarningSignature = nil
         self.mapsGLHost.onLayerStateChange = { [weak self, weak mapView] in
           guard let self, let mapView else { return }
           self.refreshDesiredState(on: mapView)
@@ -199,6 +203,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var lastShowFireLayer: Bool?
     private var pendingFireSnapshot = FireSnapshot()
     private var pendingShowFireLayer = false
+    private var lastAppliedWarningSignature: String?
+    private var pendingAlerts: [NWSAlert] = []
     private let mapsGLHost = MapsGLRadarHost()
     private var lastRadarState: RadarState?
     private var lastSyncOpacity: Double = 0.85
@@ -210,13 +216,15 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       defaultMapCenter: CLLocationCoordinate2D,
       recenterDefaultTrigger: UUID?,
       recenterUserCoordinate: CLLocationCoordinate2D?,
-      fireSnapshot: FireSnapshot
+      fireSnapshot: FireSnapshot,
+      alerts: [NWSAlert]
     ) {
       MapViewHostingSanitizer.sanitize(mapView)
       lastRadarState = radarState
       lastSyncOpacity = opacity
       pendingFireSnapshot = fireSnapshot
       pendingShowFireLayer = radarState.showFireLayer
+      pendingAlerts = alerts
 
       if !hasAppliedInitialCenter {
         hasAppliedInitialCenter = true
@@ -262,6 +270,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         snapshot: pendingFireSnapshot,
         showFireLayer: pendingShowFireLayer
       )
+      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
     }
 
     private func reconcileFireOverlay(
@@ -280,6 +289,17 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         // Style reloads clear layers — re-ensure when visible.
         FireRadarOverlay.ensureLayers(on: mapView)
         FireRadarOverlay.setVisible(true, on: mapView)
+      }
+    }
+
+    private func reconcileWarningOverlay(mapView: MapView, alerts: [NWSAlert]) {
+      guard mapView.mapboxMap.isStyleLoaded else { return }
+      let signature = RadarWarningPolygon.overlaySignature(from: alerts)
+      if lastAppliedWarningSignature != signature {
+        NWSWarningRadarOverlay.apply(alerts: alerts, on: mapView)
+        lastAppliedWarningSignature = signature
+      } else {
+        NWSWarningRadarOverlay.ensureLayers(on: mapView)
       }
     }
 
@@ -407,6 +427,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         snapshot: pendingFireSnapshot,
         showFireLayer: pendingShowFireLayer
       )
+      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
     }
 
     private func flushPendingDesiredState(on mapView: MapView) {
@@ -420,6 +441,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         snapshot: pendingFireSnapshot,
         showFireLayer: pendingShowFireLayer
       )
+      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
     }
 
     private func reconcile(mapView: MapView, desired: DesiredRasterState) {

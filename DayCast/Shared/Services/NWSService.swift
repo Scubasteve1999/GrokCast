@@ -97,7 +97,8 @@ final class NWSService {
         // Point alerts API only returns alerts that include the query point.
         containsSelectedPoint: true,
         geometryVertexCount: geom?.vertexCount,
-        geometryBBoxSummary: geom?.bboxSummary
+        geometryBBoxSummary: geom?.bboxSummary,
+        polygonCoordinates: geom?.polygonCoordinates
       )
     }
   }

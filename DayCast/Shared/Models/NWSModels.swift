@@ -26,6 +26,10 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
   let geometryVertexCount: Int?
   /// Compact bbox string like "34.9–35.2N, 90.1–89.7W" when a polygon is present.
   let geometryBBoxSummary: String?
+  /// GeoJSON MultiPolygon coordinates `[polygon][ring][vertex][lon, lat]`.
+  /// A single Polygon is stored as one-element MultiPolygon. Point-only alerts are nil.
+  /// Absent on history decoded from older builds.
+  let polygonCoordinates: [[[[Double]]]]?
 
   /// When DayCast first recorded this alert (for history sorting / retention).
   let firstSeen: Date
@@ -45,6 +49,7 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     containsSelectedPoint: Bool = true,
     geometryVertexCount: Int? = nil,
     geometryBBoxSummary: String? = nil,
+    polygonCoordinates: [[[[Double]]]]? = nil,
     firstSeen: Date = Date()
   ) {
     self.id = id
@@ -61,6 +66,7 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     self.containsSelectedPoint = containsSelectedPoint
     self.geometryVertexCount = geometryVertexCount
     self.geometryBBoxSummary = geometryBBoxSummary
+    self.polygonCoordinates = polygonCoordinates
     self.firstSeen = firstSeen
   }
 
@@ -142,6 +148,7 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     case containsSelectedPoint
     case geometryVertexCount
     case geometryBBoxSummary
+    case polygonCoordinates
     case firstSeen
   }
 
@@ -162,6 +169,7 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
       try container.decodeIfPresent(Bool.self, forKey: .containsSelectedPoint) ?? true
     geometryVertexCount = try container.decodeIfPresent(Int.self, forKey: .geometryVertexCount)
     geometryBBoxSummary = try container.decodeIfPresent(String.self, forKey: .geometryBBoxSummary)
+    polygonCoordinates = try container.decodeIfPresent([[[[Double]]]].self, forKey: .polygonCoordinates)
     firstSeen = try container.decodeIfPresent(Date.self, forKey: .firstSeen) ?? Date()
   }
 
@@ -189,6 +197,7 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     try container.encode(containsSelectedPoint, forKey: .containsSelectedPoint)
     try container.encodeIfPresent(geometryVertexCount, forKey: .geometryVertexCount)
     try container.encodeIfPresent(geometryBBoxSummary, forKey: .geometryBBoxSummary)
+    try container.encodeIfPresent(polygonCoordinates, forKey: .polygonCoordinates)
     try container.encode(firstSeen, forKey: .firstSeen)
   }
 }
@@ -238,7 +247,7 @@ struct NWSAlertProperties: Decodable {
   // Future: effective, onset, status, messageType, category, etc.
 }
 
-// MARK: - Minimal GeoJSON geometry support (Phase 1/2 only: extract rep point for pins; full boundaries Phase 3)
+// MARK: - GeoJSON geometry (rep point for pins + rings for Live Radar warning boxes)
 // NWS uses [longitude, latitude] order in coordinates arrays.
 struct NWSGeometry: Decodable {
   let type: String?
@@ -248,6 +257,8 @@ struct NWSGeometry: Decodable {
   let vertexCount: Int?
   /// Compact bbox summary for prompts ("covers area including selected location").
   let bboxSummary: String?
+  /// GeoJSON MultiPolygon coordinates. Polygon is wrapped as `[rings]`. Point is nil.
+  let polygonCoordinates: [[[[Double]]]]?
 
   private enum CodingKeys: String, CodingKey {
     case type
@@ -262,31 +273,46 @@ struct NWSGeometry: Decodable {
     representativePoint = extracted.point
     vertexCount = extracted.vertexCount
     bboxSummary = extracted.bboxSummary
+    polygonCoordinates = extracted.polygonCoordinates
   }
 
   private static func extractGeometry(from container: KeyedDecodingContainer<CodingKeys>) -> (
     point: (latitude: Double, longitude: Double)?,
     vertexCount: Int?,
-    bboxSummary: String?
+    bboxSummary: String?,
+    polygonCoordinates: [[[[Double]]]]?
   ) {
     // Point: "coordinates": [lon, lat]
     if let coords = try? container.decode([Double].self, forKey: .coordinates), coords.count >= 2 {
       return (
         point: (latitude: coords[1], longitude: coords[0]),
         vertexCount: 1,
-        bboxSummary: nil
+        bboxSummary: nil,
+        polygonCoordinates: nil
       )
     }
     // Polygon: "coordinates": [[[lon, lat], ...], ...]
     if let rings = try? container.decode([[[Double]]].self, forKey: .coordinates) {
-      return summarizeRings(rings)
+      let summary = summarizeRings(rings)
+      return (
+        summary.point,
+        summary.vertexCount,
+        summary.bboxSummary,
+        summary.vertexCount == nil ? nil : [rings]
+      )
     }
     // MultiPolygon
     if let multi = try? container.decode([[[[Double]]]].self, forKey: .coordinates) {
       let rings = multi.flatMap { $0 }
-      return summarizeRings(rings)
+      let summary = summarizeRings(rings)
+      return (
+        summary.point,
+        summary.vertexCount,
+        summary.bboxSummary,
+        summary.vertexCount == nil ? nil : multi
+      )
     }
-    return (nil, nil, nil)
+    return (nil, nil, nil, nil)
   }
 
   private static func summarizeRings(_ rings: [[[Double]]]) -> (

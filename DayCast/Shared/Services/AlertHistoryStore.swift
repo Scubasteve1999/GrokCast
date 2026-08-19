@@ -51,6 +51,7 @@ enum AlertHistoryStore {
           containsSelectedPoint: alert.containsSelectedPoint,
           geometryVertexCount: alert.geometryVertexCount ?? prior.geometryVertexCount,
           geometryBBoxSummary: alert.geometryBBoxSummary ?? prior.geometryBBoxSummary,
+          polygonCoordinates: alert.polygonCoordinates ?? prior.polygonCoordinates,
           firstSeen: prior.firstSeen
         )
       } else {
@@ -69,6 +70,7 @@ enum AlertHistoryStore {
           containsSelectedPoint: alert.containsSelectedPoint,
           geometryVertexCount: alert.geometryVertexCount,
           geometryBBoxSummary: alert.geometryBBoxSummary,
+          polygonCoordinates: alert.polygonCoordinates,
           firstSeen: now
         )
       }
