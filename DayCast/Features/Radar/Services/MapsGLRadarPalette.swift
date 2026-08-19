@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 /// Client-side reflectivity stops for MapsGL encoded radar (dBZ, metric).
-/// Graphic TWC-style rain: green-first hard bands, drizzle/clear-air hidden.
+/// Official NWS precip-mode (IEM N0R / weather.gov 16-level), not TWC-green.
 enum MapsGLRadarPalette {
   struct Stop: Equatable {
     let dbz: Double
@@ -18,27 +18,30 @@ enum MapsGLRadarPalette {
   static let sampleSmoothing: Double = 0.4
 
   static let reflectivityStops: [Stop] = [
-    Stop(dbz: 0, hex: "#0B7A2B", alpha: 0),
-    Stop(dbz: 15, hex: "#0B7A2B", alpha: 0),
-    Stop(dbz: 20, hex: "#0B7A2B", alpha: 1),
-    Stop(dbz: 25, hex: "#1DB954", alpha: 1),
-    Stop(dbz: 30, hex: "#3DDC6A", alpha: 1),
-    Stop(dbz: 35, hex: "#F5E000", alpha: 1),
-    Stop(dbz: 40, hex: "#F0B400", alpha: 1),
-    Stop(dbz: 45, hex: "#FF8A00", alpha: 1),
-    Stop(dbz: 50, hex: "#FF3D00", alpha: 1),
-    Stop(dbz: 55, hex: "#E00000", alpha: 1),
-    Stop(dbz: 60, hex: "#B00000", alpha: 1),
-    Stop(dbz: 65, hex: "#D400C8", alpha: 1),
+    Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
+    Stop(dbz: 5, hex: "#01A0F6", alpha: 1),
+    Stop(dbz: 10, hex: "#0000F6", alpha: 1),
+    Stop(dbz: 15, hex: "#00FF00", alpha: 1),
+    Stop(dbz: 20, hex: "#00C800", alpha: 1),
+    Stop(dbz: 25, hex: "#009000", alpha: 1),
+    Stop(dbz: 30, hex: "#FFFF00", alpha: 1),
+    Stop(dbz: 35, hex: "#E7C000", alpha: 1),
+    Stop(dbz: 40, hex: "#FF9000", alpha: 1),
+    Stop(dbz: 45, hex: "#FF0000", alpha: 1),
+    Stop(dbz: 50, hex: "#D60000", alpha: 1),
+    Stop(dbz: 55, hex: "#C00000", alpha: 1),
+    Stop(dbz: 60, hex: "#FF00FF", alpha: 1),
+    Stop(dbz: 65, hex: "#9955C9", alpha: 1),
+    Stop(dbz: 70, hex: "#FFFFFF", alpha: 1),
   ]
 
-  /// Painted bands only — skip the clear-air stops so the key matches the map.
+  /// Painted bands only — skip the clear-air stop so the key matches the map.
   static var visibleReflectivityStops: [Stop] {
     reflectivityStops.filter { $0.alpha > 0 }
   }
 
   /// Compact ticks a phone can read. Every value is a real painted stop.
-  static let legendTickDbz: [Double] = [20, 35, 50, 65]
+  static let legendTickDbz: [Double] = [5, 20, 35, 50, 65, 70]
 
   static func shouldUseMapsGL(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool)
     -> Bool

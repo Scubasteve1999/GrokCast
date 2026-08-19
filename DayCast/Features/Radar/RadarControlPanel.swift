@@ -694,11 +694,55 @@ struct RadarMiniLegend: View {
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(
-      "Reflectivity legend, dBZ \(Int(stops.first?.dbz ?? 20)) to \(Int(stops.last?.dbz ?? 65))"
+      "Reflectivity legend, dBZ \(Int(stops.first?.dbz ?? 5)) to \(Int(stops.last?.dbz ?? 70))"
     )
   }
 
   private var legendCaptionColor: Color {
     style == .panel ? DesignTokens.Palette.radarTextSecondary : .secondary
+  }
+}
+
+/// Vertical dBZ key on Live Radar. Same stops as MapsGL and RadarMiniLegend.
+struct RadarMapColorbar: View {
+  var body: some View {
+    let stops = Array(MapsGLRadarPalette.visibleReflectivityStops.reversed())
+    let ticks = Set(MapsGLRadarPalette.legendTickDbz)
+    return VStack(alignment: .leading, spacing: 4) {
+      Text("dBZ")
+        .font(DesignTokens.Typography.micro())
+        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+
+      HStack(alignment: .center, spacing: 4) {
+        VStack(spacing: 0) {
+          ForEach(stops, id: \.dbz) { stop in
+            Rectangle()
+              .fill(Color(hex: stop.hex))
+          }
+        }
+        .frame(width: 10)
+        .clipShape(RoundedRectangle(cornerRadius: 2))
+
+        VStack(spacing: 0) {
+          ForEach(stops, id: \.dbz) { stop in
+            Text(ticks.contains(stop.dbz) ? String(Int(stop.dbz)) : "")
+              .font(DesignTokens.Typography.micro().monospacedDigit())
+              .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
+              .frame(maxHeight: .infinity, alignment: .center)
+          }
+        }
+      }
+      .frame(height: 152)
+    }
+    .padding(.horizontal, 6)
+    .padding(.vertical, 6)
+    .background(
+      DesignTokens.Palette.cardBackground.opacity(0.88),
+      in: RoundedRectangle(cornerRadius: 8)
+    )
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("Reflectivity legend, dBZ 5 to 70")
   }
 }

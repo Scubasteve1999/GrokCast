@@ -23,6 +23,15 @@ struct RadarView: View {
     } ?? WeatherBackgroundView.inferredIsDay
   }
 
+  /// Colorbar is only honest when MapsGL rain is the paint.
+  private var showsMapsGLColorbar: Bool {
+    MapsGLRadarPalette.shouldUseMapsGL(
+      overlayOn: radarState.showRadarOverlay,
+      isSiteProduct: radarState.selectedProduct.isSiteProduct,
+      keysPresent: MapsGLRadarHost.keysPresent
+    )
+  }
+
   /// Day-1 line only when severe context is for the selected location (avoids stale city bleed).
   private var matchingDay1Summary: String? {
     guard let locationID = store.currentLocation?.id.uuidString else { return nil }
@@ -206,6 +215,14 @@ struct RadarView: View {
         )
         .padding(.top, 8)
         .padding(.trailing, DesignTokens.Spacing.space16)
+      }
+    }
+    .overlay(alignment: .bottomLeading) {
+      if store.selectedTab == .radar, showsMapsGLColorbar {
+        RadarMapColorbar()
+          .padding(.leading, DesignTokens.Spacing.space12)
+          .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance + 136)
+          .allowsHitTesting(false)
       }
     }
     .overlay(alignment: .bottom) {
