@@ -743,6 +743,6 @@ struct RadarMapColorbar: View {
       in: RoundedRectangle(cornerRadius: 8)
     )
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Reflectivity legend, dBZ 5 to 70. \(RadarChromeCopy.cellsLayer)")
+    .accessibilityLabel("Reflectivity legend, dBZ 5 to 70. \(RadarChromeCopy.motionTracks)")
   }
 }

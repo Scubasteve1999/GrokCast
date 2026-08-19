@@ -49,6 +49,15 @@ final class MapsGLRadarHost {
 
     let account = XweatherAccount(id: id, secret: secret)
     let controller = MapboxMapController(map: mapView, account: account)
+    // Metal rain is a CustomLayer. Circle/line tracks must sit above it or
+    // they composite under the encoded overlay and look like "no tracks".
+    controller.placementProvider = MapboxMapController.PlacementProvider { layer, _ in
+      var placement = MapboxMapController.Placement()
+      if MapsGLLiveRainLayers.stormcellIDs.contains(layer.id) {
+        placement.position = .above(MapsGLLiveRainLayers.radarID)
+      }
+      return placement
+    }
     self.controller = controller
 
     controller.onLoad.observe { [weak self] _ in
@@ -85,12 +94,15 @@ final class MapsGLRadarHost {
     )
     guard let controller else { return }
 
-    if lastFuture != false {
+    let futureChanged = lastFuture != false
+    if futureChanged {
       lastFuture = false
       applyTimelineRange(future: false, on: controller)
     }
     if lastVisible != want {
       lastVisible = want
+      applyVisibility(want, on: controller)
+    } else if futureChanged {
       applyVisibility(want, on: controller)
     }
     guard want else { return }
@@ -111,13 +123,16 @@ final class MapsGLRadarHost {
     )
     guard let controller else { return }
 
-    if lastFuture != radarState.showsFuture {
+    let futureChanged = lastFuture != radarState.showsFuture
+    if futureChanged {
       lastFuture = radarState.showsFuture
       applyTimelineRange(future: radarState.showsFuture, on: controller)
     }
 
     if lastVisible != want {
       lastVisible = want
+      applyVisibility(want, on: controller)
+    } else if futureChanged {
       applyVisibility(want, on: controller)
     }
 
@@ -156,37 +171,48 @@ final class MapsGLRadarHost {
     onLayerStateChange?()
   }
 
-  /// Individual configs, not `WeatherService.Stormcells` — that composite also
-  /// adds cones + heat. `addWeatherLayer(config:)` only accepts
-  /// `WeatherLayerConfiguration`, so positions and tracks are added separately.
+  /// LayerCode path, not `WeatherService.Stormcells` — that composite also
+  /// ships cones + heat. `addWeatherLayer(for:)` is what registers the layer
+  /// for visibility and timeline fetches.
   private func installStormcellLayers(on controller: MapboxMapController) {
-    do {
-      try controller.addWeatherLayer(
-        config: WeatherService.StormcellsPositions(service: controller.service))
-      try controller.addWeatherLayer(
-        config: WeatherService.StormcellsTracks(service: controller.service))
-      stormcellsReady = true
+    var added = false
+    for code in Self.stormcellCodes {
+      do {
+        try controller.addWeatherLayer(for: code)
+        added = true
+      } catch {
+        radarLog("[MapsGL] Failed to add \(code.rawValue): \(error)")
+      }
+    }
+    stormcellsReady = added
+    if added {
       radarLog("[MapsGL] stormcells positions+tracks added")
-    } catch {
-      radarLog("[MapsGL] Failed to add stormcells: \(error)")
-      stormcellsReady = false
     }
   }
 
-  private func applyVisibility(_ want: Bool, on controller: MapboxMapController) {
+  private func applyVisibility(_ rainWant: Bool, on controller: MapboxMapController) {
     if layerReady {
-      controller.setWeatherLayerVisibility(for: .radar, visible: want)
+      controller.setWeatherLayerVisibility(for: .radar, visible: rainWant)
     }
     if stormcellsReady {
+      let cellsWant = MapsGLLiveRainLayers.shouldShow(
+        overlayOn: rainWant,
+        isSiteProduct: false,
+        keysPresent: true,
+        isLive: lastFuture != true
+      )
       for code in Self.stormcellCodes {
-        controller.setWeatherLayerVisibility(for: code, visible: want)
+        controller.setWeatherLayerVisibility(for: code, visible: cellsWant)
       }
     }
   }
 
-  private static var stormcellCodes: [WeatherService.LayerCode] {
-    MapsGLLiveRainLayers.stormcellIDs.compactMap(WeatherService.LayerCode.init(rawValue:))
-  }
+  /// Typed codes — do not compactMap hyphen strings; the SDK case names are
+  /// camelCase (`stormcellsPositions`) with hyphenated raw values.
+  private static let stormcellCodes: [WeatherService.LayerCode] = [
+    .stormcellsPositions,
+    .stormcellsTracks,
+  ]
 
   private func applyTimelineRange(future: Bool, on controller: MapboxMapController) {
     if future {

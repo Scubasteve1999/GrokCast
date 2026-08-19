@@ -63,13 +63,17 @@ enum MapsGLRadarPalette {
 /// cones + heat). Same gate as encoded radar; empty coverage is valid.
 enum MapsGLLiveRainLayers {
   static let radarID = "radar"
+  /// Must match `WeatherService.LayerCode` raw values in MapsGL 1.6.1.
   static let stormcellIDs = ["stormcells-positions", "stormcells-tracks"]
 
   /// Removed on host detach. Radar first, then cell motion.
   static var detachIDs: [String] { [radarID] + stormcellIDs }
 
-  static func shouldShow(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool) -> Bool {
-    MapsGLRadarPalette.shouldUseMapsGL(
-      overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
+  static func shouldShow(
+    overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool, isLive: Bool = true
+  ) -> Bool {
+    isLive
+      && MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
   }
 }

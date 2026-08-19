@@ -138,13 +138,17 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.mapOnlySwitch, "Map only")
     XCTAssertEqual(RadarChromeCopy.radarOverlaySwitch, "Radar overlay")
     XCTAssertEqual(RadarChromeCopy.fireLayerSwitch, "Fire layer")
-    XCTAssertEqual(RadarChromeCopy.cellsLayer, "Cells")
+    XCTAssertEqual(RadarChromeCopy.motionTracks, "Motion tracks")
   }
 
   func testStormcellsFollowMapsGLRainGate() {
     XCTAssertTrue(
       MapsGLLiveRainLayers.shouldShow(
-        overlayOn: true, isSiteProduct: false, keysPresent: true)
+        overlayOn: true, isSiteProduct: false, keysPresent: true, isLive: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: false, keysPresent: true, isLive: false)
     )
     XCTAssertFalse(
       MapsGLLiveRainLayers.shouldShow(
@@ -185,7 +189,7 @@ final class RadarPreferencesTests: XCTestCase {
 
   func testStormcellsChromeIsNotSCIT() {
     let chrome = [
-      RadarChromeCopy.cellsLayer,
+      RadarChromeCopy.motionTracks,
       RadarChromeCopy.liveChip,
       RadarChromeCopy.futureChip,
       RadarChromeCopy.layers,
@@ -197,8 +201,8 @@ final class RadarPreferencesTests: XCTestCase {
       XCTAssertFalse(label.localizedCaseInsensitiveContains("NWS tracks"), label)
       XCTAssertFalse(label.localizedCaseInsensitiveContains("official storm"), label)
     }
-    XCTAssertEqual(RadarChromeCopy.cellsLayer, "Cells")
-    XCTAssertFalse(RadarChromeCopy.cellsLayer.localizedCaseInsensitiveContains("Motion"))
+    XCTAssertEqual(RadarChromeCopy.motionTracks, "Motion tracks")
+    XCTAssertTrue(RadarChromeCopy.motionTracks.localizedCaseInsensitiveContains("motion tracks"))
   }
 
   func testRadarModeChipsAreNotNamedForecast() {
