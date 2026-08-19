@@ -42,6 +42,11 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarPreviewSource.previewBaseMap, .light)
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
+    // Today card stays on the national mosaic even though Live Rain is now N0B.
+    XCTAssertTrue(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: false, keysPresent: true)
+    )
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
     XCTAssertFalse(MapsGLRadarPalette.interpolatesSamples)
     XCTAssertEqual(MapsGLRadarPalette.sampleSmoothing, 0)

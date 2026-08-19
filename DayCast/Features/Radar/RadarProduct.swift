@@ -1,10 +1,11 @@
 import Foundation
 
 /// User-facing radar products for the control panel.
-/// Reflectivity uses composite providers (Xweather live preferred, then IEM/RainViewer).
-/// Site products come from the nearest NEXRAD site via IEM RIDGE tiles
-/// (US only, live only — see IEMRadarService). IEM archives exactly N0B + N0S
-/// nationally (verified 2026-07); plain base velocity (N0U) is not scan-listable.
+/// Live Rain defaults to nearest-site N0B (`superResReflectivity`) via IEM RIDGE.
+/// `reflectivity` is the national mosaic (MapsGL / composite) — a one-tap fallback,
+/// not the opening product. Site products are US + live only (see IEMRadarService).
+/// IEM archives exactly N0B + N0S nationally (verified 2026-07); do not add
+/// velocity, dual-pol, tilts, or a site picker on this path.
 enum RadarProduct: String, CaseIterable, Identifiable {
   // Raw values are explicit because they back the tip-dismissal defaults keys —
   // renaming a case must not silently resurrect a dismissed tip.
@@ -14,13 +15,16 @@ enum RadarProduct: String, CaseIterable, Identifiable {
 
   var id: String { rawValue }
 
+  /// Opening Live prefers nearest-site N0B. Mosaic stays selectable as `reflectivity`.
+  static let defaultLive: RadarProduct = .superResReflectivity
+
   /// Plain-language name for chips, panel header, and share text. Deliberately
   /// non-technical — casual users never learn "reflectivity"/"SRV".
   /// Use `technicalName` for anything a model reads (see GrokAIViewModel).
   var displayName: String {
     switch self {
-    case .reflectivity: "Rain"
-    case .superResReflectivity: "Detail rain"
+    case .reflectivity: "Mosaic"
+    case .superResReflectivity: "Rain"
     case .stormRelativeVelocity: "Storm winds"
     }
   }

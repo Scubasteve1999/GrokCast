@@ -181,8 +181,8 @@ final class RadarLoader {
     // OWM timestamps are synthesized — only use when reals are missing or stale.
     var realCandidates: [(provider: RadarTileProvider, frames: [RadarFrame], label: String)] = []
 
-    // Default Reflectivity uses the CONUS composite (N0Q). Single-site N0B/N0S load
-    // only when the user picks Super-Res or SRV (see RadarState.setProduct).
+    // Mosaic reflectivity uses the CONUS composite (N0Q). Single-site N0B/N0S
+    // load via RadarState (Live defaults to N0B; mosaic is the fallback).
     if IEMRadarService.isWithinCONUS(coordinate) {
       let conusFrames = await IEMRadarService.loadCONUSReflectivityFrames()
       if !conusFrames.isEmpty {

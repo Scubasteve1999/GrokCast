@@ -124,11 +124,21 @@ enum ChaseRadarHUDLogic {
     return raw
   }
 
-  /// What the map is showing — Rain / Detail rain / Storm winds, not XWEATHER.
-  static func lookingAtLine(product: RadarProduct, showsFuture: Bool) -> String {
-    let name = product.displayName
-    if showsFuture { return "24-hr · \(name)" }
-    return name
+  /// What the map is showing. Site rain is nearest-site Doppler (IEM id, e.g. NQA),
+  /// not XWEATHER and not a fake national Doppler. Mosaic keeps its own name.
+  static func lookingAtLine(
+    product: RadarProduct,
+    showsFuture: Bool,
+    siteID: String? = nil
+  ) -> String {
+    if showsFuture { return "24-hr · \(product.displayName)" }
+    if product == .superResReflectivity, let siteID, !siteID.isEmpty {
+      return "\(siteID) Doppler"
+    }
+    if product.isSiteProduct, let siteID, !siteID.isEmpty {
+      return "\(siteID) · \(product.displayName)"
+    }
+    return product.displayName
   }
 }
 
@@ -196,7 +206,8 @@ struct ChaseRadarHUD: View {
       Text(
         ChaseRadarHUDLogic.lookingAtLine(
           product: radarState.selectedProduct,
-          showsFuture: radarState.showsFuture
+          showsFuture: radarState.showsFuture,
+          siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
         )
       )
       .font(DesignTokens.Typography.micro())

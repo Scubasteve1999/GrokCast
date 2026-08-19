@@ -105,4 +105,34 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertFalse(state.showFireLayer)
     XCTAssertEqual(state.playbackSpeed, RadarPlayback.defaultPlaybackSpeed, accuracy: 0.0001)
   }
+
+  func testLiveDefaultIsNearestSiteN0B() {
+    XCTAssertEqual(RadarProduct.defaultLive, .superResReflectivity)
+    XCTAssertEqual(RadarProduct.defaultLive.iemCode, "N0B")
+    XCTAssertTrue(RadarProduct.defaultLive.isSiteProduct)
+    XCTAssertEqual(RadarProduct.defaultLive.displayName, "Rain")
+
+    let state = RadarState()
+    XCTAssertEqual(state.selectedProduct, .superResReflectivity)
+    XCTAssertTrue(state.selectedProduct.isSiteProduct)
+    XCTAssertFalse(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: state.selectedProduct.isSiteProduct, keysPresent: true)
+    )
+  }
+
+  func testMosaicRemainsAOneTapFallback() async {
+    let state = RadarState()
+    XCTAssertEqual(state.selectedProduct, RadarProduct.defaultLive)
+
+    await state.setProduct(.reflectivity)
+
+    XCTAssertEqual(state.selectedProduct, .reflectivity)
+    XCTAssertFalse(state.selectedProduct.isSiteProduct)
+    XCTAssertEqual(state.selectedProduct.displayName, "Mosaic")
+    XCTAssertTrue(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: state.selectedProduct.isSiteProduct, keysPresent: true)
+    )
+  }
 }

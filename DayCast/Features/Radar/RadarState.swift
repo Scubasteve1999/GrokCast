@@ -65,8 +65,8 @@ final class RadarState {
 
   var showModeSwitchOverlay: Bool { transition != nil }
 
-  /// Composite reflectivity vs single-site NEXRAD products (Velocity/SRV).
-  private(set) var selectedProduct: RadarProduct = .reflectivity
+  /// Live Rain is nearest-site N0B. Mosaic (`reflectivity`) is the fallback product.
+  private(set) var selectedProduct: RadarProduct = .defaultLive
   /// Client-side raster color treatment (applied in the Mapbox layer).
   /// These four persist via `RadarPreferences`; the controls bind to them directly,
   /// so `didSet` is the one hook that catches every path that can change them.
@@ -551,6 +551,11 @@ extension RadarState {
       restoreCompositeLive()
       return
     }
+    // First Live open: `performDefaultRadarLoad` refreshes N0B after the mosaic
+    // cache exists so a dead site can restore tiles and keep the unavailable copy.
+    // Reloading here first would restore an empty mosaic and then the composite
+    // branch would wipe that copy.
+    guard compositeLive != nil else { return }
 
     let product = selectedProduct
     let refreshed = await refreshActiveSiteProduct()
@@ -626,11 +631,11 @@ extension RadarState {
     timeline.forecast = result.forecast
     forecastTileAvailability = result.forecastAvailability
 
-    // Don't stomp a site product (Super-Res/SRV) the user chose during the load —
-    // but do refresh those frames so Super-Res/SRV don't sit on a stale hour-old scan
-    // while composite reloads keep running underneath.
+    // Live defaults to nearest-site N0B. Don't stomp a site product (Rain/SRV)
+    // if the user flipped during the load — refresh those frames instead so
+    // N0B/SRV don't sit on a stale scan while the mosaic reload finishes.
     if selectedProduct.isSiteProduct {
-      radarLog("[RadarState] Keeping user-selected \(selectedProduct.displayName) over composite load")
+      radarLog("[RadarState] Keeping \(selectedProduct.displayName) over composite load")
       let refreshed = await refreshActiveSiteProduct()
       if !refreshed {
         radarLog(

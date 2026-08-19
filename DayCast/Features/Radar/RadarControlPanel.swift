@@ -15,7 +15,7 @@ struct RadarControlPanel: View {
   @State private var showDisplayOptions = false
   /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
   @State private var isCollapsed = true
-  /// User-driven Advanced disclosure; an active site product also forces it open.
+  /// User-driven Advanced disclosure; SRV also forces it open.
   @State private var advancedManuallyExpanded = false
   /// Mirrors RadarTipStore so dismissing re-renders without touching UserDefaults on every pass.
   @State private var dismissedTips: Set<RadarProduct> = Set(
@@ -268,10 +268,10 @@ struct RadarControlPanel: View {
     }
   }
 
-  /// Advanced products stay hidden until asked for; a live site product forces the
-  /// row open so a HUD-initiated SRV toggle doesn't leave the panel contradicting itself.
+  /// Storm winds stay behind Advanced. Live Rain is nearest-site N0B, so that
+  /// chip lives on the main row — do not hide it just because it is a site product.
   private var isAdvancedExpanded: Bool {
-    advancedManuallyExpanded || radarState.selectedProduct.isSiteProduct
+    advancedManuallyExpanded || radarState.selectedProduct == .stormRelativeVelocity
   }
 
   private var advancedAvailable: Bool {
@@ -282,6 +282,7 @@ struct RadarControlPanel: View {
     VStack(alignment: .leading, spacing: 6) {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 6) {
+          productChip(.superResReflectivity)
           productChip(.reflectivity)
           if advancedAvailable {
             advancedChip
@@ -292,12 +293,9 @@ struct RadarControlPanel: View {
       if isAdvancedExpanded, advancedAvailable {
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 6) {
-            // Nearest NEXRAD site backing these products — only meaningful here,
-            // so it stays out of the default (casual) row.
             if let site = radarState.nearestSite {
               siteBadge(site.id)
             }
-            productChip(.superResReflectivity)
             productChip(.stormRelativeVelocity)
           }
         }
@@ -324,11 +322,11 @@ struct RadarControlPanel: View {
       isSelected: isAdvancedExpanded
     ) {
       Haptic.impact(.light)
-      if radarState.selectedProduct.isSiteProduct {
-        // Collapsing while an advanced product is live would strand the selection
-        // in a hidden row, so leaving Advanced returns to plain Rain.
+      if radarState.selectedProduct == .stormRelativeVelocity {
+        // Collapsing while SRV is live would strand the selection in a hidden
+        // row. Return to default Live Rain (nearest-site N0B), not the mosaic.
         advancedManuallyExpanded = false
-        Task { await radarState.setProduct(.reflectivity) }
+        Task { await radarState.setProduct(.defaultLive) }
       } else {
         advancedManuallyExpanded.toggle()
       }
@@ -336,7 +334,7 @@ struct RadarControlPanel: View {
     .accessibilityLabel("Advanced radar products")
     .accessibilityValue(isAdvancedExpanded ? "Expanded" : "Collapsed")
     .accessibilityHint(
-      isAdvancedExpanded ? "Collapses advanced products" : "Shows detail rain and storm winds"
+      isAdvancedExpanded ? "Collapses advanced products" : "Shows storm winds"
     )
   }
 
@@ -385,14 +383,12 @@ struct RadarControlPanel: View {
   }
 
   private func productChip(_ product: RadarProduct) -> some View {
-    // Site products are only rendered inside the gated Advanced row, so by the
-    // time a chip exists it is always tappable.
     chip(
       product.displayName, systemImage: nil,
       isSelected: radarState.selectedProduct == product
     ) {
       Haptic.impact(.light)
-      if product == .reflectivity { advancedManuallyExpanded = false }
+      if product != .stormRelativeVelocity { advancedManuallyExpanded = false }
       Task { await radarState.setProduct(product) }
     }
   }
@@ -479,13 +475,15 @@ private struct RadarDisplayOptionsSheet: View {
         }
 
         Section {
-          productRow(.reflectivity)
           productRow(.superResReflectivity)
+          productRow(.reflectivity)
           productRow(.stormRelativeVelocity)
         } header: {
           Text("Products")
         } footer: {
-          Text("Detail rain and storm winds are live NEXRAD only.")
+          Text(
+            "Rain is nearest-site Doppler (N0B). Mosaic is the national composite. Storm winds are live NEXRAD only. Motion tracks exist only on the mosaic host — they do not paint on N0B."
+          )
         }
 
         Section {
