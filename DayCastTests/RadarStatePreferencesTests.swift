@@ -100,7 +100,7 @@ final class RadarStatePreferencesTests: XCTestCase {
     let state = RadarState()
 
     XCTAssertEqual(state.colorScheme, .vibrant)
-    XCTAssertEqual(state.baseMapStyle, .satelliteStreets)
+    XCTAssertEqual(state.baseMapStyle, .light)
     XCTAssertTrue(state.showRadarOverlay)
     XCTAssertFalse(state.showFireLayer)
     XCTAssertEqual(state.playbackSpeed, RadarPlayback.defaultPlaybackSpeed, accuracy: 0.0001)

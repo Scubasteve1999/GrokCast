@@ -44,7 +44,7 @@ enum RadarPreferences {
   static var baseMapStyle: RadarBaseMapStyle {
     get {
       store.string(forKey: baseMapStyleKey).flatMap(RadarBaseMapStyle.init(rawValue:))
-        ?? .satelliteStreets
+        ?? .light
     }
     set { store.set(newValue.rawValue, forKey: baseMapStyleKey) }
   }

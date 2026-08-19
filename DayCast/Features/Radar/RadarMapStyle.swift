@@ -1,7 +1,9 @@
 import MapboxMaps
 
-/// Base map styles available on the Radar tab (Mapbox style URIs).
+/// Base map styles available on the Radar tab (licensed Mapbox style URIs).
+/// Default is Light: a quiet gray canvas so TWC-green rain reads as graphic overlay.
 enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
+  case light
   case satelliteStreets
   case satellite
   case streets
@@ -11,6 +13,7 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
 
   var displayName: String {
     switch self {
+    case .light: "Light"
     case .satelliteStreets: "Hybrid"
     case .satellite: "Satellite"
     case .streets: "Streets"
@@ -20,6 +23,7 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
 
   var systemImage: String {
     switch self {
+    case .light: "square.stack.3d.up.fill"
     case .satelliteStreets: "globe.americas.fill"
     case .satellite: "globe.americas"
     case .streets: "map.fill"
@@ -29,6 +33,7 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
 
   var styleURI: StyleURI {
     switch self {
+    case .light: .light
     case .satelliteStreets: .satelliteStreets
     case .satellite: .satellite
     case .streets: .streets
@@ -39,7 +44,7 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
   /// Next style when cycling with the layers button.
   func cycled() -> RadarBaseMapStyle {
     let all = Self.allCases
-    guard let idx = all.firstIndex(of: self) else { return .satelliteStreets }
+    guard let idx = all.firstIndex(of: self) else { return .light }
     return all[(idx + 1) % all.count]
   }
 }

@@ -145,9 +145,15 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.layers, "Layers")
   }
 
+  func testDefaultBaseMapIsQuietMapboxLight() {
+    XCTAssertEqual(RadarBaseMapStyle.light.displayName, "Light")
+    XCTAssertEqual(RadarBaseMapStyle.satelliteStreets.displayName, "Hybrid")
+    XCTAssertEqual(RadarBaseMapStyle.light.cycled(), .satelliteStreets)
+  }
+
   func testDefaultsApplyWhenNothingIsStored() {
     XCTAssertEqual(RadarPreferences.colorScheme, .vibrant)
-    XCTAssertEqual(RadarPreferences.baseMapStyle, .satelliteStreets)
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
     XCTAssertTrue(RadarPreferences.showRadarOverlay)
     XCTAssertFalse(RadarPreferences.showFireLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, RadarPlayback.defaultPlaybackSpeed)
@@ -184,7 +190,7 @@ final class RadarPreferencesTests: XCTestCase {
     suite.set("blueprint", forKey: "radar.pref.baseMapStyle")
 
     XCTAssertEqual(RadarPreferences.colorScheme, .vibrant)
-    XCTAssertEqual(RadarPreferences.baseMapStyle, .satelliteStreets)
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
   }
 
   func testPlaybackSpeedIsClampedInBothDirections() {
