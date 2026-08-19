@@ -138,6 +138,67 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.mapOnlySwitch, "Map only")
     XCTAssertEqual(RadarChromeCopy.radarOverlaySwitch, "Radar overlay")
     XCTAssertEqual(RadarChromeCopy.fireLayerSwitch, "Fire layer")
+    XCTAssertEqual(RadarChromeCopy.cellsLayer, "Cells")
+  }
+
+  func testStormcellsFollowMapsGLRainGate() {
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: false, keysPresent: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: true, keysPresent: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: false, isSiteProduct: false, keysPresent: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: false, keysPresent: false)
+    )
+    XCTAssertEqual(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: false, keysPresent: true),
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: false, keysPresent: true)
+    )
+    XCTAssertEqual(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: true, keysPresent: true),
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: true, keysPresent: true)
+    )
+  }
+
+  func testDetachRemovesStormcellsAndRadar() {
+    XCTAssertEqual(
+      MapsGLLiveRainLayers.detachIDs,
+      ["radar", "stormcells-positions", "stormcells-tracks"]
+    )
+    XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("stormcells-heat"))
+    XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("stormcells-cones"))
+    XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("alerts"))
+    XCTAssertFalse(MapsGLLiveRainLayers.stormcellIDs.contains("stormcells"))
+  }
+
+  func testStormcellsChromeIsNotSCIT() {
+    let chrome = [
+      RadarChromeCopy.cellsLayer,
+      RadarChromeCopy.liveChip,
+      RadarChromeCopy.futureChip,
+      RadarChromeCopy.layers,
+      RadarChromeCopy.radarOverlaySwitch,
+      RadarChromeCopy.liveAccessibility,
+    ]
+    for label in chrome {
+      XCTAssertFalse(label.localizedCaseInsensitiveContains("SCIT"), label)
+      XCTAssertFalse(label.localizedCaseInsensitiveContains("NWS tracks"), label)
+      XCTAssertFalse(label.localizedCaseInsensitiveContains("official storm"), label)
+    }
+    XCTAssertEqual(RadarChromeCopy.cellsLayer, "Cells")
+    XCTAssertFalse(RadarChromeCopy.cellsLayer.localizedCaseInsensitiveContains("Motion"))
   }
 
   func testRadarModeChipsAreNotNamedForecast() {

@@ -57,3 +57,19 @@ enum MapsGLRadarPalette {
     overlayOn && !isSiteProduct && !keysPresent
   }
 }
+
+/// MapsGL weather-layer ids that ride with Live Rain.
+/// Positions + tracks only — not the Stormcells composite (that also ships
+/// cones + heat). Same gate as encoded radar; empty coverage is valid.
+enum MapsGLLiveRainLayers {
+  static let radarID = "radar"
+  static let stormcellIDs = ["stormcells-positions", "stormcells-tracks"]
+
+  /// Removed on host detach. Radar first, then cell motion.
+  static var detachIDs: [String] { [radarID] + stormcellIDs }
+
+  static func shouldShow(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool) -> Bool {
+    MapsGLRadarPalette.shouldUseMapsGL(
+      overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
+  }
+}

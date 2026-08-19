@@ -14,10 +14,13 @@ final class MapsGLRadarHost {
   private var cancellables = Set<AnyCancellable>()
   private var attachedMapView: MapView?
   private var layerReady = false
+  private var stormcellsReady = false
   private var lastVisible: Bool?
   private var lastFrameDate: Date?
   private var lastFuture: Bool?
   private var pendingOpacity: Double = 0.85
+  /// Today preview is rain-only. Live Radar paints cell positions + tracks.
+  var paintsStormcells = true
 
   /// Called on the main actor after layer add succeeds or fails so the
   /// representable can hide or restore PNG tiles.
@@ -54,13 +57,21 @@ final class MapsGLRadarHost {
   }
 
   func detach() {
-    if layerReady, let controller {
-      controller.removeWeatherLayer(for: .radar)
+    if let controller {
+      if layerReady {
+        controller.removeWeatherLayer(for: .radar)
+      }
+      if stormcellsReady {
+        for code in Self.stormcellCodes {
+          controller.removeWeatherLayer(for: code)
+        }
+      }
     }
     cancellables.removeAll()
     controller = nil
     attachedMapView = nil
     layerReady = false
+    stormcellsReady = false
     lastVisible = nil
     lastFrameDate = nil
     lastFuture = nil
@@ -80,9 +91,7 @@ final class MapsGLRadarHost {
     }
     if lastVisible != want {
       lastVisible = want
-      if layerReady {
-        controller.setWeatherLayerVisibility(for: .radar, visible: want)
-      }
+      applyVisibility(want, on: controller)
     }
     guard want else { return }
     // A few minutes behind wall clock matches Live's newest Xweather scan.
@@ -109,9 +118,7 @@ final class MapsGLRadarHost {
 
     if lastVisible != want {
       lastVisible = want
-      if layerReady {
-        controller.setWeatherLayerVisibility(for: .radar, visible: want)
-      }
+      applyVisibility(want, on: controller)
     }
 
     guard want else { return }
@@ -140,7 +147,45 @@ final class MapsGLRadarHost {
       radarLog("[MapsGL] Failed to add radar layer: \(error)")
       layerReady = false
     }
+    if paintsStormcells {
+      installStormcellLayers(on: controller)
+    }
+    if let lastVisible {
+      applyVisibility(lastVisible, on: controller)
+    }
     onLayerStateChange?()
+  }
+
+  /// Individual configs, not `WeatherService.Stormcells` — that composite also
+  /// adds cones + heat. `addWeatherLayer(config:)` only accepts
+  /// `WeatherLayerConfiguration`, so positions and tracks are added separately.
+  private func installStormcellLayers(on controller: MapboxMapController) {
+    do {
+      try controller.addWeatherLayer(
+        config: WeatherService.StormcellsPositions(service: controller.service))
+      try controller.addWeatherLayer(
+        config: WeatherService.StormcellsTracks(service: controller.service))
+      stormcellsReady = true
+      radarLog("[MapsGL] stormcells positions+tracks added")
+    } catch {
+      radarLog("[MapsGL] Failed to add stormcells: \(error)")
+      stormcellsReady = false
+    }
+  }
+
+  private func applyVisibility(_ want: Bool, on controller: MapboxMapController) {
+    if layerReady {
+      controller.setWeatherLayerVisibility(for: .radar, visible: want)
+    }
+    if stormcellsReady {
+      for code in Self.stormcellCodes {
+        controller.setWeatherLayerVisibility(for: code, visible: want)
+      }
+    }
+  }
+
+  private static var stormcellCodes: [WeatherService.LayerCode] {
+    MapsGLLiveRainLayers.stormcellIDs.compactMap(WeatherService.LayerCode.init(rawValue:))
   }
 
   private func applyTimelineRange(future: Bool, on controller: MapboxMapController) {

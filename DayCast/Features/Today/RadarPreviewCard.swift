@@ -107,6 +107,10 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
 
   @MainActor
   final class Coordinator {
-    let host = MapsGLRadarHost()
+    let host: MapsGLRadarHost = {
+      let host = MapsGLRadarHost()
+      host.paintsStormcells = false
+      return host
+    }()
   }
 }
