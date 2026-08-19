@@ -157,6 +157,7 @@ final class MapsGLRadarHost {
       config.layer.paint.sample.interpolation =
         MapsGLRadarPalette.interpolatesSamples ? .bicubic : .none
       config.layer.paint.sample.quality = .exact
+      config.layer.paint.sample.meld = false
       config.layer.paint.opacity = Opacity(value: Float(pendingOpacity))
       config.layer.quality = .exact
       try controller.addWeatherLayer(config: config)
@@ -181,11 +182,13 @@ final class MapsGLRadarHost {
   private func installStormcellLayers(on controller: MapboxMapController) {
     do {
       var config = WeatherService.StormcellsTracks(service: controller.service)
-      config.layer.paint.stroke.color = .constant(UIColor(white: 0.12, alpha: 1))
-      config.layer.paint.stroke.thickness = .constant(2.25)
-      config.layer.paint.stroke.opacity = .constant(0.92)
-      config.layer.paint.stroke.lineCap = .constant(.round)
-      config.layer.paint.stroke.lineJoin = .constant(.round)
+      config.layer.paint.stroke.color = .constant(
+        UIColor(white: MapsGLLiveRainLayers.trackColorWhite, alpha: 1)
+      )
+      config.layer.paint.stroke.thickness = .constant(MapsGLLiveRainLayers.trackThickness)
+      config.layer.paint.stroke.opacity = .constant(MapsGLLiveRainLayers.trackOpacity)
+      config.layer.paint.stroke.lineCap = .constant(.butt)
+      config.layer.paint.stroke.lineJoin = .constant(.miter)
       try controller.addWeatherLayer(config: config)
       stormcellsReady = true
       radarLog("[MapsGL] stormcells-tracks added")

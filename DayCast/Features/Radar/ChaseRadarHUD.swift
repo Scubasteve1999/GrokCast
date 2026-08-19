@@ -243,8 +243,8 @@ struct ChaseRadarHUD: View {
       .fill(
         LinearGradient(
           colors: [
-            DesignTokens.Palette.cardElevated.opacity(0.88),
-            DesignTokens.Palette.cardBackground.opacity(0.78),
+            DesignTokens.Palette.cardElevated.opacity(0.96),
+            DesignTokens.Palette.cardBackground.opacity(0.93),
           ],
           startPoint: .top,
           endPoint: .bottom

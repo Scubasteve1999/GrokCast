@@ -47,4 +47,25 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
     guard let idx = all.firstIndex(of: self) else { return .light }
     return all[(idx + 1) % all.count]
   }
+
+  /// POI/transit labels fight the bins. City and road names stay.
+  static let quietWorkstationHiddenLayerIDs = [
+    "poi-label",
+    "transit-label",
+    "airport-label",
+    "natural-point-label",
+  ]
+
+  /// Light-v11 only. Hybrid/Satellite keep their own labels. Missing IDs are skipped.
+  func applyQuietWorkstation(to mapView: MapView) {
+    guard self == .light else { return }
+    for id in Self.quietWorkstationHiddenLayerIDs {
+      guard mapView.mapboxMap.layerExists(withId: id) else { continue }
+      try? mapView.mapboxMap.setLayerProperty(for: id, property: "visibility", value: "none")
+    }
+    for id in ["road-label", "settlement-subdivision-label"] {
+      guard mapView.mapboxMap.layerExists(withId: id) else { continue }
+      try? mapView.mapboxMap.setLayerProperty(for: id, property: "text-opacity", value: 0.62)
+    }
+  }
 }

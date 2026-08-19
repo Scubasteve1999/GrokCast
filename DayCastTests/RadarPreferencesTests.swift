@@ -61,18 +61,23 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarPalette.reflectivityStops.first { $0.dbz == dbz }
     }
     XCTAssertEqual(stop(5)?.hex, "#01A0F6")
-    XCTAssertEqual(stop(5)?.alpha, 1)
+    XCTAssertEqual(stop(5)?.alpha ?? -1, 0.48, accuracy: 0.0001)
     XCTAssertEqual(stop(10)?.hex, "#0000F6")
     XCTAssertEqual(stop(15)?.hex, "#00FF00")
-    XCTAssertEqual(stop(15)?.alpha, 1)
+    XCTAssertEqual(stop(15)?.alpha ?? -1, 0.64, accuracy: 0.0001)
     XCTAssertEqual(stop(20)?.hex, "#00C800")
-    XCTAssertEqual(stop(20)?.alpha, 1)
+    XCTAssertEqual(stop(20)?.alpha ?? -1, 0.72, accuracy: 0.0001)
     XCTAssertEqual(stop(35)?.hex, "#E7C000")
     XCTAssertEqual(stop(40)?.hex, "#FF9000")
+    XCTAssertEqual(stop(40)?.alpha, 1)
     XCTAssertEqual(stop(50)?.hex, "#D60000")
+    XCTAssertEqual(stop(50)?.alpha, 1)
     XCTAssertEqual(stop(60)?.hex, "#FF00FF")
     XCTAssertEqual(stop(65)?.hex, "#9955C9")
     XCTAssertEqual(stop(70)?.hex, "#FFFFFF")
+    XCTAssertEqual(stop(70)?.alpha, 1)
+    XCTAssertLessThan(stop(5)?.alpha ?? 1, stop(20)?.alpha ?? 0)
+    XCTAssertLessThan(stop(20)?.alpha ?? 1, stop(40)?.alpha ?? 0)
 
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
@@ -188,6 +193,10 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("stormcells-cones"))
     XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("alerts"))
     XCTAssertFalse(MapsGLLiveRainLayers.stormcellIDs.contains("stormcells"))
+    XCTAssertEqual(MapsGLLiveRainLayers.trackThickness, 1.15, accuracy: 0.0001)
+    XCTAssertLessThan(MapsGLLiveRainLayers.trackThickness, 2)
+    XCTAssertEqual(MapsGLLiveRainLayers.trackOpacity, 0.68, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLLiveRainLayers.trackColorWhite, 0.07, accuracy: 0.0001)
   }
 
   func testStormcellsChromeIsNotSCIT() {
@@ -219,6 +228,12 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarBaseMapStyle.light.displayName, "Light")
     XCTAssertEqual(RadarBaseMapStyle.satelliteStreets.displayName, "Hybrid")
     XCTAssertEqual(RadarBaseMapStyle.light.cycled(), .satelliteStreets)
+    XCTAssertEqual(
+      RadarBaseMapStyle.quietWorkstationHiddenLayerIDs,
+      ["poi-label", "transit-label", "airport-label", "natural-point-label"]
+    )
+    XCTAssertFalse(RadarBaseMapStyle.quietWorkstationHiddenLayerIDs.contains("road-label"))
+    XCTAssertFalse(RadarBaseMapStyle.quietWorkstationHiddenLayerIDs.contains("settlement-label"))
   }
 
   func testSatellitePostcardMigratesToLightOnce() {

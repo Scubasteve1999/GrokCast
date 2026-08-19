@@ -739,7 +739,7 @@ struct RadarMapColorbar: View {
     .padding(.horizontal, 6)
     .padding(.vertical, 6)
     .background(
-      DesignTokens.Palette.cardBackground.opacity(0.88),
+      DesignTokens.Palette.cardBackground.opacity(0.94),
       in: RoundedRectangle(cornerRadius: 8)
     )
     .accessibilityElement(children: .ignore)

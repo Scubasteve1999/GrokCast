@@ -76,6 +76,11 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       to: CameraOptions(center: center, zoom: RadarPreviewSource.previewZoom)
     )
     try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
+    RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
+    mapView.mapboxMap.onStyleLoaded.observe { [weak mapView] _ in
+      guard let mapView else { return }
+      RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
+    }.store(in: &context.coordinator.styleObservers)
 
     let host = context.coordinator.host
     host.onLayerStateChange = { [weak host] in
@@ -107,6 +112,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
 
   @MainActor
   final class Coordinator {
+    var styleObservers = Set<AnyCancelable>()
     let host: MapsGLRadarHost = {
       let host = MapsGLRadarHost()
       host.paintsStormcells = false

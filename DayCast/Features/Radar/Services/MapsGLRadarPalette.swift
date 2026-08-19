@@ -20,15 +20,18 @@ enum MapsGLRadarPalette {
   /// official 5 dBZ stops into a watercolor toy.
   static let interpolatesSamples = false
 
+  /// Official NWS 16-level hex. Alphas are not a second palette: light bins
+  /// stay see-through so Light roads/labels read; cores stay 1 so they pop.
+  /// Uniform alpha 1 + layer 0.95 was a painted sheet.
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
-    Stop(dbz: 5, hex: "#01A0F6", alpha: 1),
-    Stop(dbz: 10, hex: "#0000F6", alpha: 1),
-    Stop(dbz: 15, hex: "#00FF00", alpha: 1),
-    Stop(dbz: 20, hex: "#00C800", alpha: 1),
-    Stop(dbz: 25, hex: "#009000", alpha: 1),
-    Stop(dbz: 30, hex: "#FFFF00", alpha: 1),
-    Stop(dbz: 35, hex: "#E7C000", alpha: 1),
+    Stop(dbz: 5, hex: "#01A0F6", alpha: 0.48),
+    Stop(dbz: 10, hex: "#0000F6", alpha: 0.56),
+    Stop(dbz: 15, hex: "#00FF00", alpha: 0.64),
+    Stop(dbz: 20, hex: "#00C800", alpha: 0.72),
+    Stop(dbz: 25, hex: "#009000", alpha: 0.80),
+    Stop(dbz: 30, hex: "#FFFF00", alpha: 0.88),
+    Stop(dbz: 35, hex: "#E7C000", alpha: 0.94),
     Stop(dbz: 40, hex: "#FF9000", alpha: 1),
     Stop(dbz: 45, hex: "#FF0000", alpha: 1),
     Stop(dbz: 50, hex: "#D60000", alpha: 1),
@@ -68,6 +71,11 @@ enum MapsGLLiveRainLayers {
   static let radarID = "radar"
   /// Must match `WeatherService.LayerCode` raw values in MapsGL 1.6.1.
   static let stormcellIDs = ["stormcells-tracks"]
+
+  /// Thin dark motion only. 2.25 @ 0.92 read as a marker layer, not tracks.
+  static let trackColorWhite: CGFloat = 0.07
+  static let trackThickness: Double = 1.15
+  static let trackOpacity: Double = 0.68
 
   /// Removed on host detach. Radar first, then cell motion.
   static var detachIDs: [String] { [radarID] + stormcellIDs }
