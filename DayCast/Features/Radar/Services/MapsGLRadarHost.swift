@@ -25,7 +25,7 @@ final class MapsGLRadarHost {
 
   var isReady: Bool { layerReady }
 
-  static var keysPresent: Bool {
+  nonisolated static var keysPresent: Bool {
     guard let id = DeveloperAPIKey.xweatherClientID, !id.isEmpty,
       let secret = DeveloperAPIKey.xweatherClientSecret, !secret.isEmpty
     else { return false }
@@ -64,6 +64,33 @@ final class MapsGLRadarHost {
     lastVisible = nil
     lastFrameDate = nil
     lastFuture = nil
+  }
+
+  /// Snapshot for Today: Live rain only, newest scan, no site products.
+  func syncPreview(opacity: Double, now: Date = Date()) {
+    pendingOpacity = opacity
+    let want = MapsGLRadarPalette.shouldUseMapsGL(
+      overlayOn: true, isSiteProduct: false, keysPresent: Self.keysPresent
+    )
+    guard let controller else { return }
+
+    if lastFuture != false {
+      lastFuture = false
+      applyTimelineRange(future: false, on: controller)
+    }
+    if lastVisible != want {
+      lastVisible = want
+      if layerReady {
+        controller.setWeatherLayerVisibility(for: .radar, visible: want)
+      }
+    }
+    guard want else { return }
+    // A few minutes behind wall clock matches Live's newest Xweather scan.
+    let frameDate = now.addingTimeInterval(-8 * 60)
+    if lastFrameDate != frameDate {
+      lastFrameDate = frameDate
+      controller.timeline.goTo(date: frameDate)
+    }
   }
 
   func sync(radarState: RadarState, opacity: Double) {

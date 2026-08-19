@@ -38,15 +38,12 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertFalse(RadarFeedCopy.accessibilityLabel.localizedCaseInsensitiveContains("Live Radar"))
   }
 
-  func testTodayRadarPreviewUsesXweatherNotRainViewer() {
-    guard XweatherRadarService.mapsAuthConfigured else {
-      XCTAssertNil(RadarPreviewSource.latestLiveTileTemplate())
-      return
-    }
-    let template = RadarPreviewSource.latestLiveTileTemplate()
-    XCTAssertNotNil(template)
-    XCTAssertTrue(template?.contains("xweather.com") == true)
-    XCTAssertFalse(template?.contains("rainviewer") == true)
+  func testTodayRadarPreviewUsesMapsGLOnLight() {
+    XCTAssertEqual(RadarPreviewSource.previewBaseMap, .light)
+    XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
+    XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
+    XCTAssertGreaterThan(MapsGLRadarPalette.sampleSmoothing, 0)
   }
 
   func testMapsGLRadarPaletteIsTransparentAtZero() {
