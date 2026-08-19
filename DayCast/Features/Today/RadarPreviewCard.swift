@@ -49,7 +49,7 @@ enum RadarPreviewSource {
   }
 }
 
-/// Non-interactive Mapbox Light + the same MapsGL TWC-green layer Live uses.
+/// Non-interactive Mapbox Light + the same MapsGL NWS reflectivity Live uses.
 private struct RadarPreviewMapboxMap: UIViewRepresentable {
   let center: CLLocationCoordinate2D
 

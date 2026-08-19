@@ -41,19 +41,17 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(waitForTabBar())
     openTab(.radar)
 
-    let live = app.staticTexts["LIVE"]
-    let reflectivity = app.staticTexts.matching(
-      NSPredicate(format: "label CONTAINS[c] %@", "Reflectivity")
-    ).firstMatch
-    let recenter = app.buttons["Recenter map"]
+    let live = app.buttons["Live radar"]
+    let rain = app.staticTexts["Live"]
+    let recenter = app.buttons["Recenter to selected location"]
 
     let sawLive = live.waitForExistence(timeout: 15)
-    let sawReflectivity = reflectivity.waitForExistence(timeout: 8)
+    let sawRain = rain.waitForExistence(timeout: 8)
     let sawRecenter = recenter.waitForExistence(timeout: 8)
 
     XCTAssertTrue(
-      sawLive || sawReflectivity || sawRecenter,
-      "Radar chrome missing (LIVE / Reflectivity / Recenter)"
+      sawLive || sawRain || sawRecenter,
+      "Radar chrome missing (Live / Recenter)"
     )
   }
 

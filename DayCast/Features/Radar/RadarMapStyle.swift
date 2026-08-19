@@ -1,7 +1,7 @@
 import MapboxMaps
 
 /// Base map styles available on the Radar tab (licensed Mapbox style URIs).
-/// Default is Light: a quiet gray canvas so TWC-green rain reads as graphic overlay.
+/// Default is Light: a quiet gray workstation canvas so NWS reflectivity reads.
 enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
   case light
   case satelliteStreets

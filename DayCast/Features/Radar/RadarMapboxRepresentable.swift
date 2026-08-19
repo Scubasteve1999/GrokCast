@@ -207,7 +207,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var pendingAlerts: [NWSAlert] = []
     private let mapsGLHost = MapsGLRadarHost()
     private var lastRadarState: RadarState?
-    private var lastSyncOpacity: Double = 0.85
+    private var lastSyncOpacity: Double = RadarPreferences.defaultRadarOpacity
 
     func update(
       mapView: MapView,

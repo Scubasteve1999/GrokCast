@@ -4,6 +4,7 @@ import Foundation
 import MapboxMaps
 import MapsGLMapbox
 import MapsGLMaps
+import UIKit
 
 /// Owns the MapsGL controller on the existing Mapbox `MapView`.
 /// Encoded radar is painted client-side; PNG raster stays the fallback
@@ -18,8 +19,8 @@ final class MapsGLRadarHost {
   private var lastVisible: Bool?
   private var lastFrameDate: Date?
   private var lastFuture: Bool?
-  private var pendingOpacity: Double = 0.85
-  /// Today preview is rain-only. Live Radar paints cell positions + tracks.
+  private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
+  /// Today preview is rain-only. Live Radar paints StormcellsTracks paths only.
   var paintsStormcells = true
 
   /// Called on the main actor after layer add succeeds or fails so the
@@ -149,12 +150,15 @@ final class MapsGLRadarHost {
     do {
       var config = WeatherService.Radar(service: controller.service)
       config.layer.paint.sample.colorScale = .colorScale(Self.colorScale)
-      // Spatial interpolation + smoothing shape the storm. Colorscale
-      // interpolate stays off so bands stay TWC-hard, not watercolor.
+      // Native bins + stepped colorscale. Bicubic/smoothing was the toy look.
+      // MapsGL SampleFillLayerPaint has no core-outline stroke — hard 5 dBZ
+      // bands have to do that job.
       config.layer.paint.sample.smoothing = MapsGLRadarPalette.sampleSmoothing
-      config.layer.paint.sample.interpolation = .bicubic
+      config.layer.paint.sample.interpolation =
+        MapsGLRadarPalette.interpolatesSamples ? .bicubic : .none
+      config.layer.paint.sample.quality = .exact
       config.layer.paint.opacity = Opacity(value: Float(pendingOpacity))
-      config.layer.quality = .high
+      config.layer.quality = .exact
       try controller.addWeatherLayer(config: config)
       layerReady = true
       radarLog("[MapsGL] radar layer added")
@@ -171,22 +175,23 @@ final class MapsGLRadarHost {
     onLayerStateChange?()
   }
 
-  /// LayerCode path, not `WeatherService.Stormcells` — that composite also
-  /// ships cones + heat. `addWeatherLayer(for:)` is what registers the layer
-  /// for visibility and timeline fetches.
+  /// Typed `StormcellsTracks` only. `WeatherService.Stormcells` also ships
+  /// positions + cones + heat. Positions are the white pin/tick swarm.
+  /// MapsGL cannot lengthen forecast-track geometry; empty coverage is valid.
   private func installStormcellLayers(on controller: MapboxMapController) {
-    var added = false
-    for code in Self.stormcellCodes {
-      do {
-        try controller.addWeatherLayer(for: code)
-        added = true
-      } catch {
-        radarLog("[MapsGL] Failed to add \(code.rawValue): \(error)")
-      }
-    }
-    stormcellsReady = added
-    if added {
-      radarLog("[MapsGL] stormcells positions+tracks added")
+    do {
+      var config = WeatherService.StormcellsTracks(service: controller.service)
+      config.layer.paint.stroke.color = .constant(UIColor(white: 0.12, alpha: 1))
+      config.layer.paint.stroke.thickness = .constant(2.25)
+      config.layer.paint.stroke.opacity = .constant(0.92)
+      config.layer.paint.stroke.lineCap = .constant(.round)
+      config.layer.paint.stroke.lineJoin = .constant(.round)
+      try controller.addWeatherLayer(config: config)
+      stormcellsReady = true
+      radarLog("[MapsGL] stormcells-tracks added")
+    } catch {
+      radarLog("[MapsGL] Failed to add stormcells-tracks: \(error)")
+      stormcellsReady = false
     }
   }
 
@@ -208,10 +213,9 @@ final class MapsGLRadarHost {
   }
 
   /// Typed codes — do not compactMap hyphen strings; the SDK case names are
-  /// camelCase (`stormcellsPositions`) with hyphenated raw values.
+  /// camelCase (`stormcellsTracks`) with hyphenated raw values.
   private static let stormcellCodes: [WeatherService.LayerCode] = [
-    .stormcellsPositions,
-    .stormcellsTracks,
+    .stormcellsTracks
   ]
 
   private func applyTimelineRange(future: Bool, on controller: MapboxMapController) {

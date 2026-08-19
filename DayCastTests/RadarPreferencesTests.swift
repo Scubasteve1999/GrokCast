@@ -43,7 +43,8 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
-    XCTAssertGreaterThan(MapsGLRadarPalette.sampleSmoothing, 0)
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesSamples)
+    XCTAssertEqual(MapsGLRadarPalette.sampleSmoothing, 0)
   }
 
   func testMapsGLRadarPaletteIsTransparentAtZero() {
@@ -51,9 +52,9 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(first?.dbz, 0)
     XCTAssertEqual(first?.alpha, 0)
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesSamples)
     XCTAssertEqual(MapsGLRadarPalette.bandIntervalDbz, 5)
-    XCTAssertGreaterThan(MapsGLRadarPalette.sampleSmoothing, 0)
-    XCTAssertLessThan(MapsGLRadarPalette.sampleSmoothing, 1)
+    XCTAssertEqual(MapsGLRadarPalette.sampleSmoothing, 0)
     XCTAssertGreaterThan(MapsGLRadarPalette.reflectivityStops.count, 4)
 
     func stop(_ dbz: Double) -> MapsGLRadarPalette.Stop? {
@@ -179,8 +180,10 @@ final class RadarPreferencesTests: XCTestCase {
   func testDetachRemovesStormcellsAndRadar() {
     XCTAssertEqual(
       MapsGLLiveRainLayers.detachIDs,
-      ["radar", "stormcells-positions", "stormcells-tracks"]
+      ["radar", "stormcells-tracks"]
     )
+    XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("stormcells-positions"))
+    XCTAssertFalse(MapsGLLiveRainLayers.stormcellIDs.contains("stormcells-positions"))
     XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("stormcells-heat"))
     XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("stormcells-cones"))
     XCTAssertFalse(MapsGLLiveRainLayers.detachIDs.contains("alerts"))
@@ -216,6 +219,14 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarBaseMapStyle.light.displayName, "Light")
     XCTAssertEqual(RadarBaseMapStyle.satelliteStreets.displayName, "Hybrid")
     XCTAssertEqual(RadarBaseMapStyle.light.cycled(), .satelliteStreets)
+  }
+
+  func testSatellitePostcardMigratesToLightOnce() {
+    suite.set(RadarBaseMapStyle.satelliteStreets.rawValue, forKey: "radar.pref.baseMapStyle")
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
+
+    RadarPreferences.baseMapStyle = .satelliteStreets
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .satelliteStreets)
   }
 
   func testDefaultsApplyWhenNothingIsStored() {

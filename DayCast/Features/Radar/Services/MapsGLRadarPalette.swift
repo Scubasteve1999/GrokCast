@@ -14,8 +14,11 @@ enum MapsGLRadarPalette {
   /// into watercolor. Spatial sample interpolation is a separate knob.
   static let interpolatesStops = false
   static let bandIntervalDbz: Double = 5
-  /// 0 = native radar bins (Minecraft). Modest value rounds storm edges.
-  static let sampleSmoothing: Double = 0.4
+  /// 0 = native WSR-88D bins. Any value > 0 rounds cores into blobs.
+  static let sampleSmoothing: Double = 0
+  /// False = MapsGL `InterpolationMode.none`. Bicubic is what turned
+  /// official 5 dBZ stops into a watercolor toy.
+  static let interpolatesSamples = false
 
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
@@ -59,12 +62,12 @@ enum MapsGLRadarPalette {
 }
 
 /// MapsGL weather-layer ids that ride with Live Rain.
-/// Positions + tracks only — not the Stormcells composite (that also ships
-/// cones + heat). Same gate as encoded radar; empty coverage is valid.
+/// StormcellsTracks paths only. Positions are the white pin/tick swarm.
+/// Never the Stormcells composite (cones + heat). Empty coverage is valid.
 enum MapsGLLiveRainLayers {
   static let radarID = "radar"
   /// Must match `WeatherService.LayerCode` raw values in MapsGL 1.6.1.
-  static let stormcellIDs = ["stormcells-positions", "stormcells-tracks"]
+  static let stormcellIDs = ["stormcells-tracks"]
 
   /// Removed on host detach. Radar first, then cell motion.
   static var detachIDs: [String] { [radarID] + stormcellIDs }

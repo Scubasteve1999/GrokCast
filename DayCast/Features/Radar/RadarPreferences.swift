@@ -27,7 +27,7 @@ enum RadarPreferences {
   /// Matches the Display sheet / panel slider. Out-of-range values would either
   /// wash the layer out or make it opaque enough to hide the base map.
   static let radarOpacityRange: ClosedRange<Double> = 0.4...1.0
-  static let defaultRadarOpacity: Double = 0.85
+  static let defaultRadarOpacity: Double = 0.95
 
   static func clampedRadarOpacity(_ value: Double) -> Double {
     guard value.isFinite else { return defaultRadarOpacity }
@@ -43,10 +43,25 @@ enum RadarPreferences {
 
   static var baseMapStyle: RadarBaseMapStyle {
     get {
-      store.string(forKey: baseMapStyleKey).flatMap(RadarBaseMapStyle.init(rawValue:))
+      migrateSatellitePostcardIfNeeded()
+      return store.string(forKey: baseMapStyleKey).flatMap(RadarBaseMapStyle.init(rawValue:))
         ?? .light
     }
     set { store.set(newValue.rawValue, forKey: baseMapStyleKey) }
+  }
+
+  /// One-time: Hybrid/Satellite was the leftover postcard canvas. Live MapsGL
+  /// rain needs a quiet workstation map. Users can still pick Hybrid after.
+  private static let quietBasemapMigratedKey = "radar.pref.quietBasemapMigrated"
+  private static func migrateSatellitePostcardIfNeeded() {
+    guard store.object(forKey: quietBasemapMigratedKey) == nil else { return }
+    store.set(true, forKey: quietBasemapMigratedKey)
+    let raw = store.string(forKey: baseMapStyleKey)
+    if raw == RadarBaseMapStyle.satelliteStreets.rawValue
+      || raw == RadarBaseMapStyle.satellite.rawValue
+    {
+      store.set(RadarBaseMapStyle.light.rawValue, forKey: baseMapStyleKey)
+    }
   }
 
   /// Defaults to true, so absence has to be distinguished from a stored `false` —

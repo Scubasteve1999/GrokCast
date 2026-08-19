@@ -17,12 +17,6 @@ struct RadarView: View {
     store.currentLocation?.coordinate ?? SavedLocation.oliveBranch.coordinate
   }
 
-  private var radarIsDay: Bool {
-    store.currentWeather.map {
-      WeatherBackgroundView.isDay(from: $0.symbolName)
-    } ?? WeatherBackgroundView.inferredIsDay
-  }
-
   /// Colorbar is only honest when MapsGL rain is the paint.
   private var showsMapsGLColorbar: Bool {
     MapsGLRadarPalette.shouldUseMapsGL(
@@ -177,15 +171,6 @@ struct RadarView: View {
         }
       }
       .ignoresSafeArea(edges: .bottom)
-      .overlay {
-        WeatherBackgroundView(
-          conditionCode: store.currentWeather?.conditionCode,
-          isDay: radarIsDay,
-          intensity: .subtle
-        )
-        .opacity(0.18)
-        .allowsHitTesting(false)
-      }
     }
     .overlay(alignment: .topLeading) {
       if store.selectedTab == .radar {
