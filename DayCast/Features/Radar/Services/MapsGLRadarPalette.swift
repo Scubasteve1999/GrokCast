@@ -90,9 +90,31 @@ enum MapsGLLiveRainLayers {
   static let trackThickness: Double = 1.15
   static let trackOpacity: Double = 0.68
 
+  /// Xweather stormcell GeoJSON. `general` is the dry-air nationwide tick spray.
+  /// hail / rotating / tornado is SVR/TOR class. Do not label NWS SCIT.
+  /// MapsGL `get` accepts these dotted paths (same as `report.cat` in their docs).
+  static let traitTypeProperty = "traits.type"
+  static let traitTornadoProperty = "traits.tornado"
+  static let tvsProperty = "tvs"
+  static let severeTraitTypes = ["hail", "rotating", "tornado"]
+  static let excludedTraitType = "general"
+
+  /// Client-side match for the MapsGL layer filter. `general` plus tvs/tornado
+  /// flags of 0 is the tick spray. Hail/rotation/tornado or a TVS is SVR/TOR.
+  static func isSevereStormcell(
+    traitType: String?, traitTornado: Int = 0, tvs: Int = 0
+  ) -> Bool {
+    if let traitType, severeTraitTypes.contains(traitType) { return true }
+    return traitTornado == 1 || tvs == 1
+  }
+
   /// Removed on host detach. Radar first, then cell motion.
   static var detachIDs: [String] { [radarID] + stormcellIDs }
 
+  /// Host must pass the real overlay + site flags. Do not fold rainWant into
+  /// overlayOn and then lie that `isSiteProduct` is false — that kept tracks
+  /// on N0B. Site products and overlay-off must return false so the host
+  /// detaches the layer instead of only toggling visibility.
   static func shouldShow(
     overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool, isLive: Bool = true
   ) -> Bool {

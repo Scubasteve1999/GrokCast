@@ -119,6 +119,13 @@ final class RadarStatePreferencesTests: XCTestCase {
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: state.selectedProduct.isSiteProduct, keysPresent: true)
     )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true,
+        isSiteProduct: state.selectedProduct.isSiteProduct,
+        keysPresent: true,
+        isLive: true)
+    )
   }
 
   func testMosaicRemainsAOneTapFallback() async {
@@ -133,6 +140,20 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: state.selectedProduct.isSiteProduct, keysPresent: true)
+    )
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true,
+        isSiteProduct: state.selectedProduct.isSiteProduct,
+        keysPresent: true,
+        isLive: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true,
+        isSiteProduct: state.selectedProduct.isSiteProduct,
+        keysPresent: true,
+        isLive: false)
     )
   }
 

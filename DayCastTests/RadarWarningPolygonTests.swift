@@ -161,6 +161,9 @@ final class RadarWarningPolygonTests: XCTestCase {
       "Special Weather Statement",
       "Flood Advisory",
       "Red Flag Warning",
+      "Air Quality Alert",
+      "Air Quality Warning",
+      "Air Stagnation Advisory",
     ]
     for event in excluded {
       XCTAssertNil(RadarWarningPolygon.kind(forEvent: event), event)
@@ -181,6 +184,16 @@ final class RadarWarningPolygonTests: XCTestCase {
     let tor = makeAlert(id: "tor", event: "Tornado Warning", rings: sampleRings)
     let drawn = RadarWarningPolygon.drawn(from: [heat, tor])
     XCTAssertEqual(drawn.map(\.event), ["Tornado Warning"])
+  }
+
+  func testAirQualityAlertDoesNotPaintAsMapLines() {
+    let aqa = makeAlert(event: "Air Quality Alert", rings: sampleRings)
+    let tor = makeAlert(id: "tor", event: "Tornado Warning", rings: sampleRings)
+    XCTAssertNil(RadarWarningPolygon.kind(forEvent: "Air Quality Alert"))
+    XCTAssertNil(RadarWarningPolygon.kind(forEvent: "Air Quality Warning"))
+    let drawn = RadarWarningPolygon.drawn(from: [aqa, tor])
+    XCTAssertEqual(drawn.map(\.event), ["Tornado Warning"])
+    XCTAssertEqual(RadarWarningPolygon.overlaySignature(from: [aqa]), "")
   }
 
   // MARK: - Colors + VoiceOver

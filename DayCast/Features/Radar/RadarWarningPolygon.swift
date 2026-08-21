@@ -56,6 +56,8 @@ enum RadarWarningPolygon {
 
   static func kind(forEvent event: String) -> Kind? {
     let lower = event.lowercased()
+    // Air Quality Alert / Warning polygons look like map lines at radar zoom.
+    if lower.contains("air quality") { return nil }
     guard lower.contains("warning") else { return nil }
     if lower.contains("tornado") { return .tornado }
     if lower.contains("severe thunderstorm") { return .severeThunderstorm }

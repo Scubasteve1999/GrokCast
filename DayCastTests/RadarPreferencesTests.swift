@@ -204,6 +204,33 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: true, keysPresent: true)
     )
+    // Host used to pass rainWant as overlayOn with isSiteProduct: false.
+    // N0B rainWant is false, but that is not a license to lie about site.
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: true, keysPresent: true, isLive: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: false, isSiteProduct: false, keysPresent: true, isLive: true)
+    )
+  }
+
+  func testStormcellFilterIsSevereClassOnly() {
+    XCTAssertEqual(MapsGLLiveRainLayers.severeTraitTypes, ["hail", "rotating", "tornado"])
+    XCTAssertEqual(MapsGLLiveRainLayers.excludedTraitType, "general")
+    XCTAssertFalse(MapsGLLiveRainLayers.severeTraitTypes.contains("general"))
+    XCTAssertEqual(MapsGLLiveRainLayers.traitTypeProperty, "traits.type")
+    XCTAssertEqual(MapsGLLiveRainLayers.traitTornadoProperty, "traits.tornado")
+    XCTAssertEqual(MapsGLLiveRainLayers.tvsProperty, "tvs")
+    XCTAssertFalse(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general"))
+    XCTAssertFalse(MapsGLLiveRainLayers.isSevereStormcell(traitType: nil))
+    XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "hail"))
+    XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "rotating"))
+    XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "tornado"))
+    XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", tvs: 1))
+    XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", traitTornado: 1))
+    XCTAssertFalse(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", traitTornado: 0, tvs: 0))
   }
 
   func testDetachRemovesStormcellsAndRadar() {

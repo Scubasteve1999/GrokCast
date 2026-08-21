@@ -17,8 +17,12 @@ final class MapsGLRadarHost {
   private var layerReady = false
   private var stormcellsReady = false
   private var lastVisible: Bool?
+  private var lastCellsWant: Bool?
   private var lastFrameDate: Date?
   private var lastFuture: Bool?
+  /// Real overlay/site flags for `shouldShow`. Do not pass rainWant as overlayOn.
+  private var lastOverlayOn: Bool?
+  private var lastIsSiteProduct: Bool?
   private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
   /// Today preview is rain-only. Live Radar paints StormcellsTracks paths only.
   var paintsStormcells = true
@@ -83,27 +87,38 @@ final class MapsGLRadarHost {
     layerReady = false
     stormcellsReady = false
     lastVisible = nil
+    lastCellsWant = nil
     lastFrameDate = nil
     lastFuture = nil
+    lastOverlayOn = nil
+    lastIsSiteProduct = nil
   }
 
   /// Snapshot for Today: Live rain only, newest scan, no site products.
   func syncPreview(opacity: Double, now: Date = Date()) {
     pendingOpacity = opacity
+    lastOverlayOn = true
+    lastIsSiteProduct = false
     let want = MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: true, isSiteProduct: false, keysPresent: Self.keysPresent
     )
-    guard let controller else { return }
+    guard let controller else {
+      lastVisible = want
+      lastCellsWant = cellsWanted()
+      return
+    }
 
     let futureChanged = lastFuture != false
     if futureChanged {
       lastFuture = false
       applyTimelineRange(future: false, on: controller)
     }
-    if lastVisible != want {
+    let cellsWant = cellsWanted()
+    let cellsNeedAttach = cellsWant && !stormcellsReady
+    if lastVisible != want || lastCellsWant != cellsWant || futureChanged
+      || cellsNeedAttach
+    {
       lastVisible = want
-      applyVisibility(want, on: controller)
-    } else if futureChanged {
       applyVisibility(want, on: controller)
     }
     guard want else { return }
@@ -117,12 +132,18 @@ final class MapsGLRadarHost {
 
   func sync(radarState: RadarState, opacity: Double) {
     pendingOpacity = opacity
+    lastOverlayOn = radarState.showRadarOverlay
+    lastIsSiteProduct = radarState.selectedProduct.isSiteProduct
     let want = MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
       keysPresent: Self.keysPresent
     )
-    guard let controller else { return }
+    guard let controller else {
+      lastVisible = want
+      lastCellsWant = cellsWanted()
+      return
+    }
 
     let futureChanged = lastFuture != radarState.showsFuture
     if futureChanged {
@@ -130,10 +151,12 @@ final class MapsGLRadarHost {
       applyTimelineRange(future: radarState.showsFuture, on: controller)
     }
 
-    if lastVisible != want {
+    let cellsWant = cellsWanted()
+    let cellsNeedAttach = cellsWant && !stormcellsReady
+    if lastVisible != want || lastCellsWant != cellsWant || futureChanged
+      || cellsNeedAttach
+    {
       lastVisible = want
-      applyVisibility(want, on: controller)
-    } else if futureChanged {
       applyVisibility(want, on: controller)
     }
 
@@ -167,9 +190,8 @@ final class MapsGLRadarHost {
       radarLog("[MapsGL] Failed to add radar layer: \(error)")
       layerReady = false
     }
-    if paintsStormcells {
-      installStormcellLayers(on: controller)
-    }
+    // Tracks attach only when `cellsWanted()` is true. Adding them here
+    // visible and then hiding is how N0B kept a nationwide tick spray.
     if let lastVisible {
       applyVisibility(lastVisible, on: controller)
     }
@@ -179,6 +201,8 @@ final class MapsGLRadarHost {
   /// Typed `StormcellsTracks` only. `WeatherService.Stormcells` also ships
   /// positions + cones + heat. Positions are the white pin/tick swarm.
   /// MapsGL cannot lengthen forecast-track geometry; empty coverage is valid.
+  /// Filter is hail/rotating/tornado (`traits.type`). `general` is the
+  /// dry-air tick spray across the South.
   private func installStormcellLayers(on controller: MapboxMapController) {
     do {
       var config = WeatherService.StormcellsTracks(service: controller.service)
@@ -189,6 +213,7 @@ final class MapsGLRadarHost {
       config.layer.paint.stroke.opacity = .constant(MapsGLLiveRainLayers.trackOpacity)
       config.layer.paint.stroke.lineCap = .constant(.butt)
       config.layer.paint.stroke.lineJoin = .constant(.miter)
+      config.layer.filter = Self.severeStormcellFilter
       try controller.addWeatherLayer(config: config)
       stormcellsReady = true
       radarLog("[MapsGL] stormcells-tracks added")
@@ -198,20 +223,45 @@ final class MapsGLRadarHost {
     }
   }
 
+  private func removeStormcellLayers(on controller: MapboxMapController) {
+    guard stormcellsReady else { return }
+    for code in Self.stormcellCodes {
+      controller.removeWeatherLayer(for: code)
+    }
+    stormcellsReady = false
+    lastCellsWant = false
+    radarLog("[MapsGL] stormcells-tracks removed")
+  }
+
+  /// Real overlay + site flags. Passing `rainWant` as overlayOn with
+  /// `isSiteProduct: false` was the leak: tracks stayed on N0B.
+  private func cellsWanted() -> Bool {
+    guard paintsStormcells else { return false }
+    return MapsGLLiveRainLayers.shouldShow(
+      overlayOn: lastOverlayOn ?? false,
+      isSiteProduct: lastIsSiteProduct ?? true,
+      keysPresent: Self.keysPresent,
+      isLive: lastFuture != true
+    )
+  }
+
   private func applyVisibility(_ rainWant: Bool, on controller: MapboxMapController) {
     if layerReady {
       controller.setWeatherLayerVisibility(for: .radar, visible: rainWant)
     }
-    if stormcellsReady {
-      let cellsWant = MapsGLLiveRainLayers.shouldShow(
-        overlayOn: rainWant,
-        isSiteProduct: false,
-        keysPresent: true,
-        isLive: lastFuture != true
-      )
-      for code in Self.stormcellCodes {
-        controller.setWeatherLayerVisibility(for: code, visible: cellsWant)
+    let cellsWant = cellsWanted()
+    lastCellsWant = cellsWant
+    if cellsWant {
+      if !stormcellsReady {
+        installStormcellLayers(on: controller)
       }
+      if stormcellsReady {
+        for code in Self.stormcellCodes {
+          controller.setWeatherLayerVisibility(for: code, visible: true)
+        }
+      }
+    } else {
+      removeStormcellLayers(on: controller)
     }
   }
 
@@ -220,6 +270,25 @@ final class MapsGLRadarHost {
   private static let stormcellCodes: [WeatherService.LayerCode] = [
     .stormcellsTracks
   ]
+
+  /// Xweather `traits.type` hail/rotating/tornado = SVR/TOR class.
+  /// `general` cells are the nationwide tick spray on dry air.
+  /// Use `any`/`==`, not `in`/`contains`: MapsGL 1.6.1 treats a bare string
+  /// array as an expression, so `contains(..., in: ["hail", ...])` can no-op
+  /// and paint every cell.
+  private static var severeStormcellFilter: MapsGLMaps.Expression {
+    let type = MapsGLMaps.Expression.get(MapsGLLiveRainLayers.traitTypeProperty)
+    var clauses: [Any] = MapsGLLiveRainLayers.severeTraitTypes.map {
+      MapsGLMaps.Expression.equals(type, $0) as Any
+    }
+    clauses.append(
+      MapsGLMaps.Expression.equals(
+        MapsGLMaps.Expression.get(MapsGLLiveRainLayers.traitTornadoProperty), 1))
+    clauses.append(
+      MapsGLMaps.Expression.equals(
+        MapsGLMaps.Expression.get(MapsGLLiveRainLayers.tvsProperty), 1))
+    return MapsGLMaps.Expression.or(clauses)
+  }
 
   private func applyTimelineRange(future: Bool, on controller: MapboxMapController) {
     if future {
