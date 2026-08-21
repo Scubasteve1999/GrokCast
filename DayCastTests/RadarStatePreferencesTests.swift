@@ -136,18 +136,14 @@ final class RadarStatePreferencesTests: XCTestCase {
     )
   }
 
-  func testIEMSiteRasterPaintSoftensOpacityWithoutRetint() {
-    XCTAssertEqual(IEMSiteRasterPaint.opacityFactor, 0.82, accuracy: 0.0001)
-    XCTAssertEqual(
-      IEMSiteRasterPaint.opacity(slider: RadarPreferences.defaultRadarOpacity, isIEMSite: true),
-      RadarPreferences.defaultRadarOpacity * 0.82,
-      accuracy: 0.0001)
-    XCTAssertEqual(
-      IEMSiteRasterPaint.opacity(slider: RadarPreferences.defaultRadarOpacity, isIEMSite: false),
-      RadarPreferences.defaultRadarOpacity,
-      accuracy: 0.0001)
-    XCTAssertEqual(IEMSiteRasterPaint.opacity(slider: 1.0, isIEMSite: true), 0.82, accuracy: 0.0001)
-    XCTAssertEqual(IEMSiteRasterPaint.opacity(slider: 0.4, isIEMSite: false), 0.4, accuracy: 0.0001)
+  func testIEMSiteN0BKeysClutterInsteadOfSofteningOpacity() {
+    XCTAssertTrue(
+      IEMSiteReflectivityPaint.shouldProcess(
+        url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::TWX-N0B-0/8/59/97.png"))
+    XCTAssertFalse(
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: true, keysPresent: true))
     XCTAssertEqual(RadarTileProvider.iem.maxZoom, 10, accuracy: 0.0001)
+    XCTAssertEqual(RadarPreferences.defaultRadarOpacity, 0.95, accuracy: 0.0001)
   }
 }
