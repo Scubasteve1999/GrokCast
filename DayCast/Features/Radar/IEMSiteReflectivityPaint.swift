@@ -15,6 +15,11 @@ import UniformTypeIdentifiers
 enum IEMSiteReflectivityPaint {
   /// 8-neighbor count at or below this is an isolated gate, not a rain cell.
   static let speckleMaxNeighbors = 1
+  /// Dusty khaki at the site circle is sat 28–38, not the old sat < 28 floor.
+  static let dustyMaxSaturation: Double = 42
+  /// IEM 15 dBZ green is hue ~122 (`#11D518`); `#35D65B` is ~134. Hue 138+
+  /// is the 8-bit teal-cyan ramp toward 10 dBZ, not organized light rain.
+  static let precipHueEnd: Double = 138
 
   static func shouldProcess(url: String) -> Bool {
     url.contains("ridge::") && url.contains("-N0B-")
@@ -29,13 +34,13 @@ enum IEMSiteReflectivityPaint {
     // Near-white 70 dBZ cores (sat near 0, val high).
     if val >= 88 && sat <= 20 { return false }
     // Dusty khaki/gray 8-bit floor — not saturated precip.
-    if sat < 28 && val < 88 { return true }
+    if sat < dustyMaxSaturation && val < 88 { return true }
     // Magenta / purple hail (and high-end N0B).
     if hue > 260 && hue < 340 && sat >= 20 { return false }
     // Red / orange / yellow.
     if hue < 70 || hue >= 340 { return false }
-    // Green through teal-green (NWS 15 dBZ and the 8-bit approach to it).
-    if hue >= 70 && hue < 175 { return false }
+    // Green through IEM `#35D65B`. Teal-cyan 8-bit floor is clutter.
+    if hue >= 70 && hue < precipHueEnd { return false }
     // Remaining: cyan / blue / slate (NWS 0–10 dBZ + clear-air).
     return true
   }

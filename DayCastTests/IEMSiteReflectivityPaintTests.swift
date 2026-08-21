@@ -36,6 +36,12 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertTrue(clutter(0x4F, 0x67, 0xA2))
     XCTAssertTrue(clutter(0x60, 0xB4, 0xD4))  // IEM cyan
     XCTAssertTrue(clutter(0xB0, 0xB6, 0xB4))  // dusty khaki floor
+    XCTAssertTrue(clutter(0xA3, 0xA0, 0x68))  // site-circle khaki (sat ~36)
+    XCTAssertTrue(clutter(0xB0, 0xAF, 0x7E))
+    XCTAssertTrue(clutter(0x59, 0xD6, 0xB3))  // 8-bit teal-cyan toward 10 dBZ
+    XCTAssertTrue(clutter(0x52, 0xD6, 0xA2))
+    XCTAssertTrue(clutter(0x43, 0xD6, 0x7E))
+    XCTAssertTrue(clutter(0x3C, 0xD6, 0x6D))
 
     XCTAssertFalse(clutter(0x00, 0xFF, 0x00))  // 15 dBZ green
     XCTAssertFalse(clutter(0x00, 0xC8, 0x00))  // 20 dBZ
@@ -90,6 +96,49 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertEqual(rgb(5, 5).1, 0xD5)
     XCTAssertEqual(alpha(3, 5), 255, "organized yellow must stay")
     XCTAssertEqual(rgb(3, 5).0, 0xFF)
+  }
+
+  func testKeysKhakiLeakAndTealFringeKeepsOrganizedFifteenGreen() {
+    var pixels = [UInt8](repeating: 0, count: 8 * 8 * 4)
+    func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * 8 + x) * 4
+      pixels[o] = r
+      pixels[o + 1] = g
+      pixels[o + 2] = b
+      pixels[o + 3] = 255
+    }
+    // Organized 15 dBZ green cell.
+    for y in 4...6 {
+      for x in 4...6 {
+        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    set(5, 3, r: 0x35, g: 0xD6, b: 0x5B)  // IEM bright green attached
+    set(1, 1, r: 0xA3, g: 0xA0, b: 0x68)  // khaki leak
+    set(2, 1, r: 0xB0, g: 0xAF, b: 0x7E)
+    set(0, 6, r: 0x59, g: 0xD6, b: 0xB3)  // teal fringe
+    set(1, 6, r: 0x3C, g: 0xD6, b: 0x6D)
+    set(7, 7, r: 0xFF, g: 0x90, b: 0x00)  // isolated orange — speckle drops
+
+    let png = makePNG(width: 8, height: 8, rgba: pixels)
+    let keyed = IEMSiteReflectivityPaint.keyClutter(in: png)
+    let out = readRGBA(png: keyed, width: 8, height: 8)
+
+    func alpha(_ x: Int, _ y: Int) -> UInt8 { out[(y * 8 + x) * 4 + 3] }
+    func rgb(_ x: Int, _ y: Int) -> (UInt8, UInt8, UInt8) {
+      let o = (y * 8 + x) * 4
+      return (out[o], out[o + 1], out[o + 2])
+    }
+
+    XCTAssertEqual(alpha(1, 1), 0, "khaki leak must drop")
+    XCTAssertEqual(alpha(2, 1), 0, "khaki leak must drop")
+    XCTAssertEqual(alpha(0, 6), 0, "teal fringe must drop")
+    XCTAssertEqual(alpha(1, 6), 0, "mint-teal fringe must drop")
+    XCTAssertEqual(alpha(7, 7), 0, "isolated orange gate must drop")
+    XCTAssertEqual(alpha(5, 5), 255, "organized 15 dBZ green must stay")
+    XCTAssertEqual(rgb(5, 5).1, 0xD5)
+    XCTAssertEqual(alpha(5, 3), 255, "organized IEM bright green must stay")
+    XCTAssertEqual(rgb(5, 3).1, 0xD6)
   }
 
   func testLiveDefaultStaysNearestSiteN0B() {

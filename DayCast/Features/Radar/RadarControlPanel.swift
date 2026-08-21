@@ -506,6 +506,8 @@ private struct RadarDisplayOptionsSheet: View {
         Section("Legend") {
           RadarMiniLegend(
             showsVelocity: showsVelocityLegend,
+            keysClearAir: radarState.selectedProduct.isSiteProduct
+              && !radarState.showsFuture,
             style: .sheet
           )
         }
@@ -610,6 +612,8 @@ struct RadarMiniLegend: View {
   }
 
   var showsVelocity: Bool
+  /// N0B keys 0/5/10 dBZ; mosaic/MapsGL still paints them.
+  var keysClearAir: Bool = false
   var style: Style = .panel
 
   var body: some View {
@@ -660,11 +664,12 @@ struct RadarMiniLegend: View {
     }
   }
 
-  /// Same RGB stops MapsGL paints, discrete (no gradient). Ticks sit under
-  /// the matching band so the key agrees with the map.
+  /// Same RGB stops the current paint uses, discrete (no gradient). Ticks sit
+  /// under the matching band so the key agrees with the map.
   private var reflectivityLegend: some View {
-    let stops = MapsGLRadarPalette.visibleReflectivityStops
-    let ticks = Set(MapsGLRadarPalette.legendTickDbz)
+    let stops = MapsGLRadarPalette.paintedReflectivityStops(
+      keysClearAir: keysClearAir)
+    let ticks = Set(MapsGLRadarPalette.legendTicks(keysClearAir: keysClearAir))
     return VStack(alignment: .leading, spacing: 4) {
       Text("dBZ")
         .font(DesignTokens.Typography.micro())
@@ -692,7 +697,7 @@ struct RadarMiniLegend: View {
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(
-      "Reflectivity legend, dBZ \(Int(stops.first?.dbz ?? 5)) to \(Int(stops.last?.dbz ?? 70))"
+      "Reflectivity legend, dBZ \(Int(stops.first?.dbz ?? 15)) to \(Int(stops.last?.dbz ?? 70))"
     )
   }
 
@@ -701,11 +706,18 @@ struct RadarMiniLegend: View {
   }
 }
 
-/// Vertical dBZ key on Live Radar. Same stops as MapsGL and RadarMiniLegend.
+/// Vertical dBZ key on Live Radar. Stops match the paint: N0B keys 5/10
+/// cyan-blue, so those bands stay off the legend. Mosaic/MapsGL keeps them.
 struct RadarMapColorbar: View {
+  var keysClearAir: Bool = false
+
   var body: some View {
-    let stops = Array(MapsGLRadarPalette.visibleReflectivityStops.reversed())
-    let ticks = Set(MapsGLRadarPalette.legendTickDbz)
+    let stops = Array(
+      MapsGLRadarPalette.paintedReflectivityStops(keysClearAir: keysClearAir)
+        .reversed())
+    let ticks = Set(MapsGLRadarPalette.legendTicks(keysClearAir: keysClearAir))
+    let low = Int(stops.last?.dbz ?? (keysClearAir ? 15 : 5))
+    let high = Int(stops.first?.dbz ?? 70)
     return VStack(alignment: .leading, spacing: 4) {
       Text("dBZ")
         .font(DesignTokens.Typography.micro())
@@ -741,6 +753,12 @@ struct RadarMapColorbar: View {
       in: RoundedRectangle(cornerRadius: 8)
     )
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Reflectivity legend, dBZ 5 to 70. \(RadarChromeCopy.motionTracks)")
+    .accessibilityLabel(colorbarAccessibilityLabel(low: low, high: high))
+  }
+
+  private func colorbarAccessibilityLabel(low: Int, high: Int) -> String {
+    let range = "Reflectivity legend, dBZ \(low) to \(high)"
+    if keysClearAir { return range }
+    return "\(range). \(RadarChromeCopy.motionTracks)"
   }
 }

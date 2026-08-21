@@ -42,12 +42,25 @@ enum MapsGLRadarPalette {
   ]
 
   /// Painted bands only — skip the clear-air stop so the key matches the map.
+  /// MapsGL mosaic still paints 5/10 dBZ. N0B keys those to transparent, so
+  /// pass `keysClearAir: true` and the legend starts at 15 dBZ green.
   static var visibleReflectivityStops: [Stop] {
-    reflectivityStops.filter { $0.alpha > 0 }
+    paintedReflectivityStops(keysClearAir: false)
+  }
+
+  static func paintedReflectivityStops(keysClearAir: Bool) -> [Stop] {
+    if keysClearAir {
+      return reflectivityStops.filter { $0.dbz >= 15 }
+    }
+    return reflectivityStops.filter { $0.alpha > 0 }
   }
 
   /// Compact ticks a phone can read. Every value is a real painted stop.
   static let legendTickDbz: [Double] = [5, 20, 35, 50, 65, 70]
+
+  static func legendTicks(keysClearAir: Bool) -> [Double] {
+    keysClearAir ? [15, 30, 45, 60, 70] : legendTickDbz
+  }
 
   static func shouldUseMapsGL(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool)
     -> Bool

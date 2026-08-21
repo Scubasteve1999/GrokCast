@@ -17,13 +17,13 @@ struct RadarView: View {
     store.currentLocation?.coordinate ?? SavedLocation.oliveBranch.coordinate
   }
 
-  /// Colorbar is only honest when MapsGL rain is the paint.
-  private var showsMapsGLColorbar: Bool {
-    MapsGLRadarPalette.shouldUseMapsGL(
-      overlayOn: radarState.showRadarOverlay,
-      isSiteProduct: radarState.selectedProduct.isSiteProduct,
-      keysPresent: MapsGLRadarHost.keysPresent
-    )
+  /// On-map dBZ key follows the paint: N0B (keyed 15+) or MapsGL mosaic (5+).
+  private var showsReflectivityColorbar: Bool {
+    radarState.showRadarOverlay && !radarState.selectedProduct.isVelocityProduct
+  }
+
+  private var colorbarKeysClearAir: Bool {
+    radarState.selectedProduct.isSiteProduct && !radarState.showsFuture
   }
 
   /// Day-1 line only when severe context is for the selected location (avoids stale city bleed).
@@ -209,8 +209,8 @@ struct RadarView: View {
       }
     }
     .overlay(alignment: .bottomLeading) {
-      if store.selectedTab == .radar, showsMapsGLColorbar {
-        RadarMapColorbar()
+      if store.selectedTab == .radar, showsReflectivityColorbar {
+        RadarMapColorbar(keysClearAir: colorbarKeysClearAir)
           .padding(.leading, DesignTokens.Spacing.space12)
           .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance + 136)
           .allowsHitTesting(false)

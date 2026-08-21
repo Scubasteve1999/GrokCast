@@ -139,6 +139,25 @@ final class RadarPreferencesTests: XCTestCase {
     }
   }
 
+  func testN0BColorbarOmitsKeyedCyanBlueStops() {
+    let n0b = MapsGLRadarPalette.paintedReflectivityStops(keysClearAir: true)
+    XCTAssertEqual(n0b.first?.dbz, 15)
+    XCTAssertEqual(n0b.first?.hex, "#00FF00")
+    XCTAssertFalse(n0b.contains { $0.dbz == 5 })
+    XCTAssertFalse(n0b.contains { $0.dbz == 10 })
+    XCTAssertFalse(n0b.contains { $0.hex == "#01A0F6" })
+    XCTAssertFalse(n0b.contains { $0.hex == "#0000F6" })
+    XCTAssertTrue(n0b.contains { $0.dbz == 40 && $0.hex == "#FF9000" })
+    XCTAssertEqual(MapsGLRadarPalette.legendTicks(keysClearAir: true), [15, 30, 45, 60, 70])
+    for tick in MapsGLRadarPalette.legendTicks(keysClearAir: true) {
+      XCTAssertNotNil(n0b.first { $0.dbz == tick })
+    }
+
+    let mosaic = MapsGLRadarPalette.paintedReflectivityStops(keysClearAir: false)
+    XCTAssertEqual(mosaic.first?.dbz, 5)
+    XCTAssertTrue(mosaic.contains { $0.dbz == 10 })
+  }
+
   func testControlSheetStaysUpWhenMapOnlyIsPersisted() {
     XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: false))
     XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: true))
