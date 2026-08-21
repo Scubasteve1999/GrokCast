@@ -3,6 +3,20 @@ import MapboxMaps
 import SwiftUI
 import UIKit
 
+/// IEM RIDGE N0B/N0S bakes every echo at alpha 255. MapsGL rain already
+/// learned that uniform alpha 1 + layer 0.95 is a painted sheet — light bins
+/// there sit at 0.48–0.72. Raster-opacity is the only Mapbox style knob that
+/// recaptures that on site tiles without retinting (sat/contrast/hue stay 0)
+/// or blurring grain. Fade is temporal. Linear resampling is already on.
+enum IEMSiteRasterPaint {
+  static let opacityFactor: Double = 0.82
+
+  static func opacity(slider: Double, isIEMSite: Bool) -> Double {
+    let painted = isIEMSite ? slider * opacityFactor : slider
+    return min(max(painted, 0), 1)
+  }
+}
+
 struct RadarMapboxRepresentable: UIViewRepresentable {
   @Bindable var radarState: RadarState
   var opacity: Double
@@ -338,6 +352,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
       // IEM single-site Super-Res/SRV ship NWS palettes with clear-air clutter and
       // range-fold purple at the scan edge. Glow paint makes that noise look broken.
+      // Soften with raster-opacity only — not sat/contrast/hue, not maxzoom
+      // (city view is already below z10; capping it mushes grain on pinch-in).
       let useNeutralPaint = radarState.selectedProduct.isSiteProduct && frame.provider == .iem
       let scheme = radarState.colorScheme
       let saturation: Double
@@ -364,7 +380,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         tileKey: frame.tileKey,
         provider: frame.provider,
         maxZoom: frame.provider.maxZoom,
-        opacity: opacity,
+        opacity: IEMSiteRasterPaint.opacity(slider: opacity, isIEMSite: useNeutralPaint),
         saturation: saturation,
         contrast: contrast,
         brightnessMin: brightnessMin,

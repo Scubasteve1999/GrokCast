@@ -135,4 +135,19 @@ final class RadarStatePreferencesTests: XCTestCase {
         overlayOn: true, isSiteProduct: state.selectedProduct.isSiteProduct, keysPresent: true)
     )
   }
+
+  func testIEMSiteRasterPaintSoftensOpacityWithoutRetint() {
+    XCTAssertEqual(IEMSiteRasterPaint.opacityFactor, 0.82, accuracy: 0.0001)
+    XCTAssertEqual(
+      IEMSiteRasterPaint.opacity(slider: RadarPreferences.defaultRadarOpacity, isIEMSite: true),
+      RadarPreferences.defaultRadarOpacity * 0.82,
+      accuracy: 0.0001)
+    XCTAssertEqual(
+      IEMSiteRasterPaint.opacity(slider: RadarPreferences.defaultRadarOpacity, isIEMSite: false),
+      RadarPreferences.defaultRadarOpacity,
+      accuracy: 0.0001)
+    XCTAssertEqual(IEMSiteRasterPaint.opacity(slider: 1.0, isIEMSite: true), 0.82, accuracy: 0.0001)
+    XCTAssertEqual(IEMSiteRasterPaint.opacity(slider: 0.4, isIEMSite: false), 0.4, accuracy: 0.0001)
+    XCTAssertEqual(RadarTileProvider.iem.maxZoom, 10, accuracy: 0.0001)
+  }
 }
