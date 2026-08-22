@@ -110,7 +110,7 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertEqual(RadarProduct.defaultLive, .superResReflectivity)
     XCTAssertEqual(RadarProduct.defaultLive.iemCode, "N0B")
     XCTAssertTrue(RadarProduct.defaultLive.isSiteProduct)
-    XCTAssertEqual(RadarProduct.defaultLive.displayName, "Rain")
+    XCTAssertEqual(RadarProduct.defaultLive.displayName, "Site Doppler")
 
     let state = RadarState()
     XCTAssertEqual(state.selectedProduct, .superResReflectivity)
@@ -142,7 +142,7 @@ final class RadarStatePreferencesTests: XCTestCase {
 
     XCTAssertEqual(state.selectedProduct, .reflectivity)
     XCTAssertFalse(state.selectedProduct.isSiteProduct)
-    XCTAssertEqual(state.selectedProduct.displayName, "Mosaic")
+    XCTAssertEqual(state.selectedProduct.displayName, "National radar")
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: state.selectedProduct.isSiteProduct, keysPresent: true)

@@ -197,6 +197,42 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertEqual(RadarProduct.defaultLive, .superResReflectivity)
     XCTAssertEqual(RadarProduct.defaultLive.iemCode, "N0B")
     XCTAssertTrue(RadarProduct.defaultLive.isSiteProduct)
+    XCTAssertEqual(RadarProduct.defaultLive.displayName, "Site Doppler")
+  }
+
+  func testOrganizedPrecipCountIgnoresClutterAndKeepsCells() {
+    var dry = [UInt8](repeating: 0, count: 8 * 8 * 4)
+    func setDry(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * 8 + x) * 4
+      dry[o] = r
+      dry[o + 1] = g
+      dry[o + 2] = b
+      dry[o + 3] = 255
+    }
+    setDry(1, 1, r: 0x01, g: 0xA0, b: 0xF6)
+    setDry(2, 2, r: 0x57, g: 0x6D, b: 0xA4)
+    let dryPNG = makePNG(width: 8, height: 8, rgba: dry)
+    XCTAssertEqual(IEMSiteReflectivityPaint.organizedPrecipPixelCount(in: dryPNG), 0)
+    XCTAssertFalse(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: dryPNG, minPixels: 6))
+
+    var wet = [UInt8](repeating: 0, count: 8 * 8 * 4)
+    func setWet(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * 8 + x) * 4
+      wet[o] = r
+      wet[o + 1] = g
+      wet[o + 2] = b
+      wet[o + 3] = 255
+    }
+    for y in 3...5 {
+      for x in 3...5 {
+        setWet(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    setWet(4, 4, r: 0xFF, g: 0xFF, b: 0x00)
+    let wetPNG = makePNG(width: 8, height: 8, rgba: wet)
+    XCTAssertGreaterThanOrEqual(
+      IEMSiteReflectivityPaint.organizedPrecipPixelCount(in: wetPNG), 6)
+    XCTAssertTrue(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: wetPNG, minPixels: 6))
   }
 
   private func clutter(_ r: UInt8, _ g: UInt8, _ b: UInt8) -> Bool {

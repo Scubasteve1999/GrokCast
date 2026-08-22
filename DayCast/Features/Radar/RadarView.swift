@@ -17,7 +17,7 @@ struct RadarView: View {
     store.currentLocation?.coordinate ?? SavedLocation.oliveBranch.coordinate
   }
 
-  /// On-map dBZ key follows the paint: N0B (keyed 15+) or MapsGL mosaic (5+).
+  /// On-map dBZ key follows the paint: N0B (keyed 15+) or National radar (5+).
   private var showsReflectivityColorbar: Bool {
     radarState.showRadarOverlay && !radarState.selectedProduct.isVelocityProduct
   }
@@ -66,7 +66,7 @@ struct RadarView: View {
           // Re-entering Radar after a long idle rebuilds stale frames so FUTURE
           // reflects the provider's newest run; a quick switch is a no-op.
           let center = selectedMapCenter
-          await radarState.reloadIfStale(for: center)
+          await radarState.handleLiveOpen(for: center)
           recenterOnSelectedLocation()
           if radarState.showContent {
             radarState.presentLiveNow()
@@ -78,9 +78,11 @@ struct RadarView: View {
       .task(id: store.currentLocation?.id) {
         let center = selectedMapCenter
         await radarState.updateNearestSite(for: center)
-        await radarState.reloadIfStale(for: center)
         if store.selectedTab == .radar {
+          await radarState.handleLiveOpen(for: center)
           recenterOnSelectedLocation()
+        } else {
+          await radarState.reloadIfStale(for: center)
         }
       }
       .task(id: radarState.transition?.id) {

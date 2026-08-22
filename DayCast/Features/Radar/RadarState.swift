@@ -65,8 +65,13 @@ final class RadarState {
 
   var showModeSwitchOverlay: Bool { transition != nil }
 
-  /// Live Rain is nearest-site N0B. Mosaic (`reflectivity`) is the fallback product.
+  /// Live tries nearest-site N0B. National radar (`reflectivity`) is the dry-site fallback.
   private(set) var selectedProduct: RadarProduct = .defaultLive
+  /// Explicit Layers/chip tap on Site Doppler. Live open clears this so a dry
+  /// site cannot strand the next open on a blank map.
+  private var userPinnedSiteDoppler = false
+  /// Test hook: skip the IEM tile probe.
+  var sitePrecipProbeForTesting: Bool?
   /// Client-side raster color treatment (applied in the Mapbox layer).
   /// These four persist via `RadarPreferences`; the controls bind to them directly,
   /// so `didSet` is the one hook that catches every path that can change them.
@@ -256,11 +261,18 @@ final class RadarState {
 
   /// Tab entry and resume: newest live scan so SCAN is about now, not a 2-hour-old
   /// loop start. Leaves playback paused — Play from newest starts at the oldest
-  /// frame and walks toward now. SCAN still ages whichever frame is on screen.
+  /// frame and walks toward now. SCAN/stale keys off the newest frame.
   func presentLiveNow() {
     guard !showsFuture, timeline.hasLive else { return }
     playback.landOnNewestLiveFrame(count: timeline.live.count)
     playback.stop()
+  }
+
+  /// Live tab entry / location change: re-evaluate dry-site auto National.
+  func handleLiveOpen(for coordinate: CLLocationCoordinate2D) async {
+    userPinnedSiteDoppler = false
+    await reloadIfStale(for: coordinate)
+    await applyDefaultLiveOpenPolicy()
   }
 
   func setPlaybackSpeed(_ speedMultiplier: Double) {
@@ -414,9 +426,12 @@ extension RadarState {
     nearestSite != nil
   }
 
-  /// Switch between composite reflectivity and single-site NEXRAD products.
+  /// Switch between National radar and single-site NEXRAD products.
   /// Silent no-op when the site products aren't available or frames fail to load.
-  func setProduct(_ product: RadarProduct) async {
+  func setProduct(_ product: RadarProduct, userInitiated: Bool = true) async {
+    if userInitiated {
+      userPinnedSiteDoppler = product == .superResReflectivity
+    }
     guard product != selectedProduct else { return }
     siteProductUnavailableMessage = nil
     siteProductAdvisory = nil
@@ -453,6 +468,19 @@ extension RadarState {
       activeSiteProductSite = nil
       // Revert so the chip and later composite reloads don't think a site product is active.
       selectedProduct = previousProduct
+      return
+    }
+
+    if userInitiated, product == .superResReflectivity {
+      let hasPrecip: Bool
+      if let override = sitePrecipProbeForTesting {
+        hasPrecip = override
+      } else {
+        hasPrecip = await probeSiteLiveWindowPrecip()
+      }
+      if !hasPrecip, let id = activeSiteProductSite?.id ?? nearestSite?.id {
+        siteProductAdvisory = "No precip on \(id)"
+      }
     }
   }
 
@@ -509,6 +537,80 @@ extension RadarState {
 
   func restoreCompositeLiveForTesting() {
     _ = restoreCompositeLive()
+  }
+
+  func setUserPinnedSiteDopplerForTesting(_ pinned: Bool) {
+    userPinnedSiteDoppler = pinned
+  }
+
+  func seedSiteLiveForTesting(site: IEMRadarService.Site, frames: [RadarFrame]) {
+    nearestSite = site
+    activeSiteProductSite = site
+    selectedProduct = .superResReflectivity
+    lastLoadedCoordinate = CLLocationCoordinate2D(latitude: site.lat, longitude: site.lon)
+    _ = commitLiveFrames(frames, availability: .available, isSiteProduct: true)
+  }
+
+  func applyDefaultLiveOpenPolicyForTesting() async {
+    await applyDefaultLiveOpenPolicy()
+  }
+
+  /// Dry / failed Site Doppler presents National radar on Live open.
+  func applyDefaultLiveOpenPolicy() async {
+    guard !showsFuture else { return }
+    guard selectedProduct != .stormRelativeVelocity else { return }
+    guard !userPinnedSiteDoppler else { return }
+
+    let siteIsSelected = selectedProduct.isSiteProduct
+    let siteLoaded =
+      siteIsSelected && timeline.hasLive
+      && RadarLivePresentation.isPresentableAsLive(timeline.live, isSiteProduct: true)
+    let siteFailedOrStale = siteIsSelected && !siteLoaded
+    let nationalAvailable: Bool = {
+      guard let composite = compositeLive else { return false }
+      return RadarLivePresentation.isPresentableAsLive(
+        composite.frames, isSiteProduct: false)
+    }()
+
+    var siteHasPrecip = false
+    if siteLoaded {
+      if let override = sitePrecipProbeForTesting {
+        siteHasPrecip = override
+      } else {
+        siteHasPrecip = await probeSiteLiveWindowPrecip()
+      }
+    }
+
+    let present = RadarLiveOpenPolicy.productToPresent(
+      userExplicitlyChoseSiteDoppler: userPinnedSiteDoppler,
+      siteDopplerLoaded: siteLoaded,
+      siteHasPrecipInLiveWindow: siteHasPrecip,
+      siteFailedOrStale: siteFailedOrStale,
+      nationalAvailable: nationalAvailable
+    )
+    guard present == .nationalRadar else { return }
+
+    let failedMessage = siteFailedOrStale ? siteProductUnavailableMessage : nil
+    let clearHint: String?
+    if failedMessage == nil, let id = activeSiteProductSite?.id ?? nearestSite?.id {
+      clearHint = "\(id) is clear"
+    } else {
+      clearHint = nil
+    }
+
+    restoreCompositeLive()
+    presentLiveNow()
+    if let failedMessage {
+      siteProductUnavailableMessage = failedMessage
+    } else if let clearHint {
+      siteProductAdvisory = clearHint
+    }
+  }
+
+  private func probeSiteLiveWindowPrecip() async -> Bool {
+    guard let site = activeSiteProductSite ?? nearestSite else { return false }
+    return await IEMRadarService.liveWindowHasOrganizedPrecip(
+      frames: timeline.live, site: site)
   }
 
   /// Reloads Super-Res / SRV frames for the nearest site, walking to neighbors when
@@ -691,11 +793,12 @@ extension RadarState {
       let refreshed = await refreshActiveSiteProduct()
       if !refreshed {
         radarLog(
-          "[RadarState] \(selectedProduct.displayName) refresh failed — restoring composite reflectivity"
+          "[RadarState] \(selectedProduct.displayName) refresh failed — restoring National radar"
         )
         siteProductUnavailableMessage = unavailableMessage(for: selectedProduct)
         restoreCompositeLive()
       }
+      await applyDefaultLiveOpenPolicy()
     } else {
       selectedProduct = .reflectivity
       _ = commitLiveFrames(

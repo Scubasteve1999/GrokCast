@@ -194,6 +194,7 @@ final class MapsGLRadarHost {
         MapsGLRadarPalette.interpolatesSamples ? .bicubic : .none
       config.layer.paint.sample.quality = .exact
       config.layer.paint.sample.meld = false
+      config.layer.paint.sample.drawRange = 5...75
       config.layer.paint.opacity = Opacity(value: Float(pendingOpacity))
       config.layer.quality = .exact
       try controller.addWeatherLayer(config: config)
@@ -346,8 +347,13 @@ final class MapsGLRadarHost {
         ColorStop(stop.dbz, Self.color(hex: stop.hex, alpha: stop.alpha))
       }
     )
+    // Stepped 5 dBZ bins. interpolate default is true (smooth toy wash);
+    // interval default is 0 (gradient). Both must be overridden. Apple SDK
+    // has no `breaks` — range + interval + interpolate=false is the native binning.
     options.interpolate = MapsGLRadarPalette.interpolatesStops
     options.interval = MapsGLRadarPalette.bandIntervalDbz
+    options.range = 0...70
+    options.normalized = false
     return options
   }
 

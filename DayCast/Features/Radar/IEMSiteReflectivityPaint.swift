@@ -28,8 +28,51 @@ enum IEMSiteReflectivityPaint {
   /// True yellow/orange/red. IEM olive 25 dBZ (~hue 66–70) is not a cell core.
   static let stormCoreHueEnd: Double = 65
 
+  /// Opaque pixels remaining after clutter-key. Dry N0B is ~0; a cell is dozens+.
+  static let organizedPrecipMinPixels = 40
+
   static func shouldProcess(url: String) -> Bool {
     url.contains("ridge::") && url.contains("-N0B-")
+  }
+
+  static func organizedPrecipPixelCount(in png: Data) -> Int {
+    let keyed = keyClutter(in: png)
+    guard let source = CGImageSourceCreateWithData(keyed as CFData, nil),
+      let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+    else { return 0 }
+    let width = cgImage.width
+    let height = cgImage.height
+    guard width > 0, height > 0 else { return 0 }
+    let bytesPerPixel = 4
+    var pixels = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+    return pixels.withUnsafeMutableBytes { raw -> Int in
+      guard
+        let context = CGContext(
+          data: raw.baseAddress,
+          width: width,
+          height: height,
+          bitsPerComponent: 8,
+          bytesPerRow: width * bytesPerPixel,
+          space: colorSpace,
+          bitmapInfo: bitmapInfo),
+        let buffer = raw.baseAddress?.assumingMemoryBound(to: UInt8.self)
+      else { return 0 }
+      context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+      var count = 0
+      let total = width * height
+      for i in 0..<total where buffer[i * bytesPerPixel + 3] > 0 {
+        count += 1
+      }
+      return count
+    }
+  }
+
+  static func hasOrganizedPrecip(
+    in png: Data, minPixels: Int = organizedPrecipMinPixels
+  ) -> Bool {
+    organizedPrecipPixelCount(in: png) >= minPixels
   }
 
   /// True when the baked N0B color is clear-air / cyan-blue clutter, not precip.

@@ -320,4 +320,101 @@ final class IEMRadarService {
   private static func layerTimestamp(from date: Date) -> String {
     layerFormatter.string(from: date)
   }
+
+  /// Zoom ~228 km/tile at 35°N — matches the NEXRAD umbrella without pulling
+  /// a neighboring site's storm into the dry-site probe.
+  static let precipProbeZoom = 8
+  static let precipProbeRangeMeters: CLLocationDistance = 250_000
+  private static let precipProbeTimeout: TimeInterval = 4
+
+  /// True when keyed N0B tiles in the live window still have organized precip.
+  /// Dry NQA after clutter-key is empty; fetch failure returns false so Live
+  /// can present National radar instead of a blank map.
+  static func liveWindowHasOrganizedPrecip(frames: [RadarFrame], site: Site) async -> Bool {
+    let live = RadarLivePresentation.liveFrames(frames, isSiteProduct: true)
+    guard let newest = live.last else { return false }
+    if await frameHasOrganizedPrecip(newest, site: site) { return true }
+    guard live.count > 4 else { return false }
+    return await frameHasOrganizedPrecip(live[live.count / 2], site: site)
+  }
+
+  static func webMercatorTile(lat: Double, lon: Double, zoom: Int) -> (x: Int, y: Int) {
+    let n = Double(1 << zoom)
+    let clampedLon = min(max(lon, -180), 180)
+    let clampedLat = min(max(lat, -85.05112878), 85.05112878)
+    let x = Int(floor((clampedLon + 180) / 360 * n))
+    let latRad = clampedLat * .pi / 180
+    let y = Int(floor((1 - log(tan(latRad) + 1 / cos(latRad)) / .pi) / 2 * n))
+    let maxIndex = (1 << zoom) - 1
+    return (min(max(x, 0), maxIndex), min(max(y, 0), maxIndex))
+  }
+
+  static func tilesCoveringSite(_ site: Site, zoom: Int) -> [(x: Int, y: Int)] {
+    let origin = webMercatorTile(lat: site.lat, lon: site.lon, zoom: zoom)
+    let here = CLLocation(latitude: site.lat, longitude: site.lon)
+    var ranked: [(x: Int, y: Int, meters: CLLocationDistance)] = []
+    let maxIndex = (1 << zoom) - 1
+    for dy in -2...2 {
+      for dx in -2...2 {
+        let x = origin.x + dx
+        let y = origin.y + dy
+        guard x >= 0, y >= 0, x <= maxIndex, y <= maxIndex else { continue }
+        let center = tileCenter(x: x, y: y, zoom: zoom)
+        let distance = here.distance(
+          from: CLLocation(latitude: center.lat, longitude: center.lon))
+        if distance <= precipProbeRangeMeters {
+          ranked.append((x, y, distance))
+        }
+      }
+    }
+    if ranked.isEmpty { return [origin] }
+    return ranked.sorted { $0.meters < $1.meters }.prefix(9).map { ($0.x, $0.y) }
+  }
+
+  static func tileCenter(x: Int, y: Int, zoom: Int) -> (lat: Double, lon: Double) {
+    let n = Double(1 << zoom)
+    let lon = Double(x) / n * 360 - 180 + (180 / n)
+    let latRad = atan(sinh(.pi * (1 - 2 * (Double(y) + 0.5) / n)))
+    return (latRad * 180 / .pi, lon)
+  }
+
+  private static func frameHasOrganizedPrecip(_ frame: RadarFrame, site: Site) async -> Bool {
+    guard let template = frame.tileURLTemplates.first else { return false }
+    let tiles = tilesCoveringSite(site, zoom: precipProbeZoom)
+    return await withTaskGroup(of: Bool.self) { group in
+      for tile in tiles {
+        group.addTask {
+          let urlString = template
+            .replacingOccurrences(of: "{z}", with: "\(precipProbeZoom)")
+            .replacingOccurrences(of: "{x}", with: "\(tile.x)")
+            .replacingOccurrences(of: "{y}", with: "\(tile.y)")
+          guard let url = URL(string: urlString), let data = await fetchData(url)
+          else { return false }
+          return IEMSiteReflectivityPaint.hasOrganizedPrecip(in: data)
+        }
+      }
+      for await hit in group {
+        if hit {
+          group.cancelAll()
+          return true
+        }
+      }
+      return false
+    }
+  }
+
+  private static func fetchData(_ url: URL) async -> Data? {
+    var request = URLRequest(url: url)
+    request.timeoutInterval = precipProbeTimeout
+    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+    do {
+      let (data, response) = try await URLSession.shared.data(for: request)
+      guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+        !data.isEmpty
+      else { return nil }
+      return data
+    } catch {
+      return nil
+    }
+  }
 }

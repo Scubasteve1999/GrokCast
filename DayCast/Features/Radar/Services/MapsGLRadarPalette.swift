@@ -20,18 +20,18 @@ enum MapsGLRadarPalette {
   /// official 5 dBZ stops into a watercolor toy.
   static let interpolatesSamples = false
 
-  /// Official NWS 16-level hex. Alphas are not a second palette: light bins
-  /// stay see-through so Light roads/labels read; cores stay 1 so they pop.
-  /// Uniform alpha 1 + layer 0.95 was a painted sheet.
+  /// Official NWS 16-level hex. 0 dBZ stays transparent so the map is not a
+  /// painted sheet. Light bins are opaque enough to read at CONUS scale;
+  /// 25+ dBZ is solid so yellow/orange/red/purple cores punch.
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
-    Stop(dbz: 5, hex: "#01A0F6", alpha: 0.48),
-    Stop(dbz: 10, hex: "#0000F6", alpha: 0.56),
-    Stop(dbz: 15, hex: "#00FF00", alpha: 0.64),
-    Stop(dbz: 20, hex: "#00C800", alpha: 0.72),
-    Stop(dbz: 25, hex: "#009000", alpha: 0.80),
-    Stop(dbz: 30, hex: "#FFFF00", alpha: 0.88),
-    Stop(dbz: 35, hex: "#E7C000", alpha: 0.94),
+    Stop(dbz: 5, hex: "#01A0F6", alpha: 0.85),
+    Stop(dbz: 10, hex: "#0000F6", alpha: 0.90),
+    Stop(dbz: 15, hex: "#00FF00", alpha: 0.94),
+    Stop(dbz: 20, hex: "#00C800", alpha: 0.97),
+    Stop(dbz: 25, hex: "#009000", alpha: 1),
+    Stop(dbz: 30, hex: "#FFFF00", alpha: 1),
+    Stop(dbz: 35, hex: "#E7C000", alpha: 1),
     Stop(dbz: 40, hex: "#FF9000", alpha: 1),
     Stop(dbz: 45, hex: "#FF0000", alpha: 1),
     Stop(dbz: 50, hex: "#D60000", alpha: 1),
@@ -41,8 +41,18 @@ enum MapsGLRadarPalette {
     Stop(dbz: 70, hex: "#FFFFFF", alpha: 1),
   ]
 
+  /// Explicit 5 dBZ breaks so MapsGL cannot fall back to a smooth gradient
+  /// (`interval` default 0 interpolates). Same values as the painted stops.
+  static var colorScaleBreaks: [Double] {
+    stride(from: bandIntervalDbz, through: 70, by: bandIntervalDbz).map { $0 }
+  }
+
+  /// Live PNG (N0B + national fallback) keeps native bins. Linear resampling
+  /// is what turned operational gates into mush.
+  static let liveRasterUsesNearestResampling = true
+
   /// Painted bands only — skip the clear-air stop so the key matches the map.
-  /// MapsGL mosaic still paints 5/10 dBZ. N0B keys those to transparent, so
+  /// National radar still paints 5/10 dBZ. N0B keys those to transparent, so
   /// pass `keysClearAir: true` and the legend starts at 15 dBZ green.
   static var visibleReflectivityStops: [Stop] {
     paintedReflectivityStops(keysClearAir: false)

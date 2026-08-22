@@ -38,7 +38,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .rainViewer: "Live radar · RainViewer"
     case .xweather: "Live radar · Xweather"
     case .openWeatherMap: "Radar · OpenWeatherMap"
-    case .iem: "Live radar · CONUS mosaic"
+    case .iem: "Live radar · National radar"
     }
   }
 

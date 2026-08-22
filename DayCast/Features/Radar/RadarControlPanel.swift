@@ -437,7 +437,7 @@ struct RadarControlPanel: View {
       ? radarState.activeForecastProvider
       : radarState.activeLiveProvider
     switch provider {
-    case .iem: return "CONUS mosaic"
+    case .iem: return "National radar"
     case .xweather: return "Xweather"
     case .rainViewer: return "RainViewer"
     case .openWeatherMap: return "OpenWeatherMap"
@@ -482,7 +482,7 @@ private struct RadarDisplayOptionsSheet: View {
           Text("Products")
         } footer: {
           Text(
-            "Rain is nearest-site Doppler (N0B). Mosaic is the national composite. Storm winds are live NEXRAD only. Motion tracks exist only on the mosaic host — they do not paint on N0B."
+            "Site Doppler is nearest-site NEXRAD (N0B). National radar is the CONUS picture. Storm winds are live NEXRAD only. Motion tracks exist only on National radar — they do not paint on Site Doppler."
           )
         }
 
@@ -612,7 +612,7 @@ struct RadarMiniLegend: View {
   }
 
   var showsVelocity: Bool
-  /// N0B keys 0/5/10 dBZ; mosaic/MapsGL still paints them.
+  /// N0B keys 0/5/10 dBZ; National radar / MapsGL still paints them.
   var keysClearAir: Bool = false
   var style: Style = .panel
 
@@ -707,7 +707,7 @@ struct RadarMiniLegend: View {
 }
 
 /// Vertical dBZ key on Live Radar. Stops match the paint: N0B keys 5/10
-/// cyan-blue, so those bands stay off the legend. Mosaic/MapsGL keeps them.
+/// cyan-blue, so those bands stay off the legend. National radar keeps them.
 struct RadarMapColorbar: View {
   var keysClearAir: Bool = false
 

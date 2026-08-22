@@ -14,18 +14,26 @@ final class ChaseRadarHUDTests: XCTestCase {
     XCTAssertFalse(line.contains("FUT"))
   }
 
-  func testScanDateFollowsTheVisibleFrameEvenWhilePlaying() {
+  func testScanDateKeysOffNewestFrameNotTheScrubbedFrame() {
     let now = Date()
-    let visible = now.addingTimeInterval(-150 * 60)
-    let newest = now.addingTimeInterval(-9 * 60)
+    let visible = now.addingTimeInterval(-50 * 60)
+    let newest = now.addingTimeInterval(-3 * 60)
     let shown = ChaseRadarHUDLogic.scanDateForDisplay(
       currentFrameDate: visible,
       newestTimestamp: newest,
       isAnimating: true,
       showsFuture: false
     )
-    XCTAssertEqual(shown, visible)
-    XCTAssertEqual(ChaseRadarHUDLogic.scanAgeMinutes(now: now, scanDate: shown), 150)
+    XCTAssertEqual(shown, newest)
+    XCTAssertEqual(ChaseRadarHUDLogic.scanAgeMinutes(now: now, scanDate: shown), 3)
+
+    let future = ChaseRadarHUDLogic.scanDateForDisplay(
+      currentFrameDate: visible,
+      newestTimestamp: newest,
+      isAnimating: false,
+      showsFuture: true
+    )
+    XCTAssertEqual(future, visible)
   }
 
   func testScanAgeLineBuckets() {
@@ -73,52 +81,64 @@ final class ChaseRadarHUDTests: XCTestCase {
     XCTAssertEqual(ChaseRadarHUDLogic.hudCityLine(locationName: nil), "This location")
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: false),
-      "Mosaic"
+      "National radar"
     )
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: true),
-      "24-hr · Mosaic"
+      "24-hr · National radar"
     )
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .stormRelativeVelocity, showsFuture: false),
       "Storm winds"
     )
-    let mosaic = ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: false)
-    XCTAssertFalse(mosaic.localizedCaseInsensitiveContains("XWEATHER"))
-    XCTAssertFalse(mosaic.localizedCaseInsensitiveContains("national Doppler"))
-    XCTAssertFalse(mosaic.contains("RAIN"))
+    let national = ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: false)
+    XCTAssertFalse(national.localizedCaseInsensitiveContains("XWEATHER"))
+    XCTAssertFalse(national.localizedCaseInsensitiveContains("Mosaic"))
+    XCTAssertFalse(national.contains("RAIN"))
   }
 
   func testLookingAtLineNamesNearestSiteDoppler() {
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(
         product: .superResReflectivity, showsFuture: false, siteID: "NQA"),
-      "NQA Doppler"
+      "Site Doppler"
     )
     XCTAssertEqual(
-      ChaseRadarHUDLogic.lookingAtLine(
+      ChaseRadarHUDLogic.lookingAtSiteSecondary(
+        product: .superResReflectivity, showsFuture: false, siteID: "NQA"),
+      "NQA"
+    )
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtSiteSecondary(
         product: .superResReflectivity, showsFuture: false, siteID: "KNQA"),
-      "KNQA Doppler"
+      "KNQA"
     )
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .superResReflectivity, showsFuture: false),
-      "Rain"
+      "Site Doppler"
+    )
+    XCTAssertNil(
+      ChaseRadarHUDLogic.lookingAtSiteSecondary(
+        product: .superResReflectivity, showsFuture: false, siteID: nil)
     )
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(
         product: .stormRelativeVelocity, showsFuture: false, siteID: "NQA"),
-      "NQA · Storm winds"
+      "Storm winds"
     )
-    // Mosaic ignores a leftover site id — it is not nearest-site Doppler.
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(
         product: .reflectivity, showsFuture: false, siteID: "NQA"),
-      "Mosaic"
+      "National radar"
+    )
+    XCTAssertNil(
+      ChaseRadarHUDLogic.lookingAtSiteSecondary(
+        product: .reflectivity, showsFuture: false, siteID: "NQA")
     )
     let site = ChaseRadarHUDLogic.lookingAtLine(
       product: .superResReflectivity, showsFuture: false, siteID: "NQA")
     XCTAssertFalse(site.localizedCaseInsensitiveContains("XWEATHER"))
-    XCTAssertFalse(site.localizedCaseInsensitiveContains("national Doppler"))
+    XCTAssertFalse(site.localizedCaseInsensitiveContains("Mosaic"))
     XCTAssertFalse(site.localizedCaseInsensitiveContains("Xweather"))
   }
 

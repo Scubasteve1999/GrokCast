@@ -12,18 +12,17 @@ enum ChaseRadarHUDLogic {
     return Int(now.timeIntervalSince(scanDate) / 60)
   }
 
-  /// Age the frame on screen. Using the newest live volume while the loop
-  /// shows an older time made SCAN say "9m" over a 2-hour-old picture.
+  /// SCAN / stale keys off the newest live volume, not the scrubbed frame.
+  /// Play history is ~1h; HUD freshness is whether now is current.
   static func scanDateForDisplay(
     currentFrameDate: Date?,
     newestTimestamp: Date?,
     isAnimating: Bool,
     showsFuture: Bool
   ) -> Date? {
-    _ = newestTimestamp
     _ = isAnimating
-    _ = showsFuture
-    return currentFrameDate
+    if showsFuture { return currentFrameDate }
+    return newestTimestamp ?? currentFrameDate
   }
 
   static func scanAgeLine(
@@ -124,21 +123,28 @@ enum ChaseRadarHUDLogic {
     return raw
   }
 
-  /// What the map is showing. Site rain is nearest-site Doppler (IEM id, e.g. NQA),
-  /// not XWEATHER and not a fake national Doppler. Mosaic keeps its own name.
+  /// What the map is showing. Site product is "Site Doppler"; NQA etc. is
+  /// secondary (`lookingAtSiteSecondary`). National radar never says Mosaic.
   static func lookingAtLine(
     product: RadarProduct,
     showsFuture: Bool,
     siteID: String? = nil
   ) -> String {
+    _ = siteID
     if showsFuture { return "24-hr · \(product.displayName)" }
-    if product == .superResReflectivity, let siteID, !siteID.isEmpty {
-      return "\(siteID) Doppler"
-    }
-    if product.isSiteProduct, let siteID, !siteID.isEmpty {
-      return "\(siteID) · \(product.displayName)"
-    }
     return product.displayName
+  }
+
+  /// IEM site id under Site Doppler (NQA). Nil for National radar / SRV.
+  static func lookingAtSiteSecondary(
+    product: RadarProduct,
+    showsFuture: Bool,
+    siteID: String?
+  ) -> String? {
+    guard !showsFuture, product == .superResReflectivity,
+      let siteID, !siteID.isEmpty
+    else { return nil }
+    return siteID
   }
 }
 
@@ -213,6 +219,17 @@ struct ChaseRadarHUD: View {
       .font(DesignTokens.Typography.micro())
       .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.85))
       .lineLimit(1)
+
+      if let siteID = ChaseRadarHUDLogic.lookingAtSiteSecondary(
+        product: radarState.selectedProduct,
+        showsFuture: radarState.showsFuture,
+        siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
+      ) {
+        Text(siteID)
+          .font(DesignTokens.Typography.micro().monospaced())
+          .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.62))
+          .lineLimit(1)
+      }
 
       if let alert = nearestAlertPresentation {
         Text(alert.text)

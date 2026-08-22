@@ -131,6 +131,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var appliedBrightnessMin: Double?
     private var appliedHueRotate: Double?
     private var appliedEmissive: Double?
+    private var appliedNearestResampling: Bool?
 
     private var pendingDesiredState: DesiredRasterState?
     private var crossfadeTask: Task<Void, Never>?
@@ -154,6 +155,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       var tileSize: Double
       var prefetchZoomDelta: Double
       var minimumTileUpdateInterval: Double
+      var nearestResampling: Bool
 
       static let hidden = DesiredRasterState(
         tileURLs: [],
@@ -172,7 +174,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         fadeDuration: 0,
         tileSize: 256,
         prefetchZoomDelta: 0,
-        minimumTileUpdateInterval: 0
+        minimumTileUpdateInterval: 0,
+        nearestResampling: false
       )
     }
 
@@ -337,11 +340,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         fadeDuration = 320
       }
 
-      // IEM N0B ships an 8-bit NWS scale with clear-air cyan/blue baked at
-      // alpha 255. Clutter is keyed to transparent on the PNG
-      // (`IEMSiteReflectivityPaint`); do not retint, blur, or lower
-      // raster-opacity — that left the speckle sheet and faded cores.
-      let useNeutralPaint = radarState.selectedProduct.isSiteProduct && frame.provider == .iem
+      // Live reflectivity (N0B and national PNG fallback) keeps the NWS scale.
+      // Vibrant sat/contrast/hue was the TWC-green mush next to Site Doppler.
+      let useNeutralPaint = !isFuture && !radarState.selectedProduct.isVelocityProduct
       let scheme = radarState.colorScheme
       let saturation: Double
       let contrast: Double
@@ -361,6 +362,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         hueRotate = scheme.rasterHueRotate
         emissive = scheme.rasterEmissiveStrength
       }
+      let nearestResampling =
+        !isFuture && MapsGLRadarPalette.liveRasterUsesNearestResampling
 
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
@@ -379,7 +382,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         fadeDuration: fadeDuration,
         tileSize: isXweatherRetina ? 512 : 256,
         prefetchZoomDelta: Self.prefetchZoomDelta(for: frame.provider, isAnimating: radarState.isAnimating),
-        minimumTileUpdateInterval: Self.minimumTileUpdateInterval(for: frame.provider)
+        minimumTileUpdateInterval: Self.minimumTileUpdateInterval(for: frame.provider),
+        nearestResampling: nearestResampling
       )
     }
 
@@ -515,7 +519,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           layer.rasterContrast = .constant(desired.contrast)
           layer.rasterBrightnessMin = .constant(desired.brightnessMin)
           layer.rasterHueRotate = .constant(desired.hueRotate)
-          layer.rasterResampling = .constant(.linear)
+          layer.rasterResampling = .constant(desired.nearestResampling ? .nearest : .linear)
           try mapView.mapboxMap.addLayer(layer)
         }
 
@@ -529,6 +533,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         appliedBrightnessMin = desired.brightnessMin
         appliedHueRotate = desired.hueRotate
         appliedEmissive = desired.emissive
+        appliedNearestResampling = desired.nearestResampling
       } catch {
         radarLog("[Mapbox] Dual layer setup failed: \(error)")
         resetRasterTracking()
@@ -554,6 +559,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       appliedBrightnessMin = desired.brightnessMin
       appliedHueRotate = desired.hueRotate
       appliedEmissive = desired.emissive
+      appliedNearestResampling = desired.nearestResampling
 
       #if DEBUG
       let zoom = Int(mapView.mapboxMap.cameraState.zoom.rounded())
@@ -603,6 +609,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         || appliedBrightnessMin != desired.brightnessMin
         || appliedHueRotate != desired.hueRotate
         || appliedEmissive != desired.emissive
+        || appliedNearestResampling != desired.nearestResampling
       if paintChanged {
         for slot in [BufferSlot.a, BufferSlot.b] {
           guard mapView.mapboxMap.layerExists(withId: slot.layerId) else { continue }
@@ -631,12 +638,18 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
             property: "raster-emissive-strength",
             value: desired.emissive
           )
+          try? mapView.mapboxMap.setLayerProperty(
+            for: slot.layerId,
+            property: "raster-resampling",
+            value: desired.nearestResampling ? "nearest" : "linear"
+          )
         }
         appliedSaturation = desired.saturation
         appliedContrast = desired.contrast
         appliedBrightnessMin = desired.brightnessMin
         appliedHueRotate = desired.hueRotate
         appliedEmissive = desired.emissive
+        appliedNearestResampling = desired.nearestResampling
       }
     }
 
@@ -731,6 +744,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       appliedBrightnessMin = nil
       appliedHueRotate = nil
       appliedEmissive = nil
+      appliedNearestResampling = nil
     }
   }
 }

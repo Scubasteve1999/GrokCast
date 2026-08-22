@@ -55,9 +55,9 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     )
   }
 
-  // MARK: - 2b. Mosaic motion tracks, not cone wedges
+  // MARK: - 2b. National radar motion tracks, not cone wedges
 
-  func testMosaicSelectsNationalComposite() throws {
+  func testNationalRadarSelectsNationalComposite() throws {
     XCTAssertTrue(waitForTabBar())
     openTab(.radar)
 
@@ -65,28 +65,29 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(layers.waitForExistence(timeout: 15), "Layers missing")
     layers.tap()
 
-    let mosaic = app.buttons["Mosaic"]
-    XCTAssertTrue(mosaic.waitForExistence(timeout: 8), "Mosaic product missing")
-    mosaic.tap()
+    let national = app.buttons["National radar"]
+    XCTAssertTrue(national.waitForExistence(timeout: 8), "National radar product missing")
+    national.tap()
 
     let done = app.buttons["Done"]
     if done.waitForExistence(timeout: 4) { done.tap() }
 
-    let mosaicHUD = app.staticTexts["Mosaic"]
+    let nationalHUD = app.staticTexts["National radar"]
     XCTAssertTrue(
-      mosaicHUD.waitForExistence(timeout: 12),
-      "HUD did not switch to Mosaic"
+      nationalHUD.waitForExistence(timeout: 12),
+      "HUD did not switch to National radar"
     )
+    XCTAssertFalse(app.staticTexts["Mosaic"].waitForExistence(timeout: 1))
 
     XCTAssertTrue(layers.waitForExistence(timeout: 6))
     layers.tap()
-    let rain = app.buttons["Rain"]
-    XCTAssertTrue(rain.waitForExistence(timeout: 8), "Rain/N0B product missing")
-    rain.tap()
+    let siteDoppler = app.buttons["Site Doppler"]
+    XCTAssertTrue(siteDoppler.waitForExistence(timeout: 8), "Site Doppler product missing")
+    siteDoppler.tap()
     if done.waitForExistence(timeout: 4) { done.tap() }
     XCTAssertFalse(
       app.staticTexts["Mosaic"].waitForExistence(timeout: 3),
-      "N0B HUD still says Mosaic"
+      "Site Doppler HUD still says Mosaic"
     )
   }
 
