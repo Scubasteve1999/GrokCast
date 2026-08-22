@@ -392,8 +392,56 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(RadarLivePresentation.siteLoopMaxFrames, 24)
     XCTAssertEqual(
       Level3PolarMeshCache.maxEntries, RadarLivePresentation.siteLoopMaxFrames + 4)
+    XCTAssertEqual(
+      Level3PolarGPUCache.maxEntries, RadarLivePresentation.siteLoopMaxFrames + 4)
     XCTAssertEqual(Level3PolarCrossfade.playDurationSeconds, 0.20, accuracy: 0.0001)
     XCTAssertEqual(Level3PolarCrossfade.stillDurationSeconds, 0.32, accuracy: 0.0001)
+  }
+
+  func testPolarPlayHoldsOnColdGPUBufferWhenDeviceBound() {
+    XCTAssertTrue(
+      Level3PolarPlayReadiness.canAdvance(
+        sweepPresent: true, cpuCached: true, gpuCached: true, gpuDeviceBound: true))
+    XCTAssertFalse(
+      Level3PolarPlayReadiness.canAdvance(
+        sweepPresent: true, cpuCached: true, gpuCached: false, gpuDeviceBound: true),
+      "hard-gate GPU miss mid-loop is the hitch")
+    XCTAssertTrue(
+      Level3PolarPlayReadiness.canAdvance(
+        sweepPresent: true, cpuCached: true, gpuCached: false, gpuDeviceBound: false),
+      "no Metal yet — hold on CPU only so Play is not wedged")
+    XCTAssertFalse(
+      Level3PolarPlayReadiness.canAdvance(
+        sweepPresent: true, cpuCached: false, gpuCached: true, gpuDeviceBound: true))
+    XCTAssertTrue(
+      Level3PolarPlayReadiness.canAdvance(
+        sweepPresent: false, cpuCached: false, gpuCached: false, gpuDeviceBound: true),
+      "missing sweep must not hold forever")
+  }
+
+  func testGPUCacheUnbindKeepsResidentBuffersAndPrefetchWait() async {
+    let gpu = Level3PolarGPUCache.shared
+    gpu.removeAll()
+    defer { gpu.removeAll() }
+
+    XCTAssertTrue(gpu.isPrefetchComplete, "empty expected keys must not block Play")
+    gpu.setExpectedKeys(["TWX-1", "TWX-2"])
+    XCTAssertFalse(gpu.isPrefetchComplete)
+    XCTAssertFalse(gpu.hasBoundDevice)
+    XCTAssertFalse(gpu.contains("TWX-1"))
+
+    let before = gpu.stats().count
+    gpu.unbind()
+    XCTAssertEqual(gpu.stats().count, before, "unbind must not drop loop buffers")
+    XCTAssertFalse(gpu.hasBoundDevice)
+
+    let t0 = CFAbsoluteTimeGetCurrent()
+    await gpu.waitUntilPrefetched(timeout: 0.05)
+    XCTAssertLessThan(CFAbsoluteTimeGetCurrent() - t0, 1.0)
+
+    gpu.setExpectedKeys([])
+    XCTAssertTrue(gpu.isPrefetchComplete)
+    await gpu.waitUntilPrefetched(timeout: 0.05)
   }
 
   func testMetalMeshBuildsLiveAWSFileIfPresent() throws {

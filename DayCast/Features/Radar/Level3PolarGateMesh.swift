@@ -171,6 +171,22 @@ enum Level3PolarGateMesh {
   }
 }
 
+/// Play-tick gate for Site Doppler. CPU mesh warm is not enough: hard-gate
+/// vertex buffers are 160–430k tris, so a GPU miss mid-loop is a hitch.
+enum Level3PolarPlayReadiness {
+  static func canAdvance(
+    sweepPresent: Bool,
+    cpuCached: Bool,
+    gpuCached: Bool,
+    gpuDeviceBound: Bool
+  ) -> Bool {
+    if !sweepPresent { return true }
+    if !cpuCached { return false }
+    if gpuDeviceBound && !gpuCached { return false }
+    return true
+  }
+}
+
 /// Dual-mesh opacity lerp between two hard-NWS trapezoid volumes.
 /// Play fade is polar-specific and short so 2x does not dual-draw ~860k tris
 /// for the whole frame hold. Stills keep the IEM still duration. No dBZ blend.

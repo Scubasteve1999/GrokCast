@@ -298,12 +298,24 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       depth.depthCompareFunction = .always
       depthStencilState = metalDevice.makeDepthStencilState(descriptor: depth)
       pipelineFailed = false
-      Level3PolarGPUCache.shared.bindDevice(metalDevice)
+      let deviceChanged = Level3PolarGPUCache.shared.bindDevice(metalDevice)
+      if deviceChanged {
+        lock.lock()
+        front = .empty
+        back = .empty
+        pendingCPU = nil
+        queuedGPU = nil
+        fadeStart = nil
+        fadeDuration = 0
+        lock.unlock()
+      }
       Task.detached(priority: .userInitiated) {
         Level3PolarGPUCache.shared.prefetchCachedCPUMeshes()
       }
+      if copyFadeClock() != nil { startFadePump() }
     } catch {
       pipelineFailed = true
+      Level3PolarGPUCache.shared.abandonPrefetch()
       radarLog("[Level3] polar Metal pipeline failed: \(error)")
     }
   }
@@ -403,14 +415,11 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     lock.lock()
     pipelineState = nil
     depthStencilState = nil
-    front = .empty
-    back = .empty
-    pendingCPU = nil
-    queuedGPU = nil
-    fadeStart = nil
+    // Keep front/back pointers. Mapbox ends/starts the custom layer around
+    // style and layer moves; dropping 24 hard-gate buffers there is the
+    // mid-loop hitch (each miss is a 160–430k-tri makeBuffer).
     metalDevice = nil
     lock.unlock()
-    Level3PolarGPUCache.shared.unbind()
   }
 
   private func currentKeyForPending() -> String {
@@ -460,6 +469,8 @@ fileprivate struct GPUMesh {
 /// Whole-loop GPU vertex buffers so Play adopt is a pointer swap, not `makeBuffer`.
 final class Level3PolarGPUCache: @unchecked Sendable {
   static let shared = Level3PolarGPUCache()
+  /// Same contract as the CPU mesh cache: the ~1h loop plus reload overlap.
+  static let maxEntries = RadarLivePresentation.siteLoopMaxFrames + 4
 
   private struct Entry {
     var buffer: MTLBuffer?
@@ -469,26 +480,102 @@ final class Level3PolarGPUCache: @unchecked Sendable {
   private let lock = NSLock()
   private var device: MTLDevice?
   private var byKey: [String: Entry] = [:]
+  private var expectedKeys: Set<String> = []
+  private var prefetchWaiters: [CheckedContinuation<Void, Never>] = []
+  private var prefetchGeneration: UInt64 = 0
   private var hitCount = 0
   private var missCount = 0
 
   private init() {}
 
-  func bindDevice(_ device: MTLDevice) {
+  var hasBoundDevice: Bool {
     lock.lock()
-    if self.device !== device {
-      byKey.removeAll(keepingCapacity: true)
+    defer { lock.unlock() }
+    return device != nil
+  }
+
+  var isPrefetchComplete: Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return isPrefetchCompleteLocked()
+  }
+
+  func contains(_ key: String) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return byKey[key] != nil
+  }
+
+  func setExpectedKeys(_ keys: Set<String>) {
+    lock.lock()
+    expectedKeys = keys
+    let done = isPrefetchCompleteLocked()
+    let waiters = done ? prefetchWaiters : []
+    if done { prefetchWaiters.removeAll() }
+    lock.unlock()
+    waiters.forEach { $0.resume() }
+  }
+
+  /// Play waits here so 2x never adopts a cold hard-gate buffer.
+  /// Times out so a missing Metal device cannot wedge the Play button.
+  func waitUntilPrefetched(timeout: TimeInterval = 8) async {
+    if isPrefetchComplete { return }
+    await withCheckedContinuation { continuation in
+      lock.lock()
+      if isPrefetchCompleteLocked() {
+        lock.unlock()
+        continuation.resume()
+        return
+      }
+      prefetchWaiters.append(continuation)
+      prefetchGeneration += 1
+      let gen = prefetchGeneration
+      lock.unlock()
+      if timeout > 0 {
+        Task { [weak self] in
+          let ns = UInt64(min(max(timeout, 0), 30) * 1_000_000_000)
+          try? await Task.sleep(nanoseconds: ns)
+          self?.resumePrefetchWaiters(generation: gen)
+        }
+      }
+    }
+  }
+
+  /// Pipeline / layer failed — do not block Play on GPU buffers that will never land.
+  func abandonPrefetch() {
+    lock.lock()
+    expectedKeys.removeAll()
+    prefetchGeneration += 1
+    let waiters = prefetchWaiters
+    prefetchWaiters.removeAll()
+    lock.unlock()
+    waiters.forEach { $0.resume() }
+  }
+
+  /// Returns true when an *already bound* Metal device was replaced and buffers
+  /// were dropped. First bind is not a drop — the pending still mesh stays.
+  @discardableResult
+  func bindDevice(_ device: MTLDevice) -> Bool {
+    lock.lock()
+    let hadDevice = self.device != nil
+    let changed = self.device !== device
+    if changed {
+      if hadDevice {
+        byKey.removeAll(keepingCapacity: true)
+        hitCount = 0
+        missCount = 0
+      }
       self.device = device
     }
     lock.unlock()
+    return changed && hadDevice
   }
 
+  /// Mapbox ends the custom layer around style/layer moves. Do not drop the
+  /// loop buffers — Play adopt is a pointer swap only while they stay resident.
   func unbind() {
     lock.lock()
     device = nil
-    byKey.removeAll(keepingCapacity: true)
-    hitCount = 0
-    missCount = 0
     lock.unlock()
   }
 
@@ -511,12 +598,16 @@ final class Level3PolarGPUCache: @unchecked Sendable {
     let made = Self.makeBuffer(mesh: cpu, device: device)
     lock.lock()
     if let raced = byKey[key] {
+      let waiters = takeWaitersIfCompleteLocked()
       lock.unlock()
+      waiters.forEach { $0.resume() }
       return GPUMesh(key: key, buffer: raced.buffer, vertexCount: raced.vertexCount, pendingCPU: nil)
     }
     byKey[key] = Entry(buffer: made.buffer, vertexCount: made.count)
     missCount += 1
+    let waiters = takeWaitersIfCompleteLocked()
     lock.unlock()
+    waiters.forEach { $0.resume() }
     return GPUMesh(key: key, buffer: made.buffer, vertexCount: made.count, pendingCPU: nil)
   }
 
@@ -524,7 +615,9 @@ final class Level3PolarGPUCache: @unchecked Sendable {
     lock.lock()
     let device = self.device
     if byKey[key] != nil || device == nil {
+      let waiters = takeWaitersIfCompleteLocked()
       lock.unlock()
+      waiters.forEach { $0.resume() }
       return
     }
     lock.unlock()
@@ -544,26 +637,68 @@ final class Level3PolarGPUCache: @unchecked Sendable {
     if n > 0 {
       radarLog("[Level3] polar GPU cache ready \(n) buffers")
     }
+    resumePrefetchWaitersIfComplete()
   }
 
   func keepOnly(keys: Set<String>) {
     lock.lock()
     byKey = byKey.filter { keys.contains($0.key) }
+    if !expectedKeys.isEmpty {
+      expectedKeys = expectedKeys.intersection(keys)
+    }
     lock.unlock()
   }
 
   func removeAll() {
     lock.lock()
     byKey.removeAll(keepingCapacity: true)
+    expectedKeys.removeAll()
     hitCount = 0
     missCount = 0
+    prefetchGeneration += 1
+    let waiters = prefetchWaiters
+    prefetchWaiters.removeAll()
     lock.unlock()
+    waiters.forEach { $0.resume() }
   }
 
   func stats() -> (count: Int, hits: Int, misses: Int) {
     lock.lock()
     defer { lock.unlock() }
     return (byKey.count, hitCount, missCount)
+  }
+
+  private func isPrefetchCompleteLocked() -> Bool {
+    if expectedKeys.isEmpty { return true }
+    return expectedKeys.allSatisfy { byKey[$0] != nil }
+  }
+
+  private func takeWaitersIfCompleteLocked() -> [CheckedContinuation<Void, Never>] {
+    guard isPrefetchCompleteLocked() else { return [] }
+    prefetchGeneration += 1
+    let waiters = prefetchWaiters
+    prefetchWaiters.removeAll()
+    return waiters
+  }
+
+  private func resumePrefetchWaiters(generation: UInt64) {
+    lock.lock()
+    guard generation == prefetchGeneration else {
+      lock.unlock()
+      return
+    }
+    prefetchGeneration += 1
+    let waiters = prefetchWaiters
+    prefetchWaiters.removeAll()
+    lock.unlock()
+    waiters.forEach { $0.resume() }
+  }
+
+  private func resumePrefetchWaitersIfComplete() {
+    lock.lock()
+    let waiters = takeWaitersIfCompleteLocked()
+    lock.unlock()
+    waiters.forEach { $0.resume() }
   }
 
   private static func makeBuffer(mesh: Level3PolarGateMesh.Mesh, device: MTLDevice)

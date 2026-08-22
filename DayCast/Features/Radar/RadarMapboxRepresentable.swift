@@ -449,6 +449,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         }
       } catch {
         polarLayerFailed = true
+        Level3PolarGPUCache.shared.abandonPrefetch()
         radarLog("[Level3] polar Metal layer failed: \(error)")
       }
     }

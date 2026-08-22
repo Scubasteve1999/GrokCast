@@ -281,7 +281,8 @@ final class RadarState {
     }
   }
 
-  /// Hold 2x Site Doppler until the next volume's trapezoid mesh is already in cache.
+  /// Hold 2x Site Doppler until the next volume's trapezoid mesh *and* GPU
+  /// vertex buffer are already in cache. Hard-gate makeBuffer mid-loop is the hitch.
   private var polarPlayCanAdvance: Bool {
     let frames = activeFrames
     guard frames.count > 1,
@@ -292,10 +293,14 @@ final class RadarState {
     let next = frames[nextIndex]
     let site = activeSiteProductSite?.id ?? nearestSite?.id
     guard let site else { return true }
-    if Level3N0BSweepStore.shared.sweep(site: site, timestamp: next.timestamp) == nil {
-      return true
-    }
-    return Level3PolarMeshCache.shared.cached(site: site, timestamp: next.timestamp) != nil
+    let sweepPresent =
+      Level3N0BSweepStore.shared.sweep(site: site, timestamp: next.timestamp) != nil
+    let key = Level3N0BSweepStore.exactKey(site: site, timestamp: next.timestamp)
+    return Level3PolarPlayReadiness.canAdvance(
+      sweepPresent: sweepPresent,
+      cpuCached: Level3PolarMeshCache.shared.cached(site: site, timestamp: next.timestamp) != nil,
+      gpuCached: Level3PolarGPUCache.shared.contains(key),
+      gpuDeviceBound: Level3PolarGPUCache.shared.hasBoundDevice)
   }
 
   func start() { playback.start() }
@@ -468,21 +473,27 @@ extension RadarState {
   private func startPolarAwarePlayback() {
     Level3PolarPlayStats.reset()
     let polar = currentFrame?.paintsPolarRadials == true
-    if polar, !Level3PolarMeshCache.shared.isWarmComplete {
+    let gpuReady = Level3PolarGPUCache.shared.isPrefetchComplete
+    if polar, !Level3PolarMeshCache.shared.isWarmComplete || !gpuReady {
       radarLog("[Level3] polar play waiting for mesh/GPU warm")
       polarPlayWaitTask = Task { @MainActor [weak self] in
         let t0 = CFAbsoluteTimeGetCurrent()
         await Level3PolarMeshCache.shared.waitUntilWarm()
+        await Level3PolarGPUCache.shared.waitUntilPrefetched()
         let waitMs = (CFAbsoluteTimeGetCurrent() - t0) * 1000
         guard let self, !Task.isCancelled else { return }
         self.polarPlayWaitTask = nil
-        radarLog("[Level3] polar play after warm wait=\(Int(waitMs.rounded()))ms")
+        let gpu = Level3PolarGPUCache.shared.stats().count
+        radarLog(
+          "[Level3] polar play after warm wait=\(Int(waitMs.rounded()))ms gpu=\(gpu)"
+        )
         self.playback.start()
       }
       return
     }
     if polar {
-      radarLog("[Level3] polar play warm-complete→play delay=0ms")
+      let gpu = Level3PolarGPUCache.shared.stats().count
+      radarLog("[Level3] polar play warm-complete→play delay=0ms gpu=\(gpu)")
     }
     playback.start()
   }
