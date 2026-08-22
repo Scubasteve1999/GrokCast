@@ -7,6 +7,6 @@ cd /Users/bigstevedev/Projects/GrokCast
 python3 Scripts/mrms_national/mrms_worker.py
 ```
 
-Serves `http://127.0.0.1:8765/timestamps.json` and `{id}/{z}/{x}/{y}.png` (z3–z8). Tiles are 4-pass wet-only 3x3-blurred on the native ~1 km dBZ grid, bilinear-sampled, then LUT-snapped (`PAINT_VERSION` 6) — no overlay pyramid. Simulator Debug builds use that URL. Device/TestFlight has no localhost — MapsGL rain is the fallback until a CDN base URL is set on `MRMSRadarService`.
+Serves `http://127.0.0.1:8765/timestamps.json` and `{id}/{z}/{x}/{y}.png` (z3–z8). Tiles are 8-pass wet-only 3x3-blurred on the native ~1 km dBZ grid, bilinear-sampled, then LUT-snapped (`PAINT_VERSION` 7) — no overlay pyramid. Simulator Debug builds use that URL. Device/TestFlight has no localhost — MapsGL rain is the fallback until a CDN base URL is set on `MRMSRadarService`.
 
 Requires: `brew install eccodes` and `pip3 install --user eccodes numpy pillow`.

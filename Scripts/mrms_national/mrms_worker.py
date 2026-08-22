@@ -7,7 +7,7 @@ Phone never downloads GRIB2. Simulator hits http://127.0.0.1:8765.
   python3 Scripts/mrms_national/mrms_worker.py --once --no-serve
 
 NWS 5 dBZ LUT copied from MapsGLRadarPalette. Stronger opaque-only blur
-(4-pass 3x3) on the native ~1 km dBZ grid, bilinear sample into each XYZ
+(8-pass 3x3) on the native ~1 km dBZ grid, bilinear sample into each XYZ
 tile, then LUT-snap (organic cell shapes, hard colors). No overlay pyramid.
 0/5/10 dBZ alpha 0 — visible rain floors at 15 green.
 """
@@ -52,7 +52,11 @@ STOPS = [
     (65, (0x99, 0x55, 0xC9, 255)),
     (70, (0xFF, 0xFF, 0xFF, 255)),
 ]
-PAINT_VERSION = 6
+PAINT_VERSION = 7
+# Wet-only box on native ~1 km dBZ. 8-pass 3x3 (~13 km support) rounds
+# fringe vs v6 4-pass without dilating precip into clear (wet mask held).
+BLUR_PASSES = 8
+BLUR_RADIUS = 1
 
 LUT_R = np.zeros(15, dtype=np.uint8)
 LUT_G = np.zeros(15, dtype=np.uint8)
@@ -127,8 +131,8 @@ def _grid_at(grid, rows, cols):
     return out
 
 
-def blur_opaque_dbz(grid, passes=4, radius=1):
-    """Four wet-only 3x3 passes (~7 km). Clear stays clear — no precip dilation."""
+def blur_opaque_dbz(grid, passes=BLUR_PASSES, radius=BLUR_RADIUS):
+    """Wet-only 3x3 passes (~13 km at 8). Clear stays clear — no precip dilation."""
     out = np.array(grid, dtype=np.float32, copy=True)
     nj, ni = out.shape
     for _ in range(passes):
@@ -304,7 +308,7 @@ def paint_frame(grib_path: str, out_root: str, zooms) -> dict:
 
     print(f"  paint {fid} grid {grid.shape} zooms={zooms}", flush=True)
     os.makedirs(dest, exist_ok=True)
-    soft = blur_opaque_dbz(grid)
+    soft = blur_opaque_dbz(grid, passes=BLUR_PASSES, radius=BLUR_RADIUS)
     n_tiles = write_xyz_tiles(soft, west, north, dlon, dlat, zooms, dest)
     meta = {
         "id": fid,
@@ -331,6 +335,8 @@ def write_timestamps(out_root: str, public_base: str, window: timedelta) -> dict
         marker = os.path.join(dest, ".done")
         meta_path = os.path.join(dest, "frame.json")
         if not os.path.isdir(dest) or not os.path.exists(marker):
+            continue
+        if not frame_is_current(dest):
             continue
         if os.path.exists(meta_path):
             with open(meta_path) as f:
