@@ -24,6 +24,7 @@ enum AnalyticsEvent: String, CaseIterable, Sendable {
   case feedCardTap = "feed_card_tap"
   case fireLayerToggle = "fire_layer_toggle"
   case fireProximityNotify = "fire_proximity_notify"
+  case lightningLayerToggle = "lightning_layer_toggle"
   /// One per outbound Grok call, tagged by feature and tier. This is the number
   /// that says whether Pro is priced right.
   case aiRequest = "ai_request"

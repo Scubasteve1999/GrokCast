@@ -20,6 +20,7 @@ enum RadarPreferences {
   private static let baseMapStyleKey = "radar.pref.baseMapStyle"
   private static let showRadarOverlayKey = "radar.pref.showRadarOverlay"
   private static let showFireLayerKey = "radar.pref.showFireLayer"
+  private static let showLightningLayerKey = "radar.pref.showLightningLayer"
   private static let playbackSpeedKey = "radar.pref.playbackSpeed"
   private static let radarOpacityKey = "radar.pref.radarOpacity"
   private static let chaseDeclutteredKey = "radar.pref.chaseDecluttered"
@@ -74,6 +75,12 @@ enum RadarPreferences {
   static var showFireLayer: Bool {
     get { store.bool(forKey: showFireLayerKey) }
     set { store.set(newValue, forKey: showFireLayerKey) }
+  }
+
+  /// Defaults ON for Live Radar. Absence must be distinguished from stored `false`.
+  static var showLightningLayer: Bool {
+    get { store.object(forKey: showLightningLayerKey) as? Bool ?? true }
+    set { store.set(newValue, forKey: showLightningLayerKey) }
   }
 
   /// Clamped on the way in as well as out: a value outside the supported range

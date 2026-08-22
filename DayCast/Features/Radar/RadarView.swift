@@ -4,6 +4,7 @@ import SwiftUI
 struct RadarView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(FireStore.self) private var fireStore
+  @Environment(LightningStore.self) private var lightningStore
   @Environment(\.scenePhase) private var scenePhase
 
   @State private var radarOpacity: Double = RadarPreferences.radarOpacity
@@ -24,6 +25,11 @@ struct RadarView: View {
 
   private var colorbarKeysClearAir: Bool {
     radarState.selectedProduct.isSiteProduct && !radarState.showsFuture
+  }
+
+  /// Lightning is Live-only observed CG. Hidden in 24-hr.
+  private var showsLightningOverlay: Bool {
+    radarState.showLightningLayer && !radarState.showsFuture
   }
 
   /// Day-1 line only when severe context is for the selected location (avoids stale city bleed).
@@ -55,6 +61,13 @@ struct RadarView: View {
       }
       .task(id: store.currentLocation?.id) {
         fireStore.refresh(around: selectedMapCenter)
+      }
+      .task(id: lightningPollKey) {
+        if store.selectedTab == .radar, showsLightningOverlay {
+          lightningStore.startPolling(around: selectedMapCenter)
+        } else {
+          lightningStore.stopPolling()
+        }
       }
       .onChange(of: radarState.showFireLayer) { _, isOn in
         if isOn {
@@ -92,6 +105,7 @@ struct RadarView: View {
           radarState.cancelModeSwitch()
           recenterDefaultTrigger = nil
           recenterUserCoordinate = nil
+          lightningStore.stopPolling()
         }
       }
       .onChange(of: radarState.committedIsFuture) { _, _ in
@@ -106,6 +120,9 @@ struct RadarView: View {
         switch newPhase {
         case .active:
           guard store.selectedTab == .radar else { return }
+          if showsLightningOverlay {
+            lightningStore.startPolling(around: selectedMapCenter)
+          }
           Task {
             // reloadIfStale carries its own thresholds, so a brief trip to the app
             // switcher costs nothing while a long absence rebuilds.
@@ -119,6 +136,7 @@ struct RadarView: View {
           // immediately on resume; stopping first keeps playback from advancing
           // through stale frames and fetching their tiles before the reload lands.
           radarState.stop()
+          lightningStore.stopPolling()
         default:
           break
         }
@@ -128,6 +146,7 @@ struct RadarView: View {
         radarState.cancelModeSwitch()
         recenterDefaultTrigger = nil
         recenterUserCoordinate = nil
+        lightningStore.stopPolling()
       }
       // Opacity is @State so Mapbox updates live; mirror to prefs so the next
       // launch restores the last slider position (speed/overlay already do this).
@@ -154,6 +173,7 @@ struct RadarView: View {
                 recenterDefaultTrigger: recenterDefaultTrigger,
                 recenterUserCoordinate: recenterUserCoordinate,
                 fireSnapshot: fireStore.snapshot,
+                lightningSnapshot: lightningStore.snapshot,
                 alerts: store.displayableActiveAlerts
               )
               .frame(width: geo.size.width, height: geo.size.height)
@@ -209,11 +229,27 @@ struct RadarView: View {
       }
     }
     .overlay(alignment: .bottomLeading) {
-      if store.selectedTab == .radar, showsReflectivityColorbar {
-        RadarMapColorbar(keysClearAir: colorbarKeysClearAir)
-          .padding(.leading, DesignTokens.Spacing.space12)
-          .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance + 136)
-          .allowsHitTesting(false)
+      if store.selectedTab == .radar {
+        VStack(alignment: .leading, spacing: 6) {
+          if showsLightningOverlay {
+            Text(lightningStore.attributionLabel)
+              .font(DesignTokens.Typography.micro())
+              .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 4)
+              .background(
+                DesignTokens.Palette.cardBackground.opacity(0.94),
+                in: Capsule()
+              )
+              .accessibilityLabel(lightningStore.attributionLabel)
+          }
+          if showsReflectivityColorbar {
+            RadarMapColorbar(keysClearAir: colorbarKeysClearAir)
+          }
+        }
+        .padding(.leading, DesignTokens.Spacing.space12)
+        .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance + 136)
+        .allowsHitTesting(false)
       }
     }
     .overlay(alignment: .bottom) {
@@ -279,10 +315,17 @@ struct RadarView: View {
 
     radarState.completeTransition()
   }
+
+  /// Restart lightning polls when tab, toggle, Live/24-hr, or city changes.
+  private var lightningPollKey: String {
+    let locationID = store.currentLocation?.id.uuidString ?? "olive"
+    return "\(store.selectedTab == .radar)|\(showsLightningOverlay)|\(locationID)"
+  }
 }
 
 #Preview {
   RadarView()
     .environment(WeatherStore())
     .environment(FireStore.shared)
+    .environment(LightningStore.shared)
 }

@@ -34,11 +34,13 @@ final class RadarStatePreferencesTests: XCTestCase {
     state.baseMapStyle = .dark
     state.showRadarOverlay = false
     state.showFireLayer = true
+    state.showLightningLayer = false
 
     XCTAssertEqual(RadarPreferences.colorScheme, .balanced)
     XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
     XCTAssertFalse(RadarPreferences.showRadarOverlay)
     XCTAssertTrue(RadarPreferences.showFireLayer)
+    XCTAssertFalse(RadarPreferences.showLightningLayer)
   }
 
   func testFreshStateRestoresStoredPreferences() {
@@ -46,6 +48,7 @@ final class RadarStatePreferencesTests: XCTestCase {
     RadarPreferences.baseMapStyle = .dark
     RadarPreferences.showRadarOverlay = false
     RadarPreferences.showFireLayer = true
+    RadarPreferences.showLightningLayer = false
 
     let restored = RadarState()
 
@@ -53,6 +56,7 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertEqual(restored.baseMapStyle, .dark)
     XCTAssertFalse(restored.showRadarOverlay)
     XCTAssertTrue(restored.showFireLayer)
+    XCTAssertFalse(restored.showLightningLayer)
   }
 
   /// The round trip a user actually performs: change a setting, quit, relaunch.
@@ -103,6 +107,7 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertEqual(state.baseMapStyle, .light)
     XCTAssertTrue(state.showRadarOverlay)
     XCTAssertFalse(state.showFireLayer)
+    XCTAssertTrue(state.showLightningLayer)
     XCTAssertEqual(state.playbackSpeed, RadarPlayback.defaultPlaybackSpeed, accuracy: 0.0001)
   }
 

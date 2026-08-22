@@ -526,7 +526,7 @@ private struct RadarDisplayOptionsSheet: View {
           }
         #endif
 
-        Section("Map") {
+        Section {
           namedSwitch(RadarChromeCopy.radarOverlaySwitch, isOn: $radarState.showRadarOverlay)
           namedSwitch(
             RadarChromeCopy.fireLayerSwitch,
@@ -538,11 +538,27 @@ private struct RadarDisplayOptionsSheet: View {
               }
             )
           )
+          namedSwitch(
+            RadarChromeCopy.lightningLayerSwitch,
+            isOn: Binding(
+              get: { radarState.showLightningLayer },
+              set: { newValue in
+                radarState.showLightningLayer = newValue
+                Analytics.track(.lightningLayerToggle, parameters: ["on": newValue ? "1" : "0"])
+              }
+            )
+          )
           Picker("Base map", selection: $radarState.baseMapStyle) {
             ForEach(RadarBaseMapStyle.allCases) { style in
               Label(style.displayName, systemImage: style.systemImage).tag(style)
             }
           }
+        } header: {
+          Text("Map")
+        } footer: {
+          Text(
+            "Lightning is Live only — recent cloud-to-ground strikes from Vaisala Xweather. Works on Site Doppler and National."
+          )
         }
 
         Section("Opacity") {

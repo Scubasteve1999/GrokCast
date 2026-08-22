@@ -222,7 +222,9 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.mapOnlySwitch, "Map only")
     XCTAssertEqual(RadarChromeCopy.radarOverlaySwitch, "Radar overlay")
     XCTAssertEqual(RadarChromeCopy.fireLayerSwitch, "Fire layer")
+    XCTAssertEqual(RadarChromeCopy.lightningLayerSwitch, "Lightning")
     XCTAssertEqual(RadarChromeCopy.motionTracks, "Motion tracks")
+    XCTAssertEqual(RadarChromeCopy.lightningAttribution, "Lightning · Vaisala Xweather")
   }
 
   func testStormcellsFollowMapsGLRainGate() {
@@ -459,6 +461,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
     XCTAssertTrue(RadarPreferences.showRadarOverlay)
     XCTAssertFalse(RadarPreferences.showFireLayer)
+    XCTAssertTrue(RadarPreferences.showLightningLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, RadarPlayback.defaultPlaybackSpeed)
     XCTAssertEqual(RadarPreferences.radarOpacity, RadarPreferences.defaultRadarOpacity)
     XCTAssertFalse(RadarPreferences.chaseDecluttered)
@@ -468,6 +471,7 @@ final class RadarPreferencesTests: XCTestCase {
     RadarPreferences.colorScheme = .balanced
     RadarPreferences.baseMapStyle = .dark
     RadarPreferences.showFireLayer = true
+    RadarPreferences.showLightningLayer = false
     RadarPreferences.playbackSpeed = 1.0
     RadarPreferences.radarOpacity = 0.55
     RadarPreferences.chaseDecluttered = true
@@ -475,6 +479,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarPreferences.colorScheme, .balanced)
     XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
     XCTAssertTrue(RadarPreferences.showFireLayer)
+    XCTAssertFalse(RadarPreferences.showLightningLayer)
     XCTAssertEqual(RadarPreferences.playbackSpeed, 1.0)
     XCTAssertEqual(RadarPreferences.radarOpacity, 0.55, accuracy: 0.0001)
     XCTAssertTrue(RadarPreferences.chaseDecluttered)
@@ -486,6 +491,12 @@ final class RadarPreferencesTests: XCTestCase {
   func testRadarOverlayOffIsRemembered() {
     RadarPreferences.showRadarOverlay = false
     XCTAssertFalse(RadarPreferences.showRadarOverlay)
+  }
+
+  /// Default is true, so stored false must survive (same trap as radar overlay).
+  func testLightningOffIsRemembered() {
+    RadarPreferences.showLightningLayer = false
+    XCTAssertFalse(RadarPreferences.showLightningLayer)
   }
 
   func testUnknownRawValueFallsBackToTheDefault() {

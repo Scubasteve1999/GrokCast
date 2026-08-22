@@ -156,8 +156,10 @@ enum RadarChromeCopy {
   static let mapOnlySwitch = "Map only"
   static let radarOverlaySwitch = "Radar overlay"
   static let fireLayerSwitch = "Fire layer"
+  static let lightningLayerSwitch = "Lightning"
   /// Xweather cell/motion on Live Rain. Not NWS SCIT.
   static let motionTracks = "Motion tracks"
+  static let lightningAttribution = "Lightning · Vaisala Xweather"
 }
 
 /// After the one-sheet chrome, Map-only must never hide Live / 24-hr / Layers.
