@@ -394,6 +394,21 @@ final class RadarPreferencesTests: XCTestCase {
       ["road-label", "road-label-simple", "settlement-subdivision-label"]
     )
     XCTAssertTrue(RadarBaseMapStyle.polarUnderlayBelowCandidateIDs.contains("settlement-label"))
+    XCTAssertEqual(
+      RadarBaseMapStyle.quietWorkstationPunchedLabelIDs,
+      RadarBaseMapStyle.polarUnderlayBelowCandidateIDs
+    )
+    XCTAssertEqual(RadarBaseMapStyle.quietWorkstationLabelTextOpacity, 1.0)
+    XCTAssertGreaterThanOrEqual(RadarBaseMapStyle.quietWorkstationLabelHaloWidth, 1.8)
+    XCTAssertLessThan(RadarBaseMapStyle.quietWorkstationLabelHaloBlur, 1.0)
+    XCTAssertTrue(
+      RadarBaseMapStyle.quietWorkstationLabelHaloColor.lowercased().contains("f5"),
+      "light canvas halo, not dark RadarScope invert")
+    for id in RadarBaseMapStyle.quietWorkstationPunchedLabelIDs {
+      XCTAssertFalse(
+        RadarBaseMapStyle.quietWorkstationHiddenLayerIDs.contains(id),
+        "\(id) sits above precip and must stay visible")
+    }
   }
 
   func testPolarMetalSitsBelowFirstMatchingLabelLayer() {
