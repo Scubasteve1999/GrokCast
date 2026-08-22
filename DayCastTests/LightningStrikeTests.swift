@@ -116,6 +116,24 @@ final class LightningStrikeTests: XCTestCase {
     XCTAssertEqual(strike.ageMinutes(now: now), 2.5, accuracy: 0.05)
   }
 
+  func testBoltLayerReplacesCircleDots() {
+    XCTAssertEqual(LightningRadarOverlay.layerID, "lightning-strikes-bolts")
+    XCTAssertEqual(LightningRadarOverlay.legacyCircleLayerID, "lightning-strikes-layer")
+    XCTAssertNotEqual(LightningRadarOverlay.layerID, LightningRadarOverlay.legacyCircleLayerID)
+    XCTAssertEqual(LightningRadarOverlay.iconImageID, "daycast-lightning-bolt")
+    let bolt = LightningRadarOverlay.makeBoltImage()
+    XCTAssertGreaterThanOrEqual(bolt.size.width, 24)
+    XCTAssertGreaterThanOrEqual(bolt.size.height, 24)
+  }
+
+  func testBoltYawIsStableAndBounded() {
+    XCTAssertEqual(LightningRadarOverlay.yawDegrees(for: "abc123"), LightningRadarOverlay.yawDegrees(for: "abc123"))
+    XCTAssertNotEqual(LightningRadarOverlay.yawDegrees(for: "abc123"), LightningRadarOverlay.yawDegrees(for: "def456"))
+    let yaw = LightningRadarOverlay.yawDegrees(for: "abc123")
+    XCTAssertGreaterThanOrEqual(yaw, -20)
+    XCTAssertLessThanOrEqual(yaw, 20)
+  }
+
   private static let sampleJSON = """
     {
       "success": true,

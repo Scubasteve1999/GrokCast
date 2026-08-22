@@ -160,6 +160,7 @@ enum RadarChromeCopy {
   /// Xweather cell/motion on Live Rain. Not NWS SCIT.
   static let motionTracks = "Motion tracks"
   static let lightningAttribution = "Lightning · Vaisala Xweather"
+  static let rangeRingLabel = "30 mi"
 }
 
 /// After the one-sheet chrome, Map-only must never hide Live / 24-hr / Layers.

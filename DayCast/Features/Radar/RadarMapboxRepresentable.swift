@@ -205,6 +205,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         self.polarDidNotifyReady = false
         self.lastAppliedFireSignature = nil
         self.lastAppliedLightningSignature = nil
+        self.lastAppliedRangeSignature = nil
         self.lastAppliedWarningSignature = nil
         self.mapsGLHost.onLayerStateChange = { [weak self, weak mapView] in
           guard let self, let mapView else { return }
@@ -227,6 +228,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var lastAppliedLightningSignature: String?
     private var pendingLightningSnapshot = LightningSnapshot()
     private var pendingShowLightningLayer = false
+    private var pendingRangeCenter = SavedLocation.oliveBranch.coordinate
+    private var lastAppliedRangeSignature: String?
     private var lastAppliedWarningSignature: String?
     private var pendingAlerts: [NWSAlert] = []
     private let mapsGLHost = MapsGLRadarHost()
@@ -258,6 +261,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       pendingShowFireLayer = radarState.showFireLayer
       pendingLightningSnapshot = lightningSnapshot
       pendingShowLightningLayer = radarState.showLightningLayer && !radarState.showsFuture
+      pendingRangeCenter = defaultMapCenter
       pendingAlerts = alerts
 
       if radarState.cameraSessionID != lastCameraSessionID {
@@ -340,12 +344,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         snapshot: pendingFireSnapshot,
         showFireLayer: pendingShowFireLayer
       )
+      reconcileRangeRing(mapView: mapView, center: pendingRangeCenter)
+      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
       reconcileLightningOverlay(
         mapView: mapView,
         snapshot: pendingLightningSnapshot,
         showLightningLayer: pendingShowLightningLayer
       )
-      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
     }
 
     private func reconcileFireOverlay(
@@ -381,6 +386,18 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       } else if showLightningLayer {
         LightningRadarOverlay.ensureLayers(on: mapView)
         LightningRadarOverlay.setVisible(true, on: mapView)
+      }
+    }
+
+    private func reconcileRangeRing(mapView: MapView, center: CLLocationCoordinate2D) {
+      guard mapView.mapboxMap.isStyleLoaded else { return }
+      let signature = RadarRangeRingOverlay.overlaySignature(center: center)
+      if lastAppliedRangeSignature != signature {
+        RadarRangeRingOverlay.apply(center: center, on: mapView)
+        lastAppliedRangeSignature = signature
+      } else {
+        RadarRangeRingOverlay.ensureLayers(on: mapView)
+        RadarRangeRingOverlay.setVisible(true, on: mapView)
       }
     }
 
@@ -644,12 +661,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         snapshot: pendingFireSnapshot,
         showFireLayer: pendingShowFireLayer
       )
+      reconcileRangeRing(mapView: mapView, center: pendingRangeCenter)
+      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
       reconcileLightningOverlay(
         mapView: mapView,
         snapshot: pendingLightningSnapshot,
         showLightningLayer: pendingShowLightningLayer
       )
-      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
     }
 
     private func flushPendingDesiredState(on mapView: MapView) {
@@ -666,12 +684,13 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         snapshot: pendingFireSnapshot,
         showFireLayer: pendingShowFireLayer
       )
+      reconcileRangeRing(mapView: mapView, center: pendingRangeCenter)
+      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
       reconcileLightningOverlay(
         mapView: mapView,
         snapshot: pendingLightningSnapshot,
         showLightningLayer: pendingShowLightningLayer
       )
-      reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
     }
 
     private func reconcile(mapView: MapView, desired: DesiredRasterState) {
