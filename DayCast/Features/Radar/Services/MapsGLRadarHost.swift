@@ -230,14 +230,32 @@ final class MapsGLRadarHost {
       config.layer.paint.stroke.opacity = .constant(MapsGLLiveRainLayers.trackOpacity)
       config.layer.paint.stroke.lineCap = .constant(.butt)
       config.layer.paint.stroke.lineJoin = .constant(.miter)
-      config.layer.filter = Self.severeStormcellFilter
+      config.layer.filter = Self.severeStormcellTrackFilter
       try controller.addWeatherLayer(config: config)
       stormcellsReady = true
       radarLog("[MapsGL] stormcells-tracks added")
+      applyNativeStormcellTrackFilter()
+      Task { @MainActor [weak self] in
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        self?.applyNativeStormcellTrackFilter()
+      }
     } catch {
       radarLog("[MapsGL] Failed to add stormcells-tracks: \(error)")
       stormcellsReady = false
     }
+  }
+
+  /// MapsGL `and`/`geometry-type` can no-op the same way `contains` did in 1.6.1.
+  /// Set the Mapbox layer filter directly so cone polygons are not stroked.
+  private func applyNativeStormcellTrackFilter() {
+    guard let map = attachedMapView?.mapboxMap else { return }
+    let layerID = MapsGLLiveRainLayers.stormcellIDs[0]
+    guard map.layerExists(withId: layerID) else { return }
+    try? map.setLayerProperty(
+      for: layerID,
+      property: "filter",
+      value: MapsGLLiveRainLayers.mapboxStormcellTrackFilter
+    )
   }
 
   private func removeStormcellLayers(on controller: MapboxMapController) {
@@ -303,6 +321,12 @@ final class MapsGLRadarHost {
       MapsGLMaps.Expression.equals(
         MapsGLMaps.Expression.get(MapsGLLiveRainLayers.tvsProperty), 1))
     return MapsGLMaps.Expression.or(clauses)
+  }
+
+  /// Drop forecast-cone polygons from the tracks line layer. Raw Mapbox
+  /// arrays — MapsGL `and`/`geometry-type` helpers can no-op like `contains`.
+  private static var severeStormcellTrackFilter: MapsGLMaps.Expression {
+    MapsGLMaps.Expression(MapsGLLiveRainLayers.mapboxStormcellTrackFilter)
   }
 
   private func applyTimelineRange(future: Bool, on controller: MapboxMapController) {

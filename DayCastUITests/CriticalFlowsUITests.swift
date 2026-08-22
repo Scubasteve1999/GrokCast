@@ -55,6 +55,41 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     )
   }
 
+  // MARK: - 2b. Mosaic motion tracks, not cone wedges
+
+  func testMosaicSelectsNationalComposite() throws {
+    XCTAssertTrue(waitForTabBar())
+    openTab(.radar)
+
+    let layers = app.buttons["Layers"]
+    XCTAssertTrue(layers.waitForExistence(timeout: 15), "Layers missing")
+    layers.tap()
+
+    let mosaic = app.buttons["Mosaic"]
+    XCTAssertTrue(mosaic.waitForExistence(timeout: 8), "Mosaic product missing")
+    mosaic.tap()
+
+    let done = app.buttons["Done"]
+    if done.waitForExistence(timeout: 4) { done.tap() }
+
+    let mosaicHUD = app.staticTexts["Mosaic"]
+    XCTAssertTrue(
+      mosaicHUD.waitForExistence(timeout: 12),
+      "HUD did not switch to Mosaic"
+    )
+
+    XCTAssertTrue(layers.waitForExistence(timeout: 6))
+    layers.tap()
+    let rain = app.buttons["Rain"]
+    XCTAssertTrue(rain.waitForExistence(timeout: 8), "Rain/N0B product missing")
+    rain.tap()
+    if done.waitForExistence(timeout: 4) { done.tap() }
+    XCTAssertFalse(
+      app.staticTexts["Mosaic"].waitForExistence(timeout: 3),
+      "N0B HUD still says Mosaic"
+    )
+  }
+
   // MARK: - 3. Storm Spotter entry from Briefing Studio
 
   func testStormSpotterCTAExistsInBriefingStudio() throws {

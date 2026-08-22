@@ -258,6 +258,43 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertFalse(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", traitTornado: 0, tvs: 0))
   }
 
+  func testStormcellTracksPaintLineStringsOnly() {
+    XCTAssertEqual(MapsGLLiveRainLayers.lineStringGeometryType, "LineString")
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "LineString", traitType: "hail"))
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "LineString", traitType: "rotating"))
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "LineString", traitType: "tornado"))
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "LineString", traitType: "general", tvs: 1))
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "Polygon", traitType: "hail"))
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "Point", traitType: "hail"))
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "GeometryCollection", traitType: "hail"))
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldPaintStormcellTrack(
+        geometryType: "LineString", traitType: "general"))
+    let filter = MapsGLLiveRainLayers.mapboxStormcellTrackFilter
+    XCTAssertEqual(filter.first as? String, "all")
+    let geom = filter.dropFirst().first as? [Any]
+    XCTAssertEqual(geom?.first as? String, "==")
+    XCTAssertEqual((geom?.dropFirst().first as? [String])?.first, "geometry-type")
+    XCTAssertEqual(geom?.last as? String, "LineString")
+    let any = filter.last as? [Any]
+    XCTAssertEqual(any?.first as? String, "any")
+    XCTAssertGreaterThanOrEqual(any?.count ?? 0, 6)
+  }
+
   func testDetachRemovesStormcellsAndRadar() {
     XCTAssertEqual(
       MapsGLLiveRainLayers.detachIDs,

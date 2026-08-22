@@ -98,6 +98,9 @@ enum MapsGLLiveRainLayers {
   static let tvsProperty = "tvs"
   static let severeTraitTypes = ["hail", "rotating", "tornado"]
   static let excludedTraitType = "general"
+  /// MapsGL `severe.stormcells` MVT splits each cell into Point + LineString
+  /// + Polygon (forecast cone). A line layer strokes those cones as wedges.
+  static let lineStringGeometryType = "LineString"
 
   /// Client-side match for the MapsGL layer filter. `general` plus tvs/tornado
   /// flags of 0 is the tick spray. Hail/rotation/tornado or a TVS is SVR/TOR.
@@ -106,6 +109,34 @@ enum MapsGLLiveRainLayers {
   ) -> Bool {
     if let traitType, severeTraitTypes.contains(traitType) { return true }
     return traitTornado == 1 || tvs == 1
+  }
+
+  /// Motion tracks only. Cone polygons and cell points must not paint.
+  static func shouldPaintStormcellTrack(
+    geometryType: String,
+    traitType: String?,
+    traitTornado: Int = 0,
+    tvs: Int = 0
+  ) -> Bool {
+    geometryType == lineStringGeometryType
+      && isSevereStormcell(
+        traitType: traitType, traitTornado: traitTornado, tvs: tvs)
+  }
+
+  /// Mapbox layer `filter` JSON. LineStrings of SVR/TOR class only.
+  static var mapboxStormcellTrackFilter: [Any] {
+    let typeEquals: [Any] = severeTraitTypes.map {
+      ["==", ["get", traitTypeProperty], $0] as [Any]
+    }
+    var anyClause: [Any] = ["any"]
+    anyClause.append(contentsOf: typeEquals)
+    anyClause.append(["==", ["get", traitTornadoProperty], 1] as [Any])
+    anyClause.append(["==", ["get", tvsProperty], 1] as [Any])
+    return [
+      "all",
+      ["==", ["geometry-type"], lineStringGeometryType] as [Any],
+      anyClause,
+    ]
   }
 
   /// Removed on host detach. Radar first, then cell motion.
