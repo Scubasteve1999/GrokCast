@@ -93,6 +93,13 @@ final class RadarState {
   var showRadarOverlay: Bool = RadarPreferences.showRadarOverlay {
     didSet { RadarPreferences.showRadarOverlay = showRadarOverlay }
   }
+  #if DEBUG
+    /// Spike: Mac-painted NOAA composite over Live National. Off = MapsGL rain.
+    /// Not a user preference; Release does not compile this.
+    var debugNationalOverlay: Bool = DebugFlags.nationalOverlay {
+      didSet { DebugFlags.nationalOverlay = debugNationalOverlay }
+    }
+  #endif
   /// Independent Fire overlay (FIRMS hotspots + NIFC perimeters). Does not affect precip rasters.
   var showFireLayer: Bool = RadarPreferences.showFireLayer {
     didSet { RadarPreferences.showFireLayer = showFireLayer }

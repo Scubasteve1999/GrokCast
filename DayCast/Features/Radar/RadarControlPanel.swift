@@ -512,6 +512,16 @@ private struct RadarDisplayOptionsSheet: View {
           )
         }
 
+        #if DEBUG
+          Section {
+            namedSwitch("Debug national overlay", isOn: $radarState.debugNationalOverlay)
+          } footer: {
+            Text(
+              "DEBUG. Off = today's National. Simulator loads the Mac spike PNG. Not the Live default."
+            )
+          }
+        #endif
+
         Section("Map") {
           namedSwitch(RadarChromeCopy.radarOverlaySwitch, isOn: $radarState.showRadarOverlay)
           namedSwitch(

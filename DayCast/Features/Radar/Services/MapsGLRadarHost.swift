@@ -134,11 +134,19 @@ final class MapsGLRadarHost {
     pendingOpacity = opacity
     lastOverlayOn = radarState.showRadarOverlay
     lastIsSiteProduct = radarState.selectedProduct.isSiteProduct
-    let want = MapsGLRadarPalette.shouldUseMapsGL(
+    var want = MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
       keysPresent: Self.keysPresent
     )
+    #if DEBUG
+      // Spike overlay replaces encoded rain only. Tracks still follow overlayOn.
+      if radarState.debugNationalOverlay, !radarState.showsFuture,
+        !radarState.selectedProduct.isSiteProduct
+      {
+        want = false
+      }
+    #endif
     guard let controller else {
       lastVisible = want
       lastCellsWant = cellsWanted()

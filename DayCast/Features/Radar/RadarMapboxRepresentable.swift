@@ -199,6 +199,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         self.layersInstalled = false
         self.lastAppliedFireSignature = nil
         self.lastAppliedWarningSignature = nil
+        #if DEBUG
+          self.lastMRMSDebugSignature = nil
+        #endif
         self.mapsGLHost.onLayerStateChange = { [weak self, weak mapView] in
           guard let self, let mapView else { return }
           self.refreshDesiredState(on: mapView)
@@ -214,6 +217,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var pendingShowFireLayer = false
     private var lastAppliedWarningSignature: String?
     private var pendingAlerts: [NWSAlert] = []
+    #if DEBUG
+      private var lastMRMSDebugSignature: String?
+    #endif
     private let mapsGLHost = MapsGLRadarHost()
     private var lastRadarState: RadarState?
     private var lastSyncOpacity: Double = RadarPreferences.defaultRadarOpacity
@@ -312,6 +318,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         showFireLayer: pendingShowFireLayer
       )
       reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
+      #if DEBUG
+        reconcileMRMSDebugOverlay(mapView: mapView, radarState: radarState, opacity: opacity)
+      #endif
     }
 
     private func reconcileFireOverlay(
@@ -333,6 +342,23 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
     }
 
+    #if DEBUG
+      private func reconcileMRMSDebugOverlay(
+        mapView: MapView, radarState: RadarState, opacity: Double
+      ) {
+        guard mapView.mapboxMap.isStyleLoaded else { return }
+        let visible = MRMSDebugOverlay.shouldShow(radarState: radarState)
+        let signature = "\(visible)|\(opacity)"
+        if lastMRMSDebugSignature != signature {
+          MRMSDebugOverlay.apply(visible: visible, opacity: opacity, on: mapView)
+          lastMRMSDebugSignature = signature
+        } else if visible {
+          MRMSDebugOverlay.ensureLayers(on: mapView)
+          MRMSDebugOverlay.apply(visible: true, opacity: opacity, on: mapView)
+        }
+      }
+    #endif
+
     private func reconcileWarningOverlay(mapView: MapView, alerts: [NWSAlert]) {
       guard mapView.mapboxMap.isStyleLoaded else { return }
       let signature = RadarWarningPolygon.overlaySignature(from: alerts)
@@ -346,14 +372,23 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
     private func resolveDesiredState(from radarState: RadarState, opacity: Double) -> DesiredRasterState {
       mapsGLHost.sync(radarState: radarState, opacity: opacity)
-      let mapsGLRain = MapsGLRadarPalette.shouldUseMapsGL(
+      var mapsGLRain = MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: radarState.showRadarOverlay,
         isSiteProduct: radarState.selectedProduct.isSiteProduct,
         keysPresent: MapsGLRadarHost.keysPresent
       )
+      #if DEBUG
+        if MRMSDebugOverlay.shouldShow(radarState: radarState) {
+          mapsGLRain = false
+        }
+      #endif
       // Encoded MapsGL rain replaces baked PNG only after the Metal layer is up.
       // If add fails, the existing Xweather PNG path stays visible.
       if mapsGLRain, mapsGLHost.isReady { return .hidden }
+      #if DEBUG
+        // Spike ImageSource paints National; hide leftover PNG tiles.
+        if MRMSDebugOverlay.shouldShow(radarState: radarState) { return .hidden }
+      #endif
 
       guard radarState.showRadarOverlay,
         radarState.activeShowsTiles,
@@ -472,6 +507,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         showFireLayer: pendingShowFireLayer
       )
       reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
+      #if DEBUG
+        reconcileMRMSDebugOverlay(
+          mapView: mapView, radarState: radarState, opacity: lastSyncOpacity)
+      #endif
     }
 
     private func flushPendingDesiredState(on mapView: MapView) {
@@ -486,6 +525,12 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         showFireLayer: pendingShowFireLayer
       )
       reconcileWarningOverlay(mapView: mapView, alerts: pendingAlerts)
+      #if DEBUG
+        if let radarState = lastRadarState {
+          reconcileMRMSDebugOverlay(
+            mapView: mapView, radarState: radarState, opacity: lastSyncOpacity)
+        }
+      #endif
     }
 
     private func reconcile(mapView: MapView, desired: DesiredRasterState) {

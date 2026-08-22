@@ -30,6 +30,17 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertLessThan(RadarColorScheme.vibrant.rasterHueRotate, 0)
   }
 
+  #if DEBUG
+    func testDebugNationalOverlayDefaultsOff() {
+      UserDefaults.standard.removeObject(forKey: "radar.debug.nationalOverlay")
+      XCTAssertFalse(DebugFlags.nationalOverlay)
+      XCTAssertTrue(
+        MapsGLRadarPalette.shouldUseMapsGL(
+          overlayOn: true, isSiteProduct: false, keysPresent: true)
+      )
+    }
+  #endif
+
   func testTodayRadarCardUsesOneRadarLabel() {
     XCTAssertEqual(RadarFeedCopy.title, "Radar")
     XCTAssertEqual(RadarFeedCopy.accessibilityLabel, "Radar. Opens the Radar tab.")
