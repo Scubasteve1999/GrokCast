@@ -79,7 +79,7 @@ enum Level3PolarTilePainter {
           let xN = cosLat0 * sinLat - sinLat0 * cosLat * cosDLon
           var az = atan2(yE, xN) * 180 / .pi
           if az < 0 { az += 360 }
-          guard let byte = sweep.gateByte(rangeMeters: range, azimuth: az) else { continue }
+          guard let byte = sweep.paintByte(rangeMeters: range, azimuth: az) else { continue }
           let color = sweep.rgbaLUT[Int(byte)]
           if color.3 == 0 { continue }
           let o = (row * size + col) * bytesPerPixel

@@ -44,6 +44,36 @@ struct Level3N0BSweep {
     guard gi >= 0, gi < gates.count else { return nil }
     return gates[gi]
   }
+
+  /// Nearest polar bin for painting. A 5–14 dBZ (clutter-keyed) gate sitting
+  /// between two 15+ neighbors is a 0.5° / 250 m crack — at close/street zoom
+  /// that paints as a white radial through precip. If both azimuth neighbors
+  /// (or both range neighbors) are opaque, use that hard NWS bin. Does not
+  /// blend dBZ and does not grow precip into clear air (one-sided edges stay).
+  func paintByte(rangeMeters: Double, azimuth: Double) -> UInt8? {
+    guard let byte = gateByte(rangeMeters: rangeMeters, azimuth: azimuth) else {
+      return nil
+    }
+    if isOpaque(byte) { return byte }
+    if let left = gateByte(rangeMeters: rangeMeters, azimuth: azimuth - 0.5),
+      let right = gateByte(rangeMeters: rangeMeters, azimuth: azimuth + 0.5),
+      isOpaque(left), isOpaque(right)
+    {
+      return left
+    }
+    let w = gateWidthMeters
+    if let inner = gateByte(rangeMeters: rangeMeters - w, azimuth: azimuth),
+      let outer = gateByte(rangeMeters: rangeMeters + w, azimuth: azimuth),
+      isOpaque(inner), isOpaque(outer)
+    {
+      return inner
+    }
+    return byte
+  }
+
+  func isOpaque(_ byte: UInt8) -> Bool {
+    rgbaLUT[Int(byte)].3 != 0
+  }
 }
 
 /// Mapbox interceptor + wet-probe lookup. Replaced wholesale per site load.

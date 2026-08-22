@@ -200,23 +200,33 @@ enum Level3N0BDecoder {
       let gates = r.bytes(nbytes)
       radials.append(
         Level3N0BSweep.Radial(
-          startAzimuth: start, deltaAzimuth: max(delta, 0.5), gates: gates))
+          startAzimuth: start, deltaAzimuth: delta > 0 ? delta : 0.5, gates: gates))
     }
     return ParsedRadials(binCount: nbins, radials: radials)
   }
 
+  /// Map every 0.5° slot to the radial whose `[start, start+delta)` contains the
+  /// slot center. Super-Res N0B deltas jitter 0.4/0.5/0.6 — filling
+  /// `ceil(delta/0.5)` slots from `floor(start/0.5)` lets 0.5° radials steal
+  /// the 0.4° neighbor's only slot (~73 unused radials on a 720-radial TWX
+  /// sweep). Slot-center assignment keeps all radials and leaves no 0xFFFF holes.
   static func buildAzIndex(_ radials: [Level3N0BSweep.Radial]) -> [UInt16] {
     var table = [UInt16](repeating: 0xFFFF, count: 720)
     for (i, radial) in radials.enumerated() {
       var az = radial.startAzimuth.truncatingRemainder(dividingBy: 360)
       if az < 0 { az += 360 }
-      let span = max(radial.deltaAzimuth, 0.5)
-      let steps = max(1, Int((span / 0.5).rounded(.up)))
+      let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
       let startSlot = Int((az / 0.5).rounded(.down))
-      for s in 0..<steps {
+      let steps = max(1, Int((span / 0.5).rounded(.up)) + 2)
+      for s in -1..<steps {
         var slot = (startSlot + s) % 720
         if slot < 0 { slot += 720 }
-        table[slot] = UInt16(i)
+        let mid = Double(slot) * 0.5 + 0.25
+        var d = mid - az
+        if d < 0 { d += 360 }
+        if d < span {
+          table[slot] = UInt16(i)
+        }
       }
     }
     if table.contains(0xFFFF), let seed = table.first(where: { $0 != 0xFFFF }) {

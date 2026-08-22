@@ -1,4 +1,6 @@
+import CoreGraphics
 import CoreLocation
+import ImageIO
 import XCTest
 
 @testable import DayCast
@@ -112,6 +114,58 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(sweep.longitude, -96.232, accuracy: 0.01)
     XCTAssertTrue(sweep.hasOrganizedPrecip)
     XCTAssertEqual(sweep.timestamp.timeIntervalSince1970, 1_787_405_984, accuracy: 1)
+    XCTAssertEqual(sweep.azIndex.count, 720)
+    XCTAssertFalse(sweep.azIndex.contains(0xFFFF), "every 0.5° slot maps to a radial")
+    XCTAssertEqual(
+      Set(sweep.azIndex.map { Int($0) }).count, sweep.radials.count,
+      "0.4/0.5/0.6 delta jitter must not drop radials")
+  }
+
+  func testAzIndexSlotCentersKeepJitteredRadials() {
+    // N0B Super-Res: 0.4° then 0.5° then 0.6° — the 0.4° radial used to lose
+    // its only 0.5° slot to the next start.
+    let radials = [
+      Level3N0BSweep.Radial(startAzimuth: 120.0, deltaAzimuth: 0.4, gates: [146]),
+      Level3N0BSweep.Radial(startAzimuth: 120.4, deltaAzimuth: 0.5, gates: [96]),
+      Level3N0BSweep.Radial(startAzimuth: 120.9, deltaAzimuth: 0.6, gates: [126]),
+    ]
+    let idx = Level3N0BDecoder.buildAzIndex(radials)
+    XCTAssertFalse(idx.contains(0xFFFF))
+    XCTAssertEqual(Set(idx).count, 3)
+    XCTAssertEqual(idx[240], 0, "slot 120.0–120.5 center 120.25 is the 0.4° radial")
+    XCTAssertEqual(idx[241], 1, "slot 120.5–121.0 center 120.75 is the 0.5° radial")
+    XCTAssertEqual(idx[242], 2, "slot 121.0–121.5 center 121.25 is the 0.6° radial")
+  }
+
+  func testPaintByteClosesKeyedOutCracksThroughPrecip() {
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 146, holeAzimuth: 90.5, holeByte: 86)
+    XCTAssertEqual(sweep.gateByte(rangeMeters: 5_000, azimuth: 90.5), 86)
+    XCTAssertEqual(
+      sweep.paintByte(rangeMeters: 5_000, azimuth: 90.5), 146,
+      "10 dBZ crack between 40 dBZ neighbors must paint as a hard neighbor bin")
+    XCTAssertEqual(sweep.paintByte(rangeMeters: 5_000, azimuth: 90), 146)
+  }
+
+  func testPaintByteDoesNotGrowPrecipIntoClearAir() {
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 146)
+    XCTAssertEqual(sweep.paintByte(rangeMeters: 5_000, azimuth: 90), 146)
+    XCTAssertEqual(sweep.paintByte(rangeMeters: 5_000, azimuth: 0), 0)
+    XCTAssertEqual(
+      sweep.paintByte(rangeMeters: 5_000, azimuth: 89.5), 0,
+      "one-sided edge must stay clear — no AccuWeather dilation")
+  }
+
+  func testPolarPaintHasNoAzimuthSeamsThroughPrecip() {
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 146, holeAzimuth: 90.5, holeByte: 86)
+    let z = 12
+    let dest = Self.destination(
+      lat: sweep.latitude, lon: sweep.longitude, azimuth: 90.5, rangeMeters: 6_000)
+    let tile = IEMRadarService.webMercatorTile(lat: dest.lat, lon: dest.lon, zoom: z)
+    let png = Level3PolarTilePainter.paint(sweep: sweep, z: z, x: tile.x, y: tile.y)
+    XCTAssertEqual(
+      Self.sandwichedTransparentPixels(in: png), 0,
+      "no 1px map-colored ray through precip after azimuth hole-fill")
+    XCTAssertTrue(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: png, minPixels: 1))
   }
 
   func testInterceptorReturnsNilWithoutSweep() {
@@ -175,14 +229,19 @@ final class Level3N0BTests: XCTestCase {
   // MARK: - Fixtures
 
   private static func spokeSweep(
-    azimuth: Double, byte: UInt8, delta: Double = 0.5, bins: Int = 80
+    azimuth: Double, byte: UInt8, delta: Double = 0.5, bins: Int = 80,
+    holeAzimuth: Double? = nil, holeByte: UInt8 = 86
   ) -> Level3N0BSweep {
     var radials: [Level3N0BSweep.Radial] = []
     for i in 0..<720 {
       let az = Double(i) * 0.5
       let gates: [UInt8]
+      let inHole =
+        holeAzimuth.map { min(abs(az - $0), 360 - abs(az - $0)) < 0.26 } ?? false
       let inSpoke = min(abs(az - azimuth), 360 - abs(az - azimuth)) < delta / 2 + 0.01
-      if inSpoke {
+      if inHole {
+        gates = [UInt8](repeating: holeByte, count: bins)
+      } else if holeAzimuth != nil || inSpoke {
         gates = [UInt8](repeating: byte, count: bins)
       } else {
         gates = [UInt8](repeating: 0, count: bins)
@@ -309,4 +368,66 @@ final class Level3N0BTests: XCTestCase {
     ])
   }
   private static func beI32(_ v: Int32) -> Data { beU32(UInt32(bitPattern: v)) }
+
+  private static func destination(
+    lat: Double, lon: Double, azimuth: Double, rangeMeters: Double
+  ) -> (lat: Double, lon: Double) {
+    let earthR = 6_371_000.0
+    let d = rangeMeters / earthR
+    let az = azimuth * .pi / 180
+    let lat1 = lat * .pi / 180
+    let lon1 = lon * .pi / 180
+    let lat2 = asin(sin(lat1) * cos(d) + cos(lat1) * sin(d) * cos(az))
+    let lon2 =
+      lon1 + atan2(sin(az) * sin(d) * cos(lat1), cos(d) - sin(lat1) * sin(lat2))
+    return (lat2 * 180 / .pi, lon2 * 180 / .pi)
+  }
+
+  /// Transparent pixels with opaque precip on opposite sides — the white rays.
+  static func sandwichedTransparentPixels(in png: Data) -> Int {
+    guard let source = CGImageSourceCreateWithData(png as CFData, nil),
+      let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+    else { return -1 }
+    let w = image.width
+    let h = image.height
+    var pixels = [UInt8](repeating: 0, count: w * h * 4)
+    let info = CGImageAlphaInfo.premultipliedLast.rawValue
+    let count = pixels.withUnsafeMutableBytes { raw -> Int in
+      guard
+        let ctx = CGContext(
+          data: raw.baseAddress,
+          width: w,
+          height: h,
+          bitsPerComponent: 8,
+          bytesPerRow: w * 4,
+          space: CGColorSpaceCreateDeviceRGB(),
+          bitmapInfo: info),
+        let buf = raw.baseAddress?.assumingMemoryBound(to: UInt8.self)
+      else { return -1 }
+      ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+      func opaque(_ row: Int, _ col: Int) -> Bool {
+        buf[(row * w + col) * 4 + 3] > 0
+      }
+      var n = 0
+      if w < 3 || h < 3 { return 0 }
+      for row in 1..<(h - 1) {
+        for col in 1..<(w - 1) {
+          if opaque(row, col) { continue }
+          let nB = opaque(row - 1, col)
+          let sB = opaque(row + 1, col)
+          let eB = opaque(row, col + 1)
+          let wB = opaque(row, col - 1)
+          let nw = opaque(row - 1, col - 1)
+          let se = opaque(row + 1, col + 1)
+          let ne = opaque(row - 1, col + 1)
+          let sw = opaque(row + 1, col - 1)
+          if (nB && sB) || (eB && wB) || (nw && se) || (ne && sw) {
+            n += 1
+          }
+        }
+      }
+      return n
+    }
+    return count
+  }
 }
