@@ -5,9 +5,9 @@ import simd
 import UIKit
 
 /// Mapbox `CustomLayerHost` that draws Level III N0B gates as Metal trapezoids.
-/// Dual GPU meshes crossfade at the polar play/still duration (opacity lerp of
-/// hard fills, no dBZ blend). Raster PNG nearest-sample stays the fallback when
-/// this pipeline cannot start or no sweep is loaded.
+/// Play adopts the next GPU-warm volume as a pointer swap (no dual-draw).
+/// Stills opacity-lerp two hard fills for 320 ms. Raster PNG nearest-sample
+/// stays the fallback when this pipeline cannot start or no sweep is loaded.
 final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable {
   static let layerID = "daycast-level3-polar"
 
@@ -87,7 +87,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
 
     let t0 = CFAbsoluteTimeGetCurrent()
     if let gpu = Level3PolarGPUCache.shared.cachedGPUMesh(key: key) {
-      let queued = adopt(gpu: gpu, fadeDuration: fadeSeconds)
+      let queued = adopt(gpu: gpu, fadeDuration: fadeSeconds, isAnimating: isAnimating)
       let hitchMs = (CFAbsoluteTimeGetCurrent() - t0) * 1000
       let tris = gpu.vertexCount / 3
       Level3PolarPlayStats.recordAdopt(
@@ -122,7 +122,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
         let stillCurrent = self.generation == gen
         self.lock.unlock()
         guard stillCurrent else { return }
-        let queued = self.adopt(gpu: gpu, fadeDuration: fadeSeconds)
+        let queued = self.adopt(gpu: gpu, fadeDuration: fadeSeconds, isAnimating: isAnimating)
         let buildMs = cacheHit ? 0 : mesh.buildMilliseconds
         Level3PolarPlayStats.recordAdopt(
           hitchMs: (CFAbsoluteTimeGetCurrent() - t0) * 1000,
@@ -141,28 +141,38 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
   }
 
   @discardableResult
-  private func adopt(gpu: GPUMesh, fadeDuration: TimeInterval) -> Bool {
+  private func adopt(gpu: GPUMesh, fadeDuration: TimeInterval, isAnimating: Bool) -> Bool {
     lock.lock()
     currentKey = gpu.key
     let hasFront = front.vertexCount > 0 || (pendingCPU?.vertices.isEmpty == false)
     let fading = fadeStart != nil
-    if fading {
-      queuedGPU = gpu
-      queuedFade = fadeDuration
-      lock.unlock()
-      return true
-    }
-    if !hasFront || fadeDuration <= 0 {
+    let action = Level3PolarAdopt.action(
+      hasFront: hasFront,
+      incomingFadeSeconds: fadeDuration,
+      isCurrentlyFading: fading,
+      isAnimating: isAnimating)
+    switch action {
+    case .immediate:
+      let coalesced = fading
       applyImmediateLocked(gpu)
       lock.unlock()
       fadeTask?.cancel()
       fadeTask = nil
+      if coalesced {
+        radarLog("[Level3] polar coalesce \(gpu.key) latest volume (dropped in-flight fade)")
+      }
+      return false
+    case .queued:
+      queuedGPU = gpu
+      queuedFade = fadeDuration
+      lock.unlock()
+      return true
+    case .fade:
+      installIncomingLocked(gpu, duration: fadeDuration)
+      lock.unlock()
+      startFadePump()
       return false
     }
-    installIncomingLocked(gpu, duration: fadeDuration)
-    lock.unlock()
-    startFadePump()
-    return false
   }
 
   private func applyImmediateLocked(_ gpu: GPUMesh) {
@@ -220,6 +230,10 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
 
   private func finishFade() {
     lock.lock()
+    guard fadeStart != nil else {
+      lock.unlock()
+      return
+    }
     if back.vertexCount > 0 {
       front = back
       pendingCPU = nil
@@ -234,7 +248,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     self.queuedFade = 0
     lock.unlock()
     if let queued {
-      adopt(gpu: queued, fadeDuration: queuedFade)
+      adopt(gpu: queued, fadeDuration: queuedFade, isAnimating: queuedFade <= 0)
       onNeedsDisplay?()
     } else {
       fadeTask = nil

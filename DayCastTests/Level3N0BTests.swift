@@ -394,7 +394,9 @@ final class Level3N0BTests: XCTestCase {
       Level3PolarMeshCache.maxEntries, RadarLivePresentation.siteLoopMaxFrames + 4)
     XCTAssertEqual(
       Level3PolarGPUCache.maxEntries, RadarLivePresentation.siteLoopMaxFrames + 4)
-    XCTAssertEqual(Level3PolarCrossfade.playDurationSeconds, 0.20, accuracy: 0.0001)
+    XCTAssertEqual(Level3PolarCrossfade.playDurationSeconds, 0, accuracy: 0.0001)
+    XCTAssertLessThanOrEqual(
+      Level3PolarCrossfade.playDurationSeconds, Level3PolarCrossfade.playDurationSecondsMax)
     XCTAssertEqual(Level3PolarCrossfade.stillDurationSeconds, 0.32, accuracy: 0.0001)
   }
 
@@ -481,9 +483,45 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertFalse(iem.paintsPolarRadials)
   }
 
+  func testPolarPlayAdoptsInstantlyAndNeverQueues() {
+    XCTAssertEqual(
+      Level3PolarAdopt.action(
+        hasFront: true, incomingFadeSeconds: 0, isCurrentlyFading: false, isAnimating: true),
+      .immediate,
+      "GPU-warm Play is a pointer swap")
+    XCTAssertEqual(
+      Level3PolarAdopt.action(
+        hasFront: true, incomingFadeSeconds: 0.08, isCurrentlyFading: false, isAnimating: true),
+      .immediate,
+      "Play never dual-draws two hard-gate volumes")
+    XCTAssertEqual(
+      Level3PolarAdopt.action(
+        hasFront: true, incomingFadeSeconds: 0.32, isCurrentlyFading: false, isAnimating: false),
+      .fade,
+      "stills keep the 320 ms fade")
+    XCTAssertEqual(
+      Level3PolarAdopt.action(
+        hasFront: true, incomingFadeSeconds: 0.32, isCurrentlyFading: true, isAnimating: false),
+      .immediate,
+      "a still already fading coalesces to the latest volume")
+    XCTAssertEqual(
+      Level3PolarAdopt.action(
+        hasFront: true, incomingFadeSeconds: 0, isCurrentlyFading: true, isAnimating: true),
+      .immediate,
+      "Play never queues a second fade")
+    XCTAssertEqual(
+      Level3PolarAdopt.action(
+        hasFront: false, incomingFadeSeconds: 0.32, isCurrentlyFading: false, isAnimating: false),
+      .immediate)
+    XCTAssertNotEqual(
+      Level3PolarAdopt.action(
+        hasFront: true, incomingFadeSeconds: 0.32, isCurrentlyFading: true, isAnimating: true),
+      .queued)
+  }
+
   func testPolarCrossfadeIsSnappyWhilePlaying() {
     XCTAssertEqual(
-      Level3PolarCrossfade.durationSeconds(isAnimating: true), 0.20, accuracy: 0.0001)
+      Level3PolarCrossfade.durationSeconds(isAnimating: true), 0, accuracy: 0.0001)
     XCTAssertEqual(
       Level3PolarCrossfade.durationSeconds(isAnimating: false), 0.32, accuracy: 0.0001)
     XCTAssertEqual(
@@ -492,10 +530,11 @@ final class Level3N0BTests: XCTestCase {
       700,
       accuracy: 0.0001,
       "IEM PNG fallback keeps the 700 ms raster fade")
-    XCTAssertLessThan(
+    XCTAssertEqual(
       Level3PolarCrossfade.durationSeconds(isAnimating: true) / 0.72,
-      0.40,
-      "2x hold is 720 ms; polar play fade must not dual-draw the whole interval")
+      0,
+      accuracy: 0.0001,
+      "2x hold is 720 ms; polar play must not dual-draw at all")
     XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 0, duration: 0.2), 0)
     XCTAssertEqual(
       Level3PolarCrossfade.progress(elapsed: 0.1, duration: 0.2), 0.5, accuracy: 0.001)

@@ -188,11 +188,14 @@ enum Level3PolarPlayReadiness {
 }
 
 /// Dual-mesh opacity lerp between two hard-NWS trapezoid volumes.
-/// Play fade is polar-specific and short so 2x does not dual-draw ~860k tris
-/// for the whole frame hold. Stills keep the IEM still duration. No dBZ blend.
+/// Play is a pointer swap (no dual-draw of two ~90–430k-tri volumes). Stills
+/// keep the IEM still duration. No dBZ blend.
 enum Level3PolarCrossfade {
-  /// Snappy enough that a 720 ms 2x hold is mostly a single mesh.
-  static let playDurationSeconds: TimeInterval = 0.20
+  /// GPU-warm Play: swap the front buffer only. 200 ms dual-draw was the
+  /// remaining 2x stutter after hitch p50=0.
+  static let playDurationSeconds: TimeInterval = 0
+  /// Cap if a play fade is ever restored. Must stay well under the 720 ms hold.
+  static let playDurationSecondsMax: TimeInterval = 0.08
   /// Matches live IEM still raster fade.
   static let stillDurationSeconds: TimeInterval = 0.32
 
@@ -220,6 +223,32 @@ enum Level3PolarCrossfade {
     if !isFading { return (global, 0) }
     let ops = layerOpacities(progress: progress, global: global)
     return (ops.outgoing, ops.incoming)
+  }
+}
+
+/// Site Doppler adopt policy. Play never dual-draws two hard-gate volumes and
+/// never queues a second fade on top of one already in flight.
+enum Level3PolarAdopt {
+  enum Action: Equatable {
+    case immediate
+    case fade
+    case queued
+  }
+
+  static func action(
+    hasFront: Bool,
+    incomingFadeSeconds: TimeInterval,
+    isCurrentlyFading: Bool,
+    isAnimating: Bool
+  ) -> Action {
+    if !hasFront { return .immediate }
+    // GPU-warm Play is a pointer swap. Dual-drawing two hard-gate volumes
+    // (~90–430k tris) for 200 ms was the remaining 2x stutter.
+    if isAnimating { return .immediate }
+    if incomingFadeSeconds <= 0 { return .immediate }
+    // Latest volume wins. Never queue a second fade on top of one in flight.
+    if isCurrentlyFading { return .immediate }
+    return .fade
   }
 }
 
