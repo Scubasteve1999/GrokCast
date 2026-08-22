@@ -336,6 +336,66 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertFalse(hit, "one-sided spoke edge must not grow north into clear air")
   }
 
+  func testMetalMeshOverlapsNeighborGatesToKillHairlines() {
+    XCTAssertGreaterThanOrEqual(Level3PolarGateMesh.azimuthPadDegrees, 0.05)
+    XCTAssertLessThanOrEqual(Level3PolarGateMesh.azimuthPadDegrees, 0.15)
+    XCTAssertEqual(Level3PolarGateMesh.rangePadGateFractions, 0.5, accuracy: 0.0001)
+
+    var pattern = [UInt8](repeating: 0, count: 16)
+    pattern[8] = 146
+    pattern[9] = 96
+    pattern[10] = 96
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 146, bins: 16, gatePattern: pattern)
+    let mesh = Level3PolarGateMesh.build(sweep: sweep)
+    XCTAssertEqual(mesh.triangleCount, 4, "same-byte 96 run still merges; 146 stays its own trap")
+    XCTAssertEqual(mesh.vertices.count, 12)
+
+    for t in 0..<2 {
+      let base = t * 6
+      let v0 = mesh.vertices[base]
+      XCTAssertTrue(
+        (0..<6).allSatisfy {
+          mesh.vertices[base + $0].r == v0.r
+            && mesh.vertices[base + $0].g == v0.g
+            && mesh.vertices[base + $0].b == v0.b
+            && mesh.vertices[base + $0].a == v0.a
+        },
+        "four corners of trap \(t) must stay constant-color")
+    }
+
+    let azPad = Level3PolarGateMesh.azimuthPadDegrees
+    let trap0 = Array(mesh.vertices[0..<6])
+    let azs = trap0.map { Self.azimuthDegrees(of: $0, sweep: sweep) }
+    let azSpan = (azs.max() ?? 0) - (azs.min() ?? 0)
+    XCTAssertEqual(
+      azSpan, 0.5 + 2 * azPad, accuracy: 0.04,
+      "neighbor radials must overlap in azimuth so GPU raster has no 1px crack")
+
+    let gateW = sweep.gateWidthMeters
+    let rangePad = gateW * Level3PolarGateMesh.rangePadGateFractions
+    let ranges0 = trap0.map { Self.rangeMeters(of: $0, sweep: sweep) }
+    let r0min = ranges0.min() ?? 0
+    let r0max = ranges0.max() ?? 0
+    XCTAssertEqual(r0min, 8 * gateW - rangePad, accuracy: 8)
+    XCTAssertEqual(r0max, 9 * gateW + rangePad, accuracy: 8)
+
+    let trap1 = Array(mesh.vertices[6..<12])
+    let ranges1 = trap1.map { Self.rangeMeters(of: $0, sweep: sweep) }
+    let r1min = ranges1.min() ?? 0
+    XCTAssertLessThan(
+      r1min, r0max,
+      "consecutive range gates along a radial must overlap")
+    XCTAssertGreaterThan(r0max - r1min, rangePad * 0.5)
+  }
+
+  func testPolarHostKeepsWholeLoopGPUCacheAndSnappyFade() {
+    XCTAssertEqual(RadarLivePresentation.siteLoopMaxFrames, 24)
+    XCTAssertEqual(
+      Level3PolarMeshCache.maxEntries, RadarLivePresentation.siteLoopMaxFrames + 4)
+    XCTAssertEqual(Level3PolarCrossfade.playDurationSeconds, 0.20, accuracy: 0.0001)
+    XCTAssertEqual(Level3PolarCrossfade.stillDurationSeconds, 0.32, accuracy: 0.0001)
+  }
+
   func testMetalMeshBuildsLiveAWSFileIfPresent() throws {
     let root = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent()
@@ -525,6 +585,31 @@ final class Level3N0BTests: XCTestCase {
       dbzLUT: lut,
       rgbaLUT: Level3N0BDecoder.rgbaLUT(from: lut),
       hasOrganizedPrecip: true)
+  }
+
+  private static func latLon(of v: Level3PolarVertex) -> (lat: Double, lon: Double) {
+    mercatorToLatLon(x: Double(v.mercX), y: Double(v.mercY))
+  }
+
+  private static func azimuthDegrees(of v: Level3PolarVertex, sweep: Level3N0BSweep) -> Double {
+    let ll = latLon(of: v)
+    let dLat = (ll.lat - sweep.latitude) * .pi / 180
+    let dLon = (ll.lon - sweep.longitude) * .pi / 180
+    let lat0 = sweep.latitude * .pi / 180
+    let x = dLon * cos(lat0)
+    let y = dLat
+    var az = atan2(x, y) * 180 / .pi
+    if az < 0 { az += 360 }
+    return az
+  }
+
+  private static func rangeMeters(of v: Level3PolarVertex, sweep: Level3N0BSweep) -> Double {
+    let site = Level3PolarGateMesh.mercatorXY(
+      latitude: sweep.latitude, longitude: sweep.longitude)
+    return groundMeters(
+      Level3PolarVertex(
+        mercX: Float(site.x), mercY: Float(site.y), r: 0, g: 0, b: 0, a: 0),
+      v)
   }
 
   private static func groundMeters(_ a: Level3PolarVertex, _ b: Level3PolarVertex) -> Double {

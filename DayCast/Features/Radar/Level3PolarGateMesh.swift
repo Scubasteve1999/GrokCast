@@ -14,6 +14,15 @@ struct Level3PolarVertex {
 /// (az0..az1, r0..r1) projected to mercator. Same-color consecutive gates along
 /// a radial merge into one trapezoid. No dBZ blend.
 enum Level3PolarGateMesh {
+  /// Degrees added to each azimuth edge so neighboring radials overlap after
+  /// mercator + GPU raster. Kills 1px white/underlay hairlines between wedges.
+  /// Still well under a Super-Res 0.5° gate (do not grow into AccuWeather mush).
+  static let azimuthPadDegrees: Double = 0.12
+  /// Range overlap on each inner/outer edge, as a fraction of `gateWidthMeters`.
+  /// 0.5 of a 250 m N0B gate is 125 m — covers a street-zoom crack without
+  /// blending dBZ (four corners stay the same RGBA).
+  static let rangePadGateFractions: Double = 0.5
+
   struct Mesh {
     var vertices: [Level3PolarVertex]
     var triangleCount: Int { vertices.count / 3 }
@@ -36,6 +45,8 @@ enum Level3PolarGateMesh {
     let metersPerDegLat = 111_320.0
     let metersPerDegLon = 111_320.0 * max(0.2, cosLat0)
     let gateW = sweep.gateWidthMeters
+    let azPad = azimuthPadDegrees
+    let rangePad = gateW * rangePadGateFractions
 
     for i in 0..<n {
       let radial = sweep.radials[i]
@@ -46,8 +57,8 @@ enum Level3PolarGateMesh {
       let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
       let az1 = az0 + (daz > span * 2.5 ? span : daz)
 
-      let az0rad = az0 * .pi / 180
-      let az1rad = az1 * .pi / 180
+      let az0rad = (az0 - azPad) * .pi / 180
+      let az1rad = (az1 + azPad) * .pi / 180
       let sinAz0 = sin(az0rad)
       let cosAz0 = cos(az0rad)
       let sinAz1 = sin(az1rad)
@@ -79,8 +90,8 @@ enum Level3PolarGateMesh {
           cosAz0: cosAz0,
           sinAz1: sinAz1,
           cosAz1: cosAz1,
-          r0: Double(j) * gateW,
-          r1: Double(jEnd) * gateW,
+          r0: max(0, Double(j) * gateW - rangePad),
+          r1: Double(jEnd) * gateW + rangePad,
           color: color,
           into: &vertices)
         j = jEnd
