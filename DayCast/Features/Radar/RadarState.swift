@@ -99,9 +99,10 @@ final class RadarState {
   /// the provider's newest run — reload past this age to stay current.
   private var lastLoadedAt: Date?
   /// Reload composite frames more often so Live doesn’t sit on a stale set.
-  private static let staleReloadThreshold: TimeInterval = 5 * 60
+  private static let staleReloadThreshold: TimeInterval = RadarLivePresentation.mosaicReload
   /// Even inside the time window, rebuild if the newest live frame is this old.
-  private static let newestFrameStaleThreshold: TimeInterval = 10 * 60
+  private static let newestFrameStaleThreshold: TimeInterval =
+    RadarLivePresentation.newestFrameReload
 
   /// Coordinate the timeline was built for. Provider selection is per-coordinate
   /// (IEM CONUS vs international fallbacks), so a location switch must rebuild
@@ -422,7 +423,16 @@ extension RadarState {
 
     guard product.isSiteProduct else {
       selectedProduct = .reflectivity
-      restoreCompositeLive()
+      let needsReload = RadarLivePresentation.compositeNeedsReload(
+        newestTimestamp: compositeLive?.frames.last?.timestamp,
+        lastLoadedAt: lastLoadedAt
+      )
+      if needsReload, let coordinate = lastLoadedCoordinate {
+        await loadDefaultRadar(for: coordinate)
+      } else if !restoreCompositeLive(), let coordinate = lastLoadedCoordinate {
+        await loadDefaultRadar(for: coordinate)
+      }
+      presentLiveNow()
       return
     }
 
@@ -455,16 +465,49 @@ extension RadarState {
     return "\(site.id) offline — no recent \(product.shortCode) scans nearby"
   }
 
-  private func restoreCompositeLive() {
+  /// Restore mosaic Live only when the cached scans are still inside the
+  /// Live window. A 149m composite labeled Live is a fail — reload or
+  /// unavailable, do not paint it.
+  @discardableResult
+  private func restoreCompositeLive() -> Bool {
     selectedProduct = .reflectivity
     activeSiteProductSite = nil
     siteProductAdvisory = nil
-    guard let composite = compositeLive else { return }
-    timeline.live = composite.frames
-    liveTileAvailability = composite.availability
-    if !showsFuture {
-      playback.currentIndex = max(0, composite.frames.count - 1)
+    guard let composite = compositeLive else { return false }
+    return commitLiveFrames(
+      composite.frames, availability: composite.availability, isSiteProduct: false)
+  }
+
+  /// Keep only frames the HUD may call Live. Empty / too-old → unavailable.
+  @discardableResult
+  private func commitLiveFrames(
+    _ frames: [RadarFrame],
+    availability: RadarTileAvailability,
+    isSiteProduct: Bool
+  ) -> Bool {
+    let live = RadarLivePresentation.liveFrames(frames, isSiteProduct: isSiteProduct)
+    guard RadarLivePresentation.isPresentableAsLive(live, isSiteProduct: isSiteProduct)
+    else {
+      timeline.live = []
+      liveTileAvailability = .unavailable(
+        message: RadarLivePresentation.staleUnavailableMessage)
+      return false
     }
+    timeline.live = live
+    liveTileAvailability = availability
+    if !showsFuture {
+      playback.currentIndex = max(0, live.count - 1)
+    }
+    return true
+  }
+
+  func seedCompositeCacheForTesting(frames: [RadarFrame], loadedAt: Date) {
+    compositeLive = (frames, .available)
+    lastLoadedAt = loadedAt
+  }
+
+  func restoreCompositeLiveForTesting() {
+    _ = restoreCompositeLive()
   }
 
   /// Reloads Super-Res / SRV frames for the nearest site, walking to neighbors when
@@ -493,12 +536,15 @@ extension RadarState {
       return false
     }
 
-    timeline.live = load.frames
-    liveTileAvailability = .available
+    guard commitLiveFrames(load.frames, availability: .available, isSiteProduct: true)
+    else {
+      activeSiteProductSite = nil
+      siteProductAdvisory = nil
+      return false
+    }
     siteProductUnavailableMessage = nil
     activeSiteProductSite = load.site
     siteProductAdvisory = Self.advisory(for: load, product: product)
-    playback.currentIndex = max(0, load.frames.count - 1)
 
     let via =
       load.isFallback
@@ -627,7 +673,12 @@ extension RadarState {
 
     // Always cache the composite result so a site product can restore it later —
     // even if the user selected one while this initial load was in flight.
-    compositeLive = (result.live, result.liveAvailability)
+    let mosaicLive = RadarLivePresentation.liveFrames(result.live, isSiteProduct: false)
+    let mosaicAvailability: RadarTileAvailability =
+      RadarLivePresentation.isPresentableAsLive(mosaicLive, isSiteProduct: false)
+      ? result.liveAvailability
+      : .unavailable(message: RadarLivePresentation.staleUnavailableMessage)
+    compositeLive = (mosaicLive, mosaicAvailability)
     timeline.forecast = result.forecast
     forecastTileAvailability = result.forecastAvailability
 
@@ -646,8 +697,8 @@ extension RadarState {
       }
     } else {
       selectedProduct = .reflectivity
-      timeline.live = result.live
-      liveTileAvailability = result.liveAvailability
+      _ = commitLiveFrames(
+        mosaicLive, availability: mosaicAvailability, isSiteProduct: false)
       // A composite reload means we're no longer showing the failed tap's aftermath —
       // otherwise the warning outlives the tab switch that triggered this reload.
       siteProductUnavailableMessage = nil

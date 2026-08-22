@@ -170,6 +170,19 @@ final class MapsGLRadarHost {
 
   private func installRadarLayer() {
     guard let controller else { return }
+    // Do not add rain (or tracks) until mosaic Live wants them. Adding the
+    // radar layer visible and then hiding it is how N0B kept mosaic rain.
+    let rainWant = MapsGLLiveRainLayers.shouldAttachRadar(
+      overlayOn: lastOverlayOn ?? false,
+      isSiteProduct: lastIsSiteProduct ?? true,
+      keysPresent: Self.keysPresent
+    )
+    applyVisibility(rainWant, on: controller)
+    onLayerStateChange?()
+  }
+
+  private func addRadarLayer(on controller: MapboxMapController) {
+    guard !layerReady else { return }
     do {
       var config = WeatherService.Radar(service: controller.service)
       config.layer.paint.sample.colorScale = .colorScale(Self.colorScale)
@@ -186,15 +199,19 @@ final class MapsGLRadarHost {
       try controller.addWeatherLayer(config: config)
       layerReady = true
       radarLog("[MapsGL] radar layer added")
+      onLayerStateChange?()
     } catch {
       radarLog("[MapsGL] Failed to add radar layer: \(error)")
       layerReady = false
     }
-    // Tracks attach only when `cellsWanted()` is true. Adding them here
-    // visible and then hiding is how N0B kept a nationwide tick spray.
-    if let lastVisible {
-      applyVisibility(lastVisible, on: controller)
-    }
+  }
+
+  private func removeRadarLayer(on controller: MapboxMapController) {
+    guard layerReady else { return }
+    controller.removeWeatherLayer(for: .radar)
+    layerReady = false
+    lastVisible = false
+    radarLog("[MapsGL] radar layer removed")
     onLayerStateChange?()
   }
 
@@ -246,19 +263,17 @@ final class MapsGLRadarHost {
   }
 
   private func applyVisibility(_ rainWant: Bool, on controller: MapboxMapController) {
-    if layerReady {
-      controller.setWeatherLayerVisibility(for: .radar, visible: rainWant)
+    lastVisible = rainWant
+    if rainWant {
+      addRadarLayer(on: controller)
+    } else {
+      removeRadarLayer(on: controller)
     }
     let cellsWant = cellsWanted()
     lastCellsWant = cellsWant
     if cellsWant {
       if !stormcellsReady {
         installStormcellLayers(on: controller)
-      }
-      if stormcellsReady {
-        for code in Self.stormcellCodes {
-          controller.setWeatherLayerVisibility(for: code, visible: true)
-        }
       }
     } else {
       removeStormcellLayers(on: controller)
@@ -295,7 +310,8 @@ final class MapsGLRadarHost {
       controller.timeline.startDate = Date()
       controller.timeline.endDate = Date().addingTimeInterval(12 * 3600)
     } else {
-      controller.timeline.startDate = Date().addingTimeInterval(-3 * 3600)
+      controller.timeline.startDate = Date().addingTimeInterval(
+        -RadarLivePresentation.mapsGLLiveLookback)
       controller.timeline.endDate = Date()
     }
   }

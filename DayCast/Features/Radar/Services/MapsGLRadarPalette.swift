@@ -118,8 +118,16 @@ enum MapsGLLiveRainLayers {
   static func shouldShow(
     overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool, isLive: Bool = true
   ) -> Bool {
-    isLive
-      && MapsGLRadarPalette.shouldUseMapsGL(
-        overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
+    isLive && shouldAttachRadar(
+      overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
+  }
+
+  /// Add MapsGL encoded rain only for mosaic. N0B uses IEM PNG — never add
+  /// this layer and hide it. That left mosaic rain and tracks on Doppler.
+  static func shouldAttachRadar(
+    overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool
+  ) -> Bool {
+    MapsGLRadarPalette.shouldUseMapsGL(
+      overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
   }
 }

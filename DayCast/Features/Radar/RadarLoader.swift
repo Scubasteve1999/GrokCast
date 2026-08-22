@@ -56,9 +56,6 @@ struct RadarDatasetResult: Equatable {
 final class RadarLoader {
   private(set) var isLoading = false
 
-  /// Prefer OWM only when real scans are this old (OWM timestamps are synthesized).
-  private static let realSourceStaleThreshold: TimeInterval = 25 * 60
-
   func loadAll(
     site: IEMRadarService.Site?,
     coordinate: CLLocationCoordinate2D
@@ -166,13 +163,18 @@ final class RadarLoader {
       let xwFrames = XweatherRadarService.loadLiveRadarFrames()
       if !xwFrames.isEmpty {
         let age = Date().timeIntervalSince(xwFrames.last?.timestamp ?? .distantPast)
+        if age <= RadarLivePresentation.mosaicStale {
+          radarLog(
+            "[RadarLoader] Live: Xweather radar-global (\(xwFrames.count) frames, age \(Int(age / 60))m)"
+          )
+          return LoadOutcome(
+            frames: xwFrames,
+            provider: .xweather,
+            availability: .available
+          )
+        }
         radarLog(
-          "[RadarLoader] Live: Xweather radar-global (\(xwFrames.count) frames, age \(Int(age / 60))m)"
-        )
-        return LoadOutcome(
-          frames: xwFrames,
-          provider: .xweather,
-          availability: .available
+          "[RadarLoader] Xweather live too old (\(Int(age / 60))m) — not presenting as Live"
         )
       }
     }
@@ -212,7 +214,7 @@ final class RadarLoader {
 
     if let bestReal = Self.freshestRealCandidate(realCandidates) {
       let age = Date().timeIntervalSince(bestReal.frames.last?.timestamp ?? .distantPast)
-      if age <= Self.realSourceStaleThreshold {
+      if age <= RadarLivePresentation.mosaicStale {
         radarLog("[RadarLoader] Live: \(bestReal.label) (freshest real, age \(Int(age / 60))m)")
         return LoadOutcome(
           frames: bestReal.frames,
@@ -221,23 +223,12 @@ final class RadarLoader {
         )
       }
       radarLog(
-        "[RadarLoader] Freshest real source stale (\(Int(age / 60))m) — trying OpenWeatherMap"
+        "[RadarLoader] Freshest real source stale (\(Int(age / 60))m) — not presenting as Live"
       )
     }
-
     if let openWeatherMap = await loadOpenWeatherMapLive() {
       radarLog("[RadarLoader] Live: OpenWeatherMap (\(openWeatherMap.frames.count) frames)")
       return openWeatherMap
-    }
-
-    // Last resort: stale real source still better than nothing.
-    if let bestReal = Self.freshestRealCandidate(realCandidates) {
-      radarLog("[RadarLoader] Live: \(bestReal.label) (stale real, OWM unavailable)")
-      return LoadOutcome(
-        frames: bestReal.frames,
-        provider: bestReal.provider,
-        availability: .available
-      )
     }
 
     radarLog(

@@ -126,6 +126,12 @@ final class RadarStatePreferencesTests: XCTestCase {
         keysPresent: true,
         isLive: true)
     )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldAttachRadar(
+        overlayOn: true,
+        isSiteProduct: state.selectedProduct.isSiteProduct,
+        keysPresent: true)
+    )
   }
 
   func testMosaicRemainsAOneTapFallback() async {

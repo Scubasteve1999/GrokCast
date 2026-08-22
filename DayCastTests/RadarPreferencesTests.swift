@@ -216,6 +216,29 @@ final class RadarPreferencesTests: XCTestCase {
     )
   }
 
+  func testMapsGLRadarNeverAttachesOnSiteN0B() {
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldAttachRadar(
+        overlayOn: true, isSiteProduct: true, keysPresent: true)
+    )
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.shouldShow(
+        overlayOn: true, isSiteProduct: true, keysPresent: true, isLive: true)
+    )
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.shouldAttachRadar(
+        overlayOn: true, isSiteProduct: false, keysPresent: true)
+    )
+    XCTAssertEqual(
+      MapsGLLiveRainLayers.shouldAttachRadar(
+        overlayOn: true, isSiteProduct: true, keysPresent: true),
+      MapsGLRadarPalette.shouldUseMapsGL(
+        overlayOn: true, isSiteProduct: true, keysPresent: true)
+    )
+    XCTAssertEqual(RadarLivePresentation.mapsGLLiveLookback, 15 * 60, accuracy: 0.1)
+    XCTAssertLessThan(RadarLivePresentation.mapsGLLiveLookback, 3 * 3600)
+  }
+
   func testStormcellFilterIsSevereClassOnly() {
     XCTAssertEqual(MapsGLLiveRainLayers.severeTraitTypes, ["hail", "rotating", "tornado"])
     XCTAssertEqual(MapsGLLiveRainLayers.excludedTraitType, "general")

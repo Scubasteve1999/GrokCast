@@ -20,6 +20,13 @@ enum IEMSiteReflectivityPaint {
   /// IEM 15 dBZ green is hue ~122 (`#11D518`); `#35D65B` is ~134. Hue 138+
   /// is the 8-bit teal-cyan ramp toward 10 dBZ, not organized light rain.
   static let precipHueEnd: Double = 138
+  /// Biological bloom is 15 dBZ green mixed into the cyan/blue clear-air
+  /// sweep. A 5×5 neighborhood with more chroma-clutter than precip is not a
+  /// rain cell. Not a dBZ < 20 cutoff — 15 dBZ green attached to a cell stays.
+  static let bloomMixRadius = 2
+  static let bloomEatPasses = 3
+  /// True yellow/orange/red. IEM olive 25 dBZ (~hue 66–70) is not a cell core.
+  static let stormCoreHueEnd: Double = 65
 
   static func shouldProcess(url: String) -> Bool {
     url.contains("ridge::") && url.contains("-N0B-")
@@ -79,16 +86,23 @@ enum IEMSiteReflectivityPaint {
 
       let count = width * height
       var keep = [UInt8](repeating: 0, count: count)
+      var clutter = [UInt8](repeating: 0, count: count)
       for i in 0..<count {
         let o = i * bytesPerPixel
         let r = buffer[o]
         let g = buffer[o + 1]
         let b = buffer[o + 2]
         let a = buffer[o + 3]
-        if a > 0 && !isClutterStop(red: r, green: g, blue: b, alpha: a) {
+        if a == 0 { continue }
+        if isClutterStop(red: r, green: g, blue: b, alpha: a) {
+          clutter[i] = 1
+        } else {
           keep[i] = 1
         }
       }
+
+      eatClearAirBloom(
+        keep: &keep, clutter: &clutter, width: width, height: height)
 
       var filtered = keep
       if width >= 2 && height >= 2 {
@@ -114,6 +128,10 @@ enum IEMSiteReflectivityPaint {
         }
       }
 
+      dropBloomCoresWithoutStorm(
+        filtered: &filtered, buffer: buffer, width: width, height: height,
+        bytesPerPixel: bytesPerPixel)
+
       for i in 0..<count where filtered[i] == 0 {
         let o = i * bytesPerPixel
         buffer[o] = 0
@@ -132,6 +150,108 @@ enum IEMSiteReflectivityPaint {
       guard CGImageDestinationFinalize(destination) else { return png }
       return destData as Data
     }
+  }
+
+  /// Drop 15 dBZ greens whose neighborhood is the clear-air sweep, not a cell.
+  /// Each pass treats eaten greens as clutter so bloom cores shrink; storm
+  /// interiors (green/yellow surrounded by precip) keep.
+  private static func eatClearAirBloom(
+    keep: inout [UInt8], clutter: inout [UInt8], width: Int, height: Int
+  ) {
+    guard width > 1, height > 1 else { return }
+    let radius = bloomMixRadius
+    for _ in 0..<bloomEatPasses {
+      var next = keep
+      for y in 0..<height {
+        for x in 0..<width {
+          let i = y * width + x
+          if keep[i] == 0 { continue }
+          var clutterN = 0
+          var precipN = 0
+          let y0 = max(y - radius, 0)
+          let y1 = min(y + radius, height - 1)
+          let x0 = max(x - radius, 0)
+          let x1 = min(x + radius, width - 1)
+          for ny in y0...y1 {
+            for nx in x0...x1 {
+              if nx == x && ny == y { continue }
+              let j = ny * width + nx
+              if clutter[j] == 1 {
+                clutterN += 1
+              } else if keep[j] == 1 {
+                precipN += 1
+              }
+            }
+          }
+          if clutterN > precipN {
+            next[i] = 0
+          }
+        }
+      }
+      for i in 0..<keep.count where keep[i] == 1 && next[i] == 0 {
+        clutter[i] = 1
+      }
+      keep = next
+    }
+  }
+
+  /// IEM N0B biological cores are organized 15 dBZ green with no yellow.
+  /// NWS MEG / CONUS N0Q stay dry. A cell has yellow/orange/red; 15 dBZ
+  /// green attached to that cell stays. Green-only blobs are not precip.
+  private static func dropBloomCoresWithoutStorm(
+    filtered: inout [UInt8],
+    buffer: UnsafeMutablePointer<UInt8>,
+    width: Int,
+    height: Int,
+    bytesPerPixel: Int
+  ) {
+    let count = width * height
+    var seen = [UInt8](repeating: 0, count: count)
+    var stack = [Int]()
+    var cells = [Int]()
+    for start in 0..<count {
+      if filtered[start] == 0 || seen[start] == 1 { continue }
+      stack.removeAll(keepingCapacity: true)
+      cells.removeAll(keepingCapacity: true)
+      stack.append(start)
+      seen[start] = 1
+      var hasCore = false
+      while let i = stack.popLast() {
+        cells.append(i)
+        let o = i * bytesPerPixel
+        if isStormCore(
+          red: buffer[o], green: buffer[o + 1], blue: buffer[o + 2], alpha: buffer[o + 3])
+        {
+          hasCore = true
+        }
+        let y = i / width
+        let x = i % width
+        let y0 = max(y - 1, 0)
+        let y1 = min(y + 1, height - 1)
+        let x0 = max(x - 1, 0)
+        let x1 = min(x + 1, width - 1)
+        for ny in y0...y1 {
+          for nx in x0...x1 {
+            let j = ny * width + nx
+            if filtered[j] == 1 && seen[j] == 0 {
+              seen[j] = 1
+              stack.append(j)
+            }
+          }
+        }
+      }
+      if !hasCore {
+        for i in cells { filtered[i] = 0 }
+      }
+    }
+  }
+
+  static func isStormCore(red: UInt8, green: UInt8, blue: UInt8, alpha: UInt8) -> Bool {
+    if alpha == 0 { return false }
+    let (hue, sat, val) = hsv(red: red, green: green, blue: blue)
+    if val >= 88 && sat <= 20 { return true }
+    if sat < 20 { return false }
+    return hue < stormCoreHueEnd || hue >= 340
   }
 
   /// HSV matching Python `colorsys.rgb_to_hsv`. Hue 0..<360, sat/val 0...100.

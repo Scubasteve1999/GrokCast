@@ -114,6 +114,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       }
     }
     set(5, 3, r: 0x35, g: 0xD6, b: 0x5B)  // IEM bright green attached
+    set(5, 4, r: 0xFF, g: 0xFF, b: 0x00)  // yellow core — 15 dBZ fringe stays
     set(1, 1, r: 0xA3, g: 0xA0, b: 0x68)  // khaki leak
     set(2, 1, r: 0xB0, g: 0xAF, b: 0x7E)
     set(0, 6, r: 0x59, g: 0xD6, b: 0xB3)  // teal fringe
@@ -139,6 +140,57 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertEqual(rgb(5, 5).1, 0xD5)
     XCTAssertEqual(alpha(5, 3), 255, "organized IEM bright green must stay")
     XCTAssertEqual(rgb(5, 3).1, 0xD6)
+  }
+
+  func testKeysBiologicalGreenMixedIntoClearAirKeepsOrganizedRain() {
+    // 16×16 cyan sweep (IEM clear-air) with a 4×4 15 dBZ green bloom in
+    // the middle — that is KNQA biological, not rain. A 3×3 green cell on
+    // transparent air in the corner is light rain and must stay.
+    let side = 16
+    var pixels = [UInt8](repeating: 0, count: side * side * 4)
+    func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * side + x) * 4
+      pixels[o] = r
+      pixels[o + 1] = g
+      pixels[o + 2] = b
+      pixels[o + 3] = 255
+    }
+    // Right half: cyan clear-air + 4×4 biological green.
+    for y in 0..<side {
+      for x in 8..<side {
+        set(x, y, r: 0x60, g: 0xB4, b: 0xD4)
+      }
+    }
+    for y in 6...9 {
+      for x in 10...13 {
+        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    // Left half stays transparent with an organized 3×3 rain cell + yellow core.
+    for y in 1...3 {
+      for x in 1...3 {
+        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    set(2, 2, r: 0xFF, g: 0xFF, b: 0x00)
+
+    let png = makePNG(width: side, height: side, rgba: pixels)
+    let keyed = IEMSiteReflectivityPaint.keyClutter(in: png)
+    let out = readRGBA(png: keyed, width: side, height: side)
+    func alpha(_ x: Int, _ y: Int) -> UInt8 { out[(y * side + x) * 4 + 3] }
+
+    XCTAssertEqual(alpha(11, 7), 0, "biological 15 dBZ green in cyan bloom must drop")
+    XCTAssertEqual(alpha(10, 6), 0, "bloom edge green must drop")
+    XCTAssertEqual(alpha(1, 1), 255, "15 dBZ green attached to a yellow core must stay")
+    XCTAssertEqual(alpha(2, 2), 255, "yellow storm core must stay")
+    XCTAssertFalse(
+      IEMSiteReflectivityPaint.isClutterStop(red: 0x11, green: 0xD5, blue: 0x18, alpha: 255),
+      "do not invent a dBZ < 20 chroma cutoff"
+    )
+    XCTAssertFalse(
+      IEMSiteReflectivityPaint.isStormCore(red: 0x11, green: 0xD5, blue: 0x18, alpha: 255))
+    XCTAssertTrue(
+      IEMSiteReflectivityPaint.isStormCore(red: 0xFF, green: 0xFF, blue: 0x00, alpha: 255))
   }
 
   func testLiveDefaultStaysNearestSiteN0B() {
