@@ -117,7 +117,11 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertFalse(
       MapsGLRadarPalette.usesNearestResampling(
         provider: .iem, isFuture: false, cameraZoom: 11))
-    XCTAssertTrue(
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .mrms, isFuture: false, cameraZoom: 6),
+      "National overzoom uses linear so 1 km bins contour")
+    XCTAssertFalse(
       MapsGLRadarPalette.usesNearestResampling(
         provider: .mrms, isFuture: false, cameraZoom: 12))
     XCTAssertFalse(

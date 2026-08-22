@@ -6,8 +6,9 @@ Phone never downloads GRIB2. Simulator hits http://127.0.0.1:8765.
   python3 Scripts/mrms_national/mrms_worker.py
   python3 Scripts/mrms_national/mrms_worker.py --once --no-serve
 
-NWS 5 dBZ LUT copied from MapsGLRadarPalette. Nearest sample from GRIB
-into each XYZ tile (no overlay pyramid). 0 dBZ alpha 0.
+NWS 5 dBZ LUT copied from MapsGLRadarPalette. Bilinear sample from GRIB
+into each XYZ tile, then LUT-snap (organic cell shapes, hard colors).
+No overlay pyramid. 0 dBZ alpha 0.
 """
 from __future__ import annotations
 
@@ -49,7 +50,7 @@ STOPS = [
     (65, (0x99, 0x55, 0xC9, 255)),
     (70, (0xFF, 0xFF, 0xFF, 255)),
 ]
-PAINT_VERSION = 2
+PAINT_VERSION = 3
 
 LUT_R = np.zeros(15, dtype=np.uint8)
 LUT_G = np.zeros(15, dtype=np.uint8)
@@ -113,13 +114,43 @@ def colorize_dbz(dbz):
     return rgba
 
 
-def sample_dbz(grid, west_lon, north_lat, dlon, dlat, lons, lats):
-    cols = np.rint((lons - west_lon) / dlon).astype(np.int32)
-    rows = np.rint((north_lat - lats) / dlat).astype(np.int32)
+def _grid_at(grid, rows, cols):
     nj, ni = grid.shape
     valid = (cols >= 0) & (cols < ni) & (rows >= 0) & (rows < nj)
-    out = np.full(lons.shape, np.nan, dtype=np.float32)
-    out[valid] = grid[rows[valid], cols[valid]]
+    out = np.full(rows.shape, np.nan, dtype=np.float32)
+    if np.any(valid):
+        out[valid] = grid[rows[valid], cols[valid]]
+    bad = ~np.isfinite(out) | (out >= 9000)
+    out[bad] = np.nan
+    return out
+
+
+def sample_dbz(grid, west_lon, north_lat, dlon, dlat, lons, lats):
+    """Bilinear sample native GRIB. Caller LUT-snaps so colors stay discrete."""
+    cols_f = (lons - west_lon) / dlon
+    rows_f = (north_lat - lats) / dlat
+    c0 = np.floor(cols_f).astype(np.int32)
+    r0 = np.floor(rows_f).astype(np.int32)
+    dc = (cols_f - c0).astype(np.float32)
+    dr = (rows_f - r0).astype(np.float32)
+    v00 = _grid_at(grid, r0, c0)
+    v10 = _grid_at(grid, r0, c0 + 1)
+    v01 = _grid_at(grid, r0 + 1, c0)
+    v11 = _grid_at(grid, r0 + 1, c0 + 1)
+    z00 = np.nan_to_num(v00, nan=0.0)
+    z10 = np.nan_to_num(v10, nan=0.0)
+    z01 = np.nan_to_num(v01, nan=0.0)
+    z11 = np.nan_to_num(v11, nan=0.0)
+    out = (
+        z00 * (1.0 - dc) * (1.0 - dr)
+        + z10 * dc * (1.0 - dr)
+        + z01 * (1.0 - dc) * dr
+        + z11 * dc * dr
+    ).astype(np.float32)
+    all_nan = (
+        ~np.isfinite(v00) & ~np.isfinite(v10) & ~np.isfinite(v01) & ~np.isfinite(v11)
+    )
+    out[all_nan] = np.nan
     return out
 
 
@@ -187,7 +218,7 @@ def gunzip_to(src_gz: str, dest: str) -> None:
 
 
 def paint_tile(grid, west_lon, north_lat, dlon, dlat, z, x, y):
-    """256px mercator tile, nearest sample from the native GRIB grid."""
+    """256px mercator tile, bilinear dBZ then 5 dBZ LUT snap."""
     mw, ms, me, mn = tile_xy_to_merc(z, x, y)
     xs = mw + (np.arange(256, dtype=np.float64) + 0.5) * ((me - mw) / 256.0)
     ys = mn + (np.arange(256, dtype=np.float64) + 0.5) * ((ms - mn) / 256.0)
@@ -200,7 +231,7 @@ def paint_tile(grid, west_lon, north_lat, dlon, dlat, z, x, y):
 
 
 def write_xyz_tiles(grid, west_lon, north_lat, dlon, dlat, zooms, dest_root: str) -> int:
-    """Paint XYZ tiles by nearest-sampling GRIB at each zoom. No overlay pyramid."""
+    """Paint XYZ tiles by bilinear-sampling GRIB at each zoom, then LUT-snap."""
     wet_rc = np.argwhere(np.isfinite(grid) & (grid >= 5.0) & (grid < 9000))
     if wet_rc.size == 0:
         return 0

@@ -86,9 +86,10 @@ enum MapsGLRadarPalette {
   /// them instead of GPU-magnifying a z12 cartesian sheet.
   static let level3DisplayMaxZoom: Double = 14
 
-  /// MRMS stays hard-nearest at every zoom. Site Doppler is nearest at
-  /// overview and linear only after native gate scale, so overzoom is not
-  /// Minecraft squares. Future / forecast rasters stay linear.
+  /// MRMS tiles are 5 dBZ LUT-snapped; Mapbox linear overzoom softens the 1 km
+  /// pixel grid into contoured cells without a new palette. IEM PNG fallback
+  /// stays nearest at overview and linear after native gate scale. Polar Metal
+  /// does not use this raster knob. Future / forecast rasters stay linear.
   static func usesNearestResampling(
     provider: RadarTileProvider,
     isFuture: Bool,
@@ -97,7 +98,7 @@ enum MapsGLRadarPalette {
   ) -> Bool {
     if paintsPolarRadials { return true }
     if isFuture { return false }
-    if provider == .mrms { return true }
+    if provider == .mrms { return false }
     if provider == .iem {
       return cameraZoom <= iemNativeTileZoom
     }
@@ -110,9 +111,9 @@ enum MapsGLRadarPalette {
     paintsPolarRadials ? level3DisplayMaxZoom : provider.maxZoom
   }
 
-  /// MRMS National tiles are already 5 dBZ nearest bins. Mapbox raster fade-in
-  /// and dual-buffer crossfade smear those bins into jelly. Other PNG sources
-  /// keep the existing playback blend.
+  /// MRMS National tiles are already 5 dBZ LUT bins. Mapbox raster fade-in
+  /// and dual-buffer crossfade smear those bins into jelly even with linear
+  /// overzoom. Other PNG sources keep the existing playback blend.
   static func liveRasterFadeDurationMs(
     provider: RadarTileProvider,
     isAnimating: Bool,

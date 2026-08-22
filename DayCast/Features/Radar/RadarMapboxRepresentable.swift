@@ -482,7 +482,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       // Encoded MapsGL rain replaces baked PNG only after the Metal layer is up.
       // If add fails, the existing PNG path (MRMS tiles or Xweather) stays visible.
       if mapsGLRain, mapsGLHost.isReady { return .hidden }
-      // Level III polar Metal trapezoids replace mercator PNG nearest-sample.
+      // Level III polar Metal contour quads replace mercator PNG nearest-sample.
       // Hide IEM/CPU tiles as soon as a sweep is loaded so 5–10 dBZ cyan
       // cannot composite under the mesh.
       if Self.polarSweep(from: radarState) != nil, !polarLayerFailed, !polarHost.pipelineFailed {

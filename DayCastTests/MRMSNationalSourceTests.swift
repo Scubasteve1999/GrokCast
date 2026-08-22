@@ -91,8 +91,10 @@ final class MRMSNationalSourceTests: XCTestCase {
     XCTAssertEqual(RadarTileProvider.mrms.maxZoom, 8, accuracy: 0.0001)
   }
 
-  func testMRMSRasterPaintIsNearestHardCut() {
-    XCTAssertTrue(MapsGLRadarPalette.liveRasterUsesNearestResampling)
+  func testMRMSRasterPaintContoursWithLinearOverzoom() {
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .mrms, isFuture: false, cameraZoom: 8))
     XCTAssertEqual(
       MapsGLRadarPalette.liveRasterFadeDurationMs(
         provider: .mrms, isAnimating: true, isFuture: false),

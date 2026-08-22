@@ -1,30 +1,78 @@
 import Foundation
 
-/// One vertex of a polar gate trapezoid in WebMercator [0, 1].
+/// One vertex of a polar contour quad in WebMercator [0, 1].
+/// `level` is the N0B data byte (0 = clear) so the GPU can interpolate dBZ
+/// then LUT-snap to a hard NWS 5 dBZ stop.
 struct Level3PolarVertex {
   var mercX: Float
   var mercY: Float
-  var r: UInt8
-  var g: UInt8
-  var b: UInt8
-  var a: UInt8
+  var level: Float
+  var pad: Float = 0
 }
 
-/// CPU mesh: each opaque N0B gate (after paintByte hole-fill) is a trapezoid
-/// (az0..az1, r0..r1) projected to mercator. Same-color consecutive gates along
-/// a radial merge into one trapezoid. No dBZ blend.
+/// CPU mesh: gate-center quads with interpolatable levels. Fragment shader
+/// snaps to `rgbaLUT` so cell *shapes* are organic and colors stay discrete.
+/// Range-constant runs on both radials still merge. Play fade is opacity only.
 enum Level3PolarGateMesh {
   struct Mesh {
     var vertices: [Level3PolarVertex]
+    var lut: [UInt8]
     var triangleCount: Int { vertices.count / 3 }
     var buildMilliseconds: Double
   }
 
+  /// Azimuth 5-tap (fallback 3-tap) only when every sample is opaque. Kills 0.5°
+  /// tiger-stripes inside cells without growing precip into clear air.
+  static func smoothOpaqueNeighbors(_ levels: [[Float]]) -> [[Float]] {
+    let n = levels.count
+    guard n > 4 else { return levels }
+    var out = levels
+    for i in 0..<n {
+      let l2 = levels[(i - 2 + n) % n]
+      let l1 = levels[(i - 1 + n) % n]
+      let mid = levels[i]
+      let r1 = levels[(i + 1) % n]
+      let r2 = levels[(i + 2) % n]
+      let count = min(
+        mid.count,
+        min(l2.count, min(l1.count, min(r1.count, r2.count))))
+      var row = mid
+      for j in 0..<count {
+        let a = l2[j]
+        let b = l1[j]
+        let c = mid[j]
+        let d = r1[j]
+        let e = r2[j]
+        if a > 0 && b > 0 && c > 0 && d > 0 && e > 0 {
+          row[j] = (a + b + c + d + e) / 5
+        } else if b > 0 && c > 0 && d > 0 {
+          row[j] = (b + c + d) / 3
+        }
+      }
+      out[i] = row
+    }
+    return out
+  }
+
+  static func packedLUT(_ rgba: [(UInt8, UInt8, UInt8, UInt8)]) -> [UInt8] {
+    var out = [UInt8](repeating: 0, count: 256 * 4)
+    let n = min(256, rgba.count)
+    for i in 0..<n {
+      let c = rgba[i]
+      out[i * 4] = c.0
+      out[i * 4 + 1] = c.1
+      out[i * 4 + 2] = c.2
+      out[i * 4 + 3] = c.3
+    }
+    return out
+  }
+
   static func build(sweep: Level3N0BSweep) -> Mesh {
     let t0 = CFAbsoluteTimeGetCurrent()
+    let lut = packedLUT(sweep.rgbaLUT)
     let n = sweep.radials.count
-    guard n > 0 else {
-      return Mesh(vertices: [], buildMilliseconds: 0)
+    guard n > 1 else {
+      return Mesh(vertices: [], lut: lut, buildMilliseconds: 0)
     }
 
     var vertices: [Level3PolarVertex] = []
@@ -37,58 +85,81 @@ enum Level3PolarGateMesh {
     let metersPerDegLon = 111_320.0 * max(0.2, cosLat0)
     let gateW = sweep.gateWidthMeters
 
+    var sinAz = [Double](repeating: 0, count: n)
+    var cosAz = [Double](repeating: 0, count: n)
+    var levels = [[Float]]()
+    levels.reserveCapacity(n)
     for i in 0..<n {
       let radial = sweep.radials[i]
-      let next = sweep.radials[(i + 1) % n]
-      let az0 = radial.startAzimuth
-      var daz = next.startAzimuth - az0
+      let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
+      let az = (radial.startAzimuth + span * 0.5) * .pi / 180
+      sinAz[i] = sin(az)
+      cosAz[i] = cos(az)
+      let count = radial.gates.count
+      var row = [Float](repeating: 0, count: count)
+      for j in 0..<count {
+        row[j] = sweep.contourLevel(radialIndex: i, gateIndex: j)
+      }
+      levels.append(row)
+    }
+    levels = Self.smoothOpaqueNeighbors(levels)
+
+    for i in 0..<n {
+      let next = (i + 1) % n
+      let radial = sweep.radials[i]
+      let nextRadial = sweep.radials[next]
+      var daz = nextRadial.startAzimuth - radial.startAzimuth
       if daz <= 0 { daz += 360 }
       let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
-      let az1 = az0 + (daz > span * 2.5 ? span : daz)
+      if daz > span * 2.5 { continue }
 
-      let az0rad = az0 * .pi / 180
-      let az1rad = az1 * .pi / 180
-      let sinAz0 = sin(az0rad)
-      let cosAz0 = cos(az0rad)
-      let sinAz1 = sin(az1rad)
-      let cosAz1 = cos(az1rad)
+      let jMax = min(levels[i].count, levels[next].count) - 1
+      guard jMax > 0 else { continue }
 
-      let gates = radial.gates
       var j = 0
-      while j < gates.count {
-        guard let byte = sweep.paintByte(radialIndex: i, gateIndex: j),
-          sweep.isOpaque(byte)
-        else {
+      while j < jMax {
+        let l00 = levels[i][j]
+        let l10 = levels[next][j]
+        let l01 = levels[i][j + 1]
+        let l11 = levels[next][j + 1]
+        if l00 == 0 && l10 == 0 && l01 == 0 && l11 == 0 {
           j += 1
           continue
         }
-        var jEnd = j + 1
-        while jEnd < gates.count,
-          let nextByte = sweep.paintByte(radialIndex: i, gateIndex: jEnd),
-          nextByte == byte
-        {
-          jEnd += 1
+        var jOuter = j + 1
+        if l00 == l01 && l10 == l11 {
+          while jOuter < jMax {
+            let n0 = levels[i][jOuter + 1]
+            let n1 = levels[next][jOuter + 1]
+            if n0 != l00 || n1 != l10 { break }
+            jOuter += 1
+          }
         }
-        let color = sweep.rgbaLUT[Int(byte)]
-        appendTrapezoid(
+        let lOuter0 = levels[i][jOuter]
+        let lOuter1 = levels[next][jOuter]
+        appendQuad(
           lat0Deg: lat0Deg,
           lon0Deg: lon0Deg,
           metersPerDegLat: metersPerDegLat,
           metersPerDegLon: metersPerDegLon,
-          sinAz0: sinAz0,
-          cosAz0: cosAz0,
-          sinAz1: sinAz1,
-          cosAz1: cosAz1,
-          r0: Double(j) * gateW,
-          r1: Double(jEnd) * gateW,
-          color: color,
+          sinAz0: sinAz[i],
+          cosAz0: cosAz[i],
+          sinAz1: sinAz[next],
+          cosAz1: cosAz[next],
+          r0: (Double(j) + 0.5) * gateW,
+          r1: (Double(jOuter) + 0.5) * gateW,
+          l00: l00,
+          l10: l10,
+          l11: lOuter1,
+          l01: lOuter0,
           into: &vertices)
-        j = jEnd
+        j = jOuter
       }
     }
 
     return Mesh(
       vertices: vertices,
+      lut: lut,
       buildMilliseconds: (CFAbsoluteTimeGetCurrent() - t0) * 1000)
   }
 
@@ -113,12 +184,12 @@ enum Level3PolarGateMesh {
     return (lat0Deg + north / metersPerDegLat, lon0Deg + east / metersPerDegLon)
   }
 
-  private static func appendTrapezoid(
+  private static func appendQuad(
     lat0Deg: Double, lon0Deg: Double,
     metersPerDegLat: Double, metersPerDegLon: Double,
     sinAz0: Double, cosAz0: Double, sinAz1: Double, cosAz1: Double,
     r0: Double, r1: Double,
-    color: (UInt8, UInt8, UInt8, UInt8),
+    l00: Float, l10: Float, l11: Float, l01: Float,
     into vertices: inout [Level3PolarVertex]
   ) {
     let inner0 = destination(
@@ -137,10 +208,10 @@ enum Level3PolarGateMesh {
       lat0Deg: lat0Deg, lon0Deg: lon0Deg,
       metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
       sinAz: sinAz0, cosAz: cosAz0, rangeMeters: r1)
-    let v0 = vertex(inner0, color)
-    let v1 = vertex(inner1, color)
-    let v2 = vertex(outer1, color)
-    let v3 = vertex(outer0, color)
+    let v0 = vertex(inner0, l00)
+    let v1 = vertex(inner1, l10)
+    let v2 = vertex(outer1, l11)
+    let v3 = vertex(outer0, l01)
     vertices.append(v0)
     vertices.append(v1)
     vertices.append(v2)
@@ -151,18 +222,17 @@ enum Level3PolarGateMesh {
 
   private static func vertex(
     _ ll: (lat: Double, lon: Double),
-    _ color: (UInt8, UInt8, UInt8, UInt8)
+    _ level: Float
   ) -> Level3PolarVertex {
     let m = mercatorXY(latitude: ll.lat, longitude: ll.lon)
-    return Level3PolarVertex(
-      mercX: Float(m.x), mercY: Float(m.y),
-      r: color.0, g: color.1, b: color.2, a: color.3)
+    return Level3PolarVertex(mercX: Float(m.x), mercY: Float(m.y), level: level)
   }
 }
 
-/// Dual-mesh opacity lerp between two hard-NWS trapezoid volumes.
+/// Dual-mesh opacity lerp between two contour volumes.
 /// Play fade is polar-specific and short so 2x does not dual-draw ~860k tris
-/// for the whole frame hold. Stills keep the IEM still duration. No dBZ blend.
+/// for the whole frame hold. Stills keep the IEM still duration. Volumes do
+/// not blend dBZ — each mesh LUT-snaps on its own.
 enum Level3PolarCrossfade {
   /// Snappy enough that a 720 ms 2x hold is mostly a single mesh.
   static let playDurationSeconds: TimeInterval = 0.20

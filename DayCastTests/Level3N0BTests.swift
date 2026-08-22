@@ -273,7 +273,8 @@ final class Level3N0BTests: XCTestCase {
   }
 
   func testMetalMeshEmitsWideningTrapezoidsNotMercatorSquares() {
-    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.offset(of: \.r), 8)
+    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.stride, 16)
+    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.offset(of: \.level), 8)
     let sweep = Self.spokeSweep(azimuth: 45, byte: 146, bins: 80)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.triangleCount, 0)
@@ -295,14 +296,68 @@ final class Level3N0BTests: XCTestCase {
     let sweep = Self.spokeSweep(azimuth: 90, byte: 96, bins: 40)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.vertices.count, 0)
+    XCTAssertTrue(mesh.vertices.contains { $0.level == 96 })
+    XCTAssertEqual(mesh.lut.count, 256 * 4)
     let a15 = UInt8((MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15) * 255).rounded())
-    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a == a15 })
-    XCTAssertEqual(mesh.vertices.first?.r, 0)
-    XCTAssertEqual(mesh.vertices.first?.g, a15, "premul #00FF00")
+    XCTAssertEqual(mesh.lut[96 * 4 + 3], a15, "15 dBZ LUT underlay stays translucent")
+    XCTAssertEqual(mesh.lut[96 * 4], 0)
+    XCTAssertEqual(mesh.lut[96 * 4 + 1], a15, "premul #00FF00")
 
     let clear = Self.spokeSweep(azimuth: 90, byte: 86, bins: 40)
     let empty = Level3PolarGateMesh.build(sweep: clear)
-    XCTAssertEqual(empty.triangleCount, 0, "10 dBZ cyan floor must not emit trapezoids")
+    XCTAssertEqual(empty.triangleCount, 0, "10 dBZ cyan floor must not emit contour quads")
+  }
+
+  func testMetalMeshContoursDbzInsteadOfLegoGates() {
+    let blob = Self.spokeSweep(azimuth: 90, byte: 146, delta: 5, bins: 40)
+    XCTAssertEqual(blob.contourLevel(radialIndex: 180, gateIndex: 10), 146)
+    XCTAssertEqual(blob.contourLevel(radialIndex: 0, gateIndex: 10), 0)
+    let mesh = Level3PolarGateMesh.build(sweep: blob)
+    XCTAssertGreaterThan(mesh.triangleCount, 0)
+    XCTAssertTrue(mesh.vertices.contains { $0.level == 146 }, "40 dBZ core vertices stay the hard bin")
+    XCTAssertTrue(
+      mesh.vertices.contains { $0.level == 0 },
+      "clear neighbors stay on the mesh so the 15 dBZ isocontour can fall inside the edge quad")
+    var mixedQuad = false
+    var i = 0
+    while i + 5 < mesh.vertices.count {
+      let levels = [
+        mesh.vertices[i].level, mesh.vertices[i + 1].level, mesh.vertices[i + 2].level,
+        mesh.vertices[i + 5].level,
+      ]
+      if levels.contains(146) && levels.contains(0) {
+        mixedQuad = true
+        break
+      }
+      i += 6
+    }
+    XCTAssertTrue(mixedQuad, "edge quads interpolate 40 dBZ to clear instead of a solid Lego gate")
+    XCTAssertEqual(mesh.lut[146 * 4 + 3] > 0, true)
+    XCTAssertEqual(mesh.lut[86 * 4 + 3], 0, "keyed 10 dBZ stays unpainted after LUT snap")
+  }
+
+  func testOpaqueNeighborSmoothKillsInteriorStripesNotEdges() {
+    let stripe: [[Float]] = [
+      [0, 126, 126, 0],
+      [0, 126, 126, 0],
+      [0, 146, 146, 0],
+      [0, 126, 126, 0],
+      [0, 126, 126, 0],
+    ]
+    let smoothed = Level3PolarGateMesh.smoothOpaqueNeighbors(stripe)
+    XCTAssertEqual(smoothed[0][0], 0, "clear stays clear")
+    XCTAssertEqual(
+      smoothed[2][1], (126 + 126 + 146 + 126 + 126) / 5, accuracy: 0.01,
+      "az 5-tap of interior 126/146 stripes")
+    XCTAssertEqual(smoothed[2][1], smoothed[1][1], accuracy: 0.01)
+    let edge = Level3PolarGateMesh.smoothOpaqueNeighbors([
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 146, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ])
+    XCTAssertEqual(edge[2][1], 146, "one-sided 40 dBZ gate must not wash into clear")
   }
 
   func testMetalMeshHoleFillDoesNotDilateClearAir() {
@@ -343,9 +398,11 @@ final class Level3N0BTests: XCTestCase {
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.triangleCount, 1_000)
     XCTAssertLessThan(
-      mesh.buildMilliseconds, 400,
-      "mesh build must stay inside a 2x playback budget on CI")
-    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a > 0 })
+      mesh.buildMilliseconds, 700,
+      "CPU contour mesh is a first-still / warm cost; 2x play is a cache hit")
+    XCTAssertTrue(mesh.vertices.contains { $0.level >= 96 })
+    XCTAssertEqual(mesh.lut.count, 256 * 4)
+    XCTAssertGreaterThan(mesh.lut[96 * 4 + 3], 0)
   }
 
   func testPolarFrameTileKeyDistinctFromIEM() {

@@ -4,10 +4,11 @@ import Metal
 import simd
 import UIKit
 
-/// Mapbox `CustomLayerHost` that draws Level III N0B gates as Metal trapezoids.
-/// Dual GPU meshes crossfade at the polar play/still duration (opacity lerp of
-/// hard fills, no dBZ blend). Raster PNG nearest-sample stays the fallback when
-/// this pipeline cannot start or no sweep is loaded.
+/// Mapbox `CustomLayerHost` that draws Level III N0B as Metal polar quads.
+/// Vertices carry interpolatable data-byte levels; the fragment shader LUT-snaps
+/// to hard NWS 5 dBZ fills so cells contour instead of Lego gates. Dual GPU
+/// meshes still crossfade by opacity only (no dBZ blend). Raster PNG nearest
+/// sample stays the fallback when this pipeline cannot start or no sweep is loaded.
 final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable {
   static let layerID = "daycast-level3-polar"
 
@@ -114,7 +115,8 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       if let device {
         gpu = Level3PolarGPUCache.shared.gpuMesh(key: key, cpu: mesh, device: device)
       } else {
-        gpu = GPUMesh(key: key, buffer: nil, vertexCount: 0, pendingCPU: mesh)
+        gpu = GPUMesh(
+          key: key, buffer: nil, vertexCount: 0, pendingCPU: mesh, lut: mesh.lut)
       }
       let uploadMs = (CFAbsoluteTimeGetCurrent() - tUpload) * 1000
       await MainActor.run {
@@ -169,7 +171,8 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     if let cpu = gpu.pendingCPU {
       pendingCPU = cpu
       pendingCPUIsIncoming = false
-      front = GPUMesh(key: gpu.key, buffer: nil, vertexCount: 0, pendingCPU: nil)
+      front = GPUMesh(
+        key: gpu.key, buffer: nil, vertexCount: 0, pendingCPU: nil, lut: gpu.lut)
       back = .empty
     } else {
       pendingCPU = nil
@@ -185,7 +188,8 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     if let cpu = gpu.pendingCPU {
       pendingCPU = cpu
       pendingCPUIsIncoming = true
-      back = GPUMesh(key: gpu.key, buffer: nil, vertexCount: 0, pendingCPU: nil)
+      back = GPUMesh(
+        key: gpu.key, buffer: nil, vertexCount: 0, pendingCPU: nil, lut: gpu.lut)
     } else {
       back = gpu
     }
@@ -267,7 +271,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       desc.attributes[0].format = .float2
       desc.attributes[0].offset = 0
       desc.attributes[0].bufferIndex = 0
-      desc.attributes[1].format = .uchar4
+      desc.attributes[1].format = .float
       desc.attributes[1].offset = 8
       desc.attributes[1].bufferIndex = 0
       desc.layouts[0].stride = MemoryLayout<Level3PolarVertex>.stride
@@ -387,11 +391,13 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     if drawFront, let buffer = frontMesh.buffer {
       Self.draw(
         encoder: encoder, buffer: buffer, count: frontMesh.vertexCount,
+        lut: frontMesh.lut,
         matrix: matrix, worldSize: worldSize, opacity: ops.front)
     }
     if drawBack, let buffer = backMesh.buffer {
       Self.draw(
         encoder: encoder, buffer: buffer, count: backMesh.vertexCount,
+        lut: backMesh.lut,
         matrix: matrix, worldSize: worldSize, opacity: ops.back)
     }
     encoder.endEncoding()
@@ -423,6 +429,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     encoder: MTLRenderCommandEncoder,
     buffer: MTLBuffer,
     count: Int,
+    lut: [UInt8],
     matrix: simd_float4x4,
     worldSize: Float,
     opacity: Float
@@ -433,6 +440,14 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       opacity: opacity)
     encoder.setVertexBuffer(buffer, offset: 0, index: 0)
     encoder.setVertexBytes(&uniforms, length: MemoryLayout<Level3PolarUniforms>.stride, index: 1)
+    encoder.setFragmentBytes(&uniforms, length: MemoryLayout<Level3PolarUniforms>.stride, index: 1)
+    var lutBytes = lut
+    if lutBytes.count < 256 * 4 {
+      lutBytes.append(contentsOf: repeatElement(UInt8(0), count: 256 * 4 - lutBytes.count))
+    }
+    lutBytes.withUnsafeBytes { raw in
+      encoder.setFragmentBytes(raw.baseAddress!, length: 256 * 4, index: 2)
+    }
     encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: count)
   }
 
@@ -453,8 +468,10 @@ fileprivate struct GPUMesh {
   var buffer: MTLBuffer?
   var vertexCount: Int
   var pendingCPU: Level3PolarGateMesh.Mesh?
+  var lut: [UInt8]
 
-  static let empty = GPUMesh(key: "", buffer: nil, vertexCount: 0, pendingCPU: nil)
+  static let empty = GPUMesh(
+    key: "", buffer: nil, vertexCount: 0, pendingCPU: nil, lut: [])
 }
 
 /// Whole-loop GPU vertex buffers so Play adopt is a pointer swap, not `makeBuffer`.
@@ -464,6 +481,7 @@ final class Level3PolarGPUCache: @unchecked Sendable {
   private struct Entry {
     var buffer: MTLBuffer?
     var vertexCount: Int
+    var lut: [UInt8]
   }
 
   private let lock = NSLock()
@@ -497,7 +515,8 @@ final class Level3PolarGPUCache: @unchecked Sendable {
     defer { lock.unlock() }
     guard let hit = byKey[key] else { return nil }
     hitCount += 1
-    return GPUMesh(key: key, buffer: hit.buffer, vertexCount: hit.vertexCount, pendingCPU: nil)
+    return GPUMesh(
+      key: key, buffer: hit.buffer, vertexCount: hit.vertexCount, pendingCPU: nil, lut: hit.lut)
   }
 
   fileprivate func gpuMesh(key: String, cpu: Level3PolarGateMesh.Mesh, device: MTLDevice) -> GPUMesh {
@@ -505,19 +524,22 @@ final class Level3PolarGPUCache: @unchecked Sendable {
     if let hit = byKey[key] {
       hitCount += 1
       lock.unlock()
-      return GPUMesh(key: key, buffer: hit.buffer, vertexCount: hit.vertexCount, pendingCPU: nil)
+      return GPUMesh(
+        key: key, buffer: hit.buffer, vertexCount: hit.vertexCount, pendingCPU: nil, lut: hit.lut)
     }
     lock.unlock()
     let made = Self.makeBuffer(mesh: cpu, device: device)
     lock.lock()
     if let raced = byKey[key] {
       lock.unlock()
-      return GPUMesh(key: key, buffer: raced.buffer, vertexCount: raced.vertexCount, pendingCPU: nil)
+      return GPUMesh(
+        key: key, buffer: raced.buffer, vertexCount: raced.vertexCount, pendingCPU: nil, lut: raced.lut)
     }
-    byKey[key] = Entry(buffer: made.buffer, vertexCount: made.count)
+    byKey[key] = Entry(buffer: made.buffer, vertexCount: made.count, lut: cpu.lut)
     missCount += 1
     lock.unlock()
-    return GPUMesh(key: key, buffer: made.buffer, vertexCount: made.count, pendingCPU: nil)
+    return GPUMesh(
+      key: key, buffer: made.buffer, vertexCount: made.count, pendingCPU: nil, lut: cpu.lut)
   }
 
   func ingest(key: String, mesh: Level3PolarGateMesh.Mesh) {

@@ -100,6 +100,16 @@ struct Level3N0BSweep {
   func isOpaque(_ byte: UInt8) -> Bool {
     rgbaLUT[Int(byte)].3 != 0
   }
+
+  /// Interpolatable polar sample for contour paint. Opaque hole-fill bytes
+  /// keep their NWS level; clear / keyed-out / missing stay 0 so the 15 dBZ
+  /// isocontour falls inside edge gates instead of painting Lego squares.
+  func contourLevel(radialIndex: Int, gateIndex: Int) -> Float {
+    guard let byte = paintByte(radialIndex: radialIndex, gateIndex: gateIndex),
+      isOpaque(byte)
+    else { return 0 }
+    return Float(byte)
+  }
 }
 
 /// Mapbox interceptor + wet-probe lookup. Replaced wholesale per site load.
