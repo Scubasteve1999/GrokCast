@@ -65,6 +65,7 @@ targetTemplates:
       - sdk: SwiftData.framework
       - sdk: ActivityKit.framework
       - sdk: AppIntents.framework
+      - sdk: libbz2.tbd
 
 targets:
   DayCast:

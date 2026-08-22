@@ -8,6 +8,9 @@ struct RadarFrame: Equatable {
   let timestamp: Date
   /// Mapbox raster source templates with `{z}`, `{x}`, `{y}` placeholders.
   let tileURLTemplates: [String]
+  /// True when Live Site Doppler is painting decoded Level III radials
+  /// instead of IEM RIDGE PNGs. IEM fallback leaves this false.
+  let paintsPolarRadials: Bool
 
   enum Kind: Equatable {
     case livePrecipitation
@@ -19,13 +22,15 @@ struct RadarFrame: Equatable {
     kind: Kind,
     tileEpoch: Int,
     timestamp: Date,
-    tileURLTemplates: [String]
+    tileURLTemplates: [String],
+    paintsPolarRadials: Bool = false
   ) {
     self.provider = provider
     self.kind = kind
     self.tileEpoch = tileEpoch
     self.timestamp = timestamp
     self.tileURLTemplates = tileURLTemplates
+    self.paintsPolarRadials = paintsPolarRadials
   }
 
   var tileKey: String {
@@ -46,7 +51,8 @@ struct RadarFrame: Equatable {
       return "owm:pr0:\(tileEpoch)"
     case (.iem, .livePrecipitation), (.iem, .forecastPrecipitation):
       // Fingerprint carries site + product + scan time from the ridge layer path.
-      return "iem:\(tileEpoch):\(templateFingerprint)"
+      let polar = paintsPolarRadials ? "p:" : ""
+      return "iem:\(polar)\(tileEpoch):\(templateFingerprint)"
     case (.mrms, .livePrecipitation), (.mrms, .forecastPrecipitation):
       return "mrms:\(tileEpoch):\(templateFingerprint)"
     }

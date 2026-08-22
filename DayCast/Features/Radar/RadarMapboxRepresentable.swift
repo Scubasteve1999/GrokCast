@@ -408,14 +408,16 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       let nearestResampling = MapsGLRadarPalette.usesNearestResampling(
         provider: frame.provider,
         isFuture: isFuture,
-        cameraZoom: cameraZoom
+        cameraZoom: cameraZoom,
+        paintsPolarRadials: frame.paintsPolarRadials
       )
 
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
         tileKey: frame.tileKey,
         provider: frame.provider,
-        maxZoom: frame.provider.maxZoom,
+        maxZoom: MapsGLRadarPalette.displayMaxZoom(
+          provider: frame.provider, paintsPolarRadials: frame.paintsPolarRadials),
         opacity: opacity,
         saturation: saturation,
         contrast: contrast,

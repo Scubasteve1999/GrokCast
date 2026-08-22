@@ -48,6 +48,27 @@ enum RadarLiveCameraPolicy {
     return min(localZoom, max(conusZoom, zoom))
   }
 
+  #if DEBUG
+  /// Simulator screenshot hook. `DAYCAST_RADAR_ZOOM` plus optional lat/lon.
+  static func debugCamera() -> (center: CLLocationCoordinate2D, zoom: Double)? {
+    let env = ProcessInfo.processInfo.environment
+    let args = ProcessInfo.processInfo.arguments
+    func arg(_ flag: String) -> String? {
+      guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
+      return args[i + 1]
+    }
+    guard
+      let zoom = env["DAYCAST_RADAR_ZOOM"].flatMap(Double.init)
+        ?? arg("-radarZoom").flatMap(Double.init)
+    else { return nil }
+    let lat = env["DAYCAST_RADAR_LAT"].flatMap(Double.init)
+      ?? arg("-radarLat").flatMap(Double.init) ?? 38.906
+    let lon = env["DAYCAST_RADAR_LON"].flatMap(Double.init)
+      ?? arg("-radarLon").flatMap(Double.init) ?? -95.179
+    return (CLLocationCoordinate2D(latitude: lat, longitude: lon), zoom)
+  }
+  #endif
+
   static func visibleRadiusMeters(zoom: Double, latitude: Double) -> CLLocationDistance {
     let cosLat = max(0.2, cos(latitude * .pi / 180))
     let metersPerPoint = 156_543.03392 * cosLat / pow(2, zoom)

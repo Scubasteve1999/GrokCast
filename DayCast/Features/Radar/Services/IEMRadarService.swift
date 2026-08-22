@@ -136,6 +136,18 @@ final class IEMRadarService {
   ) async -> SiteFrameLoad? {
     guard let code = product.iemCode else { return nil }
 
+    if product == .superResReflectivity {
+      if let polar = await Level3N0BService.loadSiteFramesNear(
+        coordinate: coordinate,
+        preferredSite: preferredSite,
+        maxFrames: maxFrames)
+      {
+        return polar
+      }
+      radarLog("[IEM] Level III N0B miss — IEM PNG fallback")
+      Level3N0BSweepStore.shared.removeAll()
+    }
+
     var candidates = await nearestSites(to: coordinate, limit: siteFallbackLimit)
     if let preferredSite, !candidates.contains(where: { $0.id == preferredSite.id }) {
       candidates.insert(preferredSite, at: 0)
@@ -268,15 +280,27 @@ final class IEMRadarService {
     let dates = response.scans.compactMap { Self.scanFormatter.date(from: $0.ts) }
       .sorted()
     return dates.suffix(maxFrames).map { date in
-      let layer = "ridge::\(radar)-\(productCode)-\(Self.layerTimestamp(from: date))"
-      return RadarFrame(
+      RadarFrame(
         provider: .iem,
         kind: .livePrecipitation,
         tileEpoch: Int(date.timeIntervalSince1970),
         timestamp: date,
-        tileURLTemplates: ["\(baseTileHost)/\(layer)/{z}/{x}/{y}.png"]
+        tileURLTemplates: [
+          ridgeTileTemplate(radar: radar, productCode: productCode, timestamp: date)
+        ]
       )
     }
+  }
+
+  static func ridgeTileTemplate(
+    radar: String,
+    productCode: String,
+    timestamp: Date,
+    seconds: Bool = false
+  ) -> String {
+    let stamp = seconds ? secondLayerTimestamp(from: timestamp) : layerTimestamp(from: timestamp)
+    let layer = "ridge::\(radar)-\(productCode)-\(stamp)"
+    return "\(baseTileHost)/\(layer)/{z}/{x}/{y}.png"
   }
 
   private static func fetchSites() async -> [Site]? {
@@ -319,8 +343,20 @@ final class IEMRadarService {
     return f
   }()
 
+  private static let secondLayerFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.timeZone = TimeZone(secondsFromGMT: 0)!
+    f.dateFormat = "yyyyMMddHHmmss"
+    return f
+  }()
+
   private static func layerTimestamp(from date: Date) -> String {
     layerFormatter.string(from: date)
+  }
+
+  private static func secondLayerTimestamp(from date: Date) -> String {
+    secondLayerFormatter.string(from: date)
   }
 
   /// Zoom ~228 km/tile at 35°N — matches the local camera, not a neighboring
@@ -338,6 +374,10 @@ final class IEMRadarService {
   static func liveWindowHasOrganizedPrecip(frames: [RadarFrame], site: Site) async -> Bool {
     let live = RadarLivePresentation.liveFrames(frames, isSiteProduct: true)
     guard let newest = live.last else { return false }
+    if newest.paintsPolarRadials {
+      return Level3N0BSweepStore.shared.sweep(
+        site: site.id, timestamp: newest.timestamp)?.hasOrganizedPrecip ?? false
+    }
     return await frameHasOrganizedPrecip(newest, site: site)
   }
 

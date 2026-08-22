@@ -58,6 +58,9 @@ enum MapsGLRadarPalette {
   /// Mapbox requests IEM tiles through this zoom so close-in cameras get a
   /// 256px tile we can palette-refine, instead of GPU-nearest overzooming z10.
   static let iemDisplayMaxZoom: Double = 12
+  /// Polar N0B tiles stay native at street zoom. Mapbox must keep requesting
+  /// them instead of GPU-magnifying a z12 cartesian sheet.
+  static let level3DisplayMaxZoom: Double = 14
 
   /// MRMS stays hard-nearest at every zoom. Site Doppler is nearest at
   /// overview and linear only after native gate scale, so overzoom is not
@@ -65,14 +68,22 @@ enum MapsGLRadarPalette {
   static func usesNearestResampling(
     provider: RadarTileProvider,
     isFuture: Bool,
-    cameraZoom: Double
+    cameraZoom: Double,
+    paintsPolarRadials: Bool = false
   ) -> Bool {
+    if paintsPolarRadials { return true }
     if isFuture { return false }
     if provider == .mrms { return true }
     if provider == .iem {
       return cameraZoom <= iemNativeTileZoom
     }
     return liveRasterUsesNearestResampling
+  }
+
+  static func displayMaxZoom(
+    provider: RadarTileProvider, paintsPolarRadials: Bool
+  ) -> Double {
+    paintsPolarRadials ? level3DisplayMaxZoom : provider.maxZoom
   }
 
   /// MRMS National tiles are already 5 dBZ nearest bins. Mapbox raster fade-in

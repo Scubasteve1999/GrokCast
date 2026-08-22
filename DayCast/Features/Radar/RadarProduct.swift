@@ -1,8 +1,9 @@
 import Foundation
 
 /// User-facing radar products for the control panel.
-/// Live tries nearest-site N0B (`superResReflectivity`) via IEM RIDGE, then
-/// auto-presents National radar (`reflectivity`) when that site is dry/failed.
+/// Live tries nearest-site N0B (`superResReflectivity`) via AWS Level III
+/// polar paint, then IEM RIDGE PNG, then auto-presents National radar
+/// (`reflectivity`) when that site is dry/failed.
 /// `reflectivity` stays a one-tap flip. Site products are US + live only.
 /// IEM archives exactly N0B + N0S nationally (verified 2026-07); do not add
 /// velocity, dual-pol, tilts, or a site picker on this path.

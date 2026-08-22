@@ -648,10 +648,17 @@ extension RadarState {
   }
 
   private func requestLocalCamera(respectUserPan: Bool) {
-    let center = lastLoadedCoordinate ?? CLLocationCoordinate2D(latitude: 37, longitude: -95)
+    var center = lastLoadedCoordinate ?? CLLocationCoordinate2D(latitude: 37, longitude: -95)
+    var zoom = RadarLiveCameraPolicy.localZoom
+    #if DEBUG
+      if let debug = RadarLiveCameraPolicy.debugCamera() {
+        center = debug.center
+        zoom = debug.zoom
+      }
+    #endif
     cameraRequest = RadarCameraRequest(
       center: center,
-      zoom: RadarLiveCameraPolicy.localZoom,
+      zoom: zoom,
       animated: true,
       respectUserPan: respectUserPan
     )

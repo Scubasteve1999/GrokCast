@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Live National: NOAA MRMS XYZ (when timestamps are fresh) → MapsGL rain
 ///                over Xweather/IEM/RainViewer frames.
-/// Live site:     IEM N0B / N0S.
+/// Live site:     Level III N0B polar (IEM N0B PNG fallback) / IEM N0S.
 /// Forecast:      Xweather fradar → RainViewer nowcast → OpenWeatherMap PR0
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
