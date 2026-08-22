@@ -126,6 +126,31 @@ final class LightningStrikeTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(bolt.size.height, 24)
   }
 
+  func testBoltAgeColorsAreIceWhiteNotAmber() {
+    for color in [
+      LightningRadarOverlay.boltColorNewest,
+      LightningRadarOverlay.boltColorMid,
+      LightningRadarOverlay.boltColorOldest,
+    ] {
+      var r: CGFloat = 0
+      var g: CGFloat = 0
+      var b: CGFloat = 0
+      var a: CGFloat = 0
+      XCTAssertTrue(color.getRed(&r, green: &g, blue: &b, alpha: &a))
+      XCTAssertGreaterThanOrEqual(b, g, "ice/cool: blue must not sit under green")
+      XCTAssertGreaterThanOrEqual(g, r, "ice/cool: green must not sit under red")
+      XCTAssertLessThan(r - b, 0.02, "no yellow/amber (red must not lead blue)")
+      XCTAssertGreaterThan(a, 0.99)
+    }
+
+    var nr: CGFloat = 0, ng: CGFloat = 0, nb: CGFloat = 0, na: CGFloat = 0
+    XCTAssertTrue(
+      LightningRadarOverlay.boltColorNewest.getRed(&nr, green: &ng, blue: &nb, alpha: &na))
+    XCTAssertGreaterThanOrEqual(nr, 0.96)
+    XCTAssertGreaterThanOrEqual(ng, 0.97)
+    XCTAssertGreaterThanOrEqual(nb, 0.98)
+  }
+
   func testBoltYawIsStableAndBounded() {
     XCTAssertEqual(LightningRadarOverlay.yawDegrees(for: "abc123"), LightningRadarOverlay.yawDegrees(for: "abc123"))
     XCTAssertNotEqual(LightningRadarOverlay.yawDegrees(for: "abc123"), LightningRadarOverlay.yawDegrees(for: "def456"))

@@ -11,6 +11,24 @@ enum LightningRadarOverlay {
   static let legacyCircleLayerID = "lightning-strikes-layer"
   static let iconImageID = "daycast-lightning-bolt"
 
+  /// Newest CG: ice-white. Age fade: pale ice → cool gray. Never amber / orange / red.
+  static let boltColorNewest = UIColor(red: 250 / 255, green: 253 / 255, blue: 255 / 255, alpha: 1)
+  static let boltColorMid = UIColor(red: 224 / 255, green: 236 / 255, blue: 248 / 255, alpha: 1)
+  static let boltColorOldest = UIColor(red: 176 / 255, green: 190 / 255, blue: 208 / 255, alpha: 1)
+
+  static var boltColorExpression: Exp {
+    Exp(.interpolate) {
+      Exp(.linear)
+      Exp(.get) { "ageMinutes" }
+      0
+      boltColorNewest
+      8
+      boltColorMid
+      20
+      boltColorOldest
+    }
+  }
+
   static func ensureLayers(on mapView: MapView) {
     guard let style = mapView.mapboxMap else { return }
     do {
@@ -49,20 +67,7 @@ enum LightningRadarOverlay {
             0.88
           }
         )
-        layer.iconColor = .expression(
-          Exp(.interpolate) {
-            Exp(.linear)
-            Exp(.get) { "ageMinutes" }
-            0
-            UIColor(red: 1.0, green: 0.98, blue: 0.82, alpha: 1)
-            6
-            UIColor(red: 1.0, green: 0.78, blue: 0.22, alpha: 1)
-            14
-            UIColor(red: 1.0, green: 0.45, blue: 0.12, alpha: 1)
-            20
-            UIColor(red: 0.82, green: 0.22, blue: 0.08, alpha: 1)
-          }
-        )
+        layer.iconColor = .expression(boltColorExpression)
         layer.iconOpacity = .expression(
           Exp(.interpolate) {
             Exp(.linear)
@@ -96,6 +101,10 @@ enum LightningRadarOverlay {
           Exp(.get) { "sortKey" }
         )
         try style.addLayer(layer)
+      } else {
+        try style.updateLayer(withId: layerID, type: SymbolLayer.self) { layer in
+          layer.iconColor = .expression(boltColorExpression)
+        }
       }
     } catch {
       radarLog("[LightningRadar] ensureLayers failed: \(error)")
@@ -147,7 +156,7 @@ enum LightningRadarOverlay {
     return Double(Int(hash % 41) - 20)
   }
 
-  /// White silhouette for Mapbox SDF recolor (age fade + ice halo).
+  /// White silhouette for Mapbox SDF recolor (ice-white age fade + dark halo).
   static func makeBoltImage() -> UIImage {
     let size = CGSize(width: 32, height: 32)
     let format = UIGraphicsImageRendererFormat()
