@@ -87,8 +87,8 @@ enum MapsGLRadarPalette {
   /// them instead of GPU-magnifying a z12 cartesian sheet.
   static let level3DisplayMaxZoom: Double = 14
 
-  /// MRMS tiles are 5 dBZ LUT-snapped; Mapbox linear overzoom softens the 1 km
-  /// pixel grid into contoured cells without a new palette. IEM PNG fallback
+  /// MRMS tiles are opaque-blurred + bilinear then 5 dBZ LUT-snapped; Mapbox
+  /// linear overzoom softens the 1 km pixel grid without a new palette. IEM PNG fallback
   /// stays nearest at overview and linear after native gate scale. Polar Metal
   /// does not use this raster knob. Future / forecast rasters stay linear.
   static func usesNearestResampling(

@@ -6,9 +6,10 @@ Phone never downloads GRIB2. Simulator hits http://127.0.0.1:8765.
   python3 Scripts/mrms_national/mrms_worker.py
   python3 Scripts/mrms_national/mrms_worker.py --once --no-serve
 
-NWS 5 dBZ LUT copied from MapsGLRadarPalette. Bilinear sample from GRIB
-into each XYZ tile, then LUT-snap (organic cell shapes, hard colors).
-No overlay pyramid. 0/5/10 dBZ alpha 0 — visible rain floors at 15 green.
+NWS 5 dBZ LUT copied from MapsGLRadarPalette. Light opaque-only blur on
+the native ~1 km dBZ grid, bilinear sample into each XYZ tile, then
+LUT-snap (organic cell shapes, hard colors). No overlay pyramid.
+0/5/10 dBZ alpha 0 — visible rain floors at 15 green.
 """
 from __future__ import annotations
 
@@ -33,7 +34,7 @@ import eccodes
 
 # MapsGLRadarPalette.reflectivityStops — stepped 5 dBZ.
 # 0/5/10 cyan-blue keyed out (clear-air). Visible rain starts at 15 green.
-# Bilinear + LUT-snap still contours; no blue skirt around cells.
+# Opaque-only blur + bilinear + LUT-snap; no blue skirt around cells.
 STOPS = [
     (0, (0x00, 0xEC, 0xEC, 0)),
     (5, (0x01, 0xA0, 0xF6, 0)),
@@ -51,7 +52,7 @@ STOPS = [
     (65, (0x99, 0x55, 0xC9, 255)),
     (70, (0xFF, 0xFF, 0xFF, 255)),
 ]
-PAINT_VERSION = 4
+PAINT_VERSION = 5
 
 LUT_R = np.zeros(15, dtype=np.uint8)
 LUT_G = np.zeros(15, dtype=np.uint8)
@@ -123,6 +124,31 @@ def _grid_at(grid, rows, cols):
         out[valid] = grid[rows[valid], cols[valid]]
     bad = ~np.isfinite(out) | (out >= 9000)
     out[bad] = np.nan
+    return out
+
+
+def blur_opaque_dbz(grid, passes=2):
+    """Two wet-only 3x3 passes (~5 km). Clear stays clear — no precip dilation."""
+    out = np.array(grid, dtype=np.float32, copy=True)
+    nj, ni = out.shape
+    for _ in range(passes):
+        wet = np.isfinite(out) & (out >= 15.0) & (out < 9000)
+        acc = np.zeros((nj, ni), dtype=np.float32)
+        cnt = np.zeros((nj, ni), dtype=np.float32)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                y0, y1 = max(0, dy), min(nj, nj + dy)
+                x0, x1 = max(0, dx), min(ni, ni + dx)
+                sy0 = max(0, -dy)
+                sx0 = max(0, -dx)
+                sy1 = sy0 + (y1 - y0)
+                sx1 = sx0 + (x1 - x0)
+                w = wet[sy0:sy1, sx0:sx1].astype(np.float32)
+                src = np.nan_to_num(out[sy0:sy1, sx0:sx1], nan=0.0)
+                acc[y0:y1, x0:x1] += src * w
+                cnt[y0:y1, x0:x1] += w
+        mean = np.divide(acc, cnt, out=np.zeros_like(acc), where=cnt > 0)
+        out = np.where(wet, mean, out)
     return out
 
 
@@ -278,7 +304,8 @@ def paint_frame(grib_path: str, out_root: str, zooms) -> dict:
 
     print(f"  paint {fid} grid {grid.shape} zooms={zooms}", flush=True)
     os.makedirs(dest, exist_ok=True)
-    n_tiles = write_xyz_tiles(grid, west, north, dlon, dlat, zooms, dest)
+    soft = blur_opaque_dbz(grid)
+    n_tiles = write_xyz_tiles(soft, west, north, dlon, dlat, zooms, dest)
     meta = {
         "id": fid,
         "t": valid_time.strftime("%Y-%m-%dT%H:%M:%SZ"),

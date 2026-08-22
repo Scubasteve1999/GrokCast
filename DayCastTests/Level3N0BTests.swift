@@ -353,7 +353,7 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(smoothed[0][0], 0, "clear stays clear")
     XCTAssertEqual(
       smoothed[2][1], (126 + 126 + 146 + 126 + 126) / 5, accuracy: 0.01,
-      "az 5-tap of interior 126/146 stripes")
+      "az 5-tap fallback of interior 126/146 stripes on a 5-radial field")
     XCTAssertEqual(smoothed[2][1], smoothed[1][1], accuracy: 0.01)
     let edge = Level3PolarGateMesh.smoothOpaqueNeighbors([
       [0, 0, 0],
@@ -363,6 +363,62 @@ final class Level3N0BTests: XCTestCase {
       [0, 0, 0],
     ])
     XCTAssertEqual(edge[2][1], 146, "one-sided 40 dBZ gate must not wash into clear")
+  }
+
+  func testOpaqueAzimuthNineTapAveragesWiderInterior() {
+    var stripe = [[Float]](repeating: [0, 126, 0], count: 9)
+    stripe[4] = [0, 146, 0]
+    let smoothed = Level3PolarGateMesh.smoothOpaqueAzimuth(stripe, halfWidths: [4, 3, 2, 1])
+    XCTAssertEqual(smoothed[0][0], 0)
+    XCTAssertEqual(
+      smoothed[4][1], (126 * 8 + 146) / 9, accuracy: 0.01,
+      "az 9-tap of an interior 126/146 stripe")
+    XCTAssertEqual(smoothed[3][1], smoothed[4][1], accuracy: 0.01)
+  }
+
+  func testOpaqueRangeSmoothKillsRangeStairsNotEdges() {
+    let stairs: [[Float]] = [
+      [0, 126, 126, 146, 126, 126, 0],
+    ]
+    let smoothed = Level3PolarGateMesh.smoothOpaqueRange(stairs, halfWidths: [3, 2, 1])
+    XCTAssertEqual(smoothed[0][0], 0, "clear stays clear")
+    XCTAssertEqual(
+      smoothed[0][3], (126 + 126 + 146 + 126 + 126) / 5, accuracy: 0.01,
+      "range 5-tap fallback of interior 126/146 stairs")
+    let edge = Level3PolarGateMesh.smoothOpaqueRange([[0, 0, 146, 0, 0]], halfWidths: [2, 1])
+    XCTAssertEqual(edge[0][2], 146, "one-sided range gate must not wash into clear")
+  }
+
+  func testRangeUpsample2xDoesNotDilateClearAir() {
+    let row: [[Float]] = [[0, 146, 146, 0]]
+    let dense = Level3PolarGateMesh.upsampleOpaqueRange2x(row)
+    XCTAssertEqual(dense[0].count, 7)
+    XCTAssertEqual(dense[0][0], 0)
+    XCTAssertEqual(dense[0][1], 0, "midpoint of clear+opaque stays clear")
+    XCTAssertEqual(dense[0][2], 146)
+    XCTAssertEqual(dense[0][3], 146, "midpoint of opaque+opaque is the average")
+    XCTAssertEqual(dense[0][4], 146)
+    XCTAssertEqual(dense[0][5], 0, "midpoint of opaque+clear stays clear")
+    XCTAssertEqual(dense[0][6], 0)
+  }
+
+  func testMetalMeshSamplesDenserRangeThanNativeGates() {
+    let sweep = Self.spokeSweep(
+      azimuth: 90,
+      byte: 146,
+      bins: 8,
+      gatePattern: [96, 106, 116, 126, 136, 146, 156, 166])
+    let mesh = Level3PolarGateMesh.build(sweep: sweep)
+    XCTAssertGreaterThan(mesh.triangleCount, 0)
+    var ranges: [Double] = []
+    for v in mesh.vertices where v.level > 0 {
+      ranges.append(Self.groundMetersFromSite(v, sweep: sweep))
+    }
+    XCTAssertGreaterThan(ranges.count, 0)
+    let hasHalfGate = ranges.contains { abs($0 - 250) < 40 }
+    XCTAssertTrue(
+      hasHalfGate,
+      "2x range sampling must emit a vertex near 250 m (native centers are (j+0.5)*250)")
   }
 
   func testMetalMeshHoleFillDoesNotDilateClearAir() {
@@ -403,7 +459,7 @@ final class Level3N0BTests: XCTestCase {
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.triangleCount, 1_000)
     XCTAssertLessThan(
-      mesh.buildMilliseconds, 700,
+      mesh.buildMilliseconds, 1400,
       "CPU contour mesh is a first-still / warm cost; 2x play is a cache hit")
     XCTAssertTrue(mesh.vertices.contains { $0.level >= 96 })
     XCTAssertEqual(mesh.lut.count, 256 * 4)
@@ -545,7 +601,8 @@ final class Level3N0BTests: XCTestCase {
   private static func spokeSweep(
     azimuth: Double, byte: UInt8, delta: Double = 0.5, bins: Int = 80,
     holeAzimuth: Double? = nil, holeByte: UInt8 = 86,
-    timestamp: Date = Date(timeIntervalSince1970: 1_787_405_984)
+    timestamp: Date = Date(timeIntervalSince1970: 1_787_405_984),
+    gatePattern: [UInt8]? = nil
   ) -> Level3N0BSweep {
     var radials: [Level3N0BSweep.Radial] = []
     for i in 0..<720 {
@@ -557,7 +614,11 @@ final class Level3N0BTests: XCTestCase {
       if inHole {
         gates = [UInt8](repeating: holeByte, count: bins)
       } else if holeAzimuth != nil || inSpoke {
-        gates = [UInt8](repeating: byte, count: bins)
+        if let gatePattern {
+          gates = gatePattern
+        } else {
+          gates = [UInt8](repeating: byte, count: bins)
+        }
       } else {
         gates = [UInt8](repeating: 0, count: bins)
       }
@@ -577,6 +638,15 @@ final class Level3N0BTests: XCTestCase {
       dbzLUT: lut,
       rgbaLUT: Level3N0BDecoder.rgbaLUT(from: lut),
       hasOrganizedPrecip: true)
+  }
+
+  private static func groundMetersFromSite(_ v: Level3PolarVertex, sweep: Level3N0BSweep)
+    -> Double
+  {
+    let origin = Level3PolarGateMesh.mercatorXY(
+      latitude: sweep.latitude, longitude: sweep.longitude)
+    return groundMeters(
+      Level3PolarVertex(mercX: Float(origin.x), mercY: Float(origin.y), level: 0), v)
   }
 
   private static func groundMeters(_ a: Level3PolarVertex, _ b: Level3PolarVertex) -> Double {

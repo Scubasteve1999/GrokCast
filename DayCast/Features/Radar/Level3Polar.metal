@@ -39,6 +39,7 @@ fragment float4 level3PolarFragment(
   constant Level3PolarUniforms &uniforms [[buffer(1)]],
   constant Level3PolarLUT &lut [[buffer(2)]])
 {
+  // Spatial soft lives on the CPU mesh. Snap to a hard NWS hex — never blend stops.
   int idx = int(round(in.level));
   idx = clamp(idx, 0, 255);
   float4 color = float4(lut.colors[idx]) / 255.0;

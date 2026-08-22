@@ -10,9 +10,10 @@ struct Level3PolarVertex {
   var pad: Float = 0
 }
 
-/// CPU mesh: gate-center quads with interpolatable levels. Fragment shader
-/// snaps to `rgbaLUT` so cell *shapes* are organic and colors stay discrete.
-/// Range-constant runs on both radials still merge. Play fade is opacity only.
+/// CPU mesh: denser gate-center quads with interpolatable levels. Fragment
+/// shader snaps to `rgbaLUT` so cell *shapes* are organic and colors stay
+/// discrete. Range-constant runs on both radials still merge. Play fade is
+/// opacity only.
 enum Level3PolarGateMesh {
   struct Mesh {
     var vertices: [Level3PolarVertex]
@@ -21,37 +22,112 @@ enum Level3PolarGateMesh {
     var buildMilliseconds: Double
   }
 
-  /// Azimuth 5-tap (fallback 3-tap) only when every sample is opaque. Kills 0.5°
-  /// tiger-stripes inside cells without growing precip into clear air.
+  /// Opaque-only spatial soft before meshing. Azimuth 9-tap (7/5/3 fallback)
+  /// plus range 7-tap (5/3 fallback). Every kernel sample must already be
+  /// opaque so cells blob without growing precip into clear air.
   static func smoothOpaqueNeighbors(_ levels: [[Float]]) -> [[Float]] {
+    let az = smoothOpaqueAzimuth(levels, halfWidths: [4, 3, 2, 1])
+    return smoothOpaqueRange(az, halfWidths: [3, 2, 1])
+  }
+
+  /// Insert a midpoint sample between adjacent range gates. Both gates must
+  /// be opaque or the midpoint stays 0 (no dilation). Close-zoom isocontours
+  /// then have 125 m segments instead of 250 m stairs.
+  static func upsampleOpaqueRange2x(_ levels: [[Float]]) -> [[Float]] {
+    levels.map { row in
+      guard row.count > 1 else { return row }
+      var out = [Float](repeating: 0, count: row.count * 2 - 1)
+      for j in 0..<row.count {
+        out[j * 2] = row[j]
+        if j + 1 < row.count {
+          let a = row[j]
+          let b = row[j + 1]
+          if a > 0 && b > 0 {
+            out[j * 2 + 1] = (a + b) / 2
+          }
+        }
+      }
+      return out
+    }
+  }
+
+  static func smoothOpaqueAzimuth(_ levels: [[Float]], halfWidths: [Int]) -> [[Float]] {
     let n = levels.count
-    guard n > 4 else { return levels }
+    guard n > 2 else { return levels }
     var out = levels
     for i in 0..<n {
-      let l2 = levels[(i - 2 + n) % n]
-      let l1 = levels[(i - 1 + n) % n]
       let mid = levels[i]
-      let r1 = levels[(i + 1) % n]
-      let r2 = levels[(i + 2) % n]
-      let count = min(
-        mid.count,
-        min(l2.count, min(l1.count, min(r1.count, r2.count))))
       var row = mid
-      for j in 0..<count {
-        let a = l2[j]
-        let b = l1[j]
-        let c = mid[j]
-        let d = r1[j]
-        let e = r2[j]
-        if a > 0 && b > 0 && c > 0 && d > 0 && e > 0 {
-          row[j] = (a + b + c + d + e) / 5
-        } else if b > 0 && c > 0 && d > 0 {
-          row[j] = (b + c + d) / 3
+      for j in 0..<mid.count {
+        let center = mid[j]
+        if center <= 0 { continue }
+        for half in halfWidths {
+          if n <= half * 2 { continue }
+          var sum = center
+          var ok = true
+          var d = 1
+          while d <= half {
+            let left = levels[(i - d + n) % n]
+            let right = levels[(i + d) % n]
+            if j >= left.count || j >= right.count || left[j] <= 0 || right[j] <= 0 {
+              ok = false
+              break
+            }
+            sum += left[j] + right[j]
+            d += 1
+          }
+          if ok {
+            row[j] = sum / Float(half * 2 + 1)
+            break
+          }
         }
       }
       out[i] = row
     }
     return out
+  }
+
+  static func smoothOpaqueRange(_ levels: [[Float]], halfWidths: [Int]) -> [[Float]] {
+    var out = levels
+    for i in 0..<levels.count {
+      let mid = levels[i]
+      let count = mid.count
+      guard count > 2 else { continue }
+      var row = mid
+      for j in 0..<count {
+        let center = mid[j]
+        if center <= 0 { continue }
+        for half in halfWidths {
+          if j < half || j + half >= count { continue }
+          var sum = center
+          var ok = true
+          var d = 1
+          while d <= half {
+            let inner = mid[j - d]
+            let outer = mid[j + d]
+            if inner <= 0 || outer <= 0 {
+              ok = false
+              break
+            }
+            sum += inner + outer
+            d += 1
+          }
+          if ok {
+            row[j] = sum / Float(half * 2 + 1)
+            break
+          }
+        }
+      }
+      out[i] = row
+    }
+    return out
+  }
+
+  /// Merge consecutive range samples that already snap to the same contour.
+  static func sameContourLevel(_ a: Float, _ b: Float) -> Bool {
+    if a == b { return true }
+    if a <= 0 || b <= 0 { return false }
+    return abs(a - b) < 0.5
   }
 
   static func packedLUT(_ rgba: [(UInt8, UInt8, UInt8, UInt8)]) -> [UInt8] {
@@ -102,7 +178,9 @@ enum Level3PolarGateMesh {
       }
       levels.append(row)
     }
+    levels = Self.upsampleOpaqueRange2x(levels)
     levels = Self.smoothOpaqueNeighbors(levels)
+    let sampleGateW = gateW * 0.5
 
     for i in 0..<n {
       let next = (i + 1) % n
@@ -127,11 +205,11 @@ enum Level3PolarGateMesh {
           continue
         }
         var jOuter = j + 1
-        if l00 == l01 && l10 == l11 {
+        if sameContourLevel(l00, l01) && sameContourLevel(l10, l11) {
           while jOuter < jMax {
             let n0 = levels[i][jOuter + 1]
             let n1 = levels[next][jOuter + 1]
-            if n0 != l00 || n1 != l10 { break }
+            if !sameContourLevel(n0, l00) || !sameContourLevel(n1, l10) { break }
             jOuter += 1
           }
         }
@@ -146,8 +224,8 @@ enum Level3PolarGateMesh {
           cosAz0: cosAz[i],
           sinAz1: sinAz[next],
           cosAz1: cosAz[next],
-          r0: (Double(j) + 0.5) * gateW,
-          r1: (Double(jOuter) + 0.5) * gateW,
+          r0: (Double(j) + 1) * sampleGateW,
+          r1: (Double(jOuter) + 1) * sampleGateW,
           l00: l00,
           l10: l10,
           l11: lOuter1,
