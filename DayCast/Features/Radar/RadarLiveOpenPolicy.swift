@@ -10,8 +10,8 @@ enum RadarLiveOpenPolicy {
 
   /// On Live open / first Live entry:
   /// - explicit Site Doppler tap stays (dry local inspect is allowed)
-  /// - real local precip stays on Site Doppler
-  /// - dry, failed, or stale Site Doppler presents National radar when available
+  /// - real local precip (newest scan, inside the local camera) stays on Site Doppler
+  /// - dry, failed, stale, or still-unknown Site Doppler presents National when available
   static func productToPresent(
     userExplicitlyChoseSiteDoppler: Bool,
     siteDopplerLoaded: Bool,
@@ -24,6 +24,12 @@ enum RadarLiveOpenPolicy {
     if siteDopplerLoaded && siteHasPrecipInLiveWindow { return .siteDoppler }
     if siteFailedOrStale { return .nationalRadar }
     if siteDopplerLoaded && !siteHasPrecipInLiveWindow { return .nationalRadar }
-    return .siteDoppler
+    // Site still loading: don't greet with a blank Site Doppler map.
+    return .nationalRadar
+  }
+
+  static func clearHint(siteID: String?) -> String {
+    if let siteID, !siteID.isEmpty { return "\(siteID) is clear" }
+    return "Local is clear"
   }
 }

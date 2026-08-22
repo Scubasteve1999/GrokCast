@@ -72,6 +72,13 @@ final class RadarState {
   private var userPinnedSiteDoppler = false
   /// Test hook: skip the IEM tile probe.
   var sitePrecipProbeForTesting: Bool?
+  /// Test hook: skip mosaic tile sampling and supply nearest-precip distance.
+  var nationalPrecipMetersForTesting: CLLocationDistance?
+  var usesNationalPrecipOverrideForTesting = false
+  /// Live-open / product camera. Representable applies this once per `id`.
+  private(set) var cameraRequest: RadarCameraRequest?
+  /// New Live open: representable drops the pan lock so the framing can apply.
+  private(set) var cameraSessionID = UUID()
   /// Client-side raster color treatment (applied in the Mapbox layer).
   /// These four persist via `RadarPreferences`; the controls bind to them directly,
   /// so `didSet` is the one hook that catches every path that can change them.
@@ -271,6 +278,7 @@ final class RadarState {
   /// Live tab entry / location change: re-evaluate dry-site auto National.
   func handleLiveOpen(for coordinate: CLLocationCoordinate2D) async {
     userPinnedSiteDoppler = false
+    cameraSessionID = UUID()
     await reloadIfStale(for: coordinate)
     await applyDefaultLiveOpenPolicy()
   }
@@ -478,9 +486,11 @@ extension RadarState {
       } else {
         hasPrecip = await probeSiteLiveWindowPrecip()
       }
-      if !hasPrecip, let id = activeSiteProductSite?.id ?? nearestSite?.id {
-        siteProductAdvisory = "No precip on \(id)"
+      if !hasPrecip {
+        siteProductAdvisory = RadarLiveOpenPolicy.clearHint(
+          siteID: activeSiteProductSite?.id ?? nearestSite?.id)
       }
+      requestLocalCamera(respectUserPan: false)
     }
   }
 
@@ -559,7 +569,10 @@ extension RadarState {
   func applyDefaultLiveOpenPolicy() async {
     guard !showsFuture else { return }
     guard selectedProduct != .stormRelativeVelocity else { return }
-    guard !userPinnedSiteDoppler else { return }
+    guard !userPinnedSiteDoppler else {
+      requestLocalCamera(respectUserPan: true)
+      return
+    }
 
     let siteIsSelected = selectedProduct.isSiteProduct
     let siteLoaded =
@@ -574,11 +587,7 @@ extension RadarState {
 
     var siteHasPrecip = false
     if siteLoaded {
-      if let override = sitePrecipProbeForTesting {
-        siteHasPrecip = override
-      } else {
-        siteHasPrecip = await probeSiteLiveWindowPrecip()
-      }
+      siteHasPrecip = await boundedSitePrecipProbe()
     }
 
     let present = RadarLiveOpenPolicy.productToPresent(
@@ -588,23 +597,83 @@ extension RadarState {
       siteFailedOrStale: siteFailedOrStale,
       nationalAvailable: nationalAvailable
     )
-    guard present == .nationalRadar else { return }
-
-    let failedMessage = siteFailedOrStale ? siteProductUnavailableMessage : nil
-    let clearHint: String?
-    if failedMessage == nil, let id = activeSiteProductSite?.id ?? nearestSite?.id {
-      clearHint = "\(id) is clear"
-    } else {
-      clearHint = nil
+    radarLog(
+      "[RadarState] Live open present=\(present) siteLoaded=\(siteLoaded) precip=\(siteHasPrecip) failed=\(siteFailedOrStale) national=\(nationalAvailable)"
+    )
+    guard present == .nationalRadar else {
+      if selectedProduct.isSiteProduct {
+        requestLocalCamera(respectUserPan: true)
+      }
+      return
     }
 
-    restoreCompositeLive()
-    presentLiveNow()
+    let flippingFromSite = selectedProduct.isSiteProduct
+    let failedMessage = siteFailedOrStale ? siteProductUnavailableMessage : nil
+    let clearHint: String? =
+      failedMessage == nil
+      ? RadarLiveOpenPolicy.clearHint(siteID: activeSiteProductSite?.id ?? nearestSite?.id)
+      : nil
+
+    if flippingFromSite || selectedProduct != .reflectivity {
+      restoreCompositeLive()
+      presentLiveNow()
+    } else {
+      presentLiveNow()
+    }
     if let failedMessage {
       siteProductUnavailableMessage = failedMessage
     } else if let clearHint {
       siteProductAdvisory = clearHint
     }
+    await requestDryNationalCamera()
+  }
+
+  private func boundedSitePrecipProbe() async -> Bool {
+    if let override = sitePrecipProbeForTesting { return override }
+    return await probeSiteLiveWindowPrecip()
+  }
+
+  private func requestLocalCamera(respectUserPan: Bool) {
+    let center = lastLoadedCoordinate ?? CLLocationCoordinate2D(latitude: 37, longitude: -95)
+    cameraRequest = RadarCameraRequest(
+      center: center,
+      zoom: RadarLiveCameraPolicy.localZoom,
+      animated: true,
+      respectUserPan: respectUserPan
+    )
+  }
+
+  private func requestDryNationalCamera() async {
+    let center = lastLoadedCoordinate ?? CLLocationCoordinate2D(latitude: 37, longitude: -95)
+    let nearest: CLLocationDistance?
+    if usesNationalPrecipOverrideForTesting {
+      nearest = nationalPrecipMetersForTesting
+    } else {
+      nearest = await nearestNationalPrecipMeters(from: center)
+    }
+    let zoom = RadarLiveCameraPolicy.cameraZoom(
+      presentingNationalBecauseDry: true,
+      userPinnedSiteDoppler: false,
+      nearestPrecipMeters: nearest,
+      latitude: center.latitude
+    )
+    radarLog(
+      "[RadarState] Dry National camera zoom=\(String(format: "%.2f", zoom)) nearestKm=\(nearest.map { String(format: "%.0f", $0 / 1000) } ?? "none")"
+    )
+    cameraRequest = RadarCameraRequest(
+      center: center,
+      zoom: zoom,
+      animated: true,
+      respectUserPan: true
+    )
+  }
+
+  private func nearestNationalPrecipMeters(from coordinate: CLLocationCoordinate2D)
+    async -> CLLocationDistance?
+  {
+    let frame = compositeLive?.frames.last ?? timeline.live.last
+    guard let frame else { return nil }
+    return await IEMRadarService.nearestMosaicPrecipMeters(frame: frame, from: coordinate)
   }
 
   private func probeSiteLiveWindowPrecip() async -> Bool {

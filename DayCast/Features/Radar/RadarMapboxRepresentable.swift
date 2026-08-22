@@ -116,6 +116,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var hasAppliedInitialCenter = false
     private var lastRecenterDefaultTrigger: UUID?
     private var lastRecenterUserCoordinate: CLLocationCoordinate2D?
+    private var lastCameraRequestID: UUID?
+    private var lastCameraSessionID: UUID?
+    private var userHasMovedCamera = false
 
     private var layersInstalled = false
     private var frontSlot: BufferSlot = .a
@@ -183,9 +186,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       IEMN0BTileInterceptor.install()
       let camera = CameraOptions(
         center: CLLocationCoordinate2D(latitude: 37.0, longitude: -95.0),
-        zoom: 4.5
+        zoom: RadarLiveCameraPolicy.conusZoom
       )
       mapView.mapboxMap.setCamera(to: camera)
+      mapView.gestures.delegate = self
 
       mapView.mapboxMap.onStyleLoaded.observe { [weak self, weak mapView] _ in
         guard let self, let mapView else { return }
@@ -231,17 +235,44 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       pendingShowFireLayer = radarState.showFireLayer
       pendingAlerts = alerts
 
+      if radarState.cameraSessionID != lastCameraSessionID {
+        lastCameraSessionID = radarState.cameraSessionID
+        userHasMovedCamera = false
+      }
+
       if !hasAppliedInitialCenter {
         hasAppliedInitialCenter = true
+        let opening = radarState.cameraRequest
         applyCamera(
           mapView: mapView,
-          center: recenterUserCoordinate ?? defaultMapCenter
+          center: opening?.center ?? recenterUserCoordinate ?? defaultMapCenter,
+          zoom: opening?.zoom ?? RadarLiveCameraPolicy.conusZoom,
+          animated: false
         )
+        if let opening { lastCameraRequestID = opening.id }
+      }
+
+      if let request = radarState.cameraRequest, request.id != lastCameraRequestID {
+        lastCameraRequestID = request.id
+        if !(request.respectUserPan && userHasMovedCamera) {
+          applyCamera(
+            mapView: mapView,
+            center: request.center,
+            zoom: request.zoom,
+            animated: request.animated
+          )
+        }
       }
 
       if let trigger = recenterDefaultTrigger, trigger != lastRecenterDefaultTrigger {
         lastRecenterDefaultTrigger = trigger
-        applyCamera(mapView: mapView, center: defaultMapCenter)
+        userHasMovedCamera = false
+        applyCamera(
+          mapView: mapView,
+          center: defaultMapCenter,
+          zoom: radarState.cameraRequest?.zoom ?? mapView.mapboxMap.cameraState.zoom,
+          animated: true
+        )
       }
 
       if let coordinate = recenterUserCoordinate {
@@ -252,7 +283,12 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           || abs((last?.longitude ?? 0) - coordinate.longitude) > 0.0001
         if changed {
           lastRecenterUserCoordinate = coordinate
-          applyCamera(mapView: mapView, center: coordinate)
+          applyCamera(
+            mapView: mapView,
+            center: coordinate,
+            zoom: mapView.mapboxMap.cameraState.zoom,
+            animated: true
+          )
         }
       }
 
@@ -701,10 +737,16 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
     private func applyCamera(
       mapView: MapView,
-      center: CLLocationCoordinate2D
+      center: CLLocationCoordinate2D,
+      zoom: Double,
+      animated: Bool
     ) {
-      let zoom: Double = 6.0
-      mapView.mapboxMap.setCamera(to: CameraOptions(center: center, zoom: zoom))
+      let options = CameraOptions(center: center, zoom: zoom)
+      if animated {
+        mapView.camera.ease(to: options, duration: 0.55)
+      } else {
+        mapView.mapboxMap.setCamera(to: options)
+      }
     }
 
     private func removeLayers(_ mapView: MapView) {
@@ -746,5 +788,36 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       appliedEmissive = nil
       appliedNearestResampling = nil
     }
+  }
+}
+
+extension RadarMapboxRepresentable.Coordinator: GestureManagerDelegate {
+  nonisolated func gestureManager(
+    _ gestureManager: GestureManager, didBegin gestureType: GestureType
+  ) {
+    _ = gestureManager
+    switch gestureType {
+    case .pan, .pinch, .quickZoom, .doubleTapToZoomIn, .doubleTouchToZoomOut:
+      Task { @MainActor in
+        self.userHasMovedCamera = true
+      }
+    default:
+      break
+    }
+  }
+
+  nonisolated func gestureManager(
+    _ gestureManager: GestureManager, didEnd gestureType: GestureType, willAnimate: Bool
+  ) {
+    _ = gestureManager
+    _ = gestureType
+    _ = willAnimate
+  }
+
+  nonisolated func gestureManager(
+    _ gestureManager: GestureManager, didEndAnimatingFor gestureType: GestureType
+  ) {
+    _ = gestureManager
+    _ = gestureType
   }
 }

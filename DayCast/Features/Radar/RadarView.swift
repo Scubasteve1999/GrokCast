@@ -67,7 +67,6 @@ struct RadarView: View {
           // reflects the provider's newest run; a quick switch is a no-op.
           let center = selectedMapCenter
           await radarState.handleLiveOpen(for: center)
-          recenterOnSelectedLocation()
           if radarState.showContent {
             radarState.presentLiveNow()
           }
@@ -80,7 +79,6 @@ struct RadarView: View {
         await radarState.updateNearestSite(for: center)
         if store.selectedTab == .radar {
           await radarState.handleLiveOpen(for: center)
-          recenterOnSelectedLocation()
         } else {
           await radarState.reloadIfStale(for: center)
         }
@@ -280,13 +278,6 @@ struct RadarView: View {
     }
 
     radarState.completeTransition()
-  }
-
-  /// Centers the map on the selected weather location. Clears any prior GPS recenter
-  /// so device location cannot override the selected place on the next update pass.
-  private func recenterOnSelectedLocation() {
-    recenterUserCoordinate = nil
-    recenterDefaultTrigger = UUID()
   }
 }
 

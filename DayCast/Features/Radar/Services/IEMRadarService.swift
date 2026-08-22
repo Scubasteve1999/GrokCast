@@ -1,5 +1,7 @@
+import CoreGraphics
 import CoreLocation
 import Foundation
+import ImageIO
 
 /// NWS NEXRAD single-site tiles via IEM (Iowa Environmental Mesonet) RIDGE cache.
 /// Powers the Velocity / SRV products in Live mode (US only).
@@ -321,21 +323,38 @@ final class IEMRadarService {
     layerFormatter.string(from: date)
   }
 
-  /// Zoom ~228 km/tile at 35°N — matches the NEXRAD umbrella without pulling
-  /// a neighboring site's storm into the dry-site probe.
+  /// Zoom ~228 km/tile at 35°N — matches the local camera, not a neighboring
+  /// site's storm 250 km out that leaves Olive Branch looking empty.
   static let precipProbeZoom = 8
-  static let precipProbeRangeMeters: CLLocationDistance = 250_000
-  private static let precipProbeTimeout: TimeInterval = 4
+  static let precipProbeRangeMeters: CLLocationDistance =
+    RadarLiveCameraPolicy.localPrecipRadiusMeters
+  private static let precipProbeTimeout: TimeInterval = 1.2
+  private static let mosaicPrecipProbeTimeout: TimeInterval = 1.2
+  private static let mosaicPrecipMinPixels = 24
 
-  /// True when keyed N0B tiles in the live window still have organized precip.
-  /// Dry NQA after clutter-key is empty; fetch failure returns false so Live
-  /// can present National radar instead of a blank map.
+  /// True when the *newest* N0B scan has organized precip inside the local
+  /// camera. Mid-window history (a cell that already left) is not "wet now".
+  /// Fetch failure returns false so Live can present National radar.
   static func liveWindowHasOrganizedPrecip(frames: [RadarFrame], site: Site) async -> Bool {
     let live = RadarLivePresentation.liveFrames(frames, isSiteProduct: true)
     guard let newest = live.last else { return false }
-    if await frameHasOrganizedPrecip(newest, site: site) { return true }
-    guard live.count > 4 else { return false }
-    return await frameHasOrganizedPrecip(live[live.count / 2], site: site)
+    return await frameHasOrganizedPrecip(newest, site: site)
+  }
+
+  /// Distance from `coordinate` to the nearest mosaic tile with rain in the
+  /// newest national frame. Nil = none found / fetch failed → CONUS camera.
+  static func nearestMosaicPrecipMeters(
+    frame: RadarFrame, from coordinate: CLLocationCoordinate2D
+  ) async -> CLLocationDistance? {
+    guard let template = frame.tileURLTemplates.first else { return nil }
+    for zoom in [5, 4, 3] {
+      if let meters = await nearestWetMosaicTileMeters(
+        template: template, coordinate: coordinate, zoom: zoom)
+      {
+        return meters
+      }
+    }
+    return nil
   }
 
   static func webMercatorTile(lat: Double, lon: Double, zoom: Int) -> (x: Int, y: Int) {
@@ -371,6 +390,12 @@ final class IEMRadarService {
     return ranked.sorted { $0.meters < $1.meters }.prefix(9).map { ($0.x, $0.y) }
   }
 
+  private static func mosaicTileHalfDiagonalMeters(zoom: Int, latitude: Double) -> CLLocationDistance {
+    let n = Double(1 << zoom)
+    let metersPerTile = 40_075_016.686 * max(0.2, cos(latitude * .pi / 180)) / n
+    return (metersPerTile / 2) * 1.414
+  }
+
   static func tileCenter(x: Int, y: Int, zoom: Int) -> (lat: Double, lon: Double) {
     let n = Double(1 << zoom)
     let lon = Double(x) / n * 360 - 180 + (180 / n)
@@ -403,9 +428,95 @@ final class IEMRadarService {
     }
   }
 
+  private static func nearestWetMosaicTileMeters(
+    template: String, coordinate: CLLocationCoordinate2D, zoom: Int
+  ) async -> CLLocationDistance? {
+    let origin = webMercatorTile(lat: coordinate.latitude, lon: coordinate.longitude, zoom: zoom)
+    let here = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+    let maxIndex = (1 << zoom) - 1
+    var ranked: [(x: Int, y: Int, meters: CLLocationDistance)] = []
+    for dy in -1...1 {
+      for dx in -1...1 {
+        let x = origin.x + dx
+        let y = origin.y + dy
+        guard x >= 0, y >= 0, x <= maxIndex, y <= maxIndex else { continue }
+        let center = tileCenter(x: x, y: y, zoom: zoom)
+        let centerMeters = here.distance(
+          from: CLLocation(latitude: center.lat, longitude: center.lon))
+        // Rain can sit on the far edge of a large mosaic tile; using the
+        // center alone reports 70 km while the echo is 400 km out.
+        let halfDiag = mosaicTileHalfDiagonalMeters(zoom: zoom, latitude: coordinate.latitude)
+        let meters = max(centerMeters, halfDiag)
+        ranked.append((x, y, meters))
+      }
+    }
+    ranked.sort { $0.meters < $1.meters }
+    for tile in ranked {
+      let urlString = template
+        .replacingOccurrences(of: "{z}", with: "\(zoom)")
+        .replacingOccurrences(of: "{x}", with: "\(tile.x)")
+        .replacingOccurrences(of: "{y}", with: "\(tile.y)")
+      guard let url = URL(string: urlString),
+        let data = await fetchData(url, timeout: mosaicPrecipProbeTimeout)
+      else { continue }
+      if mosaicPNGHasPrecip(data) { return tile.meters }
+    }
+    return nil
+  }
+
+  /// National / mosaic PNG: chroma rain, not the N0B clutter-key.
+  static func mosaicPNGHasPrecip(_ png: Data, minPixels: Int = mosaicPrecipMinPixels) -> Bool {
+    guard let source = CGImageSourceCreateWithData(png as CFData, nil),
+      let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+    else { return false }
+    let width = cgImage.width
+    let height = cgImage.height
+    guard width > 0, height > 0 else { return false }
+    let bytesPerPixel = 4
+    var pixels = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+    return pixels.withUnsafeMutableBytes { raw -> Bool in
+      guard
+        let context = CGContext(
+          data: raw.baseAddress,
+          width: width,
+          height: height,
+          bitsPerComponent: 8,
+          bytesPerRow: width * bytesPerPixel,
+          space: colorSpace,
+          bitmapInfo: bitmapInfo),
+        let buffer = raw.baseAddress?.assumingMemoryBound(to: UInt8.self)
+      else { return false }
+      context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+      var count = 0
+      let total = width * height
+      for i in 0..<total {
+        let o = i * bytesPerPixel
+        let a = buffer[o + 3]
+        if a < 40 { continue }
+        let r = buffer[o]
+        let g = buffer[o + 1]
+        let b = buffer[o + 2]
+        let maxc = max(r, g, b)
+        let minc = min(r, g, b)
+        if maxc < 40 { continue }
+        let sat = maxc == 0 ? 0 : Int(maxc - minc) * 100 / Int(maxc)
+        if sat < 22 { continue }
+        count += 1
+        if count >= minPixels { return true }
+      }
+      return false
+    }
+  }
+
   private static func fetchData(_ url: URL) async -> Data? {
+    await fetchData(url, timeout: precipProbeTimeout)
+  }
+
+  private static func fetchData(_ url: URL, timeout: TimeInterval) async -> Data? {
     var request = URLRequest(url: url)
-    request.timeoutInterval = precipProbeTimeout
+    request.timeoutInterval = timeout
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     do {
       let (data, response) = try await URLSession.shared.data(for: request)
