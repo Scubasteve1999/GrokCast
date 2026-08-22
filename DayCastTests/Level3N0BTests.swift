@@ -312,20 +312,25 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertFalse(iem.paintsPolarRadials)
   }
 
-  func testPolarCrossfadeMatchesLiveRasterFade() {
+  func testPolarCrossfadeIsSnappyWhilePlaying() {
     XCTAssertEqual(
-      Level3PolarCrossfade.durationSeconds(isAnimating: true), 0.7, accuracy: 0.0001)
+      Level3PolarCrossfade.durationSeconds(isAnimating: true), 0.20, accuracy: 0.0001)
     XCTAssertEqual(
       Level3PolarCrossfade.durationSeconds(isAnimating: false), 0.32, accuracy: 0.0001)
     XCTAssertEqual(
       MapsGLRadarPalette.liveRasterFadeDurationMs(
-        provider: .iem, isAnimating: true, isFuture: false) / 1000,
-      Level3PolarCrossfade.durationSeconds(isAnimating: true),
-      accuracy: 0.0001)
-    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 0, duration: 0.7), 0)
+        provider: .iem, isAnimating: true, isFuture: false),
+      700,
+      accuracy: 0.0001,
+      "IEM PNG fallback keeps the 700 ms raster fade")
+    XCTAssertLessThan(
+      Level3PolarCrossfade.durationSeconds(isAnimating: true) / 0.72,
+      0.40,
+      "2x hold is 720 ms; polar play fade must not dual-draw the whole interval")
+    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 0, duration: 0.2), 0)
     XCTAssertEqual(
-      Level3PolarCrossfade.progress(elapsed: 0.35, duration: 0.7), 0.5, accuracy: 0.001)
-    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 1, duration: 0.7), 1)
+      Level3PolarCrossfade.progress(elapsed: 0.1, duration: 0.2), 0.5, accuracy: 0.001)
+    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 1, duration: 0.2), 1)
     XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 0.1, duration: 0), 1)
     let mid = Level3PolarCrossfade.layerOpacities(progress: 0.5, global: 1)
     XCTAssertEqual(mid.outgoing, 0.5, accuracy: 0.001)
@@ -336,6 +341,14 @@ final class Level3N0BTests: XCTestCase {
     let end = Level3PolarCrossfade.layerOpacities(progress: 1, global: 0.8)
     XCTAssertEqual(end.outgoing, 0, accuracy: 0.001)
     XCTAssertEqual(end.incoming, 0.8, accuracy: 0.001)
+    let settled = Level3PolarCrossfade.drawOpacities(
+      progress: 1, global: 0.8, isFading: false)
+    XCTAssertEqual(settled.front, 0.8, accuracy: 0.001)
+    XCTAssertEqual(settled.back, 0, accuracy: 0.001)
+    let fading = Level3PolarCrossfade.drawOpacities(
+      progress: 0.5, global: 1, isFading: true)
+    XCTAssertEqual(fading.front, 0.5, accuracy: 0.001)
+    XCTAssertEqual(fading.back, 0.5, accuracy: 0.001)
   }
 
   func testMeshCacheCoversLiveLoopAndStaysWarm() {
@@ -379,6 +392,19 @@ final class Level3N0BTests: XCTestCase {
     cache.keepOnly(keys: [Level3N0BSweepStore.exactKey(site: a.siteID, timestamp: a.timestamp)])
     XCTAssertNotNil(cache.cached(site: a.siteID, timestamp: a.timestamp))
     XCTAssertNil(cache.cached(site: b.siteID, timestamp: b.timestamp))
+  }
+
+  func testWarmPendingCompletesAndWakesWaiters() async {
+    let cache = Level3PolarMeshCache.shared
+    cache.removeAll()
+    defer { cache.removeAll() }
+    XCTAssertTrue(cache.isWarmComplete)
+    cache.markWarmPending()
+    XCTAssertFalse(cache.isWarmComplete)
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 146, bins: 4)
+    await cache.warmPlayLoopConcurrent([sweep])
+    XCTAssertTrue(cache.isWarmComplete)
+    XCTAssertNotNil(cache.cached(site: sweep.siteID, timestamp: sweep.timestamp))
   }
 
   func testMeshCacheCoalescesConcurrentBuilds() {

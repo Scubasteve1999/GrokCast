@@ -55,6 +55,18 @@ final class RadarPlaybackTests: XCTestCase {
     XCTAssertEqual(playback.currentIndex, 1, "the loop walks toward now")
   }
 
+  func testAdvanceHoldsWhileCanAdvanceIsFalse() {
+    let playback = makePlayback(frames: 5)
+    playback.start()
+    XCTAssertEqual(playback.currentIndex, 0)
+    playback.canAdvance = { false }
+    playback.advance()
+    XCTAssertEqual(playback.currentIndex, 0)
+    playback.canAdvance = { true }
+    playback.advance()
+    XCTAssertEqual(playback.currentIndex, 1)
+  }
+
   func testStartFromMidLoopKeepsTheCurrentFrame() {
     let playback = makePlayback(frames: 18)
     playback.currentIndex = 7

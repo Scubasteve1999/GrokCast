@@ -161,11 +161,16 @@ enum Level3PolarGateMesh {
 }
 
 /// Dual-mesh opacity lerp between two hard-NWS trapezoid volumes.
-/// Matches live IEM raster fade. Does not blend dBZ.
+/// Play fade is polar-specific and short so 2x does not dual-draw ~860k tris
+/// for the whole frame hold. Stills keep the IEM still duration. No dBZ blend.
 enum Level3PolarCrossfade {
+  /// Snappy enough that a 720 ms 2x hold is mostly a single mesh.
+  static let playDurationSeconds: TimeInterval = 0.20
+  /// Matches live IEM still raster fade.
+  static let stillDurationSeconds: TimeInterval = 0.32
+
   static func durationSeconds(isAnimating: Bool) -> TimeInterval {
-    MapsGLRadarPalette.liveRasterFadeDurationMs(
-      provider: .iem, isAnimating: isAnimating, isFuture: false) / 1000
+    isAnimating ? playDurationSeconds : stillDurationSeconds
   }
 
   static func progress(elapsed: TimeInterval, duration: TimeInterval) -> Float {
@@ -178,6 +183,16 @@ enum Level3PolarCrossfade {
   {
     let t = min(1, max(0, progress))
     return (global * (1 - t), global * t)
+  }
+
+  /// Settled volumes live on the front mesh. Fade-end opacities put weight on
+  /// the incoming/back slot, so a non-fading draw must not use them.
+  static func drawOpacities(progress: Float, global: Float, isFading: Bool)
+    -> (front: Float, back: Float)
+  {
+    if !isFading { return (global, 0) }
+    let ops = layerOpacities(progress: progress, global: global)
+    return (ops.outgoing, ops.incoming)
   }
 }
 
@@ -194,6 +209,8 @@ final class Level3PolarMeshCache: @unchecked Sendable {
   private var building = Set<String>()
   private var hitCount = 0
   private var missCount = 0
+  private var warmPending = false
+  private var warmWaiters: [CheckedContinuation<Void, Never>] = []
 
   private init() {}
 
@@ -204,6 +221,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
       touchLocked(key)
       hitCount += 1
       condition.unlock()
+      Level3PolarGPUCache.shared.ingest(key: key, mesh: hit)
       return hit
     }
     if building.contains(key) {
@@ -214,6 +232,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
         touchLocked(key)
         hitCount += 1
         condition.unlock()
+        Level3PolarGPUCache.shared.ingest(key: key, mesh: hit)
         return hit
       }
     }
@@ -236,6 +255,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     missCount += 1
     condition.broadcast()
     condition.unlock()
+    Level3PolarGPUCache.shared.ingest(key: key, mesh: built)
     return built
   }
 
@@ -246,23 +266,64 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     return byKey[key]
   }
 
+  func snapshot() -> [(String, Level3PolarGateMesh.Mesh)] {
+    condition.lock()
+    defer { condition.unlock() }
+    return order.compactMap { key in
+      byKey[key].map { (key, $0) }
+    }
+  }
+
+  var isWarmComplete: Bool {
+    condition.lock()
+    defer { condition.unlock() }
+    return !warmPending
+  }
+
+  func markWarmPending() {
+    condition.lock()
+    warmPending = true
+    condition.unlock()
+  }
+
+  func waitUntilWarm() async {
+    await withCheckedContinuation { continuation in
+      condition.lock()
+      if !warmPending {
+        condition.unlock()
+        continuation.resume()
+        return
+      }
+      warmWaiters.append(continuation)
+      condition.unlock()
+    }
+  }
+
   /// Newest first (Live open still), then oldest→newest so Play's first frames
   /// are warm before the 8-slot LRU hitch can start.
   func warmPlayLoop(_ sweeps: [Level3N0BSweep]) {
-    guard let newest = sweeps.last else { return }
+    guard let newest = sweeps.last else {
+      finishWarm()
+      return
+    }
     _ = mesh(for: newest)
     for sweep in sweeps.dropLast() {
       _ = mesh(for: sweep)
     }
+    Level3PolarGPUCache.shared.prefetchCachedCPUMeshes()
+    finishWarm()
   }
 
   func warmPlayLoopConcurrent(_ sweeps: [Level3N0BSweep]) async {
-    guard let newest = sweeps.last else { return }
+    guard let newest = sweeps.last else {
+      finishWarm()
+      return
+    }
     _ = mesh(for: newest)
     let rest = Array(sweeps.dropLast())
     await withTaskGroup(of: Void.self) { group in
       var next = 0
-      let width = min(2, rest.count)
+      let width = min(4, rest.count)
       func enqueue() {
         guard next < rest.count else { return }
         let sweep = rest[next]
@@ -276,7 +337,9 @@ final class Level3PolarMeshCache: @unchecked Sendable {
         enqueue()
       }
     }
-    radarLog("[Level3] polar mesh cache warm \(sweeps.count) frames")
+    Level3PolarGPUCache.shared.prefetchCachedCPUMeshes()
+    finishWarm()
+    radarLog("[Level3] polar mesh cache warm \(sweeps.count) frames gpu=\(Level3PolarGPUCache.shared.stats().count)")
   }
 
   func keepOnly(keys: Set<String>) {
@@ -287,6 +350,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
       return true
     }
     condition.unlock()
+    Level3PolarGPUCache.shared.keepOnly(keys: keys)
   }
 
   func removeAll() {
@@ -296,8 +360,13 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     building.removeAll(keepingCapacity: true)
     hitCount = 0
     missCount = 0
+    warmPending = false
+    let waiters = warmWaiters
+    warmWaiters.removeAll()
     condition.broadcast()
     condition.unlock()
+    waiters.forEach { $0.resume() }
+    Level3PolarGPUCache.shared.removeAll()
   }
 
   func stats() -> (count: Int, hits: Int, misses: Int) {
@@ -311,6 +380,15 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     hitCount = 0
     missCount = 0
     condition.unlock()
+  }
+
+  private func finishWarm() {
+    condition.lock()
+    warmPending = false
+    let waiters = warmWaiters
+    warmWaiters.removeAll()
+    condition.unlock()
+    waiters.forEach { $0.resume() }
   }
 
   private func touchLocked(_ key: String) {

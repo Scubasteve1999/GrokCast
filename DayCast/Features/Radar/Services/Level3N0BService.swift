@@ -38,6 +38,7 @@ enum Level3N0BService {
             Level3N0BSweepStore.exactKey(site: $0.siteID, timestamp: $0.timestamp)
           })
         Level3PolarMeshCache.shared.keepOnly(keys: keys)
+        Level3PolarMeshCache.shared.markWarmPending()
         Task.detached(priority: .userInitiated) {
           await Level3PolarMeshCache.shared.warmPlayLoopConcurrent(sweeps)
         }

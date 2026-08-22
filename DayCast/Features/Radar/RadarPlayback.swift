@@ -28,8 +28,11 @@ final class RadarPlayback {
 
   var frameCount: () -> Int = { 0 }
   var frameTimestamps: () -> [Date] = { [] }
+  /// Polar Site Doppler holds the playhead until the next volume's CPU mesh is warm.
+  var canAdvance: () -> Bool = { true }
 
   private var timer: Timer?
+  private var advanceHoldStarted: CFAbsoluteTime?
 
   /// Loops completed since playback last started. Reset in `start()`, which every
   /// resume path funnels through (play button, scrub auto-resume, tab entry, mode switch).
@@ -86,6 +89,7 @@ final class RadarPlayback {
     currentIndex = Self.playheadIndexForStart(currentIndex: currentIndex, count: count)
     timer?.invalidate()
     completedLoops = 0
+    advanceHoldStarted = nil
     isAnimating = true
     scheduleNextTick()
   }
@@ -94,6 +98,7 @@ final class RadarPlayback {
     isAnimating = false
     timer?.invalidate()
     timer = nil
+    advanceHoldStarted = nil
   }
 
   func toggle() {
@@ -115,6 +120,8 @@ final class RadarPlayback {
       stop()
       return
     }
+
+    if !allowAdvance() { return }
 
     guard currentIndex >= count - 1 else {
       currentIndex += 1
@@ -158,11 +165,26 @@ final class RadarPlayback {
     }
   }
 
+  private func allowAdvance() -> Bool {
+    if canAdvance() {
+      advanceHoldStarted = nil
+      return true
+    }
+    let now = CFAbsoluteTimeGetCurrent()
+    if advanceHoldStarted == nil { advanceHoldStarted = now }
+    if now - (advanceHoldStarted ?? now) >= 8 {
+      advanceHoldStarted = nil
+      return true
+    }
+    return false
+  }
+
   private func scheduleNextTick() {
     timer?.invalidate()
     guard isAnimating else { return }
 
-    let interval = intervalUntilNextFrame()
+    let holding = !canAdvance()
+    let interval = holding ? 0.05 : intervalUntilNextFrame()
     let t = Timer(timeInterval: interval, repeats: false) { [weak self] _ in
       Task { @MainActor in
         guard let self, self.isAnimating else { return }
@@ -170,7 +192,7 @@ final class RadarPlayback {
         self.scheduleNextTick()
       }
     }
-    t.tolerance = min(0.1, interval * 0.1)
+    t.tolerance = holding ? 0.01 : min(0.1, interval * 0.1)
     RunLoop.main.add(t, forMode: .common)
     timer = t
   }

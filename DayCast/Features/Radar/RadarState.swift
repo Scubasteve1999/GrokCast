@@ -161,7 +161,9 @@ final class RadarState {
     }
   }
 
-  var isAnimating: Bool { playback.isAnimating }
+  var isAnimating: Bool { playback.isAnimating || polarPlayWaitTask != nil }
+
+  private var polarPlayWaitTask: Task<Void, Never>?
 
   /// Clamped on the way in, because `RadarPreferences` clamps on write and
   /// `RadarPlayback.playbackSpeed` is a plain `var` that does not. Assigning raw
@@ -274,11 +276,35 @@ final class RadarState {
     playback.frameCount = { [weak self] in self?.activeFrameCount ?? 0 }
     playback.frameTimestamps = { [weak self] in self?.activeTimestamps ?? [] }
     playback.playbackSpeed = RadarPreferences.playbackSpeed
+    playback.canAdvance = { [weak self] in
+      self?.polarPlayCanAdvance ?? true
+    }
+  }
+
+  /// Hold 2x Site Doppler until the next volume's trapezoid mesh is already in cache.
+  private var polarPlayCanAdvance: Bool {
+    let frames = activeFrames
+    guard frames.count > 1,
+      let current = currentFrame,
+      current.paintsPolarRadials
+    else { return true }
+    let nextIndex = playback.currentIndex >= frames.count - 1 ? 0 : playback.currentIndex + 1
+    let next = frames[nextIndex]
+    let site = activeSiteProductSite?.id ?? nearestSite?.id
+    guard let site else { return true }
+    if Level3N0BSweepStore.shared.sweep(site: site, timestamp: next.timestamp) == nil {
+      return true
+    }
+    return Level3PolarMeshCache.shared.cached(site: site, timestamp: next.timestamp) != nil
   }
 
   func start() { playback.start() }
 
-  func stop() { playback.stop() }
+  func stop() {
+    polarPlayWaitTask?.cancel()
+    polarPlayWaitTask = nil
+    playback.stop()
+  }
 
   /// Tab entry and resume: newest live scan so SCAN is about now, not a 2-hour-old
   /// loop start. Leaves playback paused — Play from newest starts at the oldest
@@ -286,7 +312,7 @@ final class RadarState {
   func presentLiveNow() {
     guard !showsFuture, timeline.hasLive else { return }
     playback.landOnNewestLiveFrame(count: timeline.live.count)
-    playback.stop()
+    stop()
   }
 
   /// Live tab entry / location change: re-evaluate dry-site auto National.
@@ -398,7 +424,7 @@ final class RadarState {
       savedWasFuture: committedIsFuture,
       savedForecastAvailability: forecastTileAvailability
     )
-    playback.stop()
+    stop()
   }
 
   private func restorePlaybackIndex(savedIndex: Int, wasFuture: Bool) {
@@ -425,18 +451,40 @@ final class RadarState {
 extension RadarState {
 
   func togglePlayback() {
-    if playback.isAnimating {
+    if playback.isAnimating || polarPlayWaitTask != nil {
       // Live loops wrap to older frames; pausing mid-loop made SCAN look hours-stale
       // even when the newest volume is fresh. Snap Live back to latest on pause.
-      playback.stop()
+      stop()
       if !showsFuture, timeline.hasLive {
         playback.currentIndex = max(0, timeline.live.count - 1)
       }
     } else if activeFrameCount > 0 {
-      playback.start()
+      startPolarAwarePlayback()
     } else {
       playback.isAnimating = false
     }
+  }
+
+  private func startPolarAwarePlayback() {
+    Level3PolarPlayStats.reset()
+    let polar = currentFrame?.paintsPolarRadials == true
+    if polar, !Level3PolarMeshCache.shared.isWarmComplete {
+      radarLog("[Level3] polar play waiting for mesh/GPU warm")
+      polarPlayWaitTask = Task { @MainActor [weak self] in
+        let t0 = CFAbsoluteTimeGetCurrent()
+        await Level3PolarMeshCache.shared.waitUntilWarm()
+        let waitMs = (CFAbsoluteTimeGetCurrent() - t0) * 1000
+        guard let self, !Task.isCancelled else { return }
+        self.polarPlayWaitTask = nil
+        radarLog("[Level3] polar play after warm wait=\(Int(waitMs.rounded()))ms")
+        self.playback.start()
+      }
+      return
+    }
+    if polar {
+      radarLog("[Level3] polar play warm-complete→play delay=0ms")
+    }
+    playback.start()
   }
 
   func setFutureMode(_ isFuture: Bool) {

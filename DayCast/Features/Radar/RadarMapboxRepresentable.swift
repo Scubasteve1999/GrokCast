@@ -199,6 +199,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         self.layersInstalled = false
         self.polarLayerInstalled = false
         self.polarLayerFailed = false
+        self.polarDidNotifyReady = false
         self.lastAppliedFireSignature = nil
         self.lastAppliedWarningSignature = nil
         self.mapsGLHost.onLayerStateChange = { [weak self, weak mapView] in
@@ -225,6 +226,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private let polarHost = Level3PolarMetalHost()
     private var polarLayerInstalled = false
     private var polarLayerFailed = false
+    private var polarDidNotifyReady = false
     private var lastPolarOpacity: Float?
     private var lastPolarPrefetchIndex: Int?
     private var lastPolarPrefetchSite: String?
@@ -373,7 +375,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         isAnimating: radarState.isAnimating
       ) { [weak self, weak mapView] in
         guard let self, let mapView else { return }
-        self.refreshDesiredState(on: mapView)
+        if !self.polarDidNotifyReady {
+          self.polarDidNotifyReady = true
+          self.refreshDesiredState(on: mapView)
+        }
         mapView.mapboxMap.triggerRepaint()
       }
       prefetchPolarAhead(radarState)
