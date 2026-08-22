@@ -56,6 +56,32 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
     "natural-point-label",
   ]
 
+  /// Polar Metal sits immediately below the first of these that exists in
+  /// style order (bottom→top), so settlement + road labels paint above precip.
+  /// Fill / road casings stay under. Missing IDs are skipped.
+  /// Live Light (iPhone 16) matched `road-label-simple`; `road-label` and
+  /// settlement-* stay in the list for other styles.
+  static let polarUnderlayBelowCandidateIDs = [
+    "road-label",
+    "road-label-simple",
+    "settlement-subdivision-label",
+    "settlement-minor-label",
+    "settlement-major-label",
+    "settlement-label",
+  ]
+
+  /// First matching candidate in `styleLayerIDs` (style order). Nil if none.
+  static func polarUnderlayBelowLayerID(in styleLayerIDs: [String]) -> String? {
+    let wanted = Set(polarUnderlayBelowCandidateIDs)
+    return styleLayerIDs.first { wanted.contains($0) }
+  }
+
+  static func polarUnderlayLayerPosition(on mapView: MapView) -> LayerPosition? {
+    let ids = mapView.mapboxMap.allLayerIdentifiers.map(\.id)
+    guard let below = polarUnderlayBelowLayerID(in: ids) else { return nil }
+    return .below(below)
+  }
+
   /// Light-v11 only. Hybrid/Satellite keep their own labels. Missing IDs are skipped.
   func applyQuietWorkstation(to mapView: MapView) {
     guard self == .light else { return }

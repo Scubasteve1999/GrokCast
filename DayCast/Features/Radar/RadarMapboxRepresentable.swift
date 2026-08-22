@@ -425,7 +425,12 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         }
       }
       if polarLayerInstalled { return }
+      let position = RadarBaseMapStyle.polarUnderlayLayerPosition(on: mapView)
       if mapView.mapboxMap.layerExists(withId: Level3PolarMetalHost.layerID) {
+        if let position {
+          try? mapView.mapboxMap.moveLayer(
+            withId: Level3PolarMetalHost.layerID, to: position)
+        }
         polarLayerInstalled = true
         return
       }
@@ -433,8 +438,15 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         try mapView.mapboxMap.addCustomLayer(
           withId: Level3PolarMetalHost.layerID,
           layerHost: polarHost,
-          layerPosition: nil)
+          layerPosition: position)
         polarLayerInstalled = true
+        if let below = RadarBaseMapStyle.polarUnderlayBelowLayerID(
+          in: mapView.mapboxMap.allLayerIdentifiers.map(\.id))
+        {
+          radarLog("[Level3] polar Metal layer below \(below)")
+        } else {
+          radarLog("[Level3] polar Metal layer at default (no label ids)")
+        }
       } catch {
         polarLayerFailed = true
         radarLog("[Level3] polar Metal layer failed: \(error)")

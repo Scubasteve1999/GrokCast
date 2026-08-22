@@ -41,7 +41,7 @@ enum Level3N0BDecoder {
       let band = min(70, max(0, (Double(dbz) / 5).rounded(.down) * 5))
       if band < 15 { continue }
       guard let stop = stops.last(where: { $0.dbz <= band && $0.alpha > 0 }) else { continue }
-      table[b] = premul(hex: stop.hex, alpha: stop.alpha)
+      table[b] = premul(hex: stop.hex, alpha: MapsGLRadarPalette.polarUnderlayAlpha(forDbz: band))
     }
     return table
   }

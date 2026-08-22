@@ -23,6 +23,8 @@ enum MapsGLRadarPalette {
   /// Official NWS 16-level hex. 0 dBZ stays transparent so the map is not a
   /// painted sheet. Light bins are opaque enough to read without a watercolor
   /// wash; 20+ dBZ is solid so yellow/orange/red/purple cores punch.
+  /// National / MapsGL keep these alphas. Site Doppler uses
+  /// `polarUnderlayAlpha(forDbz:)` so towns/roads read through close-zoom precip.
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
     Stop(dbz: 5, hex: "#01A0F6", alpha: 0.92),
@@ -40,6 +42,28 @@ enum MapsGLRadarPalette {
     Stop(dbz: 65, hex: "#9955C9", alpha: 1),
     Stop(dbz: 70, hex: "#FFFFFF", alpha: 1),
   ]
+
+  /// Site Doppler / Level III only. Same discrete 5 dBZ hex as
+  /// `reflectivityStops`; light–moderate bins are translucent so labels and
+  /// basemap landmarks show through, cores stay strong. Do not interpolate.
+  static func polarUnderlayAlpha(forDbz dbz: Double) -> Double {
+    switch dbz {
+    case 15: return 0.42
+    case 20: return 0.50
+    case 25: return 0.58
+    case 30: return 0.66
+    case 35: return 0.76
+    case 40: return 0.85
+    case 45: return 0.92
+    case 50: return 0.95
+    case 55: return 0.97
+    case 60: return 0.98
+    case 65: return 0.99
+    case 70: return 1
+    default:
+      return dbz < 15 ? 0 : 1
+    }
+  }
 
   /// Explicit 5 dBZ breaks so MapsGL cannot fall back to a smooth gradient
   /// (`interval` default 0 interpolates). Same values as the painted stops.

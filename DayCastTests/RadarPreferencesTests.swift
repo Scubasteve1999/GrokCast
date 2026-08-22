@@ -389,6 +389,34 @@ final class RadarPreferencesTests: XCTestCase {
     )
     XCTAssertFalse(RadarBaseMapStyle.quietWorkstationHiddenLayerIDs.contains("road-label"))
     XCTAssertFalse(RadarBaseMapStyle.quietWorkstationHiddenLayerIDs.contains("settlement-label"))
+    XCTAssertEqual(
+      RadarBaseMapStyle.polarUnderlayBelowCandidateIDs.prefix(3).map { $0 },
+      ["road-label", "road-label-simple", "settlement-subdivision-label"]
+    )
+    XCTAssertTrue(RadarBaseMapStyle.polarUnderlayBelowCandidateIDs.contains("settlement-label"))
+  }
+
+  func testPolarMetalSitsBelowFirstMatchingLabelLayer() {
+    let lightV11 = [
+      "land", "water", "road", "road-label", "settlement-subdivision-label", "settlement-label",
+    ]
+    XCTAssertEqual(
+      RadarBaseMapStyle.polarUnderlayBelowLayerID(in: lightV11),
+      "road-label",
+      "lowest candidate so road + settlement labels stay above precip")
+    XCTAssertEqual(
+      RadarBaseMapStyle.polarUnderlayBelowLayerID(in: [
+        "land", "settlement-label", "country-label",
+      ]),
+      "settlement-label")
+    XCTAssertNil(
+      RadarBaseMapStyle.polarUnderlayBelowLayerID(in: ["land", "water", "poi-label"]),
+      "skip missing settlement/road labels")
+    XCTAssertEqual(
+      RadarBaseMapStyle.polarUnderlayBelowLayerID(in: [
+        "road", "road-label-simple", "settlement-major-label",
+      ]),
+      "road-label-simple")
   }
 
   func testSatellitePostcardMigratesToLightOnce() {

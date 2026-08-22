@@ -22,11 +22,14 @@ final class Level3N0BTests: XCTestCase {
     let rgba = Level3N0BDecoder.rgbaLUT(from: lut)
     XCTAssertEqual(rgba[86].3, 0, "10 dBZ cyan floor must not paint")
     XCTAssertEqual(rgba[2].3, 0)
-    XCTAssertGreaterThan(rgba[96].3, 200, "15 dBZ green stays")
+    let a15 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15)
+    XCTAssertEqual(rgba[96].3, UInt8((a15 * 255).rounded()), "15 dBZ green stays, underlay alpha")
     XCTAssertEqual(rgba[96].0, 0)
-    XCTAssertGreaterThan(rgba[96].1, 240, "15 dBZ is NWS #00FF00")
-    XCTAssertEqual(rgba[146].0, 255, "40 dBZ is NWS #FF9000")
-    XCTAssertEqual(rgba[146].1, 144)
+    XCTAssertEqual(rgba[96].1, UInt8((255 * a15).rounded()), "15 dBZ is premul NWS #00FF00")
+    let a40 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 40)
+    XCTAssertEqual(rgba[146].0, UInt8((255 * a40).rounded()), "40 dBZ is premul NWS #FF9000")
+    XCTAssertEqual(rgba[146].1, UInt8((144 * a40).rounded()))
+    XCTAssertEqual(rgba[146].3, UInt8((a40 * 255).rounded()))
   }
 
   func testPolarSampleFollowsAzimuthNotMercatorSquare() {
@@ -94,7 +97,8 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(sweep.radials.count, 1)
     XCTAssertEqual(sweep.gateByte(rangeMeters: 100, azimuth: 90), 146)
     XCTAssertEqual(sweep.rgbaLUT[Int(86)].3, 0)
-    XCTAssertGreaterThan(sweep.rgbaLUT[Int(96)].3, 200)
+    XCTAssertGreaterThan(sweep.rgbaLUT[Int(96)].3, 0)
+    XCTAssertLessThan(sweep.rgbaLUT[Int(96)].3, 160, "15 dBZ underlay is translucent")
   }
 
   func testDecodesLiveAWSFileIfPresent() throws {
@@ -188,6 +192,57 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertTrue(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: png, minPixels: 1))
   }
 
+  func testPolarUnderlayAlphasKeepHardHexAndTranslucentLightBins() {
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesSamples)
+    XCTAssertEqual(MapsGLRadarPalette.sampleSmoothing, 0)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 10), 0)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15), 0.42, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 35), 0.76, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45), 0.92, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 70), 1, accuracy: 0.0001)
+    XCTAssertLessThan(
+      MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15),
+      MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 15 }?.alpha ?? 1)
+    XCTAssertEqual(
+      MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 15 }?.alpha ?? -1,
+      0.99,
+      accuracy: 0.0001,
+      "National / MapsGL stays near-opaque")
+    XCTAssertEqual(MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 20 }?.alpha, 1)
+    XCTAssertEqual(MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 15 }?.hex, "#00FF00")
+    XCTAssertEqual(MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 45 }?.hex, "#FF0000")
+
+    let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
+    let rgba = Level3N0BDecoder.rgbaLUT(from: lut)
+    XCTAssertEqual(rgba[96].3, UInt8((0.42 * 255).rounded()))
+    XCTAssertLessThan(rgba[96].3, 140, "15 dBZ must not be a solid sheet")
+    let a45 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45)
+    XCTAssertGreaterThan(a45, 0.9)
+    let byte45 = 156
+    XCTAssertEqual(lut[byte45], 45, accuracy: 0.01)
+    XCTAssertEqual(rgba[byte45].3, UInt8((a45 * 255).rounded()))
+    XCTAssertEqual(rgba[byte45].0, UInt8((255 * a45).rounded()), "45 dBZ stays hard red")
+    XCTAssertEqual(rgba[byte45].1, 0)
+  }
+
+  func testPolarPremulTimesGlobalOpacityStaysPremul() {
+    let stopAlpha = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15)
+    let global = RadarPreferences.defaultRadarOpacity
+    let premulG = (255.0 * stopAlpha).rounded()
+    let premulA = (stopAlpha * 255).rounded()
+    let outG = premulG * global
+    let outA = premulA * global
+    XCTAssertGreaterThan(outA, 0)
+    let unpremulG = outG / outA * 255
+    XCTAssertEqual(unpremulG, 255, accuracy: 2, "no wash / white rays from opacity multiply")
+    XCTAssertLessThan(outA / 255, 0.55, "15 dBZ * default slider still shows underlay")
+
+    let coreAlpha = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45)
+    let coreA = (coreAlpha * 255).rounded() * global
+    XCTAssertGreaterThan(coreA / 255, 0.85, "red cores stay strong after slider")
+  }
+
   func testPolarResamplingStaysNearestAtStreetZoom() {
     XCTAssertEqual(MapsGLRadarPalette.level3DisplayMaxZoom, 14, accuracy: 0.0001)
     XCTAssertTrue(
@@ -240,9 +295,10 @@ final class Level3N0BTests: XCTestCase {
     let sweep = Self.spokeSweep(azimuth: 90, byte: 96, bins: 40)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.vertices.count, 0)
-    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a > 200 })
+    let a15 = UInt8((MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15) * 255).rounded())
+    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a == a15 })
     XCTAssertEqual(mesh.vertices.first?.r, 0)
-    XCTAssertGreaterThan(mesh.vertices.first?.g ?? 0, 240)
+    XCTAssertEqual(mesh.vertices.first?.g, a15, "premul #00FF00")
 
     let clear = Self.spokeSweep(azimuth: 90, byte: 86, bins: 40)
     let empty = Level3PolarGateMesh.build(sweep: clear)
