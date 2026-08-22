@@ -465,9 +465,9 @@ extension RadarState {
     return "\(site.id) offline — no recent \(product.shortCode) scans nearby"
   }
 
-  /// Restore mosaic Live only when the cached scans are still inside the
-  /// Live window. A 149m composite labeled Live is a fail — reload or
-  /// unavailable, do not paint it.
+  /// Restore mosaic Live only when the *newest* cached scan is still
+  /// presentable. A 149m composite labeled Live is a fail — reload or
+  /// unavailable, do not paint it. Older frames in a fresh loop are history.
   @discardableResult
   private func restoreCompositeLive() -> Bool {
     selectedProduct = .reflectivity
@@ -478,7 +478,8 @@ extension RadarState {
       composite.frames, availability: composite.availability, isSiteProduct: false)
   }
 
-  /// Keep only frames the HUD may call Live. Empty / too-old → unavailable.
+  /// Keep the ~1h loop when the newest scan is still Live. Empty / newest
+  /// past HUD stale → unavailable. Do not trim history to the stale cap.
   @discardableResult
   private func commitLiveFrames(
     _ frames: [RadarFrame],
@@ -551,7 +552,7 @@ extension RadarState {
       ? "\(load.site.id) (fallback from \(load.preferredSite.id))"
       : load.site.id
     radarLog(
-      "[RadarState] \(product.displayName) ready (\(load.frames.count) scans) — NWS \(via)"
+      "[RadarState] \(product.displayName) ready (\(timeline.live.count) loop / \(load.frames.count) listed) — NWS \(via)"
         + (load.isStale ? " STALE" : "")
     )
     return true

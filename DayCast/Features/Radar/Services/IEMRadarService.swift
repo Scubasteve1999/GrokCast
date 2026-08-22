@@ -107,7 +107,7 @@ final class IEMRadarService {
   static func loadSiteFrames(
     site: String,
     product: RadarProduct,
-    maxFrames: Int = 12
+    maxFrames: Int = RadarLivePresentation.siteLoopMaxFrames
   ) async -> [RadarFrame] {
     guard let code = product.iemCode else { return [] }
     return await loadRidgeFrames(
@@ -130,7 +130,7 @@ final class IEMRadarService {
     coordinate: CLLocationCoordinate2D,
     product: RadarProduct,
     preferredSite: Site? = nil,
-    maxFrames: Int = 12
+    maxFrames: Int = RadarLivePresentation.siteLoopMaxFrames
   ) async -> SiteFrameLoad? {
     guard let code = product.iemCode else { return nil }
 

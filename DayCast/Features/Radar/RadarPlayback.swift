@@ -43,8 +43,8 @@ final class RadarPlayback {
   /// to interrupt someone watching a storm, short enough to bound a tab nobody is
   /// looking at.
   ///
-  /// Measured against Xweather Live, which serves ~18 frames at the clamped 3.0s
-  /// interval and default 2.0x speed — a ~27s loop. Providers with fewer frames run
+  /// Measured against Xweather Live, which serves ~7 frames (~1h at 10m) at the
+  /// clamped 3.0s interval and default 2.0x speed. Providers with fewer frames run
   /// shorter, so this is a ceiling on the wall-clock cap, not a fixed duration.
   private static let maxLoops = 9
 

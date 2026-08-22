@@ -235,8 +235,10 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: true, keysPresent: true)
     )
-    XCTAssertEqual(RadarLivePresentation.mapsGLLiveLookback, 15 * 60, accuracy: 0.1)
+    XCTAssertEqual(RadarLivePresentation.mapsGLLiveLookback, 60 * 60, accuracy: 0.1)
+    XCTAssertEqual(RadarLivePresentation.mapsGLLiveLookback, RadarLivePresentation.loopWindow)
     XCTAssertLessThan(RadarLivePresentation.mapsGLLiveLookback, 3 * 3600)
+    XCTAssertGreaterThan(RadarLivePresentation.mapsGLLiveLookback, 15 * 60)
   }
 
   func testStormcellFilterIsSevereClassOnly() {

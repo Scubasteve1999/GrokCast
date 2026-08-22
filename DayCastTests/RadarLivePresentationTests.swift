@@ -34,18 +34,35 @@ final class RadarLivePresentationTests: XCTestCase {
     )
   }
 
-  func testLiveLoopDropsTheThreeHourArchive() {
+  func testLiveLoopKeepsAboutOneHourNotTheHudCap() {
     let now = Date()
     let frames = (0...17).map { step in
       frame(ageMinutes: (17 - step) * 10, now: now)
     }
     let live = RadarLivePresentation.liveFrames(frames, isSiteProduct: false, now: now)
-    XCTAssertFalse(live.isEmpty)
-    XCTAssertEqual(live.count, 2, "15m window at 10m steps is current + -10m")
+    XCTAssertEqual(RadarLivePresentation.mosaicLoopMaxFrames, 7)
+    XCTAssertEqual(RadarTimelineConfig.liveMaxFrames, 7)
+    XCTAssertEqual(live.count, 7, "1h window at 10m steps is current through -60m")
     XCTAssertTrue(
-      live.allSatisfy { now.timeIntervalSince($0.timestamp) <= 15 * 60 }
+      live.allSatisfy {
+        now.timeIntervalSince($0.timestamp) <= RadarLivePresentation.loopWindow
+      }
     )
+    XCTAssertFalse(live.contains { Int(now.timeIntervalSince($0.timestamp) / 60) >= 70 })
     XCTAssertFalse(live.contains { Int(now.timeIntervalSince($0.timestamp) / 60) >= 149 })
+    XCTAssertGreaterThan(
+      live.count, 2, "HUD 15m trim left 2 mosaic frames and deleted Play")
+  }
+
+  func testSiteLoopKeepsNativeHourNotTenMinuteHudCap() {
+    let now = Date()
+    let frames = (0...11).map { step in
+      frame(ageMinutes: (11 - step) * 5, now: now)
+    }
+    let live = RadarLivePresentation.liveFrames(frames, isSiteProduct: true, now: now)
+    XCTAssertEqual(live.count, 12, "12×5m N0B volumes are ~1h, not 1–2 HUD frames")
+    XCTAssertTrue(RadarLivePresentation.isPresentableAsLive(live, isSiteProduct: true, now: now))
+    XCTAssertEqual(Int(RadarLivePresentation.newestAge(live, now: now) / 60), 0)
   }
 
   func testSiteLiveWindowIsTighterThanMosaic() {
@@ -113,11 +130,42 @@ final class RadarLivePresentationTests: XCTestCase {
 
     XCTAssertFalse(state.timeline.live.isEmpty)
     XCTAssertNil(state.liveUnavailableMessage)
+    XCTAssertGreaterThanOrEqual(state.timeline.live.count, 6)
+    XCTAssertLessThanOrEqual(state.timeline.live.count, 7)
     XCTAssertTrue(
       state.timeline.live.allSatisfy {
-        now.timeIntervalSince($0.timestamp) <= RadarLivePresentation.mosaicStale
+        Date().timeIntervalSince($0.timestamp) <= RadarLivePresentation.loopWindow + 1
       }
     )
     XCTAssertEqual(state.currentIndex, state.timeline.live.count - 1)
+    XCTAssertEqual(
+      Int(now.timeIntervalSince(state.timeline.live.last!.timestamp) / 60), 0)
+    XCTAssertFalse(
+      state.timeline.live.contains {
+        Int(now.timeIntervalSince($0.timestamp) / 60) >= 149
+      })
+
+    state.playback.start()
+    XCTAssertTrue(state.isAnimating, "a 1h loop must be playable")
+    XCTAssertEqual(state.currentIndex, 0, "Play from newest walks oldest → now")
+    state.playback.stop()
+  }
+
+  @MainActor
+  func testOpenLandsOnNewestNotOldestLoopFrame() {
+    let now = Date()
+    let state = RadarState()
+    let frames = (0...11).map { step in
+      frame(ageMinutes: (11 - step) * 5, now: now)
+    }
+    state.seedCompositeCacheForTesting(frames: frames, loadedAt: now)
+    state.restoreCompositeLiveForTesting()
+    state.presentLiveNow()
+
+    XCTAssertEqual(state.currentIndex, state.timeline.live.count - 1)
+    XCTAssertFalse(state.isAnimating)
+    XCTAssertEqual(
+      Int(now.timeIntervalSince(state.currentFrameDate ?? .distantPast) / 60), 0,
+      "Live chip / open must not sit on a 149m or hour-old loop start")
   }
 }

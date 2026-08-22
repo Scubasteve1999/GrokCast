@@ -122,7 +122,7 @@ final class MapsGLRadarHost {
       applyVisibility(want, on: controller)
     }
     guard want else { return }
-    // A few minutes behind wall clock matches Live's newest Xweather scan.
+    // A few minutes behind wall clock matches Live mosaic's newest scan.
     let frameDate = now.addingTimeInterval(-8 * 60)
     if lastFrameDate != frameDate {
       lastFrameDate = frameDate
