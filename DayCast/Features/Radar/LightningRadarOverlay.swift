@@ -16,6 +16,17 @@ enum LightningRadarOverlay {
   static let boltColorMid = UIColor(red: 224 / 255, green: 236 / 255, blue: 248 / 255, alpha: 1)
   static let boltColorOldest = UIColor(red: 176 / 255, green: 190 / 255, blue: 208 / 255, alpha: 1)
 
+  /// Map scale of the 32pt SDF glyph. Soft/small vs launch 1.35 / 1.12 / 0.88.
+  static let boltIconSizeNewest = 0.86
+  static let boltIconSizeMid = 0.72
+  static let boltIconSizeOldest = 0.58
+
+  /// Dark halo punch, thinned so ice bolts sit in precip instead of shouting.
+  static let boltHaloWidthNewest = 1.15
+  static let boltHaloWidthMid = 0.80
+  static let boltHaloWidthOldest = 0.42
+  static let boltHaloBlur = 0.42
+
   static var boltColorExpression: Exp {
     Exp(.interpolate) {
       Exp(.linear)
@@ -45,65 +56,11 @@ enum LightningRadarOverlay {
       }
       if !style.layerExists(withId: layerID) {
         var layer = SymbolLayer(id: layerID, source: sourceID)
-        layer.iconImage = .constant(.name(iconImageID))
-        layer.iconAllowOverlap = .constant(true)
-        layer.iconIgnorePlacement = .constant(true)
-        layer.iconPadding = .constant(0)
-        layer.iconAnchor = .constant(.center)
-        layer.iconPitchAlignment = .constant(.viewport)
-        layer.iconRotationAlignment = .constant(.viewport)
-        layer.iconRotate = .expression(
-          Exp(.get) { "yaw" }
-        )
-        layer.iconSize = .expression(
-          Exp(.interpolate) {
-            Exp(.linear)
-            Exp(.get) { "ageMinutes" }
-            0
-            1.35
-            8
-            1.12
-            20
-            0.88
-          }
-        )
-        layer.iconColor = .expression(boltColorExpression)
-        layer.iconOpacity = .expression(
-          Exp(.interpolate) {
-            Exp(.linear)
-            Exp(.get) { "ageMinutes" }
-            0
-            1.0
-            8
-            0.78
-            20
-            0.42
-          }
-        )
-        // Dark halo so bolts punch through green precip and yellow warning fill.
-        layer.iconHaloColor = .constant(
-          StyleColor(UIColor(red: 5 / 255, green: 7 / 255, blue: 12 / 255, alpha: 1))
-        )
-        layer.iconHaloWidth = .expression(
-          Exp(.interpolate) {
-            Exp(.linear)
-            Exp(.get) { "ageMinutes" }
-            0
-            1.6
-            8
-            1.1
-            20
-            0.6
-          }
-        )
-        layer.iconHaloBlur = .constant(0.25)
-        layer.symbolSortKey = .expression(
-          Exp(.get) { "sortKey" }
-        )
+        applyBoltStyle(&layer)
         try style.addLayer(layer)
       } else {
         try style.updateLayer(withId: layerID, type: SymbolLayer.self) { layer in
-          layer.iconColor = .expression(boltColorExpression)
+          applyBoltStyle(&layer)
         }
       }
     } catch {
@@ -157,6 +114,7 @@ enum LightningRadarOverlay {
   }
 
   /// White silhouette for Mapbox SDF recolor (ice-white age fade + dark halo).
+  /// Same 6-point zig-zag family as launch; slimmer fill so weight reads softer.
   static func makeBoltImage() -> UIImage {
     let size = CGSize(width: 32, height: 32)
     let format = UIGraphicsImageRendererFormat()
@@ -164,18 +122,76 @@ enum LightningRadarOverlay {
     format.opaque = false
     let renderer = UIGraphicsImageRenderer(size: size, format: format)
     return renderer.image { _ in
-      let inset: CGFloat = 2
+      let inset: CGFloat = 3
       let r = CGRect(origin: .zero, size: size).insetBy(dx: inset, dy: inset)
       let path = UIBezierPath()
-      path.move(to: CGPoint(x: r.minX + r.width * 0.58, y: r.minY))
-      path.addLine(to: CGPoint(x: r.minX + r.width * 0.12, y: r.minY + r.height * 0.50))
-      path.addLine(to: CGPoint(x: r.minX + r.width * 0.46, y: r.minY + r.height * 0.50))
-      path.addLine(to: CGPoint(x: r.minX + r.width * 0.30, y: r.maxY))
-      path.addLine(to: CGPoint(x: r.minX + r.width * 0.90, y: r.minY + r.height * 0.34))
-      path.addLine(to: CGPoint(x: r.minX + r.width * 0.52, y: r.minY + r.height * 0.34))
+      path.move(to: CGPoint(x: r.minX + r.width * 0.56, y: r.minY + r.height * 0.02))
+      path.addLine(to: CGPoint(x: r.minX + r.width * 0.22, y: r.minY + r.height * 0.50))
+      path.addLine(to: CGPoint(x: r.minX + r.width * 0.48, y: r.minY + r.height * 0.50))
+      path.addLine(to: CGPoint(x: r.minX + r.width * 0.34, y: r.maxY - r.height * 0.02))
+      path.addLine(to: CGPoint(x: r.minX + r.width * 0.80, y: r.minY + r.height * 0.36))
+      path.addLine(to: CGPoint(x: r.minX + r.width * 0.52, y: r.minY + r.height * 0.36))
       path.close()
       UIColor.white.setFill()
       path.fill()
     }
+  }
+
+  private static func applyBoltStyle(_ layer: inout SymbolLayer) {
+    layer.iconImage = .constant(.name(iconImageID))
+    layer.iconAllowOverlap = .constant(true)
+    layer.iconIgnorePlacement = .constant(true)
+    layer.iconPadding = .constant(0)
+    layer.iconAnchor = .constant(.center)
+    layer.iconPitchAlignment = .constant(.viewport)
+    layer.iconRotationAlignment = .constant(.viewport)
+    layer.iconRotate = .expression(
+      Exp(.get) { "yaw" }
+    )
+    layer.iconSize = .expression(
+      Exp(.interpolate) {
+        Exp(.linear)
+        Exp(.get) { "ageMinutes" }
+        0
+        boltIconSizeNewest
+        8
+        boltIconSizeMid
+        20
+        boltIconSizeOldest
+      }
+    )
+    layer.iconColor = .expression(boltColorExpression)
+    layer.iconOpacity = .expression(
+      Exp(.interpolate) {
+        Exp(.linear)
+        Exp(.get) { "ageMinutes" }
+        0
+        1.0
+        8
+        0.78
+        20
+        0.42
+      }
+    )
+    // Dark halo so bolts punch through green precip and yellow warning fill.
+    layer.iconHaloColor = .constant(
+      StyleColor(UIColor(red: 5 / 255, green: 7 / 255, blue: 12 / 255, alpha: 1))
+    )
+    layer.iconHaloWidth = .expression(
+      Exp(.interpolate) {
+        Exp(.linear)
+        Exp(.get) { "ageMinutes" }
+        0
+        boltHaloWidthNewest
+        8
+        boltHaloWidthMid
+        20
+        boltHaloWidthOldest
+      }
+    )
+    layer.iconHaloBlur = .constant(boltHaloBlur)
+    layer.symbolSortKey = .expression(
+      Exp(.get) { "sortKey" }
+    )
   }
 }
