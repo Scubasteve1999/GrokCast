@@ -32,3 +32,16 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
 
   var analyticsName: String { rawValue }
 }
+
+/// Today scrolling rows. Error banner is chrome above cards, not a `FeedItem`.
+enum TodayFeedRow: Equatable, Identifiable {
+  case errorBanner
+  case item(FeedItem)
+
+  var id: String {
+    switch self {
+    case .errorBanner: "errorBanner"
+    case .item(let item): item.id
+    }
+  }
+}

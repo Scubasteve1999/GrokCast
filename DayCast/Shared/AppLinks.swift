@@ -32,6 +32,8 @@ enum DayCastAccessibility {
   enum Today {
     static let location = "daycast.today.location"
     static let temperature = "daycast.today.temperature"
+    static let updatedAt = "daycast.today.updatedAt"
+    static let errorBanner = "daycast.today.errorBanner"
     static let root = "daycast.today.root"
     static let takeOptions = "daycast.today.takeOptions"
   }

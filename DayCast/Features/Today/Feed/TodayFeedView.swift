@@ -66,9 +66,13 @@ struct TodayFeedView: View {
   private var hrrrContextForLocation: ShortTermPrecipContext? {
     guard let locID = store.currentLocation?.id.uuidString,
       shortTermStore.context.locationID == locID,
-      shortTermStore.context.hasHRRRSlots
+      shortTermStore.context.isUsableHRRR()
     else { return nil }
     return shortTermStore.context
+  }
+
+  private var feedRows: [TodayFeedRow] {
+    FeedAssembler.rows(items: feedItems, weatherError: store.weatherError)
   }
 
   private var currentMinutecast: MinutecastSummary {
@@ -104,14 +108,17 @@ struct TodayFeedView: View {
   var body: some View {
     ScrollView {
       LazyVStack(spacing: DesignTokens.Spacing.space16) {
-        ForEach(feedItems) { item in
-          feedCard(for: item)
-            .padding(.horizontal, DesignTokens.Spacing.space20)
-        }
-
-        if let error = store.weatherError, !error.isEmpty {
-          errorBanner(error)
-            .padding(.horizontal, DesignTokens.Spacing.space20)
+        ForEach(feedRows) { row in
+          switch row {
+          case .errorBanner:
+            if let error = store.weatherError, !error.isEmpty {
+              errorBanner(error)
+                .padding(.horizontal, DesignTokens.Spacing.space20)
+            }
+          case .item(let item):
+            feedCard(for: item)
+              .padding(.horizontal, DesignTokens.Spacing.space20)
+          }
         }
       }
       .padding(.top, chipBarHeight)
@@ -270,6 +277,7 @@ struct TodayFeedView: View {
     .padding(DesignTokens.Spacing.space8)
     .background(DesignTokens.Palette.danger.opacity(0.15))
     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
+    .accessibilityIdentifier(DayCastAccessibility.Today.errorBanner)
   }
 
   private func refreshAll() async {

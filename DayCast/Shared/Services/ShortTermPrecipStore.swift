@@ -68,14 +68,8 @@ final class ShortTermPrecipStore {
         summary: summary
       )
     } else if context.locationID == locationKey, context.hasHRRRSlots {
-      // Soft failure: keep last-good HRRR for this location.
-      context = ShortTermPrecipContext(
-        locationID: locationKey,
-        fetchedAt: Date(),
-        source: context.source,
-        slots: context.slots,
-        summary: context.summary
-      )
+      // Soft failure: keep last-good HRRR and original fetchedAt. Drop if older than ~45 min.
+      context = ShortTermPrecipContext.keepingLastGood(context, locationID: locationKey)
     } else {
       context = .empty(locationID: locationKey)
     }

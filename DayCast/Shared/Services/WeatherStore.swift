@@ -884,7 +884,7 @@ final class WeatherStore {
   /// NWS stays additive (alerts / station obs) — never mapped into `DayCastWeather`.
   private enum ForecastResolution {
     case fetched(DayCastWeather)
-    case lastGood(DayCastWeather)
+    case lastGood(DayCastWeather, Error)
     case failed(Error)
   }
 
@@ -894,12 +894,12 @@ final class WeatherStore {
       return .fetched(forecast)
     case .timedOut:
       if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
-        return .lastGood(lastGood)
+        return .lastGood(lastGood, URLError(.timedOut))
       }
       return .failed(URLError(.timedOut))
     case .failure(let error):
       if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
-        return .lastGood(lastGood)
+        return .lastGood(lastGood, error)
       }
       return .failed(error)
     }
@@ -935,10 +935,14 @@ final class WeatherStore {
       if rainAlertsEnabled {
         Task { await RainAlertService.checkAndNotify(weather: data, units: temperatureUnit) }
       }
-    case .lastGood(let data):
+    case .lastGood(let data, let error):
       guard currentLocation?.id == loc.id else { break }
       currentWeather = data
       syncScoreSurfacesFromCurrentWeather()
+      weatherError =
+        isOffline
+        ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
+        : OpenMeteoService.userFriendlyMessage(for: error)
     case .failed(let error):
       if currentWeather == nil, currentLocation?.id == loc.id {
         weatherError =
@@ -1255,7 +1259,9 @@ final class WeatherStore {
   @MainActor
   private func fetchWeatherWithoutSelecting(location: SavedLocation) async -> DayCastWeather? {
     switch await resolveForecast(for: location) {
-    case .fetched(let weather), .lastGood(let weather):
+    case .fetched(let weather):
+      return weather
+    case .lastGood(let weather, _):
       return weather
     case .failed:
       return nil

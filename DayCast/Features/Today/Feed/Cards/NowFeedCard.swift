@@ -9,85 +9,103 @@ struct NowFeedCard: View {
   var onTap: () -> Void
 
   var body: some View {
-    Button(action: onTap) {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        // Location chip (TWC-style pill)
-        HStack(spacing: 6) {
-          Image(systemName: "location.fill")
-            .font(DesignTokens.Typography.micro())
-          Text(store.currentLocation?.name ?? weather.location.name)
-            .font(DesignTokens.Typography.symbol(16))
-            .lineLimit(1)
-        }
-        .foregroundStyle(Color.white)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.38), in: Capsule())
-        .accessibilityIdentifier(DayCastAccessibility.Today.location)
+    TimelineView(.everyMinute) { context in
+      let now = context.date
+      let stale = WidgetRelativeTime.isStale(weather.fetchedAt, relativeTo: now)
+      let asOf = WidgetRelativeTime.updatedLabel(for: weather.fetchedAt, relativeTo: now)
+      let heroOpacity: Double = stale ? 0.7 : 1
 
-        // Hero row: giant temp | icon + condition
-        HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
-          Text(store.formatTemperatureShort(weather.currentTemp))
-            .font(DesignTokens.Typography.displayTemp())
-            .foregroundStyle(Color.white)
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(0.45)
-            .shadow(color: .black.opacity(0.35), radius: 10, y: 3)
-            .accessibilityIdentifier(DayCastAccessibility.Today.temperature)
-
-          Spacer(minLength: 8)
-
-          VStack(spacing: 8) {
-            Image(systemName: weather.symbolName)
-              .font(DesignTokens.Typography.widgetTemp(52))
-              .symbolRenderingMode(.monochrome)
-              .foregroundStyle(Color.white)
-              .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
-
-            Text(weather.conditionText)
-              .font(DesignTokens.Typography.headline())
-              .foregroundStyle(Color.white)
-              .multilineTextAlignment(.center)
-              .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
+      Button(action: onTap) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          // Location chip (TWC-style pill)
+          HStack(spacing: 6) {
+            Image(systemName: "location.fill")
+              .font(DesignTokens.Typography.micro())
+            Text(store.currentLocation?.name ?? weather.location.name)
+              .font(DesignTokens.Typography.symbol(16))
+              .lineLimit(1)
           }
-          .frame(minWidth: 100)
-        }
+          .foregroundStyle(Color.white)
+          .padding(.horizontal, 14)
+          .padding(.vertical, 10)
+          .background(Color.black.opacity(0.38), in: Capsule())
+          .accessibilityIdentifier(DayCastAccessibility.Today.location)
 
-        Text(
-          "Feels like \(store.formatTemperatureShort(weather.feelsLike))  |  H \(store.formatTemperatureShort(weather.high))  |  L \(store.formatTemperatureShort(weather.low))"
-        )
-        .font(DesignTokens.Typography.headline())
-        .foregroundStyle(Color.white.opacity(0.95))
-        .monospacedDigit()
-        .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
+          // Hero row: giant temp | icon + condition
+          HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
+            Text(store.formatTemperatureShort(weather.currentTemp))
+              .font(DesignTokens.Typography.displayTemp())
+              .foregroundStyle(Color.white)
+              .monospacedDigit()
+              .lineLimit(1)
+              .minimumScaleFactor(0.45)
+              .shadow(color: .black.opacity(0.35), radius: 10, y: 3)
+              .accessibilityIdentifier(DayCastAccessibility.Today.temperature)
 
-        // Score chip under hero (our product surface — still elevated)
-        HStack(spacing: DesignTokens.Spacing.space8) {
-          Image(systemName: score.icon)
+            Spacer(minLength: 8)
+
+            VStack(spacing: 8) {
+              Image(systemName: weather.symbolName)
+                .font(DesignTokens.Typography.widgetTemp(52))
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(Color.white)
+                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+
+              Text(weather.conditionText)
+                .font(DesignTokens.Typography.headline())
+                .foregroundStyle(Color.white)
+                .multilineTextAlignment(.center)
+                .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
+            }
+            .frame(minWidth: 100)
+          }
+          .opacity(heroOpacity)
+
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+            Text(
+              "Feels like \(store.formatTemperatureShort(weather.feelsLike))  |  H \(store.formatTemperatureShort(weather.high))  |  L \(store.formatTemperatureShort(weather.low))"
+            )
             .font(DesignTokens.Typography.headline())
-            .foregroundStyle(scoreAccent)
-          Text("\(score.value) · \(score.label)")
-            .font(DesignTokens.Typography.subsection())
-            .foregroundStyle(Color.white)
-          Spacer(minLength: 0)
-          Image(systemName: "chevron.right")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(Color.white.opacity(0.55))
+            .foregroundStyle(Color.white.opacity(0.95))
+            .monospacedDigit()
+            .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
+            .opacity(heroOpacity)
+
+            Text(asOf)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(stale ? DesignTokens.Palette.warning : Color.white.opacity(0.85))
+              .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
+              .accessibilityIdentifier(DayCastAccessibility.Today.updatedAt)
+          }
+
+          // Score chip under hero (our product surface — still elevated)
+          HStack(spacing: DesignTokens.Spacing.space8) {
+            Image(systemName: score.icon)
+              .font(DesignTokens.Typography.headline())
+              .foregroundStyle(scoreAccent)
+            Text("\(score.value) · \(score.label)")
+              .font(DesignTokens.Typography.subsection())
+              .foregroundStyle(Color.white)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(Color.white.opacity(0.55))
+          }
+          .padding(.horizontal, 16)
+          .padding(.vertical, 12)
+          .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+          .opacity(heroOpacity)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, DesignTokens.Spacing.space4)
+        .padding(.top, DesignTokens.Spacing.space8)
+        .padding(.bottom, DesignTokens.Spacing.space12)
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, DesignTokens.Spacing.space4)
-      .padding(.top, DesignTokens.Spacing.space8)
-      .padding(.bottom, DesignTokens.Spacing.space12)
+      .buttonStyle(.plain)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(accessibilitySummary(asOf: asOf))
+      .accessibilityAddTraits(.isButton)
     }
-    .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(accessibilitySummary)
-    .accessibilityAddTraits(.isButton)
   }
 
   private var scoreAccent: Color {
@@ -98,12 +116,12 @@ struct NowFeedCard: View {
     }
   }
 
-  private var accessibilitySummary: String {
+  private func accessibilitySummary(asOf: String) -> String {
     let place = store.currentLocation?.name ?? weather.location.name
     let temp = store.formatTemperatureShort(weather.currentTemp)
     let feels = store.formatTemperatureShort(weather.feelsLike)
     return
-      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low))). DayCast score \(score.value), \(score.label)."
+      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low))). \(asOf). DayCast score \(score.value), \(score.label)."
   }
 }
 
