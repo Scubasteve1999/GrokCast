@@ -15,17 +15,18 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
 
   var id: String { rawValue }
 
-  /// Product default order (TWC-style). Do not reorder casually — personalization comes later.
+  /// Storm-first glance: Now → Alerts → Next hour → Hourly → Daily, then secondaries.
+  /// Do not reorder casually — personalization comes later.
   static let defaultOrder: [FeedItem] = [
     .now,
     .alerts,
-    .aiInsight,
+    .precip,
     .hourly,
-    .radar,
     .daily,
+    .aiInsight,
+    .radar,
     .fire,
     .airQuality,
-    .precip,
     .sunMoon,
   ]
 

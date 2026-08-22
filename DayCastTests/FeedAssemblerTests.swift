@@ -31,8 +31,35 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .aiInsight, .hourly, .radar]
+      [.now, .hourly, .aiInsight, .radar]
     )
+  }
+
+  func testStormSnapshotFirstFiveAreGlanceCards() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 2,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: true,
+      hasAQI: true,
+      hasSunriseOrSunset: true,
+      showFireCard: true,
+      showAIInsight: true
+    )
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(
+      Array(items.prefix(5)),
+      [.now, .alerts, .precip, .hourly, .daily]
+    )
+    let dailyIndex = items.firstIndex(of: .daily)
+    let aiIndex = items.firstIndex(of: .aiInsight)
+    let radarIndex = items.firstIndex(of: .radar)
+    XCTAssertNotNil(dailyIndex)
+    XCTAssertNotNil(aiIndex)
+    XCTAssertNotNil(radarIndex)
+    XCTAssertLessThan(dailyIndex!, aiIndex!)
+    XCTAssertLessThan(dailyIndex!, radarIndex!)
   }
 
   func testEmptyWeatherHidesEverything() {
