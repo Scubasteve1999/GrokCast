@@ -626,7 +626,7 @@ struct RadarMiniLegend: View {
   }
 
   var showsVelocity: Bool
-  /// N0B keys 0/5/10 dBZ; National radar / MapsGL still paints them.
+  /// N0B and National both key 0/5/10 cyan-blue; legend starts at 15 green.
   var keysClearAir: Bool = false
   var style: Style = .panel
 
@@ -720,8 +720,8 @@ struct RadarMiniLegend: View {
   }
 }
 
-/// Vertical dBZ key on Live Radar. Stops match the paint: N0B keys 5/10
-/// cyan-blue, so those bands stay off the legend. National radar keeps them.
+/// Vertical dBZ key on Live Radar. Stops match the paint: 0/5/10 cyan-blue
+/// are keyed out on National and N0B, so the legend starts at 15 green.
 struct RadarMapColorbar: View {
   var keysClearAir: Bool = false
 
@@ -730,7 +730,7 @@ struct RadarMapColorbar: View {
       MapsGLRadarPalette.paintedReflectivityStops(keysClearAir: keysClearAir)
         .reversed())
     let ticks = Set(MapsGLRadarPalette.legendTicks(keysClearAir: keysClearAir))
-    let low = Int(stops.last?.dbz ?? (keysClearAir ? 15 : 5))
+    let low = Int(stops.last?.dbz ?? 15)
     let high = Int(stops.first?.dbz ?? 70)
     return VStack(alignment: .leading, spacing: 4) {
       Text("dBZ")

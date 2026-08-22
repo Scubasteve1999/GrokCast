@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 /// IEM RIDGE N0B is 8-bit reflectivity, including clear-air. Tiles bake every
 /// echo at alpha 255 — cyan/blue/slate and dusty khaki are not rain, they are
 /// the -32 to ~10 dBZ floor plus biological/ground clutter. MapsGL already
-/// zeros the 0 dBZ cyan stop; this keys the matching baked pixels to
+/// zeros the 0/5/10 dBZ cyan-blue stops; this keys the matching baked pixels to
 /// transparent on the PNG before Mapbox paints. Isolated leftover gates
 /// (speckle) drop. Organized green/yellow/orange/red stays.
 ///

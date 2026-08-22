@@ -8,7 +8,7 @@ Phone never downloads GRIB2. Simulator hits http://127.0.0.1:8765.
 
 NWS 5 dBZ LUT copied from MapsGLRadarPalette. Bilinear sample from GRIB
 into each XYZ tile, then LUT-snap (organic cell shapes, hard colors).
-No overlay pyramid. 0 dBZ alpha 0.
+No overlay pyramid. 0/5/10 dBZ alpha 0 — visible rain floors at 15 green.
 """
 from __future__ import annotations
 
@@ -31,12 +31,13 @@ from PIL import Image
 
 import eccodes
 
-# MapsGLRadarPalette.reflectivityStops — stepped 5 dBZ, 0 transparent.
-# Light-bin alphas stay readable, not a watercolor wash (was 0.85/0.90/0.94/0.97).
+# MapsGLRadarPalette.reflectivityStops — stepped 5 dBZ.
+# 0/5/10 cyan-blue keyed out (clear-air). Visible rain starts at 15 green.
+# Bilinear + LUT-snap still contours; no blue skirt around cells.
 STOPS = [
     (0, (0x00, 0xEC, 0xEC, 0)),
-    (5, (0x01, 0xA0, 0xF6, int(round(0.92 * 255)))),
-    (10, (0x00, 0x00, 0xF6, int(round(0.96 * 255)))),
+    (5, (0x01, 0xA0, 0xF6, 0)),
+    (10, (0x00, 0x00, 0xF6, 0)),
     (15, (0x00, 0xFF, 0x00, int(round(0.99 * 255)))),
     (20, (0x00, 0xC8, 0x00, 255)),
     (25, (0x00, 0x90, 0x00, 255)),
@@ -50,7 +51,7 @@ STOPS = [
     (65, (0x99, 0x55, 0xC9, 255)),
     (70, (0xFF, 0xFF, 0xFF, 255)),
 ]
-PAINT_VERSION = 3
+PAINT_VERSION = 4
 
 LUT_R = np.zeros(15, dtype=np.uint8)
 LUT_G = np.zeros(15, dtype=np.uint8)
@@ -102,7 +103,7 @@ def tile_xy_to_merc(z, x, y):
 
 def colorize_dbz(dbz):
     bins = np.zeros(dbz.shape, dtype=np.int16)
-    valid = np.isfinite(dbz) & (dbz >= 5.0) & (dbz < 9000)
+    valid = np.isfinite(dbz) & (dbz >= 15.0) & (dbz < 9000)
     bins[valid] = np.clip((dbz[valid] // 5).astype(np.int16), 0, 14)
     rgba = np.zeros(dbz.shape + (4,), dtype=np.uint8)
     rgba[..., 0] = LUT_R[bins]
@@ -232,7 +233,7 @@ def paint_tile(grid, west_lon, north_lat, dlon, dlat, z, x, y):
 
 def write_xyz_tiles(grid, west_lon, north_lat, dlon, dlat, zooms, dest_root: str) -> int:
     """Paint XYZ tiles by bilinear-sampling GRIB at each zoom, then LUT-snap."""
-    wet_rc = np.argwhere(np.isfinite(grid) & (grid >= 5.0) & (grid < 9000))
+    wet_rc = np.argwhere(np.isfinite(grid) & (grid >= 15.0) & (grid < 9000))
     if wet_rc.size == 0:
         return 0
     lats = north_lat - wet_rc[:, 0].astype(np.float64) * dlat

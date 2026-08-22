@@ -78,9 +78,9 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarPalette.reflectivityStops.first { $0.dbz == dbz }
     }
     XCTAssertEqual(stop(5)?.hex, "#01A0F6")
-    XCTAssertEqual(stop(5)?.alpha ?? -1, 0.92, accuracy: 0.0001)
+    XCTAssertEqual(stop(5)?.alpha, 0)
     XCTAssertEqual(stop(10)?.hex, "#0000F6")
-    XCTAssertEqual(stop(10)?.alpha ?? -1, 0.96, accuracy: 0.0001)
+    XCTAssertEqual(stop(10)?.alpha, 0)
     XCTAssertEqual(stop(15)?.hex, "#00FF00")
     XCTAssertEqual(stop(15)?.alpha ?? -1, 0.99, accuracy: 0.0001)
     XCTAssertEqual(stop(20)?.hex, "#00C800")
@@ -95,7 +95,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(stop(65)?.hex, "#9955C9")
     XCTAssertEqual(stop(70)?.hex, "#FFFFFF")
     XCTAssertEqual(stop(70)?.alpha, 1)
-    XCTAssertGreaterThan(stop(5)?.alpha ?? 0, 0.9)
+    XCTAssertEqual(stop(5)?.alpha, 0, "National keys 5 dBZ cyan so bilinear cannot grow a blue skirt")
     XCTAssertEqual(stop(30)?.alpha, 1)
     XCTAssertEqual(
       MapsGLRadarPalette.colorScaleBreaks, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70])
@@ -164,7 +164,7 @@ final class RadarPreferencesTests: XCTestCase {
   }
 
   func testLegendTicksReuseMapsGLPaletteStops() {
-    XCTAssertEqual(MapsGLRadarPalette.legendTickDbz, [5, 20, 35, 50, 65, 70])
+    XCTAssertEqual(MapsGLRadarPalette.legendTickDbz, [15, 20, 35, 50, 65, 70])
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
 
     let visible = MapsGLRadarPalette.visibleReflectivityStops
@@ -174,6 +174,9 @@ final class RadarPreferencesTests: XCTestCase {
     )
     XCTAssertTrue(visible.allSatisfy { $0.alpha > 0 })
     XCTAssertFalse(visible.contains { $0.dbz == 0 })
+    XCTAssertFalse(visible.contains { $0.dbz == 5 })
+    XCTAssertFalse(visible.contains { $0.dbz == 10 })
+    XCTAssertEqual(visible.first?.dbz, 15)
 
     for tick in MapsGLRadarPalette.legendTickDbz {
       let stop = visible.first { $0.dbz == tick }
@@ -200,8 +203,13 @@ final class RadarPreferencesTests: XCTestCase {
     }
 
     let mosaic = MapsGLRadarPalette.paintedReflectivityStops(keysClearAir: false)
-    XCTAssertEqual(mosaic.first?.dbz, 5)
-    XCTAssertTrue(mosaic.contains { $0.dbz == 10 })
+    XCTAssertEqual(mosaic.first?.dbz, 15)
+    XCTAssertEqual(mosaic.first?.hex, "#00FF00")
+    XCTAssertFalse(mosaic.contains { $0.dbz == 5 })
+    XCTAssertFalse(mosaic.contains { $0.dbz == 10 })
+    XCTAssertFalse(mosaic.contains { $0.hex == "#01A0F6" })
+    XCTAssertFalse(mosaic.contains { $0.hex == "#0000F6" })
+    XCTAssertEqual(MapsGLRadarPalette.legendTicks(keysClearAir: false).first, 15)
   }
 
   func testControlSheetStaysUpWhenMapOnlyIsPersisted() {

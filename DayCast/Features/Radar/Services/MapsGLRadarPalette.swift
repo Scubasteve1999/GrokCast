@@ -20,15 +20,15 @@ enum MapsGLRadarPalette {
   /// official 5 dBZ stops into a watercolor toy.
   static let interpolatesSamples = false
 
-  /// Official NWS 16-level hex. 0 dBZ stays transparent so the map is not a
-  /// painted sheet. Light bins are opaque enough to read without a watercolor
-  /// wash; 20+ dBZ is solid so yellow/orange/red/purple cores punch.
-  /// National / MapsGL keep these alphas. Site Doppler uses
-  /// `polarUnderlayAlpha(forDbz:)` so towns/roads read through close-zoom precip.
+  /// Official NWS 16-level hex. 0/5/10 dBZ cyan-blue stay alpha 0 so National
+  /// and MapsGL do not paint a blue clear-air skirt (bilinear + LUT-snap
+  /// grew one when 5/10 were opaque). Visible rain floors at 15 green.
+  /// 20+ dBZ is solid so yellow/orange/red/purple cores punch.
+  /// Site Doppler uses `polarUnderlayAlpha(forDbz:)` (same hex, stronger fill).
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
-    Stop(dbz: 5, hex: "#01A0F6", alpha: 0.92),
-    Stop(dbz: 10, hex: "#0000F6", alpha: 0.96),
+    Stop(dbz: 5, hex: "#01A0F6", alpha: 0),
+    Stop(dbz: 10, hex: "#0000F6", alpha: 0),
     Stop(dbz: 15, hex: "#00FF00", alpha: 0.99),
     Stop(dbz: 20, hex: "#00C800", alpha: 1),
     Stop(dbz: 25, hex: "#009000", alpha: 1),
@@ -44,20 +44,21 @@ enum MapsGLRadarPalette {
   ]
 
   /// Site Doppler / Level III only. Same discrete 5 dBZ hex as
-  /// `reflectivityStops`; light–moderate bins are translucent so labels and
-  /// basemap landmarks show through, cores stay strong. Do not interpolate.
+  /// `reflectivityStops`. Fill is saturated so cells read like the High-Res
+  /// green→red reference; labels still punch via halo (`text-opacity` 1 +
+  /// `#f5f5f5`). Do not interpolate.
   static func polarUnderlayAlpha(forDbz dbz: Double) -> Double {
     switch dbz {
-    case 15: return 0.42
-    case 20: return 0.50
-    case 25: return 0.58
-    case 30: return 0.66
-    case 35: return 0.76
-    case 40: return 0.85
-    case 45: return 0.92
-    case 50: return 0.95
-    case 55: return 0.97
-    case 60: return 0.98
+    case 15: return 0.80
+    case 20: return 0.86
+    case 25: return 0.90
+    case 30: return 0.93
+    case 35: return 0.95
+    case 40: return 0.96
+    case 45: return 0.97
+    case 50: return 0.98
+    case 55: return 0.98
+    case 60: return 0.99
     case 65: return 0.99
     case 70: return 1
     default:
@@ -124,9 +125,9 @@ enum MapsGLRadarPalette {
     return isFuture ? 400 : 320
   }
 
-  /// Painted bands only — skip the clear-air stop so the key matches the map.
-  /// National radar still paints 5/10 dBZ. N0B keys those to transparent, so
-  /// pass `keysClearAir: true` and the legend starts at 15 dBZ green.
+  /// Painted bands only — skip alpha-0 stops so the key matches the map.
+  /// National and N0B both key 0/5/10 cyan-blue. `keysClearAir: true` is the
+  /// site-product legend (same 15+ floor; skips the motion-tracks a11y note).
   static var visibleReflectivityStops: [Stop] {
     paintedReflectivityStops(keysClearAir: false)
   }
@@ -139,7 +140,7 @@ enum MapsGLRadarPalette {
   }
 
   /// Compact ticks a phone can read. Every value is a real painted stop.
-  static let legendTickDbz: [Double] = [5, 20, 35, 50, 65, 70]
+  static let legendTickDbz: [Double] = [15, 20, 35, 50, 65, 70]
 
   static func legendTicks(keysClearAir: Bool) -> [Double] {
     keysClearAir ? [15, 30, 45, 60, 70] : legendTickDbz
