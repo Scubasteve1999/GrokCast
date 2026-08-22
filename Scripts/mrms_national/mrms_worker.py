@@ -6,7 +6,8 @@ Phone never downloads GRIB2. Simulator hits http://127.0.0.1:8765.
   python3 Scripts/mrms_national/mrms_worker.py
   python3 Scripts/mrms_national/mrms_worker.py --once --no-serve
 
-NWS 5 dBZ LUT copied from MapsGLRadarPalette. Nearest resample. 0 dBZ alpha 0.
+NWS 5 dBZ LUT copied from MapsGLRadarPalette. Nearest sample from GRIB
+into each XYZ tile (no overlay pyramid). 0 dBZ alpha 0.
 """
 from __future__ import annotations
 
@@ -30,12 +31,13 @@ from PIL import Image
 import eccodes
 
 # MapsGLRadarPalette.reflectivityStops — stepped 5 dBZ, 0 transparent.
+# Light-bin alphas stay readable, not a watercolor wash (was 0.85/0.90/0.94/0.97).
 STOPS = [
     (0, (0x00, 0xEC, 0xEC, 0)),
-    (5, (0x01, 0xA0, 0xF6, int(0.85 * 255))),
-    (10, (0x00, 0x00, 0xF6, int(0.90 * 255))),
-    (15, (0x00, 0xFF, 0x00, int(0.94 * 255))),
-    (20, (0x00, 0xC8, 0x00, int(0.97 * 255))),
+    (5, (0x01, 0xA0, 0xF6, int(round(0.92 * 255)))),
+    (10, (0x00, 0x00, 0xF6, int(round(0.96 * 255)))),
+    (15, (0x00, 0xFF, 0x00, int(round(0.99 * 255)))),
+    (20, (0x00, 0xC8, 0x00, 255)),
     (25, (0x00, 0x90, 0x00, 255)),
     (30, (0xFF, 0xFF, 0x00, 255)),
     (35, (0xE7, 0xC0, 0x00, 255)),
@@ -47,6 +49,7 @@ STOPS = [
     (65, (0x99, 0x55, 0xC9, 255)),
     (70, (0xFF, 0xFF, 0xFF, 255)),
 ]
+PAINT_VERSION = 2
 
 LUT_R = np.zeros(15, dtype=np.uint8)
 LUT_G = np.zeros(15, dtype=np.uint8)
@@ -69,15 +72,6 @@ EMPTY_PNG = (
 )
 
 
-def lon_to_x(lon):
-    return lon * ORIGIN_SHIFT / 180.0
-
-
-def lat_to_y(lat):
-    lat = np.clip(lat, -85.05112878, 85.05112878)
-    return np.log(np.tan((90.0 + lat) * math.pi / 360.0)) / (math.pi / 180.0) * ORIGIN_SHIFT / 180.0
-
-
 def x_to_lon(x):
     return x * 180.0 / ORIGIN_SHIFT
 
@@ -86,12 +80,14 @@ def y_to_lat(y):
     return (180.0 / math.pi) * (2.0 * np.arctan(np.exp(y * math.pi / ORIGIN_SHIFT)) - math.pi / 2.0)
 
 
-def lonlat_to_tile(lon, lat, z):
+def lonlat_to_tile_vec(lons, lats, z):
     n = 2.0 ** z
-    x = int((lon + 180.0) / 360.0 * n)
-    lat_r = math.radians(lat)
-    y = int((1.0 - math.log(math.tan(lat_r) + 1.0 / math.cos(lat_r)) / math.pi) / 2.0 * n)
-    return x, y
+    xs = np.floor((lons + 180.0) / 360.0 * n).astype(np.int32)
+    lat_r = np.radians(np.clip(lats, -85.05112878, 85.05112878))
+    ys = np.floor(
+        (1.0 - np.log(np.tan(lat_r) + 1.0 / np.cos(lat_r)) / np.pi) / 2.0 * n
+    ).astype(np.int32)
+    return xs, ys
 
 
 def tile_xy_to_merc(z, x, y):
@@ -125,18 +121,6 @@ def sample_dbz(grid, west_lon, north_lat, dlon, dlat, lons, lats):
     out = np.full(lons.shape, np.nan, dtype=np.float32)
     out[valid] = grid[rows[valid], cols[valid]]
     return out
-
-
-def reproject_mercator(grid, west_lon, south_lat, east_lon, north_lat, dlon, dlat, width):
-    x0, x1 = lon_to_x(west_lon), lon_to_x(east_lon)
-    y0, y1 = lat_to_y(south_lat), lat_to_y(north_lat)
-    height = max(1, int(round(width * (y1 - y0) / (x1 - x0))))
-    xs = np.linspace(x0, x1, width, endpoint=False) + (x1 - x0) / (2 * width)
-    ys = np.linspace(y1, y0, height, endpoint=False) - (y1 - y0) / (2 * height)
-    xx, yy = np.meshgrid(xs, ys)
-    dbz = sample_dbz(grid, west_lon, north_lat, dlon, dlat, x_to_lon(xx), y_to_lat(yy))
-    rgba = colorize_dbz(dbz)
-    return rgba, x0, y0, x1, y1
 
 
 def load_grib(path):
@@ -202,102 +186,80 @@ def gunzip_to(src_gz: str, dest: str) -> None:
         shutil.copyfileobj(gz, out)
 
 
-def write_png(path: str, rgba: np.ndarray) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    Image.fromarray(rgba, "RGBA").save(path, "PNG", optimize=True)
+def paint_tile(grid, west_lon, north_lat, dlon, dlat, z, x, y):
+    """256px mercator tile, nearest sample from the native GRIB grid."""
+    mw, ms, me, mn = tile_xy_to_merc(z, x, y)
+    xs = mw + (np.arange(256, dtype=np.float64) + 0.5) * ((me - mw) / 256.0)
+    ys = mn + (np.arange(256, dtype=np.float64) + 0.5) * ((ms - mn) / 256.0)
+    xx, yy = np.meshgrid(xs, ys)
+    dbz = sample_dbz(grid, west_lon, north_lat, dlon, dlat, x_to_lon(xx), y_to_lat(yy))
+    rgba = colorize_dbz(dbz)
+    if int(rgba[..., 3].max()) == 0:
+        return None
+    return rgba
 
 
-def cut_tiles(rgba: np.ndarray, x0, y0, x1, y1, zooms, extra_bboxes, dest_root: str) -> int:
-    """Cut 256px XYZ tiles from a mercator overlay. Skip fully transparent tiles."""
-    overlay = Image.fromarray(rgba, "RGBA")
-    ow, oh = overlay.size
+def write_xyz_tiles(grid, west_lon, north_lat, dlon, dlat, zooms, dest_root: str) -> int:
+    """Paint XYZ tiles by nearest-sampling GRIB at each zoom. No overlay pyramid."""
+    wet_rc = np.argwhere(np.isfinite(grid) & (grid >= 5.0) & (grid < 9000))
+    if wet_rc.size == 0:
+        return 0
+    lats = north_lat - wet_rc[:, 0].astype(np.float64) * dlat
+    lons = west_lon + wet_rc[:, 1].astype(np.float64) * dlon
     written = 0
-    jobs = []
     for z in zooms:
-        tx0, ty0 = lonlat_to_tile(x_to_lon(x0) + 0.05, y_to_lat(y1) - 0.05, z)
-        tx1, ty1 = lonlat_to_tile(x_to_lon(x1) - 0.05, y_to_lat(y0) + 0.05, z)
-        jobs.append((z, min(tx0, tx1), max(tx0, tx1), min(ty0, ty1), max(ty0, ty1)))
-    for z, bbox in extra_bboxes:
-        w, s, e, n = bbox
-        ax, ay = lonlat_to_tile(w, n, z)
-        bx, by = lonlat_to_tile(e, s, z)
-        jobs.append((z, min(ax, bx), max(ax, bx), min(ay, by), max(ay, by)))
-
-    n_max = {}
-    for z, xmin, xmax, ymin, ymax in jobs:
+        xs, ys = lonlat_to_tile_vec(lons, lats, z)
         cap = (1 << z) - 1
-        xmin, xmax = max(0, xmin), min(cap, xmax)
-        ymin, ymax = max(0, ymin), min(cap, ymax)
-        key = z
-        prev = n_max.get(key)
-        if prev is None:
-            n_max[key] = [xmin, xmax, ymin, ymax]
-        else:
-            prev[0] = min(prev[0], xmin)
-            prev[1] = max(prev[1], xmax)
-            prev[2] = min(prev[2], ymin)
-            prev[3] = max(prev[3], ymax)
-
-    dx = x1 - x0
-    dy = y1 - y0
-    for z, (xmin, xmax, ymin, ymax) in n_max.items():
-        for x in range(xmin, xmax + 1):
-            for y in range(ymin, ymax + 1):
-                mw, ms, me, mn = tile_xy_to_merc(z, x, y)
-                px0 = (mw - x0) / dx * ow
-                px1 = (me - x0) / dx * ow
-                py0 = (y1 - mn) / dy * oh
-                py1 = (y1 - ms) / dy * oh
-                left, right = int(math.floor(px0)), int(math.ceil(px1))
-                top, bottom = int(math.floor(py0)), int(math.ceil(py1))
-                if right <= 0 or bottom <= 0 or left >= ow or top >= oh:
-                    continue
-                left = max(0, left)
-                top = max(0, top)
-                right = min(ow, right)
-                bottom = min(oh, bottom)
-                if right - left < 1 or bottom - top < 1:
-                    continue
-                crop = overlay.crop((left, top, right, bottom))
-                tile = crop.resize((256, 256), Image.NEAREST)
-                extrema = tile.getextrema()
-                if extrema is None or extrema[3][1] == 0:
-                    continue
-                path = os.path.join(dest_root, str(z), str(x), f"{y}.png")
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                tile.save(path, "PNG", optimize=True)
-                written += 1
-        print(f"    z{z} x {xmin}-{xmax} y {ymin}-{ymax}", flush=True)
+        xs = np.clip(xs, 0, cap)
+        ys = np.clip(ys, 0, cap)
+        tiles = np.unique(np.stack([xs, ys], axis=1), axis=0)
+        print(f"    z{z} wet-tiles {len(tiles)}", flush=True)
+        for tx, ty in tiles:
+            rgba = paint_tile(grid, west_lon, north_lat, dlon, dlat, z, int(tx), int(ty))
+            if rgba is None:
+                continue
+            path = os.path.join(dest_root, str(z), str(int(tx)), f"{int(ty)}.png")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            Image.fromarray(rgba).save(path, "PNG", optimize=True)
+            written += 1
     return written
 
 
-def paint_frame(grib_path: str, out_root: str, overlay_width: int, zooms, extra_bboxes) -> dict:
+def frame_is_current(dest: str) -> bool:
+    marker = os.path.join(dest, ".done")
+    if not os.path.exists(marker):
+        return False
+    with open(marker) as f:
+        text = f.read()
+    return f"v{PAINT_VERSION}" in text
+
+
+def paint_frame(grib_path: str, out_root: str, zooms) -> dict:
     grid, west, south, east, north, dlon, dlat, valid_time = load_grib(grib_path)
     fid = frame_id_from_dt(valid_time)
     dest = os.path.join(out_root, fid)
-    marker = os.path.join(dest, ".done")
-    if os.path.exists(marker):
+    if frame_is_current(dest):
         return {"id": fid, "t": valid_time.strftime("%Y-%m-%dT%H:%M:%SZ"), "skipped": True}
 
-    print(f"  paint {fid} grid {grid.shape}", flush=True)
-    rgba, x0, y0, x1, y1 = reproject_mercator(
-        grid, west, south, east, north, dlon, dlat, width=overlay_width
-    )
+    if os.path.isdir(dest):
+        shutil.rmtree(dest, ignore_errors=True)
+
+    print(f"  paint {fid} grid {grid.shape} zooms={zooms}", flush=True)
     os.makedirs(dest, exist_ok=True)
-    write_png(os.path.join(dest, "overlay.png"), rgba)
-    n_tiles = cut_tiles(rgba, x0, y0, x1, y1, zooms, extra_bboxes, dest)
+    n_tiles = write_xyz_tiles(grid, west, north, dlon, dlat, zooms, dest)
     meta = {
         "id": fid,
         "t": valid_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tiles": n_tiles,
-        "overlayWidth": int(rgba.shape[1]),
-        "overlayHeight": int(rgba.shape[0]),
+        "paintVersion": PAINT_VERSION,
+        "gridNi": int(grid.shape[1]),
+        "gridNj": int(grid.shape[0]),
     }
     with open(os.path.join(dest, "frame.json"), "w") as f:
         json.dump(meta, f, indent=2)
         f.write("\n")
-    with open(marker, "w") as f:
-        f.write(fid + "\n")
+    with open(os.path.join(dest, ".done"), "w") as f:
+        f.write(f"{fid} v{PAINT_VERSION}\n")
     print(f"  wrote {n_tiles} tiles for {fid}", flush=True)
     return meta
 
@@ -324,7 +286,7 @@ def write_timestamps(out_root: str, public_base: str, window: timedelta) -> dict
             {
                 "t": meta["t"],
                 "id": meta["id"],
-                "template": f"{public_base.rstrip('/')}/{meta['id']}/{{z}}/{{x}}/{{y}}.png",
+                "template": f"{public_base.rstrip('/')}/{meta['id']}/{{z}}/{{x}}/{{y}}.png?v={PAINT_VERSION}",
             }
         )
     frames.sort(key=lambda item: item["t"], reverse=True)
@@ -414,7 +376,6 @@ def run_tick(args) -> dict:
     window = timedelta(minutes=args.window_minutes)
     src_dir = os.path.join(args.out, "src")
     os.makedirs(src_dir, exist_ok=True)
-    extra = [(7, bbox) for bbox in args.z7_bboxes]
 
     listed = list_ncep_frames(window + timedelta(minutes=4))
     print(f"ncep listed {len(listed)} frames in window", flush=True)
@@ -424,10 +385,9 @@ def run_tick(args) -> dict:
     latest_grib = latest_gz[: -len(".gz")]
     try:
         download_grib(NCEP_DIR + LATEST_NAME, latest_gz, latest_grib)
-        latest_meta = paint_frame(
-            latest_grib, args.out, args.overlay_width, args.zooms, extra
-        )
+        latest_meta = paint_frame(latest_grib, args.out, args.zooms)
         print(f"latest {latest_meta.get('t')} skipped={latest_meta.get('skipped', False)}", flush=True)
+        write_timestamps(args.out, args.public_base, window)
     except Exception as exc:
         print(f"latest failed: {exc}", flush=True)
 
@@ -435,7 +395,7 @@ def run_tick(args) -> dict:
     listed = listed[-args.max_frames :]
     for dt, name in listed:
         fid = frame_id_from_dt(dt)
-        if os.path.exists(os.path.join(args.out, fid, ".done")):
+        if frame_is_current(os.path.join(args.out, fid)):
             continue
         gz = os.path.join(src_dir, name)
         grib = gz[: -len(".gz")]
@@ -443,7 +403,7 @@ def run_tick(args) -> dict:
         try:
             print(f"fetch {name}", flush=True)
             download_grib(url, gz, grib)
-            paint_frame(grib, args.out, args.overlay_width, args.zooms, extra)
+            paint_frame(grib, args.out, args.zooms)
         except Exception as exc:
             print(f"frame {name} failed: {exc}", flush=True)
 
@@ -462,18 +422,12 @@ def parse_args(argv):
     p.add_argument("--interval", type=int, default=120, help="Loop seconds")
     p.add_argument("--window-minutes", type=int, default=60)
     p.add_argument("--max-frames", type=int, default=32)
-    p.add_argument("--overlay-width", type=int, default=4096)
-    p.add_argument("--zooms", default="3,4,5,6")
+    p.add_argument("--zooms", default="3,4,5,6,7,8")
     p.add_argument("--once", action="store_true")
     p.add_argument("--no-serve", action="store_true")
     p.add_argument("--public-base", default="http://127.0.0.1:8765")
     args = p.parse_args(argv)
     args.zooms = [int(z) for z in args.zooms.split(",") if z.strip()]
-    # z7 regional: Gulf/Florida + Memphis/Olive Branch so dry-open zoom-in still has tiles.
-    args.z7_bboxes = [
-        (-95.0, 24.0, -79.0, 32.5),
-        (-93.5, 33.5, -86.5, 37.5),
-    ]
     return args
 
 

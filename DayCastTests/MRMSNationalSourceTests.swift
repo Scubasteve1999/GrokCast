@@ -88,6 +88,25 @@ final class MRMSNationalSourceTests: XCTestCase {
     XCTAssertFalse(RadarTileProvider.mrms.displayName.localizedCaseInsensitiveContains("MRMS"))
     XCTAssertFalse(RadarTileProvider.mrms.liveFooterLabel.localizedCaseInsensitiveContains("MRMS"))
     XCTAssertFalse(RadarProduct.reflectivity.displayName.localizedCaseInsensitiveContains("MRMS"))
+    XCTAssertEqual(RadarTileProvider.mrms.maxZoom, 8, accuracy: 0.0001)
+  }
+
+  func testMRMSRasterPaintIsNearestHardCut() {
+    XCTAssertTrue(MapsGLRadarPalette.liveRasterUsesNearestResampling)
+    XCTAssertEqual(
+      MapsGLRadarPalette.liveRasterFadeDurationMs(
+        provider: .mrms, isAnimating: true, isFuture: false),
+      0,
+      accuracy: 0.0001)
+    XCTAssertEqual(
+      MapsGLRadarPalette.liveRasterFadeDurationMs(
+        provider: .mrms, isAnimating: false, isFuture: false),
+      0,
+      accuracy: 0.0001)
+    XCTAssertGreaterThan(
+      MapsGLRadarPalette.liveRasterFadeDurationMs(
+        provider: .iem, isAnimating: true, isFuture: false),
+      0)
   }
 
   func testMapsGLRainOffWhenNationalUsesMRMS() {

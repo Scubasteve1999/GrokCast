@@ -21,14 +21,14 @@ enum MapsGLRadarPalette {
   static let interpolatesSamples = false
 
   /// Official NWS 16-level hex. 0 dBZ stays transparent so the map is not a
-  /// painted sheet. Light bins are opaque enough to read at CONUS scale;
-  /// 25+ dBZ is solid so yellow/orange/red/purple cores punch.
+  /// painted sheet. Light bins are opaque enough to read without a watercolor
+  /// wash; 20+ dBZ is solid so yellow/orange/red/purple cores punch.
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
-    Stop(dbz: 5, hex: "#01A0F6", alpha: 0.85),
-    Stop(dbz: 10, hex: "#0000F6", alpha: 0.90),
-    Stop(dbz: 15, hex: "#00FF00", alpha: 0.94),
-    Stop(dbz: 20, hex: "#00C800", alpha: 0.97),
+    Stop(dbz: 5, hex: "#01A0F6", alpha: 0.92),
+    Stop(dbz: 10, hex: "#0000F6", alpha: 0.96),
+    Stop(dbz: 15, hex: "#00FF00", alpha: 0.99),
+    Stop(dbz: 20, hex: "#00C800", alpha: 1),
     Stop(dbz: 25, hex: "#009000", alpha: 1),
     Stop(dbz: 30, hex: "#FFFF00", alpha: 1),
     Stop(dbz: 35, hex: "#E7C000", alpha: 1),
@@ -50,6 +50,19 @@ enum MapsGLRadarPalette {
   /// Live PNG (N0B + national fallback) keeps native bins. Linear resampling
   /// is what turned operational gates into mush.
   static let liveRasterUsesNearestResampling = true
+
+  /// MRMS National tiles are already 5 dBZ nearest bins. Mapbox raster fade-in
+  /// and dual-buffer crossfade smear those bins into jelly. Other PNG sources
+  /// keep the existing playback blend.
+  static func liveRasterFadeDurationMs(
+    provider: RadarTileProvider,
+    isAnimating: Bool,
+    isFuture: Bool
+  ) -> Double {
+    if provider == .mrms { return 0 }
+    if isAnimating { return isFuture ? 850 : 700 }
+    return isFuture ? 400 : 320
+  }
 
   /// Painted bands only — skip the clear-air stop so the key matches the map.
   /// National radar still paints 5/10 dBZ. N0B keys those to transparent, so

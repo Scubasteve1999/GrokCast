@@ -78,13 +78,13 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarPalette.reflectivityStops.first { $0.dbz == dbz }
     }
     XCTAssertEqual(stop(5)?.hex, "#01A0F6")
-    XCTAssertEqual(stop(5)?.alpha ?? -1, 0.85, accuracy: 0.0001)
+    XCTAssertEqual(stop(5)?.alpha ?? -1, 0.92, accuracy: 0.0001)
     XCTAssertEqual(stop(10)?.hex, "#0000F6")
-    XCTAssertEqual(stop(10)?.alpha ?? -1, 0.90, accuracy: 0.0001)
+    XCTAssertEqual(stop(10)?.alpha ?? -1, 0.96, accuracy: 0.0001)
     XCTAssertEqual(stop(15)?.hex, "#00FF00")
-    XCTAssertEqual(stop(15)?.alpha ?? -1, 0.94, accuracy: 0.0001)
+    XCTAssertEqual(stop(15)?.alpha ?? -1, 0.99, accuracy: 0.0001)
     XCTAssertEqual(stop(20)?.hex, "#00C800")
-    XCTAssertEqual(stop(20)?.alpha ?? -1, 0.97, accuracy: 0.0001)
+    XCTAssertEqual(stop(20)?.alpha, 1)
     XCTAssertEqual(stop(25)?.alpha, 1)
     XCTAssertEqual(stop(35)?.hex, "#E7C000")
     XCTAssertEqual(stop(40)?.hex, "#FF9000")
@@ -95,7 +95,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(stop(65)?.hex, "#9955C9")
     XCTAssertEqual(stop(70)?.hex, "#FFFFFF")
     XCTAssertEqual(stop(70)?.alpha, 1)
-    XCTAssertGreaterThan(stop(5)?.alpha ?? 0, 0.8)
+    XCTAssertGreaterThan(stop(5)?.alpha ?? 0, 0.9)
     XCTAssertEqual(stop(30)?.alpha, 1)
     XCTAssertEqual(
       MapsGLRadarPalette.colorScaleBreaks, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70])

@@ -67,7 +67,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .xweather: 11  // Retina mosaic holds detail slightly past prior z10 cap.
     case .openWeatherMap: 7
     case .iem: 10
-    case .mrms: 7
+    case .mrms: 8
     }
   }
 }

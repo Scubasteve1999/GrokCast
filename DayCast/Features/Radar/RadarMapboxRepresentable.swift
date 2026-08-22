@@ -367,15 +367,11 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       let isFuture = radarState.showsFuture
       // Xweather live + forecast use @2x retina templates (512px).
       let isXweatherRetina = frame.provider == .xweather
-      // Longer fades than the tile cadence so frames blend instead of popping.
-      let fadeDuration: Double
-      if radarState.isAnimating {
-        fadeDuration = isFuture ? 850 : 700
-      } else if isFuture {
-        fadeDuration = 400
-      } else {
-        fadeDuration = 320
-      }
+      let fadeDuration = MapsGLRadarPalette.liveRasterFadeDurationMs(
+        provider: frame.provider,
+        isAnimating: radarState.isAnimating,
+        isFuture: isFuture
+      )
 
       // Live reflectivity (N0B and national PNG fallback) keeps the NWS scale.
       // Vibrant sat/contrast/hue was the TWC-green mush next to Site Doppler.
@@ -400,7 +396,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         emissive = scheme.rasterEmissiveStrength
       }
       let nearestResampling =
-        !isFuture && MapsGLRadarPalette.liveRasterUsesNearestResampling
+        frame.provider == .mrms
+        || (!isFuture && MapsGLRadarPalette.liveRasterUsesNearestResampling)
 
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
