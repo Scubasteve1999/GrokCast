@@ -277,179 +277,40 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(spoke.paintByte(radialIndex: 0, gateIndex: 10), 0)
   }
 
-  func testPolarFieldCoveringFanIsADiskNotGateQuads() {
-    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.stride, 16)
-    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.offset(of: \.level), 8)
+  func testMetalMeshEmitsWideningTrapezoidsNotMercatorSquares() {
+    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.offset(of: \.r), 8)
     let sweep = Self.spokeSweep(azimuth: 45, byte: 146, bins: 80)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
-    XCTAssertEqual(mesh.triangleCount, Level3PolarGateMesh.coveringWedges)
+    XCTAssertGreaterThan(mesh.triangleCount, 0)
     XCTAssertEqual(mesh.vertices.count % 3, 0)
-    XCTAssertTrue(mesh.hasField)
-    XCTAssertEqual(mesh.fieldWidth, 720)
-    XCTAssertEqual(mesh.fieldHeight, 80)
 
-    var maxRange = 0.0
-    for v in mesh.vertices {
-      maxRange = max(maxRange, Self.groundMetersFromSite(v, sweep: sweep))
+    var inner = 0.0
+    var outer = 0.0
+    var i = 0
+    while i + 5 < mesh.vertices.count {
+      inner = max(inner, Self.groundMeters(mesh.vertices[i], mesh.vertices[i + 1]))
+      outer = max(outer, Self.groundMeters(mesh.vertices[i + 2], mesh.vertices[i + 5]))
+      i += 6
     }
-    XCTAssertEqual(maxRange, sweep.maxRangeMeters, accuracy: 400)
-    XCTAssertLessThan(mesh.triangleCount, 400, "covering fan stays cheap after warm")
+    XCTAssertGreaterThan(outer, 50, "far-range 0.5° gate must be tens of meters wide")
+    XCTAssertGreaterThan(outer, inner * 2.5, "far-range gates must be wider wedges")
   }
 
-  func testPolarFieldSkipsClearAirAndKeeps15Green() {
+  func testMetalMeshSkipsClearAirAndKeeps15Green() {
     let sweep = Self.spokeSweep(azimuth: 90, byte: 96, bins: 40)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.vertices.count, 0)
-    XCTAssertTrue(mesh.field.contains { $0 >= 90 }, "15 dBZ green stays in the field")
-    XCTAssertEqual(mesh.lut.count, 256 * 4)
     let a15 = UInt8((MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15) * 255).rounded())
-    XCTAssertEqual(mesh.lut[96 * 4 + 3], a15, "15 dBZ LUT underlay stays translucent")
-    XCTAssertEqual(mesh.lut[96 * 4], 0)
-    XCTAssertEqual(mesh.lut[96 * 4 + 1], a15, "premul #00FF00")
+    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a == a15 })
+    XCTAssertEqual(mesh.vertices.first?.r, 0)
+    XCTAssertEqual(mesh.vertices.first?.g, a15, "premul #00FF00")
 
     let clear = Self.spokeSweep(azimuth: 90, byte: 86, bins: 40)
     let empty = Level3PolarGateMesh.build(sweep: clear)
-    XCTAssertEqual(empty.triangleCount, 0, "10 dBZ cyan floor must not emit a covering fan")
-    XCTAssertFalse(empty.field.contains { $0 > 0 }, "keyed 10 dBZ stays 0 in the field")
+    XCTAssertEqual(empty.triangleCount, 0, "10 dBZ cyan floor must not emit trapezoids")
   }
 
-  func testPolarFieldContoursDbzInsteadOfLegoGates() {
-    let blob = Self.spokeSweep(azimuth: 90, byte: 146, delta: 5, bins: 40)
-    XCTAssertEqual(blob.contourLevel(radialIndex: 180, gateIndex: 10), 146)
-    XCTAssertEqual(blob.contourLevel(radialIndex: 0, gateIndex: 10), 0)
-    let mesh = Level3PolarGateMesh.build(sweep: blob)
-    XCTAssertTrue(mesh.hasField)
-    let core = Level3PolarGateMesh.sampleField(
-      mesh.field, width: mesh.fieldWidth, height: mesh.fieldHeight,
-      rangeMeters: 5_000, azimuth: 90, maxRangeMeters: mesh.maxRangeMeters)
-    XCTAssertGreaterThan(core, 100, "40 dBZ core stays a hard-ish bin after wet-only blur")
-    let clear = Level3PolarGateMesh.sampleField(
-      mesh.field, width: mesh.fieldWidth, height: mesh.fieldHeight,
-      rangeMeters: 5_000, azimuth: 0, maxRangeMeters: mesh.maxRangeMeters)
-    XCTAssertEqual(clear, 0, "clear air stays 0 — no dilation")
-
-    var fractional = 0
-    var az = 86.0
-    while az <= 94 {
-      let s = Level3PolarGateMesh.sampleField(
-        mesh.field, width: mesh.fieldWidth, height: mesh.fieldHeight,
-        rangeMeters: 5_000, azimuth: az, maxRangeMeters: mesh.maxRangeMeters)
-      if s > 1 && s < 145 { fractional += 1 }
-      az += 0.05
-    }
-    XCTAssertGreaterThan(
-      fractional, 4,
-      "bilinear polar samples must produce sub-gate levels at the 40 dBZ edge")
-    XCTAssertEqual(mesh.lut[146 * 4 + 3] > 0, true)
-    XCTAssertEqual(mesh.lut[86 * 4 + 3], 0, "keyed 10 dBZ stays unpainted after LUT snap")
-  }
-
-  func testPolarFieldLutSnapNeverPaintsBlueRain() {
-    let blob = Self.spokeSweep(azimuth: 90, byte: 146, delta: 4, bins: 40)
-    let mesh = Level3PolarGateMesh.build(sweep: blob)
-    var painted = 0
-    var blue = 0
-    var az = 0.0
-    while az < 360 {
-      let s = Level3PolarGateMesh.sampleField(
-        mesh.field, width: mesh.fieldWidth, height: mesh.fieldHeight,
-        rangeMeters: 6_000, azimuth: az, maxRangeMeters: mesh.maxRangeMeters)
-      let idx = Level3PolarGateMesh.lutIndex(s)
-      XCTAssertTrue((0..<256).contains(idx))
-      let alpha = mesh.lut[idx * 4 + 3]
-      if alpha > 0 {
-        painted += 1
-        let r = mesh.lut[idx * 4]
-        let g = mesh.lut[idx * 4 + 1]
-        let b = mesh.lut[idx * 4 + 2]
-        if Int(b) > Int(r) + 20 && Int(b) > Int(g) + 20 { blue += 1 }
-      }
-      az += 0.5
-    }
-    XCTAssertGreaterThan(painted, 0)
-    XCTAssertEqual(blue, 0, "interpolated 0→40 dBZ must not LUT-snap to cyan/navy")
-  }
-
-  func testOpaqueNeighborSmoothKillsInteriorStripesNotEdges() {
-    let stripe: [[Float]] = [
-      [0, 126, 126, 0],
-      [0, 126, 126, 0],
-      [0, 146, 146, 0],
-      [0, 126, 126, 0],
-      [0, 126, 126, 0],
-    ]
-    let smoothed = Level3PolarGateMesh.smoothOpaqueNeighbors(stripe)
-    XCTAssertEqual(smoothed[0][0], 0, "clear stays clear")
-    XCTAssertEqual(
-      smoothed[2][1], (126 + 126 + 146 + 126 + 126) / 5, accuracy: 0.01,
-      "az 5-tap fallback of interior 126/146 stripes on a 5-radial field")
-    XCTAssertEqual(smoothed[2][1], smoothed[1][1], accuracy: 0.01)
-    let edge = Level3PolarGateMesh.smoothOpaqueNeighbors([
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 146, 0],
-      [0, 0, 0],
-      [0, 0, 0],
-    ])
-    XCTAssertEqual(edge[2][1], 146, "one-sided 40 dBZ gate must not wash into clear")
-  }
-
-  func testOpaqueAzimuthNineTapAveragesWiderInterior() {
-    var stripe = [[Float]](repeating: [0, 126, 0], count: 9)
-    stripe[4] = [0, 146, 0]
-    let smoothed = Level3PolarGateMesh.smoothOpaqueAzimuth(stripe, halfWidths: [4, 3, 2, 1])
-    XCTAssertEqual(smoothed[0][0], 0)
-    XCTAssertEqual(
-      smoothed[4][1], (126 * 8 + 146) / 9, accuracy: 0.01,
-      "az 9-tap of an interior 126/146 stripe")
-    XCTAssertEqual(smoothed[3][1], smoothed[4][1], accuracy: 0.01)
-  }
-
-  func testOpaqueRangeSmoothKillsRangeStairsNotEdges() {
-    let stairs: [[Float]] = [
-      [0, 126, 126, 146, 126, 126, 0],
-    ]
-    let smoothed = Level3PolarGateMesh.smoothOpaqueRange(stairs, halfWidths: [3, 2, 1])
-    XCTAssertEqual(smoothed[0][0], 0, "clear stays clear")
-    XCTAssertEqual(
-      smoothed[0][3], (126 + 126 + 146 + 126 + 126) / 5, accuracy: 0.01,
-      "range 5-tap fallback of interior 126/146 stairs")
-    let edge = Level3PolarGateMesh.smoothOpaqueRange([[0, 0, 146, 0, 0]], halfWidths: [2, 1])
-    XCTAssertEqual(edge[0][2], 146, "one-sided range gate must not wash into clear")
-  }
-
-  func testRangeUpsample2xDoesNotDilateClearAir() {
-    let row: [[Float]] = [[0, 146, 146, 0]]
-    let dense = Level3PolarGateMesh.upsampleOpaqueRange2x(row)
-    XCTAssertEqual(dense[0].count, 7)
-    XCTAssertEqual(dense[0][0], 0)
-    XCTAssertEqual(dense[0][1], 0, "midpoint of clear+opaque stays clear")
-    XCTAssertEqual(dense[0][2], 146)
-    XCTAssertEqual(dense[0][3], 146, "midpoint of opaque+opaque is the average")
-    XCTAssertEqual(dense[0][4], 146)
-    XCTAssertEqual(dense[0][5], 0, "midpoint of opaque+clear stays clear")
-    XCTAssertEqual(dense[0][6], 0)
-  }
-
-  func testPolarFieldBilinearSamplesBetweenNativeGates() {
-    let sweep = Self.spokeSweep(
-      azimuth: 90,
-      byte: 146,
-      bins: 8,
-      gatePattern: [96, 106, 116, 126, 136, 146, 156, 166])
-    let mesh = Level3PolarGateMesh.build(sweep: sweep)
-    XCTAssertTrue(mesh.hasField)
-    let mid = Level3PolarGateMesh.sampleField(
-      mesh.field, width: mesh.fieldWidth, height: mesh.fieldHeight,
-      rangeMeters: 250, azimuth: 90.25, maxRangeMeters: mesh.maxRangeMeters)
-    XCTAssertGreaterThan(mid, 90)
-    XCTAssertLessThan(mid, 170)
-    XCTAssertGreaterThan(
-      abs(mid - Float(mid.rounded())), 0.01,
-      "halfway between native 250 m gates must be a fractional field sample")
-  }
-
-  func testPolarFieldHoleFillDoesNotDilateClearAir() {
+  func testMetalMeshHoleFillDoesNotDilateClearAir() {
     let cracked = Self.spokeSweep(azimuth: 90, byte: 146, holeAzimuth: 90.5, holeByte: 86)
     let filled = Level3PolarGateMesh.build(sweep: cracked)
     let disk = Level3PolarGateMesh.build(
@@ -457,36 +318,25 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertGreaterThan(filled.triangleCount, 0)
     XCTAssertEqual(
       filled.triangleCount, disk.triangleCount,
-      "keyed crack through precip still covers the radar disk")
-    let hole = Level3PolarGateMesh.sampleField(
-      filled.field, width: filled.fieldWidth, height: filled.fieldHeight,
-      rangeMeters: 5_000, azimuth: 90.5, maxRangeMeters: filled.maxRangeMeters)
-    XCTAssertGreaterThan(hole, 0, "two-sided keyed crack fills from opaque neighbors")
+      "keyed crack through precip becomes a neighbor trapezoid")
 
     let edge = Self.spokeSweep(azimuth: 90, byte: 146)
     let mesh = Level3PolarGateMesh.build(sweep: edge)
-    let north = Level3PolarGateMesh.sampleField(
-      mesh.field, width: mesh.fieldWidth, height: mesh.fieldHeight,
-      rangeMeters: 5_000, azimuth: 0, maxRangeMeters: mesh.maxRangeMeters)
-    XCTAssertEqual(north, 0, "one-sided spoke edge must not grow north into clear air")
+    let cosLat = cos(edge.latitude * .pi / 180)
+    let north = Level3PolarGateMesh.destination(
+      lat0Deg: edge.latitude,
+      lon0Deg: edge.longitude,
+      metersPerDegLat: 111_320,
+      metersPerDegLon: 111_320 * cosLat,
+      sinAz: 0, cosAz: 1, rangeMeters: 5_000)
+    let merc = Level3PolarGateMesh.mercatorXY(latitude: north.lat, longitude: north.lon)
+    let hit = mesh.vertices.contains { v in
+      abs(Double(v.mercX) - merc.x) < 0.00005 && abs(Double(v.mercY) - merc.y) < 0.00005
+    }
+    XCTAssertFalse(hit, "one-sided spoke edge must not grow north into clear air")
   }
 
-  func testWetOnlyFieldBlurDoesNotDilateOrMushClear() {
-    let width = 9
-    let height = 5
-    var field = [Float](repeating: 0, count: width * height)
-    field[2 * width + 4] = 146
-    field[2 * width + 5] = 146
-    field[2 * width + 3] = 126
-    let blurred = Level3PolarGateMesh.blurWetOnly(field, width: width, height: height)
-    XCTAssertEqual(blurred[0], 0, "clear stays clear")
-    XCTAssertEqual(blurred[2 * width + 0], 0)
-    XCTAssertGreaterThan(blurred[2 * width + 4], 0)
-    XCTAssertLessThan(blurred[2 * width + 4], 146)
-    XCTAssertEqual(blurred[2 * width + 1], 0, "blur must not grow a wet texel into clear")
-  }
-
-  func testPolarFieldBuildsLiveAWSFileIfPresent() throws {
+  func testMetalMeshBuildsLiveAWSFileIfPresent() throws {
     let root = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent()
       .deletingLastPathComponent()
@@ -496,17 +346,11 @@ final class Level3N0BTests: XCTestCase {
     let data = try Data(contentsOf: file)
     let sweep = try XCTUnwrap(Level3N0BDecoder.decode(data, siteHint: "TWX"))
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
-    XCTAssertEqual(mesh.triangleCount, Level3PolarGateMesh.coveringWedges)
-    XCTAssertTrue(mesh.hasField)
-    XCTAssertEqual(mesh.fieldWidth, 720)
-    XCTAssertEqual(mesh.fieldHeight, sweep.binCount)
-    let wet = mesh.field.filter { $0 >= 96 }.count
-    XCTAssertGreaterThan(wet, 1_000)
+    XCTAssertGreaterThan(mesh.triangleCount, 1_000)
     XCTAssertLessThan(
-      mesh.buildMilliseconds, 1400,
-      "CPU polar field is a first-still / warm cost; 2x play is a cache hit")
-    XCTAssertEqual(mesh.lut.count, 256 * 4)
-    XCTAssertGreaterThan(mesh.lut[96 * 4 + 3], 0)
+      mesh.buildMilliseconds, 400,
+      "mesh build must stay inside a 2x playback budget on CI")
+    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a > 0 })
   }
 
   func testPolarFrameTileKeyDistinctFromIEM() {
@@ -681,15 +525,6 @@ final class Level3N0BTests: XCTestCase {
       dbzLUT: lut,
       rgbaLUT: Level3N0BDecoder.rgbaLUT(from: lut),
       hasOrganizedPrecip: true)
-  }
-
-  private static func groundMetersFromSite(_ v: Level3PolarVertex, sweep: Level3N0BSweep)
-    -> Double
-  {
-    let origin = Level3PolarGateMesh.mercatorXY(
-      latitude: sweep.latitude, longitude: sweep.longitude)
-    return groundMeters(
-      Level3PolarVertex(mercX: Float(origin.x), mercY: Float(origin.y), level: 0), v)
   }
 
   private static func groundMeters(_ a: Level3PolarVertex, _ b: Level3PolarVertex) -> Double {

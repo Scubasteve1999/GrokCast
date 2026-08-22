@@ -469,7 +469,7 @@ extension RadarState {
     Level3PolarPlayStats.reset()
     let polar = currentFrame?.paintsPolarRadials == true
     if polar, !Level3PolarMeshCache.shared.isWarmComplete {
-      radarLog("[Level3] polar play waiting for field/GPU warm")
+      radarLog("[Level3] polar play waiting for mesh/GPU warm")
       polarPlayWaitTask = Task { @MainActor [weak self] in
         let t0 = CFAbsoluteTimeGetCurrent()
         await Level3PolarMeshCache.shared.waitUntilWarm()

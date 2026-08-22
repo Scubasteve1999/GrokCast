@@ -90,7 +90,8 @@ enum MapsGLRadarPalette {
   /// MRMS tiles are opaque-blurred + bilinear then 5 dBZ LUT-snapped; Mapbox
   /// linear overzoom softens the 1 km pixel grid without a new palette. IEM PNG fallback
   /// stays nearest at overview and linear after native gate scale. Polar Metal
-  /// does not use this raster knob. Future / forecast rasters stay linear.
+  /// paints constant-color gate trapezoids and does not use this raster knob.
+  /// Future / forecast rasters stay linear.
   static func usesNearestResampling(
     provider: RadarTileProvider,
     isFuture: Bool,
