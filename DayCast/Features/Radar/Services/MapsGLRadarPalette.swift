@@ -72,10 +72,13 @@ enum MapsGLRadarPalette {
     keysClearAir ? [15, 30, 45, 60, 70] : legendTickDbz
   }
 
-  static func shouldUseMapsGL(overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool)
-    -> Bool
-  {
-    overlayOn && !isSiteProduct && keysPresent
+  static func shouldUseMapsGL(
+    overlayOn: Bool,
+    isSiteProduct: Bool,
+    keysPresent: Bool,
+    nationalUsesMRMS: Bool = false
+  ) -> Bool {
+    overlayOn && !isSiteProduct && keysPresent && !nationalUsesMRMS
   }
 
   /// Vibrant/Balanced only retints leftover PNG. Hide it when MapsGL rain
@@ -159,16 +162,22 @@ enum MapsGLLiveRainLayers {
   static func shouldShow(
     overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool, isLive: Bool = true
   ) -> Bool {
-    isLive && shouldAttachRadar(
-      overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
+    // Tracks stay on National Live even when rain is MRMS tiles.
+    isLive && overlayOn && !isSiteProduct && keysPresent
   }
 
-  /// Add MapsGL encoded rain only for mosaic. N0B uses IEM PNG — never add
-  /// this layer and hide it. That left mosaic rain and tracks on Doppler.
+  /// Add MapsGL encoded rain only for mosaic fallback. N0B uses IEM PNG.
+  /// MRMS National tiles replace encoded rain; tracks still attach via shouldShow.
   static func shouldAttachRadar(
-    overlayOn: Bool, isSiteProduct: Bool, keysPresent: Bool
+    overlayOn: Bool,
+    isSiteProduct: Bool,
+    keysPresent: Bool,
+    nationalUsesMRMS: Bool = false
   ) -> Bool {
     MapsGLRadarPalette.shouldUseMapsGL(
-      overlayOn: overlayOn, isSiteProduct: isSiteProduct, keysPresent: keysPresent)
+      overlayOn: overlayOn,
+      isSiteProduct: isSiteProduct,
+      keysPresent: keysPresent,
+      nationalUsesMRMS: nationalUsesMRMS)
   }
 }

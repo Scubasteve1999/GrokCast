@@ -47,6 +47,8 @@ struct RadarFrame: Equatable {
     case (.iem, .livePrecipitation), (.iem, .forecastPrecipitation):
       // Fingerprint carries site + product + scan time from the ridge layer path.
       return "iem:\(tileEpoch):\(templateFingerprint)"
+    case (.mrms, .livePrecipitation), (.mrms, .forecastPrecipitation):
+      return "mrms:\(tileEpoch):\(templateFingerprint)"
     }
   }
 

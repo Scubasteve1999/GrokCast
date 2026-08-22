@@ -31,9 +31,10 @@ final class RadarPreferencesTests: XCTestCase {
   }
 
   #if DEBUG
-    func testDebugNationalOverlayDefaultsOff() {
-      UserDefaults.standard.removeObject(forKey: "radar.debug.nationalOverlay")
-      XCTAssertFalse(DebugFlags.nationalOverlay)
+    func testDebugNationalPaintDefaultsToAuto() {
+      UserDefaults.standard.removeObject(forKey: "radar.debug.nationalPaint")
+      XCTAssertEqual(DebugFlags.nationalPaint, .auto)
+      XCTAssertEqual(MRMSNationalSource.overrideForDebug(), .auto)
       XCTAssertTrue(
         MapsGLRadarPalette.shouldUseMapsGL(
           overlayOn: true, isSiteProduct: false, keysPresent: true)

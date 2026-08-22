@@ -112,6 +112,8 @@ final class RadarLoader {
         return .timelineOnly(message: message)
       }
       return .timelineOnly(message: "Xweather keys not configured for forecast.")
+    case .mrms:
+      return .unavailable(message: "Forecast radar unavailable.")
     case .openWeatherMap:
       guard OpenWeatherMapRadarService.apiKeyConfigured else {
         return .timelineOnly(message: "OpenWeatherMap API key not configured.")
@@ -157,8 +159,27 @@ final class RadarLoader {
     rainViewerLive: [RadarFrame],
     xweatherLiveOK: Bool
   ) async -> LoadOutcome {
-    // Phase 3 default: expand Xweather live as the paid mosaic before adding another
-    // vendor (e.g. Tomorrow.io). Super-Res / SRV stay on IEM single-site via setProduct.
+    let mrmsOverride = MRMSNationalSource.overrideForDebug()
+    if mrmsOverride != .forceMapsGL {
+      let mrmsFrames = await MRMSRadarService.loadLiveFrames()
+      if MRMSNationalSource.shouldPresent(mrmsFrames, override: mrmsOverride) {
+        let live = RadarLivePresentation.liveFrames(mrmsFrames, isSiteProduct: false)
+        radarLog(
+          "[RadarLoader] Live: National tiles (\(live.count) frames, newest age \(Int(RadarLivePresentation.newestAge(live) / 60))m)"
+        )
+        return LoadOutcome(
+          frames: live,
+          provider: .mrms,
+          availability: .available
+        )
+      }
+      if !mrmsFrames.isEmpty {
+        radarLog("[RadarLoader] National tiles stale or unusable — MapsGL rain fallback")
+      }
+    }
+
+    // MapsGL rain fallback timeline: Xweather / IEM / RainViewer / OWM.
+    // Super-Res / SRV stay on IEM single-site via setProduct.
     if xweatherLiveOK {
       let xwFrames = XweatherRadarService.loadLiveRadarFrames()
       if !xwFrames.isEmpty {

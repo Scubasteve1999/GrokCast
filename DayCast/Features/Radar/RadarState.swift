@@ -51,6 +51,14 @@ final class RadarState {
     timeline.live.first?.provider
   }
 
+  /// National Live is painting MRMS XYZ tiles (MapsGL rain must stay off).
+  var nationalUsesMRMSPaint: Bool {
+    guard !showsFuture, selectedProduct == .reflectivity, activeLiveProvider == .mrms else {
+      return false
+    }
+    return MRMSNationalSource.overrideForDebug() != .forceMapsGL
+  }
+
   var activeForecastProvider: RadarTileProvider? {
     timeline.forecast.first?.provider
   }
@@ -94,10 +102,9 @@ final class RadarState {
     didSet { RadarPreferences.showRadarOverlay = showRadarOverlay }
   }
   #if DEBUG
-    /// Spike: Mac-painted NOAA composite over Live National. Off = MapsGL rain.
-    /// Not a user preference; Release does not compile this.
-    var debugNationalOverlay: Bool = DebugFlags.nationalOverlay {
-      didSet { DebugFlags.nationalOverlay = debugNationalOverlay }
+    /// Force MapsGL rain / force National tiles. Auto is the Live default.
+    var debugNationalPaint: DebugFlags.NationalPaint = DebugFlags.nationalPaint {
+      didSet { DebugFlags.nationalPaint = debugNationalPaint }
     }
   #endif
   /// Independent Fire overlay (FIRMS hotspots + NIFC perimeters). Does not affect precip rasters.

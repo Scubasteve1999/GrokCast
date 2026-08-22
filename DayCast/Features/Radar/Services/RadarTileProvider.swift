@@ -2,14 +2,18 @@ import Foundation
 
 /// Selects which backend serves precipitation map tiles.
 ///
-/// Live:     Xweather radar-global (when probed) → freshest IEM / RainViewer; OWM if reals >25m stale
-/// Forecast: Xweather fradar → RainViewer nowcast → OpenWeatherMap PR0
+/// Live National: NOAA MRMS XYZ (when timestamps are fresh) → MapsGL rain
+///                over Xweather/IEM/RainViewer frames.
+/// Live site:     IEM N0B / N0S.
+/// Forecast:      Xweather fradar → RainViewer nowcast → OpenWeatherMap PR0
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
   case xweather
   case openWeatherMap
   /// NWS NEXRAD single-site products (Velocity/SRV) via IEM RIDGE cache. Live-only.
   case iem
+  /// NOAA MRMS MergedReflectivityQCComposite, pre-tiled on Mac/CDN. Live National.
+  case mrms
 
   static let preferredLive: RadarTileProvider = .xweather
   static let preferredForecast: RadarTileProvider = .xweather
@@ -20,6 +24,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .xweather: "Xweather"
     case .openWeatherMap: "OpenWeatherMap"
     case .iem: "NWS NEXRAD"
+    case .mrms: "National radar"
     }
   }
 
@@ -30,6 +35,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .xweather: "XWEATHER"
     case .openWeatherMap: "OWM"
     case .iem: "CONUS"
+    case .mrms: "NATIONAL"
     }
   }
 
@@ -39,6 +45,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .xweather: "Live radar · Xweather"
     case .openWeatherMap: "Radar · OpenWeatherMap"
     case .iem: "Live radar · National radar"
+    case .mrms: "Live radar · National radar"
     }
   }
 
@@ -49,6 +56,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .openWeatherMap:
       "Forecast radar · OpenWeatherMap"
     case .iem: "Forecast radar · NWS NEXRAD"
+    case .mrms: "Forecast radar · National radar"
     }
   }
 
@@ -59,6 +67,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .xweather: 11  // Retina mosaic holds detail slightly past prior z10 cap.
     case .openWeatherMap: 7
     case .iem: 10
+    case .mrms: 7
     }
   }
 }

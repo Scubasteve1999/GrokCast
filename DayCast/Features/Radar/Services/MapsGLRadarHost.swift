@@ -23,6 +23,7 @@ final class MapsGLRadarHost {
   /// Real overlay/site flags for `shouldShow`. Do not pass rainWant as overlayOn.
   private var lastOverlayOn: Bool?
   private var lastIsSiteProduct: Bool?
+  private var lastNationalUsesMRMS: Bool?
   private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
   /// Today preview is rain-only. Live Radar paints StormcellsTracks paths only.
   var paintsStormcells = true
@@ -92,6 +93,7 @@ final class MapsGLRadarHost {
     lastFuture = nil
     lastOverlayOn = nil
     lastIsSiteProduct = nil
+    lastNationalUsesMRMS = nil
   }
 
   /// Snapshot for Today: Live rain only, newest scan, no site products.
@@ -134,19 +136,13 @@ final class MapsGLRadarHost {
     pendingOpacity = opacity
     lastOverlayOn = radarState.showRadarOverlay
     lastIsSiteProduct = radarState.selectedProduct.isSiteProduct
-    var want = MapsGLRadarPalette.shouldUseMapsGL(
+    lastNationalUsesMRMS = radarState.nationalUsesMRMSPaint
+    let want = MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
-      keysPresent: Self.keysPresent
+      keysPresent: Self.keysPresent,
+      nationalUsesMRMS: radarState.nationalUsesMRMSPaint
     )
-    #if DEBUG
-      // Spike overlay replaces encoded rain only. Tracks still follow overlayOn.
-      if radarState.debugNationalOverlay, !radarState.showsFuture,
-        !radarState.selectedProduct.isSiteProduct
-      {
-        want = false
-      }
-    #endif
     guard let controller else {
       lastVisible = want
       lastCellsWant = cellsWanted()
@@ -168,7 +164,9 @@ final class MapsGLRadarHost {
       applyVisibility(want, on: controller)
     }
 
-    guard want else { return }
+    // Rain and tracks share the MapsGL timeline. Keep goTo even when rain is
+    // MRMS tiles so cell motion still keys off the presented scan time.
+    guard want || cellsWant else { return }
 
     if let date = radarState.currentFrameDate, lastFrameDate != date {
       lastFrameDate = date
@@ -183,7 +181,8 @@ final class MapsGLRadarHost {
     let rainWant = MapsGLLiveRainLayers.shouldAttachRadar(
       overlayOn: lastOverlayOn ?? false,
       isSiteProduct: lastIsSiteProduct ?? true,
-      keysPresent: Self.keysPresent
+      keysPresent: Self.keysPresent,
+      nationalUsesMRMS: lastNationalUsesMRMS ?? false
     )
     applyVisibility(rainWant, on: controller)
     onLayerStateChange?()

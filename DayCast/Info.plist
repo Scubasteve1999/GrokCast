@@ -39,6 +39,11 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>DayCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

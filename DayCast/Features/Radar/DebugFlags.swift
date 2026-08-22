@@ -4,15 +4,32 @@ import Foundation
 /// Debug-only flags for development and testing.
 /// These have no effect in Release builds.
 enum DebugFlags {
-  /// Spike: paint Mac-generated NOAA composite overlay instead of MapsGL rain
-  /// on Live National. Off = today's National unchanged. Never a Live default.
-  /// Simulator reads the PNG from the local scratch path; the phone does not
-  /// download GRIB2.
-  private static let nationalOverlayKey = "radar.debug.nationalOverlay"
+  /// Live National paint override. Auto (default) uses MRMS tiles when the
+  /// local worker/CDN is fresh, else MapsGL rain. Chrome never says MRMS.
+  enum NationalPaint: String, CaseIterable, Identifiable {
+    case auto
+    case forceTiles = "tiles"
+    case forceMapsGL = "mapsgl"
 
-  static var nationalOverlay: Bool {
-    get { UserDefaults.standard.bool(forKey: nationalOverlayKey) }
-    set { UserDefaults.standard.set(newValue, forKey: nationalOverlayKey) }
+    var id: String { rawValue }
+
+    var debugLabel: String {
+      switch self {
+      case .auto: "Auto"
+      case .forceTiles: "Force National tiles"
+      case .forceMapsGL: "Force MapsGL rain"
+      }
+    }
+  }
+
+  private static let nationalPaintKey = "radar.debug.nationalPaint"
+
+  static var nationalPaint: NationalPaint {
+    get {
+      let raw = UserDefaults.standard.string(forKey: nationalPaintKey) ?? ""
+      return NationalPaint(rawValue: raw) ?? .auto
+    }
+    set { UserDefaults.standard.set(newValue.rawValue, forKey: nationalPaintKey) }
   }
 }
 #endif

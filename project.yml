@@ -109,6 +109,8 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: "DayCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings."
         NSPhotoLibraryAddUsageDescription: "DayCast saves AI-generated weather images to your Photo Library when you choose Save."
         ITSAppUsesNonExemptEncryption: false
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         UIBackgroundModes:
           - fetch
           - remote-notification

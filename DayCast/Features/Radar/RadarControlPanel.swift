@@ -437,7 +437,7 @@ struct RadarControlPanel: View {
       ? radarState.activeForecastProvider
       : radarState.activeLiveProvider
     switch provider {
-    case .iem: return "National radar"
+    case .iem, .mrms: return "National radar"
     case .xweather: return "Xweather"
     case .rainViewer: return "RainViewer"
     case .openWeatherMap: return "OpenWeatherMap"
@@ -514,10 +514,14 @@ private struct RadarDisplayOptionsSheet: View {
 
         #if DEBUG
           Section {
-            namedSwitch("Debug national overlay", isOn: $radarState.debugNationalOverlay)
+            Picker("National paint", selection: $radarState.debugNationalPaint) {
+              ForEach(DebugFlags.NationalPaint.allCases) { mode in
+                Text(mode.debugLabel).tag(mode)
+              }
+            }
           } footer: {
             Text(
-              "DEBUG. Off = today's National. Simulator loads the Mac spike PNG. Not the Live default."
+              "DEBUG. Auto uses National tiles when the local worker is fresh, else MapsGL rain. Never shown as MRMS."
             )
           }
         #endif
