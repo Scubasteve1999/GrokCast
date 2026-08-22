@@ -226,6 +226,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var polarLayerInstalled = false
     private var polarLayerFailed = false
     private var lastPolarOpacity: Float?
+    private var lastPolarPrefetchIndex: Int?
+    private var lastPolarPrefetchSite: String?
     private var lastRadarState: RadarState?
     private var lastSyncOpacity: Double = RadarPreferences.defaultRadarOpacity
 
@@ -365,20 +367,59 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       guard mapView.mapboxMap.isStyleLoaded else { return }
       ensurePolarLayer(on: mapView)
       let polarOpacity = Float(opacity)
-      polarHost.setSweep(Self.polarSweep(from: radarState), opacity: polarOpacity) {
-        [weak self, weak mapView] in
+      polarHost.setSweep(
+        Self.polarSweep(from: radarState),
+        opacity: polarOpacity,
+        isAnimating: radarState.isAnimating
+      ) { [weak self, weak mapView] in
         guard let self, let mapView else { return }
         self.refreshDesiredState(on: mapView)
         mapView.mapboxMap.triggerRepaint()
       }
+      prefetchPolarAhead(radarState)
       if lastPolarOpacity != polarOpacity {
         lastPolarOpacity = polarOpacity
         mapView.mapboxMap.triggerRepaint()
       }
     }
 
+    /// Warm the next few loop volumes so 2x play never waits on a cold mesh.
+    private func prefetchPolarAhead(_ radarState: RadarState) {
+      let frames = radarState.activeFrames
+      guard !frames.isEmpty,
+        let site = radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
+      else { return }
+      let start = radarState.currentIndex
+      if lastPolarPrefetchIndex == start, lastPolarPrefetchSite == site { return }
+      lastPolarPrefetchIndex = start
+      lastPolarPrefetchSite = site
+      let ahead = min(6, frames.count)
+      var specs: [(String, Date)] = []
+      specs.reserveCapacity(ahead)
+      for i in 0..<ahead {
+        let frame = frames[(start + i) % frames.count]
+        guard frame.paintsPolarRadials else { continue }
+        specs.append((site, frame.timestamp))
+      }
+      guard !specs.isEmpty else { return }
+      Task.detached(priority: .userInitiated) {
+        for (site, timestamp) in specs {
+          guard
+            let sweep = Level3N0BSweepStore.shared.sweep(site: site, timestamp: timestamp)
+          else { continue }
+          _ = Level3PolarMeshCache.shared.mesh(for: sweep)
+        }
+      }
+    }
+
     private func ensurePolarLayer(on mapView: MapView) {
-      if polarLayerInstalled || polarLayerFailed { return }
+      if polarLayerFailed { return }
+      if polarHost.onNeedsDisplay == nil {
+        polarHost.onNeedsDisplay = { [weak mapView] in
+          mapView?.mapboxMap.triggerRepaint()
+        }
+      }
+      if polarLayerInstalled { return }
       if mapView.mapboxMap.layerExists(withId: Level3PolarMetalHost.layerID) {
         polarLayerInstalled = true
         return

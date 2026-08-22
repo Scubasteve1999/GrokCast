@@ -5,22 +5,30 @@ import simd
 import UIKit
 
 /// Mapbox `CustomLayerHost` that draws Level III N0B gates as Metal trapezoids.
+/// Dual GPU meshes crossfade between volumes (same duration as live IEM raster).
 /// Raster PNG nearest-sample stays the fallback when this pipeline cannot start
 /// or no sweep is loaded.
 final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable {
   static let layerID = "daycast-level3-polar"
 
+  var onNeedsDisplay: (() -> Void)?
+
   private let lock = NSLock()
   private var metalDevice: MTLDevice?
   private var pipelineState: MTLRenderPipelineState?
   private var depthStencilState: MTLDepthStencilState?
-  private var vertexBuffer: MTLBuffer?
-  private var vertexCount = 0
-  private var pendingMesh: Level3PolarGateMesh.Mesh?
+  private var front = GPUMesh.empty
+  private var back = GPUMesh.empty
+  private var pendingCPU: Level3PolarGateMesh.Mesh?
+  private var pendingCPUIsIncoming = false
   private var opacity: Float = 1
   private var currentKey: String?
   private var generation: UInt64 = 0
-  private var lastLoggedKey: String?
+  private var fadeStart: CFAbsoluteTime?
+  private var fadeDuration: TimeInterval = 0
+  private var queuedGPU: GPUMesh?
+  private var queuedFade: TimeInterval = 0
+  private var fadeTask: Task<Void, Never>?
 
   /// Shader / pipeline setup failed — representable must keep IEM/CPU tiles.
   private(set) var pipelineFailed = false
@@ -29,13 +37,14 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
   var hasDrawableMesh: Bool {
     lock.lock()
     defer { lock.unlock() }
-    if let pendingMesh, !pendingMesh.vertices.isEmpty { return true }
-    return vertexCount > 0
+    if let pendingCPU, !pendingCPU.vertices.isEmpty { return true }
+    return front.vertexCount > 0 || back.vertexCount > 0
   }
 
   func setSweep(
     _ sweep: Level3N0BSweep?,
     opacity: Float,
+    isAnimating: Bool,
     onReady: @escaping () -> Void
   ) {
     lock.lock()
@@ -45,14 +54,19 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     guard let sweep else {
       lock.lock()
       let wasActive =
-        currentKey != nil || vertexCount > 0
-        || (pendingMesh?.vertices.isEmpty == false)
+        currentKey != nil || front.vertexCount > 0 || back.vertexCount > 0
+        || (pendingCPU?.vertices.isEmpty == false)
       generation += 1
       currentKey = nil
-      pendingMesh = Level3PolarGateMesh.Mesh(vertices: [], buildMilliseconds: 0)
-      vertexCount = 0
-      vertexBuffer = nil
+      pendingCPU = nil
+      front = .empty
+      back = .empty
+      queuedGPU = nil
+      fadeStart = nil
+      fadeDuration = 0
       lock.unlock()
+      fadeTask?.cancel()
+      fadeTask = nil
       if wasActive { onReady() }
       return
     }
@@ -63,44 +77,138 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     lock.unlock()
     if already { return }
 
-    if let cached = Level3PolarMeshCache.shared.cached(
-      site: sweep.siteID, timestamp: sweep.timestamp)
-    {
-      adopt(mesh: cached, key: key)
-      onReady()
-      return
-    }
-
+    let fadeSeconds = Level3PolarCrossfade.durationSeconds(isAnimating: isAnimating)
     lock.lock()
     generation += 1
     currentKey = key
     let gen = generation
+    let device = metalDevice
     lock.unlock()
 
     Task.detached(priority: .userInitiated) {
+      let cacheHit = Level3PolarMeshCache.shared.cached(
+        site: sweep.siteID, timestamp: sweep.timestamp) != nil
       let mesh = Level3PolarMeshCache.shared.mesh(for: sweep)
+      let tUpload = CFAbsoluteTimeGetCurrent()
+      let gpu: GPUMesh
+      if let device {
+        gpu = Self.makeGPUMesh(mesh: mesh, key: key, device: device)
+      } else {
+        gpu = GPUMesh(key: key, buffer: nil, vertexCount: 0, pendingCPU: mesh)
+      }
+      let uploadMs = (CFAbsoluteTimeGetCurrent() - tUpload) * 1000
       await MainActor.run {
         self.lock.lock()
         let stillCurrent = self.generation == gen
         self.lock.unlock()
         guard stillCurrent else { return }
-        self.adopt(mesh: mesh, key: key)
+        self.adopt(gpu: gpu, fadeDuration: fadeSeconds)
+        let buildMs = cacheHit ? 0 : mesh.buildMilliseconds
+        radarLog(
+          "[Level3] polar adopt \(key) cache=\(cacheHit ? "hit" : "miss") build=\(Int(buildMs.rounded()))ms upload=\(Int(uploadMs.rounded()))ms tris=\(mesh.triangleCount) fade=\(Int((fadeSeconds * 1000).rounded()))ms"
+        )
         onReady()
       }
     }
   }
 
-  private func adopt(mesh: Level3PolarGateMesh.Mesh, key: String) {
+  private func adopt(gpu: GPUMesh, fadeDuration: TimeInterval) {
     lock.lock()
-    currentKey = key
-    pendingMesh = mesh
-    let shouldLog = lastLoggedKey != key
-    if shouldLog { lastLoggedKey = key }
+    currentKey = gpu.key
+    let hasFront = front.vertexCount > 0 || (pendingCPU?.vertices.isEmpty == false)
+    let fading = fadeStart != nil
+    if fading {
+      queuedGPU = gpu
+      queuedFade = fadeDuration
+      lock.unlock()
+      return
+    }
+    if !hasFront || fadeDuration <= 0 {
+      applyImmediateLocked(gpu)
+      lock.unlock()
+      fadeTask?.cancel()
+      fadeTask = nil
+      return
+    }
+    installIncomingLocked(gpu, duration: fadeDuration)
     lock.unlock()
-    if shouldLog {
-      radarLog(
-        "[Level3] polar Metal mesh \(key) \(mesh.triangleCount) tris in \(Int(mesh.buildMilliseconds.rounded()))ms"
-      )
+    startFadePump()
+  }
+
+  private func applyImmediateLocked(_ gpu: GPUMesh) {
+    if let cpu = gpu.pendingCPU {
+      pendingCPU = cpu
+      pendingCPUIsIncoming = false
+      front = GPUMesh(key: gpu.key, buffer: nil, vertexCount: 0, pendingCPU: nil)
+      back = .empty
+    } else {
+      pendingCPU = nil
+      front = gpu
+      back = .empty
+    }
+    queuedGPU = nil
+    fadeStart = nil
+    fadeDuration = 0
+  }
+
+  private func installIncomingLocked(_ gpu: GPUMesh, duration: TimeInterval) {
+    if let cpu = gpu.pendingCPU {
+      pendingCPU = cpu
+      pendingCPUIsIncoming = true
+      back = GPUMesh(key: gpu.key, buffer: nil, vertexCount: 0, pendingCPU: nil)
+    } else {
+      back = gpu
+    }
+    fadeStart = CFAbsoluteTimeGetCurrent()
+    fadeDuration = duration
+    queuedGPU = nil
+  }
+
+  private func copyFadeClock() -> (start: CFAbsoluteTime, duration: TimeInterval)? {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let fadeStart, fadeDuration > 0 else { return nil }
+    return (fadeStart, fadeDuration)
+  }
+
+  private func startFadePump() {
+    fadeTask?.cancel()
+    fadeTask = Task { @MainActor [weak self] in
+      while let self, !Task.isCancelled {
+        guard let clock = self.copyFadeClock() else { break }
+        let t = Level3PolarCrossfade.progress(
+          elapsed: CFAbsoluteTimeGetCurrent() - clock.start, duration: clock.duration)
+        self.onNeedsDisplay?()
+        if t >= 1 {
+          self.finishFade()
+          break
+        }
+        try? await Task.sleep(nanoseconds: 16_666_667)
+      }
+    }
+  }
+
+  private func finishFade() {
+    lock.lock()
+    if back.vertexCount > 0 {
+      front = back
+      pendingCPU = nil
+    }
+    pendingCPUIsIncoming = false
+    back = .empty
+    fadeStart = nil
+    fadeDuration = 0
+    let queued = queuedGPU
+    let queuedFade = self.queuedFade
+    queuedGPU = nil
+    self.queuedFade = 0
+    lock.unlock()
+    if let queued {
+      adopt(gpu: queued, fadeDuration: queuedFade)
+      onNeedsDisplay?()
+    } else {
+      fadeTask = nil
+      onNeedsDisplay?()
     }
   }
 
@@ -172,30 +280,45 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     mtlRenderPassDescriptor: MTLRenderPassDescriptor
   ) {
     lock.lock()
-    let pending = pendingMesh
-    pendingMesh = nil
-    var count = vertexCount
-    var buffer = vertexBuffer
+    var frontMesh = front
+    var backMesh = back
+    let pending = pendingCPU
+    pendingCPU = nil
+    let pendingIncoming = pendingCPUIsIncoming
     let opacity = self.opacity
     let failed = pipelineFailed
+    let fadeStart = self.fadeStart
+    let fadeDuration = self.fadeDuration
     lock.unlock()
 
     if let pending, let metalDevice {
-      if pending.vertices.isEmpty {
-        buffer = nil
-        count = 0
+      let gpu = Self.makeGPUMesh(mesh: pending, key: frontMesh.key, device: metalDevice)
+      if pendingIncoming {
+        backMesh = gpu
       } else {
-        let bytes = pending.vertices.count * MemoryLayout<Level3PolarVertex>.stride
-        buffer = metalDevice.makeBuffer(bytes: pending.vertices, length: bytes, options: [])
-        count = pending.vertices.count
+        frontMesh = gpu
       }
       lock.lock()
-      vertexBuffer = buffer
-      vertexCount = count
+      if pendingIncoming {
+        self.back = gpu
+      } else {
+        self.front = gpu
+      }
       lock.unlock()
     }
 
-    guard !failed, count > 0, let buffer, let pipelineState else { return }
+    guard !failed, let pipelineState else { return }
+    let t: Float
+    if let fadeStart, fadeDuration > 0 {
+      t = Level3PolarCrossfade.progress(
+        elapsed: CFAbsoluteTimeGetCurrent() - fadeStart, duration: fadeDuration)
+    } else {
+      t = 1
+    }
+    let ops = Level3PolarCrossfade.layerOpacities(progress: t, global: opacity)
+    let drawFront = frontMesh.vertexCount > 0 && ops.outgoing > 0.001
+    let drawBack = backMesh.vertexCount > 0 && ops.incoming > 0.001
+    guard drawFront || drawBack else { return }
     guard let encoder = mtlCommandBuffer.makeRenderCommandEncoder(descriptor: mtlRenderPassDescriptor)
     else { return }
 
@@ -214,24 +337,63 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     }
 
     let worldSize = Float(Projection.worldSize(scale: pow(2, parameters.zoom)))
+    let matrix = Self.mvpMatrix(parameters: parameters)
+    if drawFront, let buffer = frontMesh.buffer {
+      Self.draw(
+        encoder: encoder, buffer: buffer, count: frontMesh.vertexCount,
+        matrix: matrix, worldSize: worldSize, opacity: ops.outgoing)
+    }
+    if drawBack, let buffer = backMesh.buffer {
+      Self.draw(
+        encoder: encoder, buffer: buffer, count: backMesh.vertexCount,
+        matrix: matrix, worldSize: worldSize, opacity: ops.incoming)
+    }
+    encoder.endEncoding()
+  }
+
+  func renderingWillEnd() {
+    fadeTask?.cancel()
+    fadeTask = nil
+    lock.lock()
+    pipelineState = nil
+    depthStencilState = nil
+    front = .empty
+    back = .empty
+    pendingCPU = nil
+    queuedGPU = nil
+    fadeStart = nil
+    metalDevice = nil
+    lock.unlock()
+  }
+
+  private static func draw(
+    encoder: MTLRenderCommandEncoder,
+    buffer: MTLBuffer,
+    count: Int,
+    matrix: simd_float4x4,
+    worldSize: Float,
+    opacity: Float
+  ) {
     var uniforms = Level3PolarUniforms(
-      matrix: Self.mvpMatrix(parameters: parameters),
+      matrix: matrix,
       worldSize: worldSize,
       opacity: opacity)
     encoder.setVertexBuffer(buffer, offset: 0, index: 0)
     encoder.setVertexBytes(&uniforms, length: MemoryLayout<Level3PolarUniforms>.stride, index: 1)
     encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: count)
-    encoder.endEncoding()
   }
 
-  func renderingWillEnd() {
-    lock.lock()
-    pipelineState = nil
-    depthStencilState = nil
-    vertexBuffer = nil
-    vertexCount = 0
-    metalDevice = nil
-    lock.unlock()
+  private static func makeGPUMesh(
+    mesh: Level3PolarGateMesh.Mesh, key: String, device: MTLDevice
+  ) -> GPUMesh {
+    if mesh.vertices.isEmpty {
+      return GPUMesh(key: key, buffer: nil, vertexCount: 0, pendingCPU: nil)
+    }
+    let bytes = mesh.vertices.count * MemoryLayout<Level3PolarVertex>.stride
+    let buffer = mesh.vertices.withUnsafeBufferPointer { ptr in
+      device.makeBuffer(bytes: ptr.baseAddress!, length: bytes, options: .storageModeShared)
+    }
+    return GPUMesh(key: key, buffer: buffer, vertexCount: mesh.vertices.count, pendingCPU: nil)
   }
 
   private static func mvpMatrix(parameters: CustomLayerRenderParameters) -> simd_float4x4 {
@@ -244,6 +406,15 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     case noLibrary
     case noFunction
   }
+}
+
+private struct GPUMesh {
+  var key: String
+  var buffer: MTLBuffer?
+  var vertexCount: Int
+  var pendingCPU: Level3PolarGateMesh.Mesh?
+
+  static let empty = GPUMesh(key: "", buffer: nil, vertexCount: 0, pendingCPU: nil)
 }
 
 private struct Level3PolarUniforms {

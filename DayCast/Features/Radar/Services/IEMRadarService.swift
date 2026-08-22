@@ -146,6 +146,7 @@ final class IEMRadarService {
       }
       radarLog("[IEM] Level III N0B miss — IEM PNG fallback")
       Level3N0BSweepStore.shared.removeAll()
+      Level3PolarMeshCache.shared.removeAll()
     }
 
     var candidates = await nearestSites(to: coordinate, limit: siteFallbackLimit)

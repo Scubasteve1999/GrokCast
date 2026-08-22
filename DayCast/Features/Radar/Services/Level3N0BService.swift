@@ -33,10 +33,13 @@ enum Level3N0BService {
       {
         Level3N0BSweepStore.shared.replace(loaded.sweeps)
         let sweeps = loaded.sweeps
-        Task.detached(priority: .utility) {
-          for sweep in sweeps.reversed() {
-            _ = Level3PolarMeshCache.shared.mesh(for: sweep)
-          }
+        let keys = Set(
+          sweeps.map {
+            Level3N0BSweepStore.exactKey(site: $0.siteID, timestamp: $0.timestamp)
+          })
+        Level3PolarMeshCache.shared.keepOnly(keys: keys)
+        Task.detached(priority: .userInitiated) {
+          await Level3PolarMeshCache.shared.warmPlayLoopConcurrent(sweeps)
         }
         radarLog(
           "[Level3] N0B polar \(site.id) \(loaded.frames.count) scans, newest \(Int(load.newestScanAge / 60))m"

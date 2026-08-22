@@ -312,11 +312,96 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertFalse(iem.paintsPolarRadials)
   }
 
+  func testPolarCrossfadeMatchesLiveRasterFade() {
+    XCTAssertEqual(
+      Level3PolarCrossfade.durationSeconds(isAnimating: true), 0.7, accuracy: 0.0001)
+    XCTAssertEqual(
+      Level3PolarCrossfade.durationSeconds(isAnimating: false), 0.32, accuracy: 0.0001)
+    XCTAssertEqual(
+      MapsGLRadarPalette.liveRasterFadeDurationMs(
+        provider: .iem, isAnimating: true, isFuture: false) / 1000,
+      Level3PolarCrossfade.durationSeconds(isAnimating: true),
+      accuracy: 0.0001)
+    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 0, duration: 0.7), 0)
+    XCTAssertEqual(
+      Level3PolarCrossfade.progress(elapsed: 0.35, duration: 0.7), 0.5, accuracy: 0.001)
+    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 1, duration: 0.7), 1)
+    XCTAssertEqual(Level3PolarCrossfade.progress(elapsed: 0.1, duration: 0), 1)
+    let mid = Level3PolarCrossfade.layerOpacities(progress: 0.5, global: 1)
+    XCTAssertEqual(mid.outgoing, 0.5, accuracy: 0.001)
+    XCTAssertEqual(mid.incoming, 0.5, accuracy: 0.001)
+    let start = Level3PolarCrossfade.layerOpacities(progress: 0, global: 0.8)
+    XCTAssertEqual(start.outgoing, 0.8, accuracy: 0.001)
+    XCTAssertEqual(start.incoming, 0, accuracy: 0.001)
+    let end = Level3PolarCrossfade.layerOpacities(progress: 1, global: 0.8)
+    XCTAssertEqual(end.outgoing, 0, accuracy: 0.001)
+    XCTAssertEqual(end.incoming, 0.8, accuracy: 0.001)
+  }
+
+  func testMeshCacheCoversLiveLoopAndStaysWarm() {
+    XCTAssertGreaterThanOrEqual(
+      Level3PolarMeshCache.maxEntries, RadarLivePresentation.siteLoopMaxFrames)
+    let cache = Level3PolarMeshCache.shared
+    cache.removeAll()
+    defer { cache.removeAll() }
+
+    var sweeps: [Level3N0BSweep] = []
+    let base = Date(timeIntervalSince1970: 1_787_405_984)
+    for i in 0..<22 {
+      sweeps.append(
+        Self.spokeSweep(
+          azimuth: 90, byte: 146, bins: 4,
+          timestamp: base.addingTimeInterval(Double(i * 180))))
+    }
+    cache.warmPlayLoop(sweeps)
+    XCTAssertEqual(cache.stats().count, 22)
+    cache.resetStats()
+    for sweep in sweeps {
+      _ = cache.mesh(for: sweep)
+    }
+    let after = cache.stats()
+    XCTAssertEqual(after.misses, 0, "full-loop warm must keep Play on cache hits")
+    XCTAssertEqual(after.hits, 22)
+  }
+
+  func testMeshCacheKeepOnlyDropsOtherVolumes() {
+    let cache = Level3PolarMeshCache.shared
+    cache.removeAll()
+    defer { cache.removeAll() }
+    let a = Self.spokeSweep(
+      azimuth: 90, byte: 146, bins: 4,
+      timestamp: Date(timeIntervalSince1970: 1_787_405_984))
+    let b = Self.spokeSweep(
+      azimuth: 90, byte: 146, bins: 4,
+      timestamp: Date(timeIntervalSince1970: 1_787_406_164))
+    _ = cache.mesh(for: a)
+    _ = cache.mesh(for: b)
+    cache.keepOnly(keys: [Level3N0BSweepStore.exactKey(site: a.siteID, timestamp: a.timestamp)])
+    XCTAssertNotNil(cache.cached(site: a.siteID, timestamp: a.timestamp))
+    XCTAssertNil(cache.cached(site: b.siteID, timestamp: b.timestamp))
+  }
+
+  func testMeshCacheCoalescesConcurrentBuilds() {
+    let cache = Level3PolarMeshCache.shared
+    cache.removeAll()
+    defer { cache.removeAll() }
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 146, bins: 8)
+    cache.resetStats()
+    DispatchQueue.concurrentPerform(iterations: 4) { _ in
+      _ = cache.mesh(for: sweep)
+    }
+    let stats = cache.stats()
+    XCTAssertEqual(stats.misses, 1)
+    XCTAssertEqual(stats.hits, 3)
+    XCTAssertEqual(stats.count, 1)
+  }
+
   // MARK: - Fixtures
 
   private static func spokeSweep(
     azimuth: Double, byte: UInt8, delta: Double = 0.5, bins: Int = 80,
-    holeAzimuth: Double? = nil, holeByte: UInt8 = 86
+    holeAzimuth: Double? = nil, holeByte: UInt8 = 86,
+    timestamp: Date = Date(timeIntervalSince1970: 1_787_405_984)
   ) -> Level3N0BSweep {
     var radials: [Level3N0BSweep.Radial] = []
     for i in 0..<720 {
@@ -338,7 +423,7 @@ final class Level3N0BTests: XCTestCase {
     let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
     return Level3N0BSweep(
       siteID: "TWX",
-      timestamp: Date(timeIntervalSince1970: 1_787_405_984),
+      timestamp: timestamp,
       latitude: 38.997,
       longitude: -96.232,
       gateWidthMeters: 250,

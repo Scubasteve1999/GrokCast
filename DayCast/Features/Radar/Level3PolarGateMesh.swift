@@ -160,47 +160,163 @@ enum Level3PolarGateMesh {
   }
 }
 
-/// LRU-ish cache of CPU trapezoid meshes keyed by site + volume time.
+/// Dual-mesh opacity lerp between two hard-NWS trapezoid volumes.
+/// Matches live IEM raster fade. Does not blend dBZ.
+enum Level3PolarCrossfade {
+  static func durationSeconds(isAnimating: Bool) -> TimeInterval {
+    MapsGLRadarPalette.liveRasterFadeDurationMs(
+      provider: .iem, isAnimating: isAnimating, isFuture: false) / 1000
+  }
+
+  static func progress(elapsed: TimeInterval, duration: TimeInterval) -> Float {
+    guard duration > 0 else { return 1 }
+    return Float(min(1, max(0, elapsed / duration)))
+  }
+
+  static func layerOpacities(progress: Float, global: Float)
+    -> (outgoing: Float, incoming: Float)
+  {
+    let t = min(1, max(0, progress))
+    return (global * (1 - t), global * t)
+  }
+}
+
+/// LRU cache of CPU trapezoid meshes keyed by site + volume time.
+/// Sized for the whole ~1h Live Site Doppler loop so 2x play is a hit.
 final class Level3PolarMeshCache: @unchecked Sendable {
   static let shared = Level3PolarMeshCache()
-  private let lock = NSLock()
+  /// `siteLoopMaxFrames` plus a few reload-overlap volumes.
+  static let maxEntries = RadarLivePresentation.siteLoopMaxFrames + 4
+
+  private let condition = NSCondition()
   private var byKey: [String: Level3PolarGateMesh.Mesh] = [:]
   private var order: [String] = []
-  private let maxEntries = 8
+  private var building = Set<String>()
+  private var hitCount = 0
+  private var missCount = 0
 
   private init() {}
 
   func mesh(for sweep: Level3N0BSweep) -> Level3PolarGateMesh.Mesh {
     let key = Level3N0BSweepStore.exactKey(site: sweep.siteID, timestamp: sweep.timestamp)
-    lock.lock()
+    condition.lock()
     if let hit = byKey[key] {
-      lock.unlock()
+      touchLocked(key)
+      hitCount += 1
+      condition.unlock()
       return hit
     }
-    lock.unlock()
+    if building.contains(key) {
+      while building.contains(key) {
+        condition.wait()
+      }
+      if let hit = byKey[key] {
+        touchLocked(key)
+        hitCount += 1
+        condition.unlock()
+        return hit
+      }
+    }
+    building.insert(key)
+    condition.unlock()
+
     let built = Level3PolarGateMesh.build(sweep: sweep)
-    lock.lock()
+
+    condition.lock()
     byKey[key] = built
+    if let idx = order.firstIndex(of: key) {
+      order.remove(at: idx)
+    }
     order.append(key)
-    while order.count > maxEntries {
+    while order.count > Self.maxEntries {
       let old = order.removeFirst()
       byKey.removeValue(forKey: old)
     }
-    lock.unlock()
+    building.remove(key)
+    missCount += 1
+    condition.broadcast()
+    condition.unlock()
     return built
   }
 
   func cached(site: String, timestamp: Date) -> Level3PolarGateMesh.Mesh? {
     let key = Level3N0BSweepStore.exactKey(site: site, timestamp: timestamp)
-    lock.lock()
-    defer { lock.unlock() }
+    condition.lock()
+    defer { condition.unlock() }
     return byKey[key]
   }
 
+  /// Newest first (Live open still), then oldest→newest so Play's first frames
+  /// are warm before the 8-slot LRU hitch can start.
+  func warmPlayLoop(_ sweeps: [Level3N0BSweep]) {
+    guard let newest = sweeps.last else { return }
+    _ = mesh(for: newest)
+    for sweep in sweeps.dropLast() {
+      _ = mesh(for: sweep)
+    }
+  }
+
+  func warmPlayLoopConcurrent(_ sweeps: [Level3N0BSweep]) async {
+    guard let newest = sweeps.last else { return }
+    _ = mesh(for: newest)
+    let rest = Array(sweeps.dropLast())
+    await withTaskGroup(of: Void.self) { group in
+      var next = 0
+      let width = min(2, rest.count)
+      func enqueue() {
+        guard next < rest.count else { return }
+        let sweep = rest[next]
+        next += 1
+        group.addTask {
+          _ = self.mesh(for: sweep)
+        }
+      }
+      for _ in 0..<width { enqueue() }
+      for await _ in group {
+        enqueue()
+      }
+    }
+    radarLog("[Level3] polar mesh cache warm \(sweeps.count) frames")
+  }
+
+  func keepOnly(keys: Set<String>) {
+    condition.lock()
+    order.removeAll { key in
+      if keys.contains(key) { return false }
+      byKey.removeValue(forKey: key)
+      return true
+    }
+    condition.unlock()
+  }
+
   func removeAll() {
-    lock.lock()
+    condition.lock()
     byKey.removeAll(keepingCapacity: true)
     order.removeAll(keepingCapacity: true)
-    lock.unlock()
+    building.removeAll(keepingCapacity: true)
+    hitCount = 0
+    missCount = 0
+    condition.broadcast()
+    condition.unlock()
+  }
+
+  func stats() -> (count: Int, hits: Int, misses: Int) {
+    condition.lock()
+    defer { condition.unlock() }
+    return (order.count, hitCount, missCount)
+  }
+
+  func resetStats() {
+    condition.lock()
+    hitCount = 0
+    missCount = 0
+    condition.unlock()
+  }
+
+  private func touchLocked(_ key: String) {
+    if let idx = order.firstIndex(of: key) {
+      order.remove(at: idx)
+      order.append(key)
+    }
   }
 }
