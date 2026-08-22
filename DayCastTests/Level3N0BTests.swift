@@ -206,6 +206,92 @@ final class Level3N0BTests: XCTestCase {
       accuracy: 0.0001)
   }
 
+  func testGateIndexedPaintByteClosesKeyedCracks() {
+    let cracked = Self.spokeSweep(azimuth: 90, byte: 146, holeAzimuth: 90.5, holeByte: 86)
+    let holeRadial = Int((90.5 / 0.5).rounded(.down))
+    XCTAssertEqual(cracked.radials[holeRadial].gates[10], 86)
+    XCTAssertEqual(
+      cracked.paintByte(radialIndex: holeRadial, gateIndex: 10), 146,
+      "discrete hole-fill must close 5–14 dBZ cracks for trapezoid paint")
+    let spoke = Self.spokeSweep(azimuth: 90, byte: 146)
+    XCTAssertEqual(spoke.paintByte(radialIndex: 0, gateIndex: 10), 0)
+  }
+
+  func testMetalMeshEmitsWideningTrapezoidsNotMercatorSquares() {
+    XCTAssertEqual(MemoryLayout<Level3PolarVertex>.offset(of: \.r), 8)
+    let sweep = Self.spokeSweep(azimuth: 45, byte: 146, bins: 80)
+    let mesh = Level3PolarGateMesh.build(sweep: sweep)
+    XCTAssertGreaterThan(mesh.triangleCount, 0)
+    XCTAssertEqual(mesh.vertices.count % 3, 0)
+
+    var inner = 0.0
+    var outer = 0.0
+    var i = 0
+    while i + 5 < mesh.vertices.count {
+      inner = max(inner, Self.groundMeters(mesh.vertices[i], mesh.vertices[i + 1]))
+      outer = max(outer, Self.groundMeters(mesh.vertices[i + 2], mesh.vertices[i + 5]))
+      i += 6
+    }
+    XCTAssertGreaterThan(outer, 50, "far-range 0.5° gate must be tens of meters wide")
+    XCTAssertGreaterThan(outer, inner * 2.5, "far-range gates must be wider wedges")
+  }
+
+  func testMetalMeshSkipsClearAirAndKeeps15Green() {
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 96, bins: 40)
+    let mesh = Level3PolarGateMesh.build(sweep: sweep)
+    XCTAssertGreaterThan(mesh.vertices.count, 0)
+    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a > 200 })
+    XCTAssertEqual(mesh.vertices.first?.r, 0)
+    XCTAssertGreaterThan(mesh.vertices.first?.g ?? 0, 240)
+
+    let clear = Self.spokeSweep(azimuth: 90, byte: 86, bins: 40)
+    let empty = Level3PolarGateMesh.build(sweep: clear)
+    XCTAssertEqual(empty.triangleCount, 0, "10 dBZ cyan floor must not emit trapezoids")
+  }
+
+  func testMetalMeshHoleFillDoesNotDilateClearAir() {
+    let cracked = Self.spokeSweep(azimuth: 90, byte: 146, holeAzimuth: 90.5, holeByte: 86)
+    let filled = Level3PolarGateMesh.build(sweep: cracked)
+    let disk = Level3PolarGateMesh.build(
+      sweep: Self.spokeSweep(azimuth: 90, byte: 146, holeAzimuth: 90.5, holeByte: 146))
+    XCTAssertGreaterThan(filled.triangleCount, 0)
+    XCTAssertEqual(
+      filled.triangleCount, disk.triangleCount,
+      "keyed crack through precip becomes a neighbor trapezoid")
+
+    let edge = Self.spokeSweep(azimuth: 90, byte: 146)
+    let mesh = Level3PolarGateMesh.build(sweep: edge)
+    let cosLat = cos(edge.latitude * .pi / 180)
+    let north = Level3PolarGateMesh.destination(
+      lat0Deg: edge.latitude,
+      lon0Deg: edge.longitude,
+      metersPerDegLat: 111_320,
+      metersPerDegLon: 111_320 * cosLat,
+      sinAz: 0, cosAz: 1, rangeMeters: 5_000)
+    let merc = Level3PolarGateMesh.mercatorXY(latitude: north.lat, longitude: north.lon)
+    let hit = mesh.vertices.contains { v in
+      abs(Double(v.mercX) - merc.x) < 0.00005 && abs(Double(v.mercY) - merc.y) < 0.00005
+    }
+    XCTAssertFalse(hit, "one-sided spoke edge must not grow north into clear air")
+  }
+
+  func testMetalMeshBuildsLiveAWSFileIfPresent() throws {
+    let root = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+    let file = root.appendingPathComponent(
+      "scratch/radar-site-level3-2026-08-22/src/TWX_N0B_2026_08_22_13_39_44")
+    guard FileManager.default.fileExists(atPath: file.path) else { return }
+    let data = try Data(contentsOf: file)
+    let sweep = try XCTUnwrap(Level3N0BDecoder.decode(data, siteHint: "TWX"))
+    let mesh = Level3PolarGateMesh.build(sweep: sweep)
+    XCTAssertGreaterThan(mesh.triangleCount, 1_000)
+    XCTAssertLessThan(
+      mesh.buildMilliseconds, 400,
+      "mesh build must stay inside a 2x playback budget on CI")
+    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a > 0 })
+  }
+
   func testPolarFrameTileKeyDistinctFromIEM() {
     let ts = Date(timeIntervalSince1970: 1_787_405_984)
     let iem = RadarFrame(
@@ -262,6 +348,24 @@ final class Level3N0BTests: XCTestCase {
       dbzLUT: lut,
       rgbaLUT: Level3N0BDecoder.rgbaLUT(from: lut),
       hasOrganizedPrecip: true)
+  }
+
+  private static func groundMeters(_ a: Level3PolarVertex, _ b: Level3PolarVertex) -> Double {
+    let aLL = mercatorToLatLon(x: Double(a.mercX), y: Double(a.mercY))
+    let bLL = mercatorToLatLon(x: Double(b.mercX), y: Double(b.mercY))
+    let lat1 = aLL.lat * .pi / 180
+    let lat2 = bLL.lat * .pi / 180
+    let dLat = lat2 - lat1
+    let dLon = (bLL.lon - aLL.lon) * .pi / 180
+    let h =
+      sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+    return 2 * 6_371_000 * asin(min(1, sqrt(h)))
+  }
+
+  private static func mercatorToLatLon(x: Double, y: Double) -> (lat: Double, lon: Double) {
+    let lon = x * 360 - 180
+    let lat = atan(sinh(.pi * (1 - 2 * y))) * 180 / .pi
+    return (lat, lon)
   }
 
   private static func azimuthSpanWithData(sweep: Level3N0BSweep, rangeMeters: Double) -> Double

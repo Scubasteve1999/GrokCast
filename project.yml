@@ -66,6 +66,7 @@ targetTemplates:
       - sdk: ActivityKit.framework
       - sdk: AppIntents.framework
       - sdk: libbz2.tbd
+      - sdk: Metal.framework
 
 targets:
   DayCast:

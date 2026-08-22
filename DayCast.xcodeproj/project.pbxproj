@@ -98,10 +98,12 @@
 		535EB9E5B68B584F85B76066 /* TripPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655C014CC78B4648C3AEE3FE /* TripPlannerView.swift */; };
 		5424F306C67503AC5F29311D /* GrokAccessRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C0BAA60DB18B91FD2B5BCB /* GrokAccessRules.swift */; };
 		5659BD98140E9FC58743C789 /* FIRMSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF428440D691785729D1494 /* FIRMSService.swift */; };
+		56D7D480CA4CEFF2EBE9E1A8 /* Level3PolarGateMesh.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46110249A5A55862851B4CF /* Level3PolarGateMesh.swift */; };
 		5895A1D178733CA09C877498 /* Level3N0BSweep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B33AEBCC066161FFF7B475C /* Level3N0BSweep.swift */; };
 		5A4B3D6FF433EEC80066EE41 /* Shimmer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDCD398C47456C76BC945AE6 /* Shimmer.swift */; };
 		5B39CA67905A5B89B7D68CB5 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EAA01BFCA534DFEAFC4234E /* TodayView.swift */; };
 		5CC8C54F30F2008545049585 /* RadarState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130A5D059F4E7BE59D84F1E9 /* RadarState.swift */; };
+		5D602D54F2151588BF783AC8 /* Level3Polar.metal in Sources */ = {isa = PBXBuildFile; fileRef = 9AF4B56FCD24975A4EC91CA2 /* Level3Polar.metal */; };
 		5D6684F6373F3BE0112AECD1 /* OpenWeatherMapRadarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD833B40415072C010726AB6 /* OpenWeatherMapRadarService.swift */; };
 		5D686A3D72C78649E6FA3154 /* MorningBriefGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA30560F9886B3664570F56 /* MorningBriefGenerator.swift */; };
 		5DB358495467BB9B9D3B18FE /* WeatherLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2191CF5981DA494B1921694 /* WeatherLiveActivityAttributes.swift */; };
@@ -131,6 +133,7 @@
 		6ED7EFF393260841F1C8A25F /* Level3PolarTilePainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 632EE400B865D9993128627F /* Level3PolarTilePainter.swift */; };
 		70012A0E8858AF28A3FE297B /* SmallWeatherWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BD96EF3042487A5E6F1BAF /* SmallWeatherWidgetView.swift */; };
 		70B5A91705402128D5CE5CE8 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6FA010DD5E336453535FDB /* DesignTokens.swift */; };
+		7187C10C70B6156D0C465639 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6635E0E0D1DA00401CBEBD24 /* Metal.framework */; };
 		727EDB8342EED3D4401D4B46 /* GrokBriefSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82AFDBD5FA7F7FC588A7F9B5 /* GrokBriefSafety.swift */; };
 		72BBDBFD282D519CC1A0198A /* GrokUsageLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */; };
 		72F2AE3017181425828C4D66 /* OpenMeteoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87159F8D417E8988A505FC20 /* OpenMeteoModels.swift */; };
@@ -155,6 +158,7 @@
 		81BDFE0B8D36FAB0AE7EB769 /* WidgetAppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93DB2ABC43A84A7E02CAC21F /* WidgetAppGroup.swift */; };
 		81C2039DB2AD4BBAC4535D45 /* WidgetTimelineReloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373E45D03390CC816D80697E /* WidgetTimelineReloader.swift */; };
 		81C95AC781203914B7C085CA /* GrokImagineResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCEF80E0E0EE07171967065A /* GrokImagineResultView.swift */; };
+		83B7D49E1AF43880D9D87DD7 /* Level3PolarMetalHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB84772D5264F747072B1B5 /* Level3PolarMetalHost.swift */; };
 		83FFA219B015D8A317814B34 /* RainAlertService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0416C99BB85F66803E9B475 /* RainAlertService.swift */; };
 		860D23B2DCC0089B4D9DC1FE /* MRMSNationalSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59DE278FF74080A30F5D741 /* MRMSNationalSourceTests.swift */; };
 		8A5DF100175C877FD8AE8BAA /* TodayFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3AAC3C15FD1B2E68CB61B1 /* TodayFeedView.swift */; };
@@ -442,6 +446,7 @@
 		62C5BE657D13E3388F9E388E /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		632EE400B865D9993128627F /* Level3PolarTilePainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3PolarTilePainter.swift; sourceTree = "<group>"; };
 		655C014CC78B4648C3AEE3FE /* TripPlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripPlannerView.swift; sourceTree = "<group>"; };
+		6635E0E0D1DA00401CBEBD24 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		6650C048F6CA59F0AD726F7E /* OpenWeatherMapService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapService.swift; sourceTree = "<group>"; };
 		681B8EFA71DA2E012D77F4E3 /* RadarPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPlaybackTests.swift; sourceTree = "<group>"; };
 		6890616F733AA4EAD75CB81D /* AlertsFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsFeedCard.swift; sourceTree = "<group>"; };
@@ -495,6 +500,7 @@
 		999642A4FA30958744EFB10A /* RadarLivePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarLivePresentationTests.swift; sourceTree = "<group>"; };
 		9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokUsageLimiterTests.swift; sourceTree = "<group>"; };
 		9A270636E6538021FD147BB8 /* SPCSevereService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCSevereService.swift; sourceTree = "<group>"; };
+		9AF4B56FCD24975A4EC91CA2 /* Level3Polar.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Level3Polar.metal; sourceTree = "<group>"; };
 		9B072FAB6C8278751CF5E72A /* DeveloperAPIKey.swift.example */ = {isa = PBXFileReference; path = DeveloperAPIKey.swift.example; sourceTree = "<group>"; };
 		9B5209B61529516137ADA7DA /* FeedAssemblerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedAssemblerTests.swift; sourceTree = "<group>"; };
 		9C39E4354D382B96A752F190 /* AppReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPrompt.swift; sourceTree = "<group>"; };
@@ -535,6 +541,7 @@
 		B51E71CBAB003104AE501109 /* CitySearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitySearch.swift; sourceTree = "<group>"; };
 		B87F8FCB7DA5A0448C53C9F4 /* ShortTermPrecipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortTermPrecipStore.swift; sourceTree = "<group>"; };
 		B884314715997DAC2C6B68E7 /* GrokAIViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAIViewModel.swift; sourceTree = "<group>"; };
+		BBB84772D5264F747072B1B5 /* Level3PolarMetalHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3PolarMetalHost.swift; sourceTree = "<group>"; };
 		BCEF80E0E0EE07171967065A /* GrokImagineResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokImagineResultView.swift; sourceTree = "<group>"; };
 		BD4B0E558818D94C18033738 /* FireRadarOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireRadarOverlay.swift; sourceTree = "<group>"; };
 		C038A8F618D6CB171729FF02 /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
@@ -543,6 +550,7 @@
 		C1788DDA014C0E918894B23D /* DayCastScoreCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastScoreCalculatorTests.swift; sourceTree = "<group>"; };
 		C1C02F68938EE2AC612CD623 /* WeatherLiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLiveActivityManager.swift; sourceTree = "<group>"; };
 		C1FC64509D3C9CFFD19B7CF6 /* EntitlementChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntitlementChecker.swift; sourceTree = "<group>"; };
+		C46110249A5A55862851B4CF /* Level3PolarGateMesh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3PolarGateMesh.swift; sourceTree = "<group>"; };
 		C8A0E85AF7FFE9723749A4B0 /* OpenWeatherMapForecastChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapForecastChip.swift; sourceTree = "<group>"; };
 		C96F869480EBCC4B93303B00 /* DailyRowSkeleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyRowSkeleton.swift; sourceTree = "<group>"; };
 		CA7A41096F01DF0C5EDA8F96 /* GrokAuthResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAuthResolver.swift; sourceTree = "<group>"; };
@@ -624,6 +632,7 @@
 				14AC6671ACB6E6284AB8EC39 /* ActivityKit.framework in Frameworks */,
 				C4972F1D0BB76B932204BC73 /* AppIntents.framework in Frameworks */,
 				93FB0F626F5BA71B9AD4FCA1 /* libbz2.tbd in Frameworks */,
+				7187C10C70B6156D0C465639 /* Metal.framework in Frameworks */,
 				3644B15871D939A01772547B /* MapboxMaps in Frameworks */,
 				11284AB72B03A5E9411A7B54 /* MapsGL in Frameworks */,
 				7FEF022F4D0BE02EC397CA2B /* FirebaseMessaging in Frameworks */,
@@ -736,6 +745,9 @@
 				ADAFBE6CC0235E69537970C7 /* Level3BZip2.swift */,
 				F818036AA59AEADA6DE23FCB /* Level3N0BDecoder.swift */,
 				5B33AEBCC066161FFF7B475C /* Level3N0BSweep.swift */,
+				9AF4B56FCD24975A4EC91CA2 /* Level3Polar.metal */,
+				C46110249A5A55862851B4CF /* Level3PolarGateMesh.swift */,
+				BBB84772D5264F747072B1B5 /* Level3PolarMetalHost.swift */,
 				632EE400B865D9993128627F /* Level3PolarTilePainter.swift */,
 				84D9E5EAFA5F12700176F5E2 /* NWSRadarProduct.swift */,
 				313EDB6CF096C61129D31746 /* NWSWarningRadarOverlay.swift */,
@@ -1259,6 +1271,7 @@
 				3C75DB7EB509515CAD1FB40E /* Foundation.framework */,
 				F850D569D46C2613B644F665 /* libbz2.tbd */,
 				5C8EA2119040603711FCED49 /* MapKit.framework */,
+				6635E0E0D1DA00401CBEBD24 /* Metal.framework */,
 				89A93680E3BB758EED0AEBAC /* PhotosUI.framework */,
 				D83F27355A300AE91A235E60 /* SwiftData.framework */,
 				6CF8E942DAF5E1E61B1AC5F5 /* SwiftUI.framework */,
@@ -1610,6 +1623,9 @@
 				6BD506E759E563FE78598D2F /* Level3N0BDecoder.swift in Sources */,
 				EEA792DB5391989404E83111 /* Level3N0BService.swift in Sources */,
 				5895A1D178733CA09C877498 /* Level3N0BSweep.swift in Sources */,
+				5D602D54F2151588BF783AC8 /* Level3Polar.metal in Sources */,
+				56D7D480CA4CEFF2EBE9E1A8 /* Level3PolarGateMesh.swift in Sources */,
+				83B7D49E1AF43880D9D87DD7 /* Level3PolarMetalHost.swift in Sources */,
 				6ED7EFF393260841F1C8A25F /* Level3PolarTilePainter.swift in Sources */,
 				EC0E1CA44F488C6AE693F18A /* Location.swift in Sources */,
 				94E703A99435944B09CABD34 /* LocationChipBar.swift in Sources */,

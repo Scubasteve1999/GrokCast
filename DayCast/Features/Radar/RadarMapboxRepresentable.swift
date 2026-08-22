@@ -197,6 +197,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
         (self.appliedBaseMapStyle ?? .light).applyQuietWorkstation(to: mapView)
         self.layersInstalled = false
+        self.polarLayerInstalled = false
+        self.polarLayerFailed = false
         self.lastAppliedFireSignature = nil
         self.lastAppliedWarningSignature = nil
         self.mapsGLHost.onLayerStateChange = { [weak self, weak mapView] in
@@ -220,6 +222,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private var lastAppliedWarningSignature: String?
     private var pendingAlerts: [NWSAlert] = []
     private let mapsGLHost = MapsGLRadarHost()
+    private let polarHost = Level3PolarMetalHost()
+    private var polarLayerInstalled = false
+    private var polarLayerFailed = false
+    private var lastPolarOpacity: Float?
     private var lastRadarState: RadarState?
     private var lastSyncOpacity: Double = RadarPreferences.defaultRadarOpacity
 
@@ -298,6 +304,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
 
       reconcileBaseMapStyle(mapView: mapView, style: radarState.baseMapStyle)
+      reconcilePolar(mapView: mapView, radarState: radarState, opacity: opacity)
 
       let desired = resolveDesiredState(
         from: radarState,
@@ -352,6 +359,58 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
     }
 
+    private func reconcilePolar(
+      mapView: MapView, radarState: RadarState, opacity: Double
+    ) {
+      guard mapView.mapboxMap.isStyleLoaded else { return }
+      ensurePolarLayer(on: mapView)
+      let polarOpacity = Float(opacity)
+      polarHost.setSweep(Self.polarSweep(from: radarState), opacity: polarOpacity) {
+        [weak self, weak mapView] in
+        guard let self, let mapView else { return }
+        self.refreshDesiredState(on: mapView)
+        mapView.mapboxMap.triggerRepaint()
+      }
+      if lastPolarOpacity != polarOpacity {
+        lastPolarOpacity = polarOpacity
+        mapView.mapboxMap.triggerRepaint()
+      }
+    }
+
+    private func ensurePolarLayer(on mapView: MapView) {
+      if polarLayerInstalled || polarLayerFailed { return }
+      if mapView.mapboxMap.layerExists(withId: Level3PolarMetalHost.layerID) {
+        polarLayerInstalled = true
+        return
+      }
+      do {
+        try mapView.mapboxMap.addCustomLayer(
+          withId: Level3PolarMetalHost.layerID,
+          layerHost: polarHost,
+          layerPosition: nil)
+        polarLayerInstalled = true
+      } catch {
+        polarLayerFailed = true
+        radarLog("[Level3] polar Metal layer failed: \(error)")
+      }
+    }
+
+    static func polarSweep(from radarState: RadarState) -> Level3N0BSweep? {
+      guard radarState.showRadarOverlay,
+        let frame = radarState.currentFrame,
+        frame.paintsPolarRadials
+      else { return nil }
+      if let site = radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id,
+        let sweep = Level3N0BSweepStore.shared.sweep(site: site, timestamp: frame.timestamp)
+      {
+        return sweep
+      }
+      guard let url = frame.tileURLTemplates.first,
+        let ref = Level3PolarTilePainter.parse(url)
+      else { return nil }
+      return Level3N0BSweepStore.shared.sweep(site: ref.site, timestamp: ref.timestamp)
+    }
+
     private func resolveDesiredState(
       from radarState: RadarState, opacity: Double, cameraZoom: Double
     ) -> DesiredRasterState {
@@ -365,6 +424,12 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       // Encoded MapsGL rain replaces baked PNG only after the Metal layer is up.
       // If add fails, the existing PNG path (MRMS tiles or Xweather) stays visible.
       if mapsGLRain, mapsGLHost.isReady { return .hidden }
+      // Level III polar Metal trapezoids replace mercator PNG nearest-sample.
+      // Hide IEM/CPU tiles as soon as a sweep is loaded so 5–10 dBZ cyan
+      // cannot composite under the mesh.
+      if Self.polarSweep(from: radarState) != nil, !polarLayerFailed, !polarHost.pipelineFailed {
+        return .hidden
+      }
 
       guard radarState.showRadarOverlay,
         radarState.activeShowsTiles,
@@ -476,6 +541,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         flushPendingDesiredState(on: mapView)
         return
       }
+      reconcilePolar(mapView: mapView, radarState: radarState, opacity: lastSyncOpacity)
       let desired = resolveDesiredState(
         from: radarState,
         opacity: lastSyncOpacity,
@@ -493,6 +559,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     private func flushPendingDesiredState(on mapView: MapView) {
       guard mapView.mapboxMap.isStyleLoaded else { return }
       MapViewHostingSanitizer.sanitize(mapView)
+      if let radarState = lastRadarState {
+        reconcilePolar(mapView: mapView, radarState: radarState, opacity: lastSyncOpacity)
+      }
       if let desired = pendingDesiredState {
         reconcile(mapView: mapView, desired: desired)
       }

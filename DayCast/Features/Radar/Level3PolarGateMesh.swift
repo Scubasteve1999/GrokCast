@@ -1,0 +1,206 @@
+import Foundation
+
+/// One vertex of a polar gate trapezoid in WebMercator [0, 1].
+struct Level3PolarVertex {
+  var mercX: Float
+  var mercY: Float
+  var r: UInt8
+  var g: UInt8
+  var b: UInt8
+  var a: UInt8
+}
+
+/// CPU mesh: each opaque N0B gate (after paintByte hole-fill) is a trapezoid
+/// (az0..az1, r0..r1) projected to mercator. Same-color consecutive gates along
+/// a radial merge into one trapezoid. No dBZ blend.
+enum Level3PolarGateMesh {
+  struct Mesh {
+    var vertices: [Level3PolarVertex]
+    var triangleCount: Int { vertices.count / 3 }
+    var buildMilliseconds: Double
+  }
+
+  static func build(sweep: Level3N0BSweep) -> Mesh {
+    let t0 = CFAbsoluteTimeGetCurrent()
+    let n = sweep.radials.count
+    guard n > 0 else {
+      return Mesh(vertices: [], buildMilliseconds: 0)
+    }
+
+    var vertices: [Level3PolarVertex] = []
+    vertices.reserveCapacity(1_200_000)
+
+    let lat0Deg = sweep.latitude
+    let lon0Deg = sweep.longitude
+    let cosLat0 = cos(lat0Deg * .pi / 180)
+    let metersPerDegLat = 111_320.0
+    let metersPerDegLon = 111_320.0 * max(0.2, cosLat0)
+    let gateW = sweep.gateWidthMeters
+
+    for i in 0..<n {
+      let radial = sweep.radials[i]
+      let next = sweep.radials[(i + 1) % n]
+      let az0 = radial.startAzimuth
+      var daz = next.startAzimuth - az0
+      if daz <= 0 { daz += 360 }
+      let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
+      let az1 = az0 + (daz > span * 2.5 ? span : daz)
+
+      let az0rad = az0 * .pi / 180
+      let az1rad = az1 * .pi / 180
+      let sinAz0 = sin(az0rad)
+      let cosAz0 = cos(az0rad)
+      let sinAz1 = sin(az1rad)
+      let cosAz1 = cos(az1rad)
+
+      let gates = radial.gates
+      var j = 0
+      while j < gates.count {
+        guard let byte = sweep.paintByte(radialIndex: i, gateIndex: j),
+          sweep.isOpaque(byte)
+        else {
+          j += 1
+          continue
+        }
+        var jEnd = j + 1
+        while jEnd < gates.count,
+          let nextByte = sweep.paintByte(radialIndex: i, gateIndex: jEnd),
+          nextByte == byte
+        {
+          jEnd += 1
+        }
+        let color = sweep.rgbaLUT[Int(byte)]
+        appendTrapezoid(
+          lat0Deg: lat0Deg,
+          lon0Deg: lon0Deg,
+          metersPerDegLat: metersPerDegLat,
+          metersPerDegLon: metersPerDegLon,
+          sinAz0: sinAz0,
+          cosAz0: cosAz0,
+          sinAz1: sinAz1,
+          cosAz1: cosAz1,
+          r0: Double(j) * gateW,
+          r1: Double(jEnd) * gateW,
+          color: color,
+          into: &vertices)
+        j = jEnd
+      }
+    }
+
+    return Mesh(
+      vertices: vertices,
+      buildMilliseconds: (CFAbsoluteTimeGetCurrent() - t0) * 1000)
+  }
+
+  /// WebMercator x/y in [0, 1], matching Mapbox `latLngToMercatorXY`.
+  static func mercatorXY(latitude: Double, longitude: Double) -> (x: Double, y: Double) {
+    let x = (longitude + 180) / 360
+    let clamped = min(max(latitude, -85.05112878), 85.05112878)
+    let latRad = clamped * .pi / 180
+    let y = (1 - log(tan(.pi / 4 + latRad / 2)) / .pi) / 2
+    return (x, y)
+  }
+
+  /// Local tangent-plane dest. Error at 230 km is sub-pixel at overview.
+  static func destination(
+    lat0Deg: Double, lon0Deg: Double,
+    metersPerDegLat: Double, metersPerDegLon: Double,
+    sinAz: Double, cosAz: Double, rangeMeters: Double
+  ) -> (lat: Double, lon: Double) {
+    if rangeMeters <= 0 { return (lat0Deg, lon0Deg) }
+    let north = rangeMeters * cosAz
+    let east = rangeMeters * sinAz
+    return (lat0Deg + north / metersPerDegLat, lon0Deg + east / metersPerDegLon)
+  }
+
+  private static func appendTrapezoid(
+    lat0Deg: Double, lon0Deg: Double,
+    metersPerDegLat: Double, metersPerDegLon: Double,
+    sinAz0: Double, cosAz0: Double, sinAz1: Double, cosAz1: Double,
+    r0: Double, r1: Double,
+    color: (UInt8, UInt8, UInt8, UInt8),
+    into vertices: inout [Level3PolarVertex]
+  ) {
+    let inner0 = destination(
+      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
+      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
+      sinAz: sinAz0, cosAz: cosAz0, rangeMeters: r0)
+    let inner1 = destination(
+      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
+      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
+      sinAz: sinAz1, cosAz: cosAz1, rangeMeters: r0)
+    let outer1 = destination(
+      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
+      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
+      sinAz: sinAz1, cosAz: cosAz1, rangeMeters: r1)
+    let outer0 = destination(
+      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
+      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
+      sinAz: sinAz0, cosAz: cosAz0, rangeMeters: r1)
+    let v0 = vertex(inner0, color)
+    let v1 = vertex(inner1, color)
+    let v2 = vertex(outer1, color)
+    let v3 = vertex(outer0, color)
+    vertices.append(v0)
+    vertices.append(v1)
+    vertices.append(v2)
+    vertices.append(v0)
+    vertices.append(v2)
+    vertices.append(v3)
+  }
+
+  private static func vertex(
+    _ ll: (lat: Double, lon: Double),
+    _ color: (UInt8, UInt8, UInt8, UInt8)
+  ) -> Level3PolarVertex {
+    let m = mercatorXY(latitude: ll.lat, longitude: ll.lon)
+    return Level3PolarVertex(
+      mercX: Float(m.x), mercY: Float(m.y),
+      r: color.0, g: color.1, b: color.2, a: color.3)
+  }
+}
+
+/// LRU-ish cache of CPU trapezoid meshes keyed by site + volume time.
+final class Level3PolarMeshCache: @unchecked Sendable {
+  static let shared = Level3PolarMeshCache()
+  private let lock = NSLock()
+  private var byKey: [String: Level3PolarGateMesh.Mesh] = [:]
+  private var order: [String] = []
+  private let maxEntries = 8
+
+  private init() {}
+
+  func mesh(for sweep: Level3N0BSweep) -> Level3PolarGateMesh.Mesh {
+    let key = Level3N0BSweepStore.exactKey(site: sweep.siteID, timestamp: sweep.timestamp)
+    lock.lock()
+    if let hit = byKey[key] {
+      lock.unlock()
+      return hit
+    }
+    lock.unlock()
+    let built = Level3PolarGateMesh.build(sweep: sweep)
+    lock.lock()
+    byKey[key] = built
+    order.append(key)
+    while order.count > maxEntries {
+      let old = order.removeFirst()
+      byKey.removeValue(forKey: old)
+    }
+    lock.unlock()
+    return built
+  }
+
+  func cached(site: String, timestamp: Date) -> Level3PolarGateMesh.Mesh? {
+    let key = Level3N0BSweepStore.exactKey(site: site, timestamp: timestamp)
+    lock.lock()
+    defer { lock.unlock() }
+    return byKey[key]
+  }
+
+  func removeAll() {
+    lock.lock()
+    byKey.removeAll(keepingCapacity: true)
+    order.removeAll(keepingCapacity: true)
+    lock.unlock()
+  }
+}

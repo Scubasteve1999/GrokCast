@@ -71,6 +71,32 @@ struct Level3N0BSweep {
     return byte
   }
 
+  /// Gate-indexed hole-fill for trapezoid paint. Neighbors are the previous /
+  /// next radial and inner / outer range bin — not a ±0.5° resample.
+  func paintByte(radialIndex: Int, gateIndex: Int) -> UInt8? {
+    guard radialIndex >= 0, radialIndex < radials.count else { return nil }
+    let gates = radials[radialIndex].gates
+    guard gateIndex >= 0, gateIndex < gates.count else { return nil }
+    let byte = gates[gateIndex]
+    if isOpaque(byte) { return byte }
+    let n = radials.count
+    if n >= 3 {
+      let left = radials[(radialIndex - 1 + n) % n].gates
+      let right = radials[(radialIndex + 1) % n].gates
+      if gateIndex < left.count, gateIndex < right.count,
+        isOpaque(left[gateIndex]), isOpaque(right[gateIndex])
+      {
+        return left[gateIndex]
+      }
+    }
+    if gateIndex > 0, gateIndex + 1 < gates.count,
+      isOpaque(gates[gateIndex - 1]), isOpaque(gates[gateIndex + 1])
+    {
+      return gates[gateIndex - 1]
+    }
+    return byte
+  }
+
   func isOpaque(_ byte: UInt8) -> Bool {
     rgbaLUT[Int(byte)].3 != 0
   }

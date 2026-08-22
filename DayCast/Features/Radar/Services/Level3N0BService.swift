@@ -32,6 +32,12 @@ enum Level3N0BService {
         frames: loaded.frames, site: site, preferred: preferred)
       {
         Level3N0BSweepStore.shared.replace(loaded.sweeps)
+        let sweeps = loaded.sweeps
+        Task.detached(priority: .utility) {
+          for sweep in sweeps.reversed() {
+            _ = Level3PolarMeshCache.shared.mesh(for: sweep)
+          }
+        }
         radarLog(
           "[Level3] N0B polar \(site.id) \(loaded.frames.count) scans, newest \(Int(load.newestScanAge / 60))m"
         )
