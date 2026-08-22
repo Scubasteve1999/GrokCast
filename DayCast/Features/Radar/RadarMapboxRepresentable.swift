@@ -206,6 +206,11 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         self.mapsGLHost.attach(to: mapView)
         self.flushPendingDesiredState(on: mapView)
       }.store(in: &cancelables)
+
+      mapView.mapboxMap.onCameraChanged.observe { [weak self, weak mapView] _ in
+        guard let self, let mapView else { return }
+        self.refreshDesiredState(on: mapView)
+      }.store(in: &cancelables)
     }
 
     private var lastAppliedFireSignature: String?
@@ -294,7 +299,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
 
       reconcileBaseMapStyle(mapView: mapView, style: radarState.baseMapStyle)
 
-      let desired = resolveDesiredState(from: radarState, opacity: opacity)
+      let desired = resolveDesiredState(
+        from: radarState,
+        opacity: opacity,
+        cameraZoom: mapView.mapboxMap.cameraState.zoom)
       pendingDesiredState = desired.visible ? desired : nil
 
       guard mapView.mapboxMap.isStyleLoaded else {
@@ -344,7 +352,9 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       }
     }
 
-    private func resolveDesiredState(from radarState: RadarState, opacity: Double) -> DesiredRasterState {
+    private func resolveDesiredState(
+      from radarState: RadarState, opacity: Double, cameraZoom: Double
+    ) -> DesiredRasterState {
       mapsGLHost.sync(radarState: radarState, opacity: opacity)
       let mapsGLRain = MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: radarState.showRadarOverlay,
@@ -395,9 +405,11 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         hueRotate = scheme.rasterHueRotate
         emissive = scheme.rasterEmissiveStrength
       }
-      let nearestResampling =
-        frame.provider == .mrms
-        || (!isFuture && MapsGLRadarPalette.liveRasterUsesNearestResampling)
+      let nearestResampling = MapsGLRadarPalette.usesNearestResampling(
+        provider: frame.provider,
+        isFuture: isFuture,
+        cameraZoom: cameraZoom
+      )
 
       return DesiredRasterState(
         tileURLs: frame.tileURLTemplates,
@@ -462,7 +474,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         flushPendingDesiredState(on: mapView)
         return
       }
-      let desired = resolveDesiredState(from: radarState, opacity: lastSyncOpacity)
+      let desired = resolveDesiredState(
+        from: radarState,
+        opacity: lastSyncOpacity,
+        cameraZoom: mapView.mapboxMap.cameraState.zoom)
       pendingDesiredState = desired.visible ? desired : nil
       reconcile(mapView: mapView, desired: desired)
       reconcileFireOverlay(

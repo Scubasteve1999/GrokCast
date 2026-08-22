@@ -100,6 +100,29 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(
       MapsGLRadarPalette.colorScaleBreaks, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70])
     XCTAssertTrue(MapsGLRadarPalette.liveRasterUsesNearestResampling)
+    XCTAssertEqual(MapsGLRadarPalette.iemNativeTileZoom, 8.5, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.iemDisplayMaxZoom, 12, accuracy: 0.0001)
+    XCTAssertTrue(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .iem, isFuture: false, cameraZoom: 6))
+    XCTAssertTrue(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .iem, isFuture: false, cameraZoom: 8.5))
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .iem, isFuture: false, cameraZoom: 8.51))
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .iem, isFuture: false, cameraZoom: 9.3))
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .iem, isFuture: false, cameraZoom: 11))
+    XCTAssertTrue(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .mrms, isFuture: false, cameraZoom: 12))
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .iem, isFuture: true, cameraZoom: 6))
     XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
     XCTAssertEqual(MapsGLRadarPalette.bandIntervalDbz, 5)
 

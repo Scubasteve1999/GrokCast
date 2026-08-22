@@ -12,9 +12,21 @@ import UniformTypeIdentifiers
 ///
 /// Not a dBZ < 20 cutoff: 15 dBZ NWS green (`#00FF00` / IEM `#11D518`) keeps.
 /// Not opacity, blur, glow, or sat/hue retint.
+///
+/// Past ~z9, IEM's own tiles are nearest-upsampled cartesian gates. After
+/// clutter-key, recover that native grid and palette-snap upsample so close
+/// zoom is not Minecraft squares and dBZ colors stay discrete.
 enum IEMSiteReflectivityPaint {
   /// 8-neighbor count at or below this is an isolated gate, not a rain cell.
   static let speckleMaxNeighbors = 1
+  /// Smallest integer upsample (2/4/8) treated as empty IEM overzoom.
+  static let overzoomBlockSizes = [8, 4, 2]
+  /// Opaque N×N blocks that are a single color. z10 IEM is ~89% 2×2;
+  /// native z8 is ~33% and must not refine.
+  static let overzoomIdenticalBlockFraction = 0.78
+  /// Skip tiny synthetic tiles (unit tests) and empty frames.
+  static let overzoomMinDimension = 16
+  static let overzoomMinOpaqueBlocks = 8
   /// Dusty khaki at the site circle is sat 28–38, not the old sat < 28 floor.
   static let dustyMaxSaturation: Double = 42
   /// IEM 15 dBZ green is hue ~122 (`#11D518`); `#35D65B` is ~134. Hue 138+
@@ -183,6 +195,9 @@ enum IEMSiteReflectivityPaint {
         buffer[o + 3] = 0
       }
 
+      refineOverzoomedGates(
+        buffer: buffer, width: width, height: height, bytesPerPixel: bytesPerPixel)
+
       guard let outImage = context.makeImage() else { return png }
       let destData = NSMutableData()
       guard
@@ -285,6 +300,169 @@ enum IEMSiteReflectivityPaint {
       }
       if !hasCore {
         for i in cells { filtered[i] = 0 }
+      }
+    }
+  }
+
+  /// IEM z10+ tiles are N×N copies of a coarser cartesian gate. Recover the
+  /// native cell, bilinear-upsample, snap RGB to a real NWS/IEM stop, keep
+  /// fractional alpha so rain/clear edges are not jagged squares.
+  static func inferredOverzoomBlockSize(
+    buffer: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerPixel: Int
+  ) -> Int {
+    guard width >= overzoomMinDimension, height >= overzoomMinDimension else {
+      return 1
+    }
+    for size in overzoomBlockSizes {
+      guard width % size == 0, height % size == 0 else { continue }
+      var identical = 0
+      var opaqueBlocks = 0
+      let yBlocks = height / size
+      let xBlocks = width / size
+      for by in 0..<yBlocks {
+        for bx in 0..<xBlocks {
+          let x0 = bx * size
+          let y0 = by * size
+          let o0 = (y0 * width + x0) * bytesPerPixel
+          let r0 = buffer[o0]
+          let g0 = buffer[o0 + 1]
+          let b0 = buffer[o0 + 2]
+          let a0 = buffer[o0 + 3]
+          var anyOpaque = a0 > 0
+          var allSame = true
+          for dy in 0..<size {
+            for dx in 0..<size {
+              if dx == 0 && dy == 0 { continue }
+              let o = ((y0 + dy) * width + (x0 + dx)) * bytesPerPixel
+              let a = buffer[o + 3]
+              if a > 0 { anyOpaque = true }
+              if a != a0 || buffer[o] != r0 || buffer[o + 1] != g0 || buffer[o + 2] != b0 {
+                allSame = false
+              }
+            }
+          }
+          if anyOpaque {
+            opaqueBlocks += 1
+            if allSame { identical += 1 }
+          }
+        }
+      }
+      if opaqueBlocks >= overzoomMinOpaqueBlocks,
+        Double(identical) / Double(opaqueBlocks) >= overzoomIdenticalBlockFraction
+      {
+        return size
+      }
+    }
+    return 1
+  }
+
+  private static func refineOverzoomedGates(
+    buffer: UnsafeMutablePointer<UInt8>,
+    width: Int,
+    height: Int,
+    bytesPerPixel: Int
+  ) {
+    let block = inferredOverzoomBlockSize(
+      buffer: buffer, width: width, height: height, bytesPerPixel: bytesPerPixel)
+    guard block >= 2 else { return }
+
+    let nativeW = width / block
+    let nativeH = height / block
+    var native = [UInt8](repeating: 0, count: nativeW * nativeH * bytesPerPixel)
+    for ny in 0..<nativeH {
+      for nx in 0..<nativeW {
+        let src = (ny * block * width + nx * block) * bytesPerPixel
+        let dst = (ny * nativeW + nx) * bytesPerPixel
+        native[dst] = buffer[src]
+        native[dst + 1] = buffer[src + 1]
+        native[dst + 2] = buffer[src + 2]
+        native[dst + 3] = buffer[src + 3]
+      }
+    }
+
+    func nativePixel(_ nx: Int, _ ny: Int) -> (r: Int, g: Int, b: Int, a: Int) {
+      let x = min(max(nx, 0), nativeW - 1)
+      let y = min(max(ny, 0), nativeH - 1)
+      let o = (y * nativeW + x) * bytesPerPixel
+      return (
+        Int(native[o]), Int(native[o + 1]), Int(native[o + 2]), Int(native[o + 3])
+      )
+    }
+
+    for y in 0..<height {
+      for x in 0..<width {
+        let u = (Double(x) + 0.5) / Double(block) - 0.5
+        let v = (Double(y) + 0.5) / Double(block) - 0.5
+        let x0 = Int(floor(u))
+        let y0 = Int(floor(v))
+        let fu = u - Double(x0)
+        let fv = v - Double(y0)
+        let p00 = nativePixel(x0, y0)
+        let p10 = nativePixel(x0 + 1, y0)
+        let p01 = nativePixel(x0, y0 + 1)
+        let p11 = nativePixel(x0 + 1, y0 + 1)
+
+        let w00 = (1 - fu) * (1 - fv)
+        let w10 = fu * (1 - fv)
+        let w01 = (1 - fu) * fv
+        let w11 = fu * fv
+        let a =
+          Double(p00.a) * w00 + Double(p10.a) * w10 + Double(p01.a) * w01
+          + Double(p11.a) * w11
+        let outA = UInt8(min(255, max(0, a.rounded())))
+        let o = (y * width + x) * bytesPerPixel
+        if outA == 0 {
+          buffer[o] = 0
+          buffer[o + 1] = 0
+          buffer[o + 2] = 0
+          buffer[o + 3] = 0
+          continue
+        }
+
+        let corners = [p00, p10, p01, p11]
+        var br = 0.0
+        var bg = 0.0
+        var bb = 0.0
+        var ba = 0.0
+        let weights = [w00, w10, w01, w11]
+        for i in 0..<4 where corners[i].a > 0 {
+          let aw = Double(corners[i].a) * weights[i]
+          br += Double(corners[i].r) * aw
+          bg += Double(corners[i].g) * aw
+          bb += Double(corners[i].b) * aw
+          ba += aw
+        }
+        let sr: Int
+        let sg: Int
+        let sb: Int
+        if ba > 0 {
+          sr = Int((br / ba).rounded())
+          sg = Int((bg / ba).rounded())
+          sb = Int((bb / ba).rounded())
+        } else {
+          sr = 0
+          sg = 0
+          sb = 0
+        }
+
+        var best = corners.first { $0.a > 0 } ?? p00
+        var bestDist = Int.max
+        for c in corners where c.a > 0 {
+          let dr = c.r - sr
+          let dg = c.g - sg
+          let db = c.b - sb
+          let dist = dr * dr + dg * dg + db * db
+          if dist < bestDist {
+            bestDist = dist
+            best = c
+          }
+        }
+
+        let alpha = Double(outA) / 255
+        buffer[o] = UInt8(min(255, (Double(best.r) * alpha).rounded()))
+        buffer[o + 1] = UInt8(min(255, (Double(best.g) * alpha).rounded()))
+        buffer[o + 2] = UInt8(min(255, (Double(best.b) * alpha).rounded()))
+        buffer[o + 3] = outA
       }
     }
   }

@@ -50,6 +50,30 @@ enum MapsGLRadarPalette {
   /// Live PNG (N0B + national fallback) keeps native bins. Linear resampling
   /// is what turned operational gates into mush.
   static let liveRasterUsesNearestResampling = true
+  /// IEM RIDGE cartesian PNGs stop adding native detail near WebMercator z9
+  /// (~250 m/px, N0B range-gate scale). Past that, IEM tiles are nearest
+  /// copies of that raster (z11 ≈ 97% identical to 2× nearest of z10).
+  /// Overview stays nearest so 1-pixel gates do not watercolor.
+  static let iemNativeTileZoom: Double = 8.5
+  /// Mapbox requests IEM tiles through this zoom so close-in cameras get a
+  /// 256px tile we can palette-refine, instead of GPU-nearest overzooming z10.
+  static let iemDisplayMaxZoom: Double = 12
+
+  /// MRMS stays hard-nearest at every zoom. Site Doppler is nearest at
+  /// overview and linear only after native gate scale, so overzoom is not
+  /// Minecraft squares. Future / forecast rasters stay linear.
+  static func usesNearestResampling(
+    provider: RadarTileProvider,
+    isFuture: Bool,
+    cameraZoom: Double
+  ) -> Bool {
+    if isFuture { return false }
+    if provider == .mrms { return true }
+    if provider == .iem {
+      return cameraZoom <= iemNativeTileZoom
+    }
+    return liveRasterUsesNearestResampling
+  }
 
   /// MRMS National tiles are already 5 dBZ nearest bins. Mapbox raster fade-in
   /// and dual-buffer crossfade smear those bins into jelly. Other PNG sources

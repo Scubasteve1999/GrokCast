@@ -193,6 +193,95 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       IEMSiteReflectivityPaint.isStormCore(red: 0xFF, green: 0xFF, blue: 0x00, alpha: 255))
   }
 
+  func testRefinesOverzoomedGatesWithoutMixingBins() {
+    // 32×32 nearest-upsampled 2×2 gates (IEM z10). Organized 15 dBZ green
+    // with a yellow core. Interiors stay discrete; rain/clear edges AA.
+    let side = 32
+    var pixels = [UInt8](repeating: 0, count: side * side * 4)
+    func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * side + x) * 4
+      pixels[o] = r
+      pixels[o + 1] = g
+      pixels[o + 2] = b
+      pixels[o + 3] = 255
+    }
+    for y in 8..<24 {
+      for x in 8..<24 {
+        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    for y in 14..<18 {
+      for x in 14..<18 {
+        set(x, y, r: 0xFF, g: 0xFF, b: 0x00)
+      }
+    }
+
+    let png = makePNG(width: side, height: side, rgba: pixels)
+    let keyed = IEMSiteReflectivityPaint.keyClutter(in: png)
+    let out = readRGBA(png: keyed, width: side, height: side)
+
+    func pixel(_ x: Int, _ y: Int) -> (r: UInt8, g: UInt8, b: UInt8, a: UInt8) {
+      let o = (y * side + x) * 4
+      return (out[o], out[o + 1], out[o + 2], out[o + 3])
+    }
+
+    let core = pixel(16, 16)
+    XCTAssertEqual(core.a, 255)
+    XCTAssertEqual(core.r, 0xFF)
+    XCTAssertEqual(core.g, 0xFF)
+    XCTAssertEqual(core.b, 0x00)
+
+    let green = pixel(10, 10)
+    XCTAssertEqual(green.a, 255)
+    XCTAssertEqual(green.r, 0x11)
+    XCTAssertEqual(green.g, 0xD5)
+    XCTAssertEqual(green.b, 0x18)
+
+    var edgeAA = false
+    var lime = false
+    for y in 0..<side {
+      for x in 0..<side {
+        let p = pixel(x, y)
+        if p.a > 0 && p.a < 255 { edgeAA = true }
+        // Green+yellow mix that is not either stop.
+        let isGreen = p.r == 0x11 && p.g == 0xD5 && p.b == 0x18
+        let isYellow = p.r == 0xFF && p.g == 0xFF && p.b == 0x00
+        if p.a == 255 && !isGreen && !isYellow {
+          lime = true
+        }
+      }
+    }
+    XCTAssertTrue(edgeAA, "rain/clear boundary must anti-alias")
+    XCTAssertFalse(lime, "must not paint pastel smear between 15 and 30 dBZ")
+  }
+
+  func testDoesNotRefineNativeOnePixelGates() {
+    let side = 32
+    var pixels = [UInt8](repeating: 0, count: side * side * 4)
+    func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * side + x) * 4
+      pixels[o] = r
+      pixels[o + 1] = g
+      pixels[o + 2] = b
+      pixels[o + 3] = 255
+    }
+    for y in 8...20 {
+      for x in 8...20 {
+        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    set(14, 14, r: 0xFF, g: 0xFF, b: 0x00)
+
+    let png = makePNG(width: side, height: side, rgba: pixels)
+    let keyed = IEMSiteReflectivityPaint.keyClutter(in: png)
+    let out = readRGBA(png: keyed, width: side, height: side)
+    func alpha(_ x: Int, _ y: Int) -> UInt8 { out[(y * side + x) * 4 + 3] }
+
+    XCTAssertEqual(alpha(8, 8), 255)
+    XCTAssertEqual(alpha(7, 8), 0, "native 1px outline must stay hard at overview")
+    XCTAssertEqual(alpha(14, 14), 255)
+  }
+
   func testLiveDefaultStaysNearestSiteN0B() {
     XCTAssertEqual(RadarProduct.defaultLive, .superResReflectivity)
     XCTAssertEqual(RadarProduct.defaultLive.iemCode, "N0B")
