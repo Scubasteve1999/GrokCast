@@ -6,9 +6,9 @@ Phone never downloads GRIB2. Simulator hits http://127.0.0.1:8765.
   python3 Scripts/mrms_national/mrms_worker.py
   python3 Scripts/mrms_national/mrms_worker.py --once --no-serve
 
-NWS 5 dBZ LUT copied from MapsGLRadarPalette. Light opaque-only blur on
-the native ~1 km dBZ grid, bilinear sample into each XYZ tile, then
-LUT-snap (organic cell shapes, hard colors). No overlay pyramid.
+NWS 5 dBZ LUT copied from MapsGLRadarPalette. Stronger opaque-only blur
+(4-pass 3x3) on the native ~1 km dBZ grid, bilinear sample into each XYZ
+tile, then LUT-snap (organic cell shapes, hard colors). No overlay pyramid.
 0/5/10 dBZ alpha 0 — visible rain floors at 15 green.
 """
 from __future__ import annotations
@@ -52,7 +52,7 @@ STOPS = [
     (65, (0x99, 0x55, 0xC9, 255)),
     (70, (0xFF, 0xFF, 0xFF, 255)),
 ]
-PAINT_VERSION = 5
+PAINT_VERSION = 6
 
 LUT_R = np.zeros(15, dtype=np.uint8)
 LUT_G = np.zeros(15, dtype=np.uint8)
@@ -127,16 +127,16 @@ def _grid_at(grid, rows, cols):
     return out
 
 
-def blur_opaque_dbz(grid, passes=2):
-    """Two wet-only 3x3 passes (~5 km). Clear stays clear — no precip dilation."""
+def blur_opaque_dbz(grid, passes=4, radius=1):
+    """Four wet-only 3x3 passes (~7 km). Clear stays clear — no precip dilation."""
     out = np.array(grid, dtype=np.float32, copy=True)
     nj, ni = out.shape
     for _ in range(passes):
         wet = np.isfinite(out) & (out >= 15.0) & (out < 9000)
         acc = np.zeros((nj, ni), dtype=np.float32)
         cnt = np.zeros((nj, ni), dtype=np.float32)
-        for dy in (-1, 0, 1):
-            for dx in (-1, 0, 1):
+        for dy in range(-radius, radius + 1):
+            for dx in range(-radius, radius + 1):
                 y0, y1 = max(0, dy), min(nj, nj + dy)
                 x0, x1 = max(0, dx), min(ni, ni + dx)
                 sy0 = max(0, -dy)

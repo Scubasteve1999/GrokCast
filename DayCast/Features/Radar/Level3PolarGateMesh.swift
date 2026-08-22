@@ -1,8 +1,7 @@
 import Foundation
 
-/// One vertex of a polar contour quad in WebMercator [0, 1].
-/// `level` is the N0B data byte (0 = clear) so the GPU can interpolate dBZ
-/// then LUT-snap to a hard NWS 5 dBZ stop.
+/// Covering-fan vertex in WebMercator [0, 1]. `level` is unused on the
+/// texture path — the fragment shader samples the polar field.
 struct Level3PolarVertex {
   var mercX: Float
   var mercY: Float
@@ -10,17 +9,30 @@ struct Level3PolarVertex {
   var pad: Float = 0
 }
 
-/// CPU mesh: denser gate-center quads with interpolatable levels. Fragment
-/// shader snaps to `rgbaLUT` so cell *shapes* are organic and colors stay
-/// discrete. Range-constant runs on both radials still merge. Play fade is
-/// opacity only.
+/// CPU polar field: rasterize N0B data-bytes onto a 720 × gates texture,
+/// wet-only blur (no dilation into clear), covering fan for the radar disk.
+/// GPU bilinear-samples the field then LUT-snaps so isocontours are organic
+/// at close zoom (gate-quad triangles cannot). Play fade is opacity only.
 enum Level3PolarGateMesh {
   struct Mesh {
     var vertices: [Level3PolarVertex]
     var lut: [UInt8]
+    var field: [Float]
+    var fieldWidth: Int
+    var fieldHeight: Int
+    var siteLatitude: Double
+    var siteLongitude: Double
+    var maxRangeMeters: Double
     var triangleCount: Int { vertices.count / 3 }
     var buildMilliseconds: Double
+    var hasField: Bool {
+      fieldWidth > 0 && fieldHeight > 0 && field.count == fieldWidth * fieldHeight
+    }
   }
+
+  static let coveringWedges = 180
+  static let fieldBlurPasses = 4
+  static let fieldBlurRadius = 1
 
   /// Opaque-only spatial soft before meshing. Azimuth 9-tap (7/5/3 fallback)
   /// plus range 7-tap (5/3 fallback). Every kernel sample must already be
@@ -146,99 +158,154 @@ enum Level3PolarGateMesh {
   static func build(sweep: Level3N0BSweep) -> Mesh {
     let t0 = CFAbsoluteTimeGetCurrent()
     let lut = packedLUT(sweep.rgbaLUT)
-    let n = sweep.radials.count
-    guard n > 1 else {
-      return Mesh(vertices: [], lut: lut, buildMilliseconds: 0)
-    }
-
-    var vertices: [Level3PolarVertex] = []
-    vertices.reserveCapacity(1_200_000)
-
     let lat0Deg = sweep.latitude
     let lon0Deg = sweep.longitude
+    let maxRange = sweep.maxRangeMeters
+    func finished(
+      vertices: [Level3PolarVertex], field: [Float], width: Int, height: Int
+    ) -> Mesh {
+      Mesh(
+        vertices: vertices,
+        lut: lut,
+        field: field,
+        fieldWidth: width,
+        fieldHeight: height,
+        siteLatitude: lat0Deg,
+        siteLongitude: lon0Deg,
+        maxRangeMeters: maxRange,
+        buildMilliseconds: (CFAbsoluteTimeGetCurrent() - t0) * 1000)
+    }
+    guard sweep.radials.count > 1, sweep.binCount > 0 else {
+      return finished(vertices: [], field: [], width: 0, height: 0)
+    }
+
+    let raster = rasterizeField(sweep: sweep)
+    var wet = false
+    for v in raster.levels where v > 0 {
+      wet = true
+      break
+    }
+    guard wet else {
+      return finished(vertices: [], field: raster.levels, width: raster.width, height: raster.height)
+    }
+
+    let blurred = blurWetOnly(
+      raster.levels, width: raster.width, height: raster.height)
     let cosLat0 = cos(lat0Deg * .pi / 180)
-    let metersPerDegLat = 111_320.0
-    let metersPerDegLon = 111_320.0 * max(0.2, cosLat0)
-    let gateW = sweep.gateWidthMeters
+    let vertices = buildCoveringFan(
+      lat0Deg: lat0Deg,
+      lon0Deg: lon0Deg,
+      metersPerDegLat: 111_320.0,
+      metersPerDegLon: 111_320.0 * max(0.2, cosLat0),
+      maxRangeMeters: maxRange)
+    return finished(
+      vertices: vertices, field: blurred, width: raster.width, height: raster.height)
+  }
 
-    var sinAz = [Double](repeating: 0, count: n)
-    var cosAz = [Double](repeating: 0, count: n)
-    var levels = [[Float]]()
-    levels.reserveCapacity(n)
-    for i in 0..<n {
-      let radial = sweep.radials[i]
-      let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
-      let az = (radial.startAzimuth + span * 0.5) * .pi / 180
-      sinAz[i] = sin(az)
-      cosAz[i] = cos(az)
-      let count = radial.gates.count
-      var row = [Float](repeating: 0, count: count)
+  /// 0.5° azimuth slots × native range gates. Hole-fill lives in `contourLevel`.
+  static func rasterizeField(sweep: Level3N0BSweep) -> (
+    levels: [Float], width: Int, height: Int
+  ) {
+    let width = max(1, sweep.azIndex.count)
+    let height = max(1, sweep.binCount)
+    var levels = [Float](repeating: 0, count: width * height)
+    for slot in 0..<width {
+      let ri = sweep.azIndex[slot]
+      if ri == 0xFFFF { continue }
+      let radialIndex = Int(ri)
+      guard radialIndex >= 0, radialIndex < sweep.radials.count else { continue }
+      let count = min(sweep.radials[radialIndex].gates.count, height)
       for j in 0..<count {
-        row[j] = sweep.contourLevel(radialIndex: i, gateIndex: j)
+        levels[j * width + slot] = sweep.contourLevel(
+          radialIndex: radialIndex, gateIndex: j)
       }
-      levels.append(row)
     }
-    levels = Self.upsampleOpaqueRange2x(levels)
-    levels = Self.smoothOpaqueNeighbors(levels)
-    let sampleGateW = gateW * 0.5
+    return (levels, width, height)
+  }
 
-    for i in 0..<n {
-      let next = (i + 1) % n
-      let radial = sweep.radials[i]
-      let nextRadial = sweep.radials[next]
-      var daz = nextRadial.startAzimuth - radial.startAzimuth
-      if daz <= 0 { daz += 360 }
-      let span = radial.deltaAzimuth > 0 ? radial.deltaAzimuth : 0.5
-      if daz > span * 2.5 { continue }
-
-      let jMax = min(levels[i].count, levels[next].count) - 1
-      guard jMax > 0 else { continue }
-
-      var j = 0
-      while j < jMax {
-        let l00 = levels[i][j]
-        let l10 = levels[next][j]
-        let l01 = levels[i][j + 1]
-        let l11 = levels[next][j + 1]
-        if l00 == 0 && l10 == 0 && l01 == 0 && l11 == 0 {
-          j += 1
-          continue
-        }
-        var jOuter = j + 1
-        if sameContourLevel(l00, l01) && sameContourLevel(l10, l11) {
-          while jOuter < jMax {
-            let n0 = levels[i][jOuter + 1]
-            let n1 = levels[next][jOuter + 1]
-            if !sameContourLevel(n0, l00) || !sameContourLevel(n1, l10) { break }
-            jOuter += 1
+  /// Multi-pass wet-only box. Clear texels stay 0 so precip cannot dilate.
+  static func blurWetOnly(
+    _ levels: [Float], width: Int, height: Int,
+    passes: Int = fieldBlurPasses, radius: Int = fieldBlurRadius
+  ) -> [Float] {
+    guard width > 2, height > 2, levels.count == width * height, passes > 0, radius > 0
+    else { return levels }
+    var src = levels
+    var dst = [Float](repeating: 0, count: levels.count)
+    for _ in 0..<passes {
+      for y in 0..<height {
+        let row = y * width
+        for x in 0..<width {
+          let idx = row + x
+          let center = src[idx]
+          if center <= 0 {
+            dst[idx] = 0
+            continue
           }
+          var sum: Float = 0
+          var n: Float = 0
+          var dy = -radius
+          while dy <= radius {
+            let yy = y + dy
+            if yy >= 0 && yy < height {
+              let srcRow = yy * width
+              var dx = -radius
+              while dx <= radius {
+                var xx = x + dx
+                if xx >= width { xx -= width }
+                if xx < 0 { xx += width }
+                let v = src[srcRow + xx]
+                if v > 0 {
+                  sum += v
+                  n += 1
+                }
+                dx += 1
+              }
+            }
+            dy += 1
+          }
+          dst[idx] = n > 0 ? sum / n : 0
         }
-        let lOuter0 = levels[i][jOuter]
-        let lOuter1 = levels[next][jOuter]
-        appendQuad(
-          lat0Deg: lat0Deg,
-          lon0Deg: lon0Deg,
-          metersPerDegLat: metersPerDegLat,
-          metersPerDegLon: metersPerDegLon,
-          sinAz0: sinAz[i],
-          cosAz0: cosAz[i],
-          sinAz1: sinAz[next],
-          cosAz1: cosAz[next],
-          r0: (Double(j) + 1) * sampleGateW,
-          r1: (Double(jOuter) + 1) * sampleGateW,
-          l00: l00,
-          l10: l10,
-          l11: lOuter1,
-          l01: lOuter0,
-          into: &vertices)
-        j = jOuter
       }
+      swap(&src, &dst)
     }
+    return src
+  }
 
-    return Mesh(
-      vertices: vertices,
-      lut: lut,
-      buildMilliseconds: (CFAbsoluteTimeGetCurrent() - t0) * 1000)
+  /// Bilinear sample of the polar field (azimuth wraps, range clamps to 0).
+  static func sampleField(
+    _ levels: [Float], width: Int, height: Int,
+    rangeMeters: Double, azimuth: Double, maxRangeMeters: Double
+  ) -> Float {
+    guard width > 0, height > 0, maxRangeMeters > 0,
+      levels.count == width * height
+    else { return 0 }
+    if rangeMeters < 0 || rangeMeters >= maxRangeMeters { return 0 }
+    var az = azimuth.truncatingRemainder(dividingBy: 360)
+    if az < 0 { az += 360 }
+    let u = az / 360 * Double(width) - 0.5
+    let v = rangeMeters / maxRangeMeters * Double(height) - 0.5
+    let x0 = Int(floor(u))
+    let y0 = Int(floor(v))
+    let tx = Float(u - Double(x0))
+    let ty = Float(v - Double(y0))
+    func at(_ x: Int, _ y: Int) -> Float {
+      if y < 0 || y >= height { return 0 }
+      var xx = x % width
+      if xx < 0 { xx += width }
+      return levels[y * width + xx]
+    }
+    let c00 = at(x0, y0)
+    let c10 = at(x0 + 1, y0)
+    let c01 = at(x0, y0 + 1)
+    let c11 = at(x0 + 1, y0 + 1)
+    return c00 * (1 - tx) * (1 - ty) + c10 * tx * (1 - ty) + c01 * (1 - tx) * ty
+      + c11 * tx * ty
+  }
+
+  static func lutIndex(_ level: Float) -> Int {
+    guard level.isFinite else { return 0 }
+    return Int(min(255, max(0, level.rounded())))
   }
 
   /// WebMercator x/y in [0, 1], matching Mapbox `latLngToMercatorXY`.
@@ -262,40 +329,34 @@ enum Level3PolarGateMesh {
     return (lat0Deg + north / metersPerDegLat, lon0Deg + east / metersPerDegLon)
   }
 
-  private static func appendQuad(
+  static func buildCoveringFan(
     lat0Deg: Double, lon0Deg: Double,
     metersPerDegLat: Double, metersPerDegLon: Double,
-    sinAz0: Double, cosAz0: Double, sinAz1: Double, cosAz1: Double,
-    r0: Double, r1: Double,
-    l00: Float, l10: Float, l11: Float, l01: Float,
-    into vertices: inout [Level3PolarVertex]
-  ) {
-    let inner0 = destination(
-      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
-      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
-      sinAz: sinAz0, cosAz: cosAz0, rangeMeters: r0)
-    let inner1 = destination(
-      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
-      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
-      sinAz: sinAz1, cosAz: cosAz1, rangeMeters: r0)
-    let outer1 = destination(
-      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
-      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
-      sinAz: sinAz1, cosAz: cosAz1, rangeMeters: r1)
-    let outer0 = destination(
-      lat0Deg: lat0Deg, lon0Deg: lon0Deg,
-      metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
-      sinAz: sinAz0, cosAz: cosAz0, rangeMeters: r1)
-    let v0 = vertex(inner0, l00)
-    let v1 = vertex(inner1, l10)
-    let v2 = vertex(outer1, l11)
-    let v3 = vertex(outer0, l01)
-    vertices.append(v0)
-    vertices.append(v1)
-    vertices.append(v2)
-    vertices.append(v0)
-    vertices.append(v2)
-    vertices.append(v3)
+    maxRangeMeters: Double,
+    wedges: Int = coveringWedges
+  ) -> [Level3PolarVertex] {
+    let n = max(8, wedges)
+    var vertices: [Level3PolarVertex] = []
+    vertices.reserveCapacity(n * 3)
+    let origin = mercatorXY(latitude: lat0Deg, longitude: lon0Deg)
+    let vCenter = Level3PolarVertex(
+      mercX: Float(origin.x), mercY: Float(origin.y), level: 0)
+    for i in 0..<n {
+      let az0 = Double(i) / Double(n) * 2 * .pi
+      let az1 = Double(i + 1) / Double(n) * 2 * .pi
+      let p0 = destination(
+        lat0Deg: lat0Deg, lon0Deg: lon0Deg,
+        metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
+        sinAz: sin(az0), cosAz: cos(az0), rangeMeters: maxRangeMeters)
+      let p1 = destination(
+        lat0Deg: lat0Deg, lon0Deg: lon0Deg,
+        metersPerDegLat: metersPerDegLat, metersPerDegLon: metersPerDegLon,
+        sinAz: sin(az1), cosAz: cos(az1), rangeMeters: maxRangeMeters)
+      vertices.append(vCenter)
+      vertices.append(vertex(p0, 0))
+      vertices.append(vertex(p1, 0))
+    }
+    return vertices
   }
 
   private static func vertex(
@@ -307,10 +368,10 @@ enum Level3PolarGateMesh {
   }
 }
 
-/// Dual-mesh opacity lerp between two contour volumes.
-/// Play fade is polar-specific and short so 2x does not dual-draw ~860k tris
-/// for the whole frame hold. Stills keep the IEM still duration. Volumes do
-/// not blend dBZ — each mesh LUT-snaps on its own.
+/// Dual-volume opacity lerp between two polar fields.
+/// Play fade is polar-specific and short so 2x does not dual-sample the
+/// whole hold. Stills keep the IEM still duration. Volumes do not blend
+/// dBZ — each field LUT-snaps on its own.
 enum Level3PolarCrossfade {
   /// Snappy enough that a 720 ms 2x hold is mostly a single mesh.
   static let playDurationSeconds: TimeInterval = 0.20
@@ -344,7 +405,7 @@ enum Level3PolarCrossfade {
   }
 }
 
-/// LRU cache of CPU trapezoid meshes keyed by site + volume time.
+/// LRU cache of CPU polar fields keyed by site + volume time.
 /// Sized for the whole ~1h Live Site Doppler loop so 2x play is a hit.
 final class Level3PolarMeshCache: @unchecked Sendable {
   static let shared = Level3PolarMeshCache()
@@ -487,7 +548,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     }
     Level3PolarGPUCache.shared.prefetchCachedCPUMeshes()
     finishWarm()
-    radarLog("[Level3] polar mesh cache warm \(sweeps.count) frames gpu=\(Level3PolarGPUCache.shared.stats().count)")
+    radarLog("[Level3] polar field cache warm \(sweeps.count) frames gpu=\(Level3PolarGPUCache.shared.stats().count)")
   }
 
   func keepOnly(keys: Set<String>) {
