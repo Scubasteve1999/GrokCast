@@ -47,8 +47,33 @@ final class RadarRangeRingTests: XCTestCase {
 
   func testLabelCapsuleImageIsReadable() {
     let image = RadarRangeRingOverlay.makeLabelImage()
-    XCTAssertGreaterThan(image.size.width, 28)
-    XCTAssertGreaterThan(image.size.height, 12)
+    XCTAssertGreaterThan(image.size.width, 36)
+    XCTAssertGreaterThan(image.size.height, 16)
+  }
+
+  func testCenterMarkImageIsAVisiblePip() {
+    let image = RadarRangeRingOverlay.makeCenterImage()
+    XCTAssertGreaterThanOrEqual(image.size.width, 20)
+    XCTAssertGreaterThanOrEqual(image.size.height, 20)
+  }
+
+  func testRingPaintIsPresentNotARadarScopeClone() {
+    XCTAssertEqual(RadarRangeRingOverlay.strokeWidth, 2.2, accuracy: 0.01)
+    XCTAssertGreaterThan(RadarRangeRingOverlay.strokeWidth, 1.6)
+    XCTAssertLessThan(RadarRangeRingOverlay.strokeWidth, 3.5)
+    XCTAssertGreaterThan(RadarRangeRingOverlay.haloWidth, RadarRangeRingOverlay.strokeWidth)
+    XCTAssertGreaterThan(RadarRangeRingOverlay.haloBlur, 0.5)
+    XCTAssertGreaterThan(RadarRangeRingOverlay.fillOpacity, 0)
+    XCTAssertLessThan(RadarRangeRingOverlay.fillOpacity, 0.12)
+  }
+
+  func testCenterMarkUsesTheConfirmedCoordinate() {
+    let chip = SavedLocation(
+      name: "Memphis, TN", latitude: memphis.latitude, longitude: memphis.longitude)
+    let center = RadarRangeRing.confirmedCenter(
+      selectedLocation: chip, deviceCoordinate: seattle)
+    XCTAssertEqual(center?.latitude ?? 0, memphis.latitude, accuracy: 0.0000001)
+    XCTAssertEqual(center?.longitude ?? 0, memphis.longitude, accuracy: 0.0000001)
   }
 
   func testOverlaySignatureChangesWithCity() {

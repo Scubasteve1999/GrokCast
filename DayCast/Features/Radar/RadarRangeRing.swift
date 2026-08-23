@@ -10,7 +10,8 @@ enum RadarRangeRing {
   static var label: String { RadarChromeCopy.rangeRingLabel }
   /// Southeast of center so the capsule sits on the ring, away from top-trailing HUD.
   static let labelBearingDegrees = 135.0
-  static let steps = 72
+  /// 2.5° vertices — even geodesic, not a 72-step facet ring.
+  static let steps = 144
   static let earthRadiusMeters = 6_371_000.0
 
   /// Ring center for Mapbox + geodesic math. Same value must be passed to both.
