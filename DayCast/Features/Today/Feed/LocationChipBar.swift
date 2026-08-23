@@ -52,7 +52,7 @@ struct LocationChipBar: View {
         .accessibilityHint(selected ? "Selected city" : "Shows weather for this city")
         .accessibilityAddTraits(.isButton)
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityIdentifier(DayCastAccessibility.Locations.chip(title))
+        .accessibilityIdentifier(Self.accessibilityIdentifier(for: location, selected: selected))
         .contentShape(Capsule())
       }
     }
@@ -68,6 +68,13 @@ struct LocationChipBar: View {
 
   static func chipTitle(for location: SavedLocation) -> String {
     location.isCurrent ? "Near Me" : location.name
+  }
+
+  /// Selected city owns `Today.location` so Now does not need a second name capsule.
+  static func accessibilityIdentifier(for location: SavedLocation, selected: Bool) -> String {
+    selected
+      ? DayCastAccessibility.Today.location
+      : DayCastAccessibility.Locations.chip(chipTitle(for: location))
   }
 
   /// Overlay hugs the chips; empty strip does not eat card taps.

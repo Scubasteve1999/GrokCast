@@ -482,13 +482,11 @@ private struct TodaySkeletonPanel: View {
   }
 }
 
-/// Floating Now hero — location chip, giant temp, condition, feels, score chip.
-/// Matches `NowFeedCard` proportions (no gray slab).
+/// Floating Now hero — giant temp, condition, feels, Updated.
+/// Matches `NowFeedCard` (city is the chip bar; score is Now detail).
 struct HeroSkeleton: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-      ShimmerBlock(width: 128, height: 36, cornerRadius: 18)
-
       HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
         ShimmerBlock(width: 168, height: 88, cornerRadius: DesignTokens.Radius.small)
         Spacer(minLength: 8)
@@ -500,7 +498,6 @@ struct HeroSkeleton: View {
 
       ShimmerBlock(width: 248, height: 18, cornerRadius: DesignTokens.Radius.small)
       ShimmerBlock(width: 108, height: 12, cornerRadius: DesignTokens.Radius.small)
-      ShimmerBlock(width: nil, height: 44, cornerRadius: 14)
     }
     .padding(.horizontal, DesignTokens.Spacing.space4)
     .padding(.top, DesignTokens.Spacing.space8)

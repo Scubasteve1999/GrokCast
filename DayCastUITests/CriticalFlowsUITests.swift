@@ -9,9 +9,12 @@ final class CriticalFlowsUITests: DayCastUITestCase {
   func testLaunchShowsTodayWeather() throws {
     XCTAssertTrue(waitForTabBar(), "Tab bar did not appear after launch")
 
-    // Hero location or temperature should be visible once weather loads.
+    // City lives on the chip bar (`daycast.today.location` on the selected chip).
     let locationCandidates = [
+      app.buttons.matching(NSPredicate(format: "identifier == %@", "daycast.today.location")),
       app.staticTexts.matching(NSPredicate(format: "identifier == %@", "daycast.today.location")),
+      app.buttons.matching(
+        NSPredicate(format: "identifier BEGINSWITH %@", "daycast.locations.chip.")),
       app.staticTexts.matching(NSPredicate(format: "label MATCHES %@", ".+, [A-Z]{2}")),
     ]
 

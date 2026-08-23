@@ -179,7 +179,7 @@ struct TodayFeedView: View {
   private func feedCard(for item: FeedItem) -> some View {
     switch item {
     case .now:
-      NowFeedCard(weather: weather, score: currentScore) {
+      NowFeedCard(weather: weather) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         showNowDetail = true
       }

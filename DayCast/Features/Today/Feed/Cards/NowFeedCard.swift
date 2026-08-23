@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Weather Channel–style hero: location chip, huge temp, condition on the right,
-/// feels/H/L line, floating on the photo-like sky (no gray slab).
+/// First-glance Now: huge temp + condition, feels/H/L, Updated.
+/// City lives on `LocationChipBar`. DayCast score lives in `NowDetailView`.
 struct NowFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
-  let score: DayCastScore
   var onTap: () -> Void
 
   var body: some View {
@@ -17,21 +16,6 @@ struct NowFeedCard: View {
 
       Button(action: onTap) {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          // Location chip (TWC-style pill)
-          HStack(spacing: 6) {
-            Image(systemName: "location.fill")
-              .font(DesignTokens.Typography.micro())
-            Text(store.currentLocation?.name ?? weather.location.name)
-              .font(DesignTokens.Typography.symbol(16))
-              .lineLimit(1)
-          }
-          .foregroundStyle(Color.white)
-          .padding(.horizontal, 14)
-          .padding(.vertical, 10)
-          .background(Color.black.opacity(0.38), in: Capsule())
-          .accessibilityIdentifier(DayCastAccessibility.Today.location)
-
-          // Hero row: giant temp | icon + condition
           HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
             Text(store.formatTemperatureShort(weather.currentTemp))
               .font(DesignTokens.Typography.displayTemp())
@@ -77,24 +61,6 @@ struct NowFeedCard: View {
               .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
               .accessibilityIdentifier(DayCastAccessibility.Today.updatedAt)
           }
-
-          // Score chip under hero (our product surface — still elevated)
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: score.icon)
-              .font(DesignTokens.Typography.headline())
-              .foregroundStyle(scoreAccent)
-            Text("\(score.value) · \(score.label)")
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(Color.white)
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(Color.white.opacity(0.55))
-          }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 12)
-          .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-          .opacity(heroOpacity)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DesignTokens.Spacing.space4)
@@ -104,15 +70,8 @@ struct NowFeedCard: View {
       .buttonStyle(.plain)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(accessibilitySummary(asOf: asOf))
+      .accessibilityHint("Shows Now details including DayCast score")
       .accessibilityAddTraits(.isButton)
-    }
-  }
-
-  private var scoreAccent: Color {
-    switch score.accentTier {
-    case .great: DesignTokens.Palette.success
-    case .okay: DesignTokens.Palette.accentWarm
-    case .poor: DesignTokens.Palette.danger
     }
   }
 
@@ -121,7 +80,7 @@ struct NowFeedCard: View {
     let temp = store.formatTemperatureShort(weather.currentTemp)
     let feels = store.formatTemperatureShort(weather.feelsLike)
     return
-      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low))). \(asOf). DayCast score \(score.value), \(score.label)."
+      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low))). \(asOf)."
   }
 }
 

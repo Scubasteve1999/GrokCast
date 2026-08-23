@@ -131,6 +131,20 @@ final class CitySearchTests: XCTestCase {
     XCTAssertEqual(LocationChipBar.chipTitle(for: gps), "Near Me")
   }
 
+  func testSelectedChipOwnsTodayLocationAccessibilityId() {
+    let tampa = SavedLocation(name: "Tampa, FL", latitude: 27.9506, longitude: -82.4572)
+    XCTAssertEqual(
+      LocationChipBar.accessibilityIdentifier(for: tampa, selected: true),
+      DayCastAccessibility.Today.location
+    )
+    XCTAssertEqual(
+      LocationChipBar.accessibilityIdentifier(for: tampa, selected: false),
+      DayCastAccessibility.Locations.chip("Tampa, FL")
+    )
+    XCTAssertEqual(DayCastAccessibility.Today.temperature, "daycast.today.temperature")
+    XCTAssertEqual(DayCastAccessibility.Today.updatedAt, "daycast.today.updatedAt")
+  }
+
   func testChipBarEmptyStripDoesNotCatchTaps() {
     XCTAssertTrue(LocationChipBar.emptyStripPassesHitsThrough)
     XCTAssertEqual(RadarFeedCard.accessibilityLabel, RadarFeedCopy.accessibilityLabel)
