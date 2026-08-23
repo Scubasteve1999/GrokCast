@@ -16,16 +16,16 @@ enum LightningRadarOverlay {
   static let boltColorMid = UIColor(red: 224 / 255, green: 236 / 255, blue: 248 / 255, alpha: 1)
   static let boltColorOldest = UIColor(red: 176 / 255, green: 190 / 255, blue: 208 / 255, alpha: 1)
 
-  /// Map scale of the 32pt SDF glyph. Soft/small vs launch 1.35 / 1.12 / 0.88.
-  static let boltIconSizeNewest = 0.86
-  static let boltIconSizeMid = 0.72
-  static let boltIconSizeOldest = 0.58
+  /// Map scale of the 32pt SDF glyph. Quieter vs 1bf3ae7 0.86 / 0.72 / 0.58.
+  static let boltIconSizeNewest = 0.64
+  static let boltIconSizeMid = 0.52
+  static let boltIconSizeOldest = 0.40
 
-  /// Dark halo punch, thinned so ice bolts sit in precip instead of shouting.
-  static let boltHaloWidthNewest = 1.15
-  static let boltHaloWidthMid = 0.80
-  static let boltHaloWidthOldest = 0.42
-  static let boltHaloBlur = 0.42
+  /// Dark halo punch, thinned again so ice bolts sit in precip instead of shouting.
+  static let boltHaloWidthNewest = 0.72
+  static let boltHaloWidthMid = 0.46
+  static let boltHaloWidthOldest = 0.20
+  static let boltHaloBlur = 0.52
 
   static var boltColorExpression: Exp {
     Exp(.interpolate) {

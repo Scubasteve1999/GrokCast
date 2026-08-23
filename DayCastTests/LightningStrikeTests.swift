@@ -127,16 +127,20 @@ final class LightningStrikeTests: XCTestCase {
   }
 
   func testBoltMapSizeAndHaloAreSoftWeights() {
-    XCTAssertLessThan(LightningRadarOverlay.boltIconSizeNewest, 1.0)
+    XCTAssertLessThan(LightningRadarOverlay.boltIconSizeNewest, 0.72)
+    XCTAssertGreaterThan(LightningRadarOverlay.boltIconSizeNewest, 0.50)
     XCTAssertLessThan(
       LightningRadarOverlay.boltIconSizeMid, LightningRadarOverlay.boltIconSizeNewest)
     XCTAssertLessThan(
       LightningRadarOverlay.boltIconSizeOldest, LightningRadarOverlay.boltIconSizeMid)
-    XCTAssertGreaterThan(LightningRadarOverlay.boltIconSizeOldest, 0.45)
-    XCTAssertLessThan(LightningRadarOverlay.boltHaloWidthNewest, 1.4)
+    XCTAssertGreaterThan(LightningRadarOverlay.boltIconSizeOldest, 0.32)
+    XCTAssertLessThan(LightningRadarOverlay.boltHaloWidthNewest, 0.90)
     XCTAssertLessThan(
       LightningRadarOverlay.boltHaloWidthMid, LightningRadarOverlay.boltHaloWidthNewest)
+    XCTAssertLessThan(
+      LightningRadarOverlay.boltHaloWidthOldest, LightningRadarOverlay.boltHaloWidthMid)
     XCTAssertGreaterThan(LightningRadarOverlay.boltHaloBlur, 0.3)
+    XCTAssertLessThan(LightningRadarOverlay.boltHaloBlur, 0.70)
   }
 
   func testBoltAgeColorsAreIceWhiteNotAmber() {
