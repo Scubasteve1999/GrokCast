@@ -150,13 +150,13 @@ enum ChaseRadarHUDLogic {
 
 // MARK: - View
 
-/// Compact strip: SCAN age, city, what you’re looking at, nearest alert.
+/// Compact strip: SCAN age, city, looking-at product, site id, nearest NWS alert.
+/// SPC Day 1 / outlook lives on Alerts and Today — not here.
 struct ChaseRadarHUD: View {
   var radarState: RadarState
   let mapCenter: CLLocationCoordinate2D
   var cityName: String?
   let alerts: [NWSAlert]
-  let day1Summary: String?
   @Binding var isDecluttered: Bool
 
   var body: some View {
@@ -237,13 +237,6 @@ struct ChaseRadarHUD: View {
           .foregroundStyle(alertColor(alert))
           .multilineTextAlignment(.trailing)
           .lineLimit(2)
-      }
-
-      if let day1Summary, !day1Summary.isEmpty {
-        Text(day1Summary)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.7))
-          .lineLimit(1)
       }
 
       if let message = radarState.siteProductUnavailableMessage {

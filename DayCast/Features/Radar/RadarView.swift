@@ -32,14 +32,6 @@ struct RadarView: View {
     radarState.showLightningLayer && !radarState.showsFuture
   }
 
-  /// Day-1 line only when severe context is for the selected location (avoids stale city bleed).
-  private var matchingDay1Summary: String? {
-    guard let locationID = store.currentLocation?.id.uuidString else { return nil }
-    let context = SevereWeatherStore.shared.context
-    guard context.locationID == locationID, context.day1Outlook.isMeaningful else { return nil }
-    return context.day1Outlook.summaryLine
-  }
-
   var body: some View {
     NavigationStack {
       ZStack {
@@ -221,7 +213,6 @@ struct RadarView: View {
           mapCenter: selectedMapCenter,
           cityName: store.currentLocation?.name,
           alerts: store.displayableActiveAlerts,
-          day1Summary: matchingDay1Summary,
           isDecluttered: $chaseDecluttered
         )
         .padding(.top, 8)

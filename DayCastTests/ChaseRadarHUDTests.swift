@@ -97,6 +97,24 @@ final class ChaseRadarHUDTests: XCTestCase {
     XCTAssertFalse(national.contains("RAIN"))
   }
 
+  func testHudLinesStayOperationalNotOutlook() {
+    // SPC Day 1 / outlook lives on Alerts and Today, not the chase strip.
+    let product = ChaseRadarHUDLogic.lookingAtLine(
+      product: .superResReflectivity, showsFuture: false, siteID: "TFX")
+    let site = ChaseRadarHUDLogic.lookingAtSiteSecondary(
+      product: .superResReflectivity, showsFuture: false, siteID: "TFX")
+    XCTAssertEqual(product, "Site Doppler")
+    XCTAssertEqual(site, "TFX")
+    XCTAssertFalse(product.localizedCaseInsensitiveContains("Day 1"))
+    XCTAssertFalse(product.localizedCaseInsensitiveContains("outlook"))
+    XCTAssertNil(
+      ChaseRadarHUDLogic.nearestAlertLine(
+        alerts: [],
+        mapCenter: CLLocationCoordinate2D(latitude: 47.5, longitude: -111.3)
+      )
+    )
+  }
+
   func testLookingAtLineNamesNearestSiteDoppler() {
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(
