@@ -127,8 +127,8 @@ final class LightningStrikeTests: XCTestCase {
   }
 
   func testBoltMapSizeAndHaloAreSoftWeights() {
-    XCTAssertLessThan(LightningRadarOverlay.boltIconSizeNewest, 0.72)
-    XCTAssertGreaterThan(LightningRadarOverlay.boltIconSizeNewest, 0.50)
+    XCTAssertLessThan(LightningRadarOverlay.boltIconSizeNewest, 0.82)
+    XCTAssertGreaterThan(LightningRadarOverlay.boltIconSizeNewest, 0.68)
     XCTAssertLessThan(
       LightningRadarOverlay.boltIconSizeMid, LightningRadarOverlay.boltIconSizeNewest)
     XCTAssertLessThan(
