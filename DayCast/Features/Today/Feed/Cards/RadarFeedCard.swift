@@ -1,23 +1,19 @@
 import SwiftUI
 
-/// One-glance Today teaser. Product names match Live-open policy
-/// (`Site Doppler` / `National radar`). Never “Radar. Opens the Radar tab.”
+/// One-glance Today teaser. Product half always matches the National
+/// preview (`National radar`). Never Site Doppler. Never mosaic.
+/// Never “Radar. Opens the Radar tab.” Live-open policy for the Radar
+/// tab is unchanged.
 enum RadarFeedCopy {
   static let opensRadarTab = "Opens the Radar tab."
 
   static func title(conditionCode: Int, siteID: String? = nil) -> String {
     let condition = WeatherCondition(fromWMO: conditionCode)
-    let product = RadarLiveOpenPolicy.productMatchingLocalNow(
-      hasPrecip: isLocalWet(condition)
-    )
-    switch product {
-    case .siteDoppler:
-      return
-        "\(precipWord(for: condition)) now · \(RadarProduct.superResReflectivity.displayName)"
-    case .nationalRadar:
-      return
-        "\(RadarLiveOpenPolicy.clearHint(siteID: siteID)) · \(RadarProduct.reflectivity.displayName)"
+    let product = RadarProduct.reflectivity.displayName
+    if isLocalWet(condition) {
+      return "\(precipWord(for: condition)) now · \(product)"
     }
+    return "\(RadarLiveOpenPolicy.clearHint(siteID: siteID)) · \(product)"
   }
 
   static func accessibilityLabel(conditionCode: Int, siteID: String? = nil) -> String {

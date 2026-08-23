@@ -93,26 +93,26 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     )
   }
 
-  func testTodayRadarTeaserCopyMatchesPolicy() {
+  func testTodayRadarTeaserCopyMatchesNationalPreview() {
     XCTAssertEqual(
       RadarFeedCopy.title(conditionCode: 61),
-      "Rain now · Site Doppler"
+      "Rain now · National radar"
     )
     XCTAssertEqual(
       RadarFeedCopy.title(conditionCode: 95),
-      "Storm now · Site Doppler"
+      "Storm now · National radar"
     )
     XCTAssertEqual(
       RadarFeedCopy.title(conditionCode: 71),
-      "Snow now · Site Doppler"
+      "Snow now · National radar"
     )
     XCTAssertEqual(
       RadarFeedCopy.title(conditionCode: 66),
-      "Sleet now · Site Doppler"
+      "Sleet now · National radar"
     )
     XCTAssertEqual(
       RadarFeedCopy.title(conditionCode: 51),
-      "Rain now · Site Doppler"
+      "Rain now · National radar"
     )
     XCTAssertEqual(
       RadarFeedCopy.title(conditionCode: 0),
@@ -126,13 +126,26 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
       RadarFeedCopy.title(conditionCode: 0, siteID: "NQA"),
       "NQA is clear · National radar"
     )
+    XCTAssertEqual(
+      RadarFeedCopy.accessibilityLabel(conditionCode: 61),
+      "Rain now. National radar. Opens the Radar tab."
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.accessibilityLabel(conditionCode: 0),
+      "Local is clear. National radar. Opens the Radar tab."
+    )
     let strings = [
       RadarFeedCopy.title(conditionCode: 61),
+      RadarFeedCopy.title(conditionCode: 95),
+      RadarFeedCopy.title(conditionCode: 71),
+      RadarFeedCopy.title(conditionCode: 66),
       RadarFeedCopy.title(conditionCode: 0),
       RadarFeedCopy.accessibilityLabel(conditionCode: 61),
       RadarFeedCopy.accessibilityLabel(conditionCode: 0),
     ]
     for copy in strings {
+      XCTAssertTrue(copy.localizedCaseInsensitiveContains("National radar"), copy)
+      XCTAssertFalse(copy.localizedCaseInsensitiveContains("Site Doppler"), copy)
       XCTAssertFalse(copy.localizedCaseInsensitiveContains("Mosaic"), copy)
       XCTAssertFalse(copy == "Radar. Opens the Radar tab.", copy)
     }

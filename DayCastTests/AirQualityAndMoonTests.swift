@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import DayCast
 
 final class AirQualityAndMoonTests: XCTestCase {
@@ -199,7 +200,7 @@ final class AirQualityAndMoonTests: XCTestCase {
   func testRadarFeedCardVoiceOverIsOneLabeledControl() {
     XCTAssertEqual(
       RadarFeedCard.accessibilityLabel(conditionCode: 61),
-      RadarFeedCopy.accessibilityLabel(conditionCode: 61)
+      "Rain now. National radar. Opens the Radar tab."
     )
     XCTAssertEqual(
       RadarFeedCard.accessibilityLabel(conditionCode: 0),

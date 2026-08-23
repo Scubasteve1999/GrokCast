@@ -45,17 +45,19 @@ final class RadarPreferencesTests: XCTestCase {
   func testTodayRadarCardUsesOneRadarLabel() {
     let rain = RadarFeedCopy.title(conditionCode: 61)
     let dry = RadarFeedCopy.title(conditionCode: 0)
-    XCTAssertEqual(rain, "Rain now · Site Doppler")
+    XCTAssertEqual(rain, "Rain now · National radar")
     XCTAssertEqual(dry, "Local is clear · National radar")
     XCTAssertEqual(
       RadarFeedCopy.accessibilityLabel(conditionCode: 61),
-      "Rain now. Site Doppler. Opens the Radar tab."
+      "Rain now. National radar. Opens the Radar tab."
     )
     XCTAssertEqual(
       RadarFeedCopy.accessibilityLabel(conditionCode: 0),
       "Local is clear. National radar. Opens the Radar tab."
     )
     for copy in [rain, dry] {
+      XCTAssertTrue(copy.contains("National radar"), copy)
+      XCTAssertFalse(copy.localizedCaseInsensitiveContains("Site Doppler"), copy)
       XCTAssertFalse(copy.localizedCaseInsensitiveContains("Live Radar"), copy)
       XCTAssertFalse(copy.localizedCaseInsensitiveContains("Mosaic"), copy)
       XCTAssertFalse(copy.localizedCaseInsensitiveContains("Radar. Opens"), copy)
@@ -107,7 +109,8 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(stop(65)?.hex, "#9955C9")
     XCTAssertEqual(stop(70)?.hex, "#FFFFFF")
     XCTAssertEqual(stop(70)?.alpha, 1)
-    XCTAssertEqual(stop(5)?.alpha, 0, "National keys 5 dBZ cyan so bilinear cannot grow a blue skirt")
+    XCTAssertEqual(
+      stop(5)?.alpha, 0, "National keys 5 dBZ cyan so bilinear cannot grow a blue skirt")
     XCTAssertEqual(stop(30)?.alpha, 1)
     XCTAssertEqual(
       MapsGLRadarPalette.colorScaleBreaks, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70])
@@ -323,7 +326,8 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "tornado"))
     XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", tvs: 1))
     XCTAssertTrue(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", traitTornado: 1))
-    XCTAssertFalse(MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", traitTornado: 0, tvs: 0))
+    XCTAssertFalse(
+      MapsGLLiveRainLayers.isSevereStormcell(traitType: "general", traitTornado: 0, tvs: 0))
   }
 
   func testStormcellTracksPaintLineStringsOnly() {

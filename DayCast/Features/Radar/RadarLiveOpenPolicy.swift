@@ -28,8 +28,9 @@ enum RadarLiveOpenPolicy {
     return .nationalRadar
   }
 
-  /// Today teaser: local now is the wet signal. Does not fetch tiles.
-  /// National is assumed available (the Today preview is already National).
+  /// Read-only Live-open product for a local wet/dry now. Does not fetch tiles.
+  /// National is assumed available. Today teaser does not use this — the
+  /// preview is always National radar.
   static func productMatchingLocalNow(hasPrecip: Bool) -> Product {
     productToPresent(
       userExplicitlyChoseSiteDoppler: false,
