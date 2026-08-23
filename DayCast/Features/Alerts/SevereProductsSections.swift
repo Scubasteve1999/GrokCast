@@ -28,12 +28,12 @@ struct SevereProductsSections: View {
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         Text(context.day1Outlook.category.displayName.uppercased())
-          .font(DesignTokens.Typography.headline())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .font(DesignTokens.Typography.studioTitle())
+          .foregroundStyle(outlookColor)
 
         Text(context.day1Outlook.summaryLine)
-          .font(DesignTokens.Typography.callout())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .font(DesignTokens.Typography.body())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
 
         if let detail = context.day1Outlook.labelDetail, !detail.isEmpty {
           Text(detail)
@@ -43,11 +43,22 @@ struct SevereProductsSections: View {
       }
       .padding(DesignTokens.Spacing.space16)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .cardStyle(
-        background: DesignTokens.Palette.cardBackground,
-        stroke: DesignTokens.Palette.cardStroke,
+      .elevatedCardStyle(
+        background: DesignTokens.Palette.cardElevated,
+        stroke: outlookColor.opacity(0.45),
         cornerRadius: DesignTokens.Card.cornerRadiusMedium
       )
+      .overlay(alignment: .leading) {
+        UnevenRoundedRectangle(
+          topLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
+          bottomLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
+          bottomTrailingRadius: 0,
+          topTrailingRadius: 0
+        )
+        .fill(outlookColor)
+        .frame(width: 3)
+        .padding(.vertical, DesignTokens.Spacing.space8)
+      }
     }
   }
 
@@ -124,12 +135,7 @@ struct SevereProductsSections: View {
   }
 
   private var outlookColor: Color {
-    switch context.day1Outlook.category {
-    case .none, .generalThunderstorm: DesignTokens.Palette.textSecondary
-    case .marginal: DesignTokens.Palette.success
-    case .slight: DesignTokens.Palette.warning
-    case .enhanced, .moderate, .high: DesignTokens.Palette.danger
-    }
+    SevereOutlookAccent.color(for: context.day1Outlook.category)
   }
 }
 
@@ -141,24 +147,26 @@ struct SevereContextCard: View {
     context.alerts.contains { $0.isSevereEvent && !$0.isExpired }
   }
 
+  private var outlookColor: Color {
+    SevereOutlookAccent.color(for: context.day1Outlook.category)
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       HStack(spacing: DesignTokens.Spacing.space8) {
         Image(systemName: hasNWSSevere ? "exclamationmark.triangle.fill" : "cloud.bolt.rain.fill")
           .font(DesignTokens.Typography.metric())
-          .foregroundStyle(
-            hasNWSSevere ? DesignTokens.Palette.warning : DesignTokens.Palette.textSecondary
-          )
+          .foregroundStyle(hasNWSSevere ? DesignTokens.Palette.warning : outlookColor)
           .accessibilityHidden(true)
-        Text(hasNWSSevere ? "Severe weather" : "Outlook")
-          .font(DesignTokens.Typography.caption())
+        Text(hasNWSSevere ? "Severe weather" : AlertsHonesty.todayOutlookCardHeading)
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer()
       }
 
       if context.day1Outlook.isMeaningful {
         Text(context.day1Outlook.summaryLine)
-          .font(DesignTokens.Typography.subsection())
+          .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
       }
 
@@ -182,9 +190,24 @@ struct SevereContextCard: View {
       background: DesignTokens.Palette.cardBackground,
       stroke: hasNWSSevere
         ? DesignTokens.Palette.warning.opacity(0.45)
-        : DesignTokens.Palette.cardStroke,
+        : outlookColor.opacity(0.45),
       cornerRadius: DesignTokens.Card.cornerRadiusMedium
     )
     .accessibilityElement(children: .combine)
+  }
+}
+
+private enum SevereOutlookAccent {
+  static func color(for category: SPCOutlookCategory) -> Color {
+    switch category {
+    case .none:
+      DesignTokens.Palette.textSecondary
+    case .generalThunderstorm, .marginal:
+      DesignTokens.Palette.accentWarm
+    case .slight:
+      DesignTokens.Palette.warning
+    case .enhanced, .moderate, .high:
+      DesignTokens.Palette.danger
+    }
   }
 }

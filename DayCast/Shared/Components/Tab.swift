@@ -274,13 +274,16 @@ struct CompactTabBar: View {
 
   private var alertsChrome: AlertsHonesty.Chrome {
     let locID = store.currentLocation?.id.uuidString
-    let hasSPC =
-      locID != nil
-      && severeStore.context.locationID == locID
-      && severeStore.context.hasSPCContent
+    let matched = locID != nil && severeStore.context.locationID == locID
+    let hasSPC = matched && severeStore.context.hasSPCContent
+    let summary: String? =
+      matched && severeStore.context.day1Outlook.isMeaningful
+      ? severeStore.context.day1Outlook.summaryLine
+      : nil
     return AlertsHonesty.chrome(
       nwsAlertCount: store.displayableActiveAlerts.count,
-      hasSevereProducts: hasSPC
+      hasSevereProducts: hasSPC,
+      outlookSummary: summary
     )
   }
 

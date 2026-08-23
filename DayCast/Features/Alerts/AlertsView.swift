@@ -51,10 +51,16 @@ struct AlertsView: View {
     store.alertsLoadState == .failed
   }
 
+  private var outlookSummary: String? {
+    guard let ctx = severeContextForLocation, ctx.day1Outlook.isMeaningful else { return nil }
+    return ctx.day1Outlook.summaryLine
+  }
+
   private var honesty: AlertsHonesty.Chrome {
     AlertsHonesty.chrome(
       nwsAlertCount: activeAlerts.count,
-      hasSevereProducts: hasSevereProducts
+      hasSevereProducts: hasSevereProducts,
+      outlookSummary: outlookSummary
     )
   }
 
@@ -114,12 +120,23 @@ struct AlertsView: View {
           alertsErrorBanner
         }
 
-        if let caption = honesty.noActiveAlertsCaption {
-          Text(caption)
-            .font(DesignTokens.Typography.callout())
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier(DayCastAccessibility.Alerts.noActiveCaption)
+        if honesty.riskCaption != nil || honesty.noActiveAlertsCaption != nil {
+          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+            if let risk = honesty.riskCaption {
+              Text(risk)
+                .font(DesignTokens.Typography.callout())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let caption = honesty.noActiveAlertsCaption {
+              Text(caption)
+                .font(DesignTokens.Typography.caption())
+                .foregroundStyle(DesignTokens.Palette.textTertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+          }
+          .accessibilityHidden(true)
+          .accessibilityIdentifier(DayCastAccessibility.Alerts.noActiveCaption)
         }
 
         if honesty.showsActiveNow {

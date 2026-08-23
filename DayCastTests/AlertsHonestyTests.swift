@@ -7,24 +7,65 @@ final class AlertsHonestyTests: XCTestCase {
   func testOutlookOnlyIsNotAWarningCount() {
     let chrome = AlertsHonesty.chrome(nwsAlertCount: 0, hasSevereProducts: true)
 
-    XCTAssertEqual(chrome.screenTitle, "Outlook")
+    XCTAssertEqual(chrome.screenTitle, "Severe Outlook")
     XCTAssertFalse(chrome.showsActiveNow)
-    XCTAssertEqual(chrome.noActiveAlertsCaption, "No active alerts")
+    XCTAssertNil(chrome.riskCaption)
+    XCTAssertEqual(chrome.noActiveAlertsCaption, "No active NWS alerts")
     XCTAssertEqual(chrome.tabSymbolName, "bell.fill")
     XCTAssertEqual(chrome.tabAccessibilityLabel, "Alerts")
-    XCTAssertEqual(chrome.tabAccessibilityValue, "No active alerts")
-    XCTAssertEqual(chrome.screenAccessibilityLabel, "Outlook")
+    XCTAssertEqual(chrome.tabAccessibilityValue, "No active NWS alerts")
+    XCTAssertEqual(chrome.screenAccessibilityLabel, "Severe Outlook. No active NWS alerts")
 
     XCTAssertFalse(chrome.tabSymbolName.contains("badge"))
-    XCTAssertFalse(chrome.tabAccessibilityValue?.contains("1") == true)
     XCTAssertNotEqual(chrome.tabAccessibilityValue, AlertsHonesty.nwsCountPhrase(1))
+    XCTAssertFalse(chrome.tabAccessibilityValue?.localizedCaseInsensitiveContains("1 active") == true)
     XCTAssertFalse(chrome.screenAccessibilityLabel.localizedCaseInsensitiveContains("1 active"))
   }
 
+  func testOutlookOnlyLeadsWithDay1RiskCaption() {
+    let slight = AlertsHonesty.chrome(
+      nwsAlertCount: 0,
+      hasSevereProducts: true,
+      outlookSummary: "Day 1 Slight · HAIL 15% · WIND 15%"
+    )
+    XCTAssertEqual(slight.screenTitle, "Severe Outlook")
+    XCTAssertEqual(slight.riskCaption, "Day 1 Slight · HAIL 15% · WIND 15%")
+    XCTAssertEqual(slight.noActiveAlertsCaption, "No active NWS alerts")
+    XCTAssertFalse(slight.showsActiveNow)
+    XCTAssertEqual(slight.tabSymbolName, "bell.fill")
+    XCTAssertEqual(
+      slight.tabAccessibilityValue,
+      "Day 1 Slight · HAIL 15% · WIND 15%. No active NWS alerts"
+    )
+    XCTAssertEqual(
+      slight.screenAccessibilityLabel,
+      "Severe Outlook. Day 1 Slight · HAIL 15% · WIND 15%. No active NWS alerts"
+    )
+    XCTAssertFalse(slight.screenAccessibilityLabel.localizedCaseInsensitiveContains("1 active"))
+    XCTAssertNotEqual(slight.tabAccessibilityValue, AlertsHonesty.nwsCountPhrase(1))
+
+    let tstm = AlertsHonesty.chrome(
+      nwsAlertCount: 0,
+      hasSevereProducts: true,
+      outlookSummary: "Day 1 Thunderstorm"
+    )
+    XCTAssertEqual(tstm.riskCaption, "Day 1 Thunderstorm")
+    XCTAssertEqual(
+      tstm.screenAccessibilityLabel,
+      "Severe Outlook. Day 1 Thunderstorm. No active NWS alerts"
+    )
+    XCTAssertFalse(tstm.screenAccessibilityLabel.localizedCaseInsensitiveContains("1 active"))
+  }
+
   func testWarningCityKeepsActiveNowAndHonestCount() {
-    let one = AlertsHonesty.chrome(nwsAlertCount: 1, hasSevereProducts: true)
+    let one = AlertsHonesty.chrome(
+      nwsAlertCount: 1,
+      hasSevereProducts: true,
+      outlookSummary: "Day 1 Slight · HAIL 15% · WIND 15%"
+    )
     XCTAssertEqual(one.screenTitle, "Alerts")
     XCTAssertTrue(one.showsActiveNow)
+    XCTAssertNil(one.riskCaption)
     XCTAssertNil(one.noActiveAlertsCaption)
     XCTAssertEqual(one.tabSymbolName, "bell.badge.fill")
     XCTAssertEqual(one.tabAccessibilityValue, "1 active alert")
@@ -40,6 +81,7 @@ final class AlertsHonestyTests: XCTestCase {
     let chrome = AlertsHonesty.chrome(nwsAlertCount: 0, hasSevereProducts: false)
     XCTAssertEqual(chrome.screenTitle, "Alerts")
     XCTAssertFalse(chrome.showsActiveNow)
+    XCTAssertNil(chrome.riskCaption)
     XCTAssertNil(chrome.noActiveAlertsCaption)
     XCTAssertEqual(chrome.tabSymbolName, "bell.fill")
     XCTAssertNil(chrome.tabAccessibilityValue)
@@ -53,17 +95,31 @@ final class AlertsHonestyTests: XCTestCase {
 
   func testTodaySlotOutlookOnlyIsNotAWarningList() {
     XCTAssertEqual(AlertsHonesty.todaySlotTitle(nwsAlertCount: 0), "Severe outlook")
+    XCTAssertEqual(AlertsHonesty.todayOutlookCardHeading, "Severe Outlook")
     XCTAssertEqual(AlertsHonesty.todaySlotAccessibility(nwsAlertCount: 0), "Severe outlook")
+    XCTAssertEqual(
+      AlertsHonesty.todaySlotAccessibility(
+        nwsAlertCount: 0,
+        outlookSummary: "Day 1 Slight · HAIL 15% · WIND 15%"
+      ),
+      "Severe outlook. Day 1 Slight · HAIL 15% · WIND 15%"
+    )
     XCTAssertFalse(
-      AlertsHonesty.todaySlotAccessibility(nwsAlertCount: 0)
-        .localizedCaseInsensitiveContains("1 active")
+      AlertsHonesty.todaySlotAccessibility(
+        nwsAlertCount: 0,
+        outlookSummary: "Day 1 Slight · HAIL 15% · WIND 15%"
+      )
+      .localizedCaseInsensitiveContains("1 active")
     )
   }
 
   func testTodaySlotWarningCityKeepsActiveAlerts() {
     XCTAssertEqual(AlertsHonesty.todaySlotTitle(nwsAlertCount: 1), "Active Alerts")
     XCTAssertEqual(
-      AlertsHonesty.todaySlotAccessibility(nwsAlertCount: 1),
+      AlertsHonesty.todaySlotAccessibility(
+        nwsAlertCount: 1,
+        outlookSummary: "Day 1 Slight"
+      ),
       "Active Alerts. 1 active alert"
     )
     XCTAssertEqual(
@@ -75,7 +131,7 @@ final class AlertsHonestyTests: XCTestCase {
   func testNegativeNWSCountIsTreatedAsZero() {
     let chrome = AlertsHonesty.chrome(nwsAlertCount: -1, hasSevereProducts: true)
     XCTAssertFalse(chrome.showsActiveNow)
-    XCTAssertEqual(chrome.screenTitle, "Outlook")
+    XCTAssertEqual(chrome.screenTitle, "Severe Outlook")
     XCTAssertEqual(chrome.tabSymbolName, "bell.fill")
   }
 }

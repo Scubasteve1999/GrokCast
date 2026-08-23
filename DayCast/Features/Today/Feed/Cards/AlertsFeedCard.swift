@@ -24,7 +24,14 @@ struct AlertsFeedCard: View {
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .tracking(DesignTokens.Typography.cardLabelTracking)
-        .accessibilityLabel(AlertsHonesty.todaySlotAccessibility(nwsAlertCount: alerts.count))
+        .accessibilityLabel(
+          AlertsHonesty.todaySlotAccessibility(
+            nwsAlertCount: alerts.count,
+            outlookSummary: severeContext?.day1Outlook.isMeaningful == true
+              ? severeContext?.day1Outlook.summaryLine
+              : nil
+          )
+        )
 
       if let severeContext {
         SevereContextCard(context: severeContext)
