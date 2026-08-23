@@ -55,8 +55,13 @@ class DayCastUITestCase: XCTestCase {
 
     // Reached when the welcome card was already dismissed but permission is still
     // .notDetermined (e.g. a previous test in the same run tapped through).
-    let enable = app.buttons["ENABLE LOCATION"]
-    if enable.waitForExistence(timeout: 2) {
+    let enable = firstExistingButton(
+      [
+        "daycast.today.enableLocation",
+        "Enable location",
+        "ENABLE LOCATION",
+      ], timeout: 2)
+    if let enable {
       enable.tap()
       grantLocationPermissionIfPrompted(timeout: 5)
     }
@@ -115,6 +120,18 @@ class DayCastUITestCase: XCTestCase {
   }
 
   // MARK: - Waiting
+
+  private func firstExistingButton(_ titles: [String], timeout: TimeInterval) -> XCUIElement? {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      for title in titles {
+        let button = app.buttons[title]
+        if button.exists { return button }
+      }
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    }
+    return nil
+  }
 
   func waitForHittable(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
     XCTWaiter.wait(

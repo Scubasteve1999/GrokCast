@@ -15,6 +15,20 @@ final class TodayFirstRunTests: XCTestCase {
     XCTAssertTrue(body.contains("now"))
     XCTAssertTrue(body.contains("alert"))
     XCTAssertTrue(body.contains("rain"))
+    XCTAssertEqual(TodayCopy.trustNow, "Now")
+    XCTAssertEqual(TodayCopy.trustAlerts, "Alerts")
+    XCTAssertEqual(TodayCopy.trustNextHour, "Next hour")
+  }
+
+  func testPermissionAndDeniedCopyStayStormTrust() {
+    let permission = TodayCopy.permissionBody.lowercased()
+    XCTAssertTrue(permission.contains("now"))
+    XCTAssertTrue(permission.contains("alert"))
+    XCTAssertTrue(permission.contains("rain"))
+    XCTAssertFalse(permission.contains("ai-powered"))
+    XCTAssertFalse(TodayCopy.deniedBody.lowercased().contains("insight"))
+    XCTAssertFalse(TodayCopy.deniedTitle.localizedCaseInsensitiveContains("welcome"))
+    XCTAssertEqual(TodayCopy.openSettings, "Open Settings")
   }
 
   func testEmptyGateCopyIsNotASecondWelcome() {

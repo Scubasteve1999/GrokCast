@@ -36,6 +36,11 @@ enum DayCastAccessibility {
     static let errorBanner = "daycast.today.errorBanner"
     static let root = "daycast.today.root"
     static let takeOptions = "daycast.today.takeOptions"
+    static let getStarted = "daycast.today.getStarted"
+    static let continuePermission = "daycast.today.continuePermission"
+    static let enableLocation = "daycast.today.enableLocation"
+    static let openSettings = "daycast.today.openSettings"
+    static let statusPill = "daycast.today.statusPill"
   }
 
   enum Radar {

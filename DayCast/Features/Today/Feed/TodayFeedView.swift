@@ -257,32 +257,22 @@ struct TodayFeedView: View {
   }
 
   private func errorBanner(_ error: String) -> some View {
-    HStack(spacing: DesignTokens.Spacing.space8) {
-      Image(systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill")
-        .foregroundStyle(DesignTokens.Palette.danger)
-      Text(error)
-        .font(DesignTokens.Typography.caption())
-        .foregroundStyle(DesignTokens.Palette.danger)
-        .lineLimit(2)
-      Spacer(minLength: DesignTokens.Spacing.space8)
-      Button(store.isShowingDefaultLocationFallback ? "Use my position" : "Retry") {
-        Haptic.impact(.medium)
-        Task {
-          if store.isShowingDefaultLocationFallback {
-            await store.useCurrentDeviceLocation()
-          } else {
-            await store.refreshWeather()
-          }
+    TodayMessageBanner(
+      message: error,
+      isOffline: store.isOffline,
+      tone: store.isShowingDefaultLocationFallback ? .warning : .danger,
+      actionTitle: store.isShowingDefaultLocationFallback
+        ? TodayCopy.useMyPosition : "Retry"
+    ) {
+      Haptic.impact(.medium)
+      Task {
+        if store.isShowingDefaultLocationFallback {
+          await store.useCurrentDeviceLocation()
+        } else {
+          await store.refreshWeather()
         }
       }
-      .font(DesignTokens.Typography.caption())
-      .buttonStyle(.bordered)
-      .tint(DesignTokens.Palette.danger)
-      .controlSize(.small)
     }
-    .padding(DesignTokens.Spacing.space8)
-    .background(DesignTokens.Palette.danger.opacity(0.15))
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small))
     .accessibilityIdentifier(DayCastAccessibility.Today.errorBanner)
   }
 

@@ -4,79 +4,76 @@ struct LocationPermissionView: View {
   @Environment(WeatherStore.self) private var store
 
   var body: some View {
-    VStack(spacing: 24) {
-      Image(systemName: "location.fill")
-        .font(DesignTokens.Typography.symbol(64))
-        .foregroundStyle(.white)
-        .symbolEffect(.pulse, options: .repeating)
+    TodayFirstRunStage {
+      TodayFirstRunCard {
+        TodayWeatherGlyph(kind: .location)
 
-      Text("LOCATION ACCESS")
-        .font(DesignTokens.Typography.studioTitle())
-        .tracking(2)
+        Text(title)
+          .font(DesignTokens.Typography.title())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .multilineTextAlignment(.center)
 
-      switch store.locationService.authorizationStatus {
-      case .notDetermined:
-        Text(
-          "DayCast uses your location to show local Now, official alerts, and next-hour rain."
-        )
-        .font(DesignTokens.Typography.body())
-        .multilineTextAlignment(.center)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 12)
+        Text(bodyText)
+          .font(DesignTokens.Typography.callout())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .multilineTextAlignment(.center)
+          .fixedSize(horizontal: false, vertical: true)
 
-        Button {
+        if let action {
+          TodayPrimaryCTA(
+            title: action.title,
+            systemImage: action.systemImage,
+            action: action.handler
+          )
+          .accessibilityIdentifier(action.identifier)
+        }
+      }
+    }
+  }
+
+  private var title: String {
+    switch store.locationService.authorizationStatus {
+    case .denied: TodayCopy.deniedTitle
+    case .restricted: TodayCopy.restrictedTitle
+    default: TodayCopy.permissionTitle
+    }
+  }
+
+  private var bodyText: String {
+    switch store.locationService.authorizationStatus {
+    case .denied: TodayCopy.deniedBody
+    case .restricted: TodayCopy.restrictedBody
+    default: TodayCopy.permissionBody
+    }
+  }
+
+  private var action: (title: String, systemImage: String, identifier: String, handler: () -> Void)?
+  {
+    switch store.locationService.authorizationStatus {
+    case .notDetermined:
+      return (
+        TodayCopy.enableLocation,
+        "location.fill",
+        DayCastAccessibility.Today.enableLocation,
+        {
           Haptic.impact(.medium)
           store.markLocationPermissionRequested()
           store.locationService.requestLocationPermission()
-        } label: {
-          Label("ENABLE LOCATION", systemImage: "location.fill")
-            .font(DesignTokens.Typography.caption())
-            .tracking(1.5)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(.indigo.opacity(0.7))
-        .padding(.top, 8)
-
-      case .denied:
-        Text(
-          "Location access was denied. Enable it in Settings to use your current position for weather and insights."
-        )
-        .font(DesignTokens.Typography.body())
-        .multilineTextAlignment(.center)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 12)
-
-        Button {
+      )
+    case .denied:
+      return (
+        TodayCopy.openSettings,
+        "gearshape",
+        DayCastAccessibility.Today.openSettings,
+        {
           Haptic.impact(.medium)
           store.locationService.openSettings()
-        } label: {
-          Label("OPEN SETTINGS", systemImage: "gearshape")
-            .font(DesignTokens.Typography.caption())
-            .tracking(1.5)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(.indigo.opacity(0.7))
-        .padding(.top, 8)
-
-      case .restricted:
-        Text(
-          "Location access is restricted on this device. Check Settings > Screen Time or parental controls."
-        )
-        .font(DesignTokens.Typography.body())
-        .multilineTextAlignment(.center)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 12)
-
-      case .authorized, .authorizedWhenInUse, .authorizedAlways:
-        EmptyView()
-
-      default:
-        EmptyView()
-      }
+      )
+    default:
+      return nil
     }
-    .padding(32)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    .foregroundStyle(.white)
   }
 }
 

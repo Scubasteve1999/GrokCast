@@ -11,6 +11,29 @@ enum TodayCopy {
   static let emptyTitle = "Getting your city"
   static let emptyBody =
     "Tap Use my position for local Now and alerts, or pick a saved city. This is not GPS yet."
+
+  static let getStarted = "Get Started"
+  static let continuePermission = "Continue"
+  static let enableLocation = "Enable location"
+  static let openSettings = "Open Settings"
+  static let useMyPosition = "Use my position"
+
+  static let permissionTitle = "Use your location"
+  static let permissionBody =
+    "DayCast uses your location to show local Now, official alerts, and next-hour rain."
+  static let permissionPrivacy =
+    "Your location is only used for weather — we don’t track or store it."
+
+  static let deniedTitle = "Location is off"
+  static let deniedBody =
+    "Location access was denied. Enable it in Settings to use your current position for Now and alerts."
+  static let restrictedTitle = "Location is restricted"
+  static let restrictedBody =
+    "Location access is restricted on this device. Check Settings > Screen Time or parental controls."
+
+  static let trustNow = "Now"
+  static let trustAlerts = "Alerts"
+  static let trustNextHour = "Next hour"
 }
 
 /// Storm-first skeleton slots — must match the glance cards, not the old tactical grid.
@@ -163,6 +186,9 @@ struct TodayView: View {
       .sheet(isPresented: $showPermissionExplanation) {
         permissionExplanation()
           .preferredColorScheme(.dark)
+          .presentationDetents([.fraction(0.72), .large])
+          .presentationDragIndicator(.visible)
+          .presentationBackground(DesignTokens.Palette.bgPrimary)
       }
       .onChange(of: store.locationService.authorizationStatus) { _, _ in
         store.noteAuthorizationMayNeedDeviceLocation()
@@ -175,123 +201,107 @@ struct TodayView: View {
   // MARK: - Onboarding
 
   private func firstLaunchWelcome() -> some View {
-    VStack {
-      Spacer()
-      VStack(spacing: 20) {
-        Image(systemName: "sun.max")
-          .font(DesignTokens.Typography.symbol(48))
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
+    TodayFirstRunStage {
+      TodayFirstRunCard {
+        TodayWeatherGlyph(kind: .weather)
         Text(TodayCopy.welcomeTitle)
-          .font(DesignTokens.Typography.studioTitle())
+          .font(DesignTokens.Typography.title())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .multilineTextAlignment(.center)
         Text(TodayCopy.welcomeBody)
-          .font(.callout)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .multilineTextAlignment(.center)
-          .padding(.horizontal, 8)
-        Button("Get Started") {
+          .fixedSize(horizontal: false, vertical: true)
+        TodayTrustRow()
+        TodayPrimaryCTA(title: TodayCopy.getStarted) {
           Haptic.impact(.medium)
           showPermissionExplanation = true
         }
-        .buttonStyle(.borderedProminent)
-        .tint(DesignTokens.Palette.accent)
+        .accessibilityIdentifier(DayCastAccessibility.Today.getStarted)
       }
-      .padding(DesignTokens.Spacing.space16)
-      .cardStyle(
-        background: DesignTokens.Palette.cardBackground,
-        stroke: DesignTokens.Palette.cardStroke,
-        cornerRadius: DesignTokens.Card.cornerRadiusMedium
-      )
-      .padding(.horizontal, 20)
-      .readableContentWidth(ReadableContentWidth.compact)
-      Spacer()
     }
   }
 
   private func permissionExplanation() -> some View {
-    VStack(spacing: 20) {
-      Image(systemName: "location.fill")
-        .font(DesignTokens.Typography.symbol(48))
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-      VStack(spacing: 12) {
-        Text("DayCast uses your location to show accurate weather forecasts for where you are.")
-          .font(DesignTokens.Typography.body())
-          .multilineTextAlignment(.center)
+    ScrollView {
+      TodayFirstRunCard {
+        TodayWeatherGlyph(kind: .location)
+        Text(TodayCopy.permissionTitle)
+          .font(DesignTokens.Typography.title())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
-        Text("Your location is only used for weather — we don’t track or store it.")
-          .font(DesignTokens.Typography.body())
           .multilineTextAlignment(.center)
+        Text(TodayCopy.permissionBody)
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .multilineTextAlignment(.center)
+          .fixedSize(horizontal: false, vertical: true)
+        Text(TodayCopy.permissionPrivacy)
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .multilineTextAlignment(.center)
+          .fixedSize(horizontal: false, vertical: true)
+        TodayPrimaryCTA(title: TodayCopy.continuePermission) {
+          Haptic.impact(.medium)
+          store.markLocationPermissionRequested()
+          store.locationService.requestLocationPermission()
+          showPermissionExplanation = false
+        }
+        .accessibilityIdentifier(DayCastAccessibility.Today.continuePermission)
       }
-      Button("Continue") {
-        Haptic.impact(.medium)
-        store.markLocationPermissionRequested()
-        store.locationService.requestLocationPermission()
-        showPermissionExplanation = false
-      }
-      .buttonStyle(.borderedProminent)
-      .tint(DesignTokens.Palette.accent)
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.top, DesignTokens.Spacing.space24)
+      .padding(.bottom, DesignTokens.Spacing.space16)
+      .readableContentWidth(ReadableContentWidth.compact)
     }
-    .padding(24)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background {
+      WeatherBackgroundLayer(
+        conditionCode: nil,
+        isDay: WeatherBackgroundView.inferredIsDay,
+        intensity: .staticOnly
+      )
+      .ignoresSafeArea()
+    }
   }
 
   private func emptyLocationGate() -> some View {
-    ContentUnavailableView {
-      Label(TodayCopy.emptyTitle, systemImage: "location.circle")
-    } description: {
-      Text(TodayCopy.emptyBody)
-    } actions: {
-      VStack(spacing: 12) {
+    TodayFirstRunStage {
+      TodayFirstRunCard {
+        TodayWeatherGlyph(kind: .city)
+        Text(TodayCopy.emptyTitle)
+          .font(DesignTokens.Typography.title())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .multilineTextAlignment(.center)
+        Text(TodayCopy.emptyBody)
+          .font(DesignTokens.Typography.callout())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .multilineTextAlignment(.center)
+          .fixedSize(horizontal: false, vertical: true)
+
         if store.locationService.isLoading || store.isLoadingWeather
           || store.isAcquiringDeviceLocation
         {
-          HStack(spacing: 8) {
-            ProgressView()
-              .tint(.white)
-            Text(TodayCopy.gettingLocation)
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-          }
-        } else if store.weatherError != nil {
-          HStack(spacing: 8) {
-            Image(
-              systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill"
-            )
-            .foregroundStyle(DesignTokens.Palette.danger)
-            Text(store.weatherError ?? "")
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.danger)
-              .lineLimit(2)
-            Spacer(minLength: 8)
-            Button("Retry") {
-              Haptic.impact(.medium)
-              Task { await store.useCurrentDeviceLocation() }
-            }
-            .font(DesignTokens.Typography.caption())
-            .buttonStyle(.bordered)
-            .tint(DesignTokens.Palette.danger)
-            .controlSize(.small)
-          }
-          .padding(8)
-          .background(DesignTokens.Palette.danger.opacity(0.15))
-          .clipShape(RoundedRectangle(cornerRadius: 8))
-        } else {
-          Button("USE MY POSITION") {
+          TodayStatusPill(text: TodayCopy.gettingLocation)
+        } else if let error = store.weatherError, !error.isEmpty {
+          TodayMessageBanner(
+            message: error,
+            isOffline: store.isOffline,
+            tone: store.isShowingDefaultLocationFallback ? .warning : .danger,
+            actionTitle: "Retry"
+          ) {
             Haptic.impact(.medium)
             Task { await store.useCurrentDeviceLocation() }
           }
-          .buttonStyle(.borderedProminent)
-          .tint(DesignTokens.Palette.accent)
+        } else {
+          TodayPrimaryCTA(
+            title: TodayCopy.useMyPosition,
+            systemImage: "location.fill"
+          ) {
+            Haptic.impact(.medium)
+            Task { await store.useCurrentDeviceLocation() }
+          }
         }
       }
-      .padding(16)
-      .background(DesignTokens.Palette.cardBackground)
-      .overlay(
-        RoundedRectangle(cornerRadius: 14)
-          .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
-      )
-      .clipShape(RoundedRectangle(cornerRadius: 14))
     }
   }
 
@@ -373,16 +383,8 @@ struct TodaySkeleton: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         if let statusText, !statusText.isEmpty {
-          HStack(spacing: DesignTokens.Spacing.space8) {
-            ProgressView()
-              .tint(.white)
-            Text(statusText)
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-          }
-          .padding(.horizontal, DesignTokens.Spacing.space20)
-          .accessibilityElement(children: .combine)
-          .accessibilityLabel(statusText)
+          TodayStatusPill(text: statusText)
+            .padding(.horizontal, DesignTokens.Spacing.space20)
         }
         TodaySkeletonPanel()
           .padding(.horizontal, DesignTokens.Spacing.space20)
@@ -398,7 +400,7 @@ private struct TodaySkeletonPanel: View {
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space16) {
       chipBarSkeleton
-      HeroSkeleton(includeHorizontalPadding: false)
+      HeroSkeleton()
       alertsSlotSkeleton
       precipSlotSkeleton
       hourlySlotSkeleton
@@ -407,98 +409,113 @@ private struct TodaySkeletonPanel: View {
 
   private var chipBarSkeleton: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      ShimmerBlock(width: 88, height: 32, cornerRadius: DesignTokens.Radius.small)
-      ShimmerBlock(width: 72, height: 32, cornerRadius: DesignTokens.Radius.small)
-      ShimmerBlock(width: 96, height: 32, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: 88, height: 36, cornerRadius: 18)
+      ShimmerBlock(width: 72, height: 36, cornerRadius: 18)
+      ShimmerBlock(width: 96, height: 36, cornerRadius: 18)
       Spacer(minLength: 0)
     }
   }
 
+  /// Thin alert row — matches `AlertsFeedCard` event bar, not a padded card.
   private var alertsSlotSkeleton: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      ShimmerBlock(width: 110, height: 12, cornerRadius: DesignTokens.Radius.small)
-      ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.medium)
+    HStack(spacing: DesignTokens.Spacing.space8) {
+      ShimmerBlock(width: 28, height: 28, cornerRadius: DesignTokens.Radius.small)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+        ShimmerBlock(width: 132, height: 14, cornerRadius: 4)
+        ShimmerBlock(width: 196, height: 12, cornerRadius: 4)
+      }
+      Spacer(minLength: 0)
     }
-    .padding(DesignTokens.Spacing.space16)
+    .padding(DesignTokens.Spacing.space12)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+    .background(DesignTokens.Palette.cardBackground.opacity(0.72))
+    .overlay(
+      RoundedRectangle(cornerRadius: DesignTokens.Radius.medium, style: .continuous)
+        .stroke(DesignTokens.Palette.cardStroke, lineWidth: DesignTokens.Card.strokeWidth)
     )
+    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium, style: .continuous))
   }
 
+  /// Minutecast strip: caption + message + 16 thin bars at 28pt.
   private var precipSlotSkeleton: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      ShimmerBlock(width: 88, height: 12, cornerRadius: DesignTokens.Radius.small)
-      HStack(spacing: DesignTokens.Spacing.space4) {
-        ForEach(0..<8, id: \.self) { _ in
-          ShimmerBlock(width: nil, height: 36, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: 88, height: 12, cornerRadius: 4)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+        ShimmerBlock(width: 168, height: 12, cornerRadius: 4)
+        HStack(alignment: .bottom, spacing: 3) {
+          ForEach(0..<16, id: \.self) { index in
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+              .fill(DesignTokens.Palette.cardElevated)
+              .frame(maxWidth: .infinity)
+              .frame(height: precipBarHeight(at: index))
+              .shimmer()
+          }
         }
+        .frame(height: 28, alignment: .bottom)
       }
+      .padding(.vertical, DesignTokens.Spacing.space12)
+      .padding(.horizontal, DesignTokens.Spacing.space12)
+      .cardStyle(cornerRadius: DesignTokens.Radius.small)
     }
-    .padding(DesignTokens.Spacing.space16)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
-    )
+  }
+
+  private func precipBarHeight(at index: Int) -> CGFloat {
+    // Quiet variation so the strip reads as minutecast, not identical ticks.
+    let pattern: [CGFloat] = [8, 8, 10, 16, 22, 18, 10, 8]
+    return pattern[index % pattern.count]
   }
 
   private var hourlySlotSkeleton: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      ShimmerBlock(width: 72, height: 12, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: 72, height: 12, cornerRadius: 4)
       HStack(spacing: DesignTokens.Spacing.space12) {
-        ForEach(0..<6, id: \.self) { _ in
-          VStack(spacing: DesignTokens.Spacing.space8) {
-            ShimmerBlock(width: 28, height: 10, cornerRadius: DesignTokens.Radius.small)
-            ShimmerBlock(width: 28, height: 28, cornerRadius: DesignTokens.Radius.small)
-            ShimmerBlock(width: 36, height: 16, cornerRadius: DesignTokens.Radius.small)
-          }
+        ForEach(0..<5, id: \.self) { index in
+          HourlyRowSkeleton(isNow: index == 0, layout: .figma)
         }
         Spacer(minLength: 0)
       }
+      .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space8)
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space40)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
-    )
+    .cardStyle()
   }
 }
 
+/// Floating Now hero — location chip, giant temp, condition, feels, score chip.
+/// Matches `NowFeedCard` proportions (no gray slab).
 struct HeroSkeleton: View {
-  var includeHorizontalPadding: Bool = true
-
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-      ShimmerBlock(width: 140, height: 28, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: 128, height: 36, cornerRadius: 18)
 
       HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
-        ShimmerBlock(width: 120, height: 72, cornerRadius: DesignTokens.Radius.small)
-        Spacer()
+        ShimmerBlock(width: 168, height: 88, cornerRadius: DesignTokens.Radius.small)
+        Spacer(minLength: 8)
         VStack(spacing: DesignTokens.Spacing.space8) {
-          ShimmerBlock(width: 48, height: 48, cornerRadius: DesignTokens.Radius.small)
-          ShimmerBlock(width: 90, height: 16, cornerRadius: DesignTokens.Radius.small)
+          ShimmerBlock(width: 52, height: 52, cornerRadius: DesignTokens.Radius.small)
+          ShimmerBlock(width: 72, height: 16, cornerRadius: DesignTokens.Radius.small)
         }
       }
 
-      ShimmerBlock(width: 200, height: 16, cornerRadius: DesignTokens.Radius.small)
-      ShimmerBlock(width: 120, height: 12, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: 248, height: 18, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: 108, height: 12, cornerRadius: DesignTokens.Radius.small)
+      ShimmerBlock(width: nil, height: 44, cornerRadius: 14)
     }
-    .padding(.vertical, DesignTokens.Spacing.space20)
-    .padding(.horizontal, includeHorizontalPadding ? DesignTokens.Spacing.space20 : 0)
+    .padding(.horizontal, DesignTokens.Spacing.space4)
+    .padding(.top, DesignTokens.Spacing.space8)
+    .padding(.bottom, DesignTokens.Spacing.space12)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusLarge
-    )
   }
+}
+
+#Preview("Today — waiting skeleton") {
+  ZStack {
+    WeatherBackgroundLayer(conditionCode: nil, intensity: .staticOnly)
+      .ignoresSafeArea()
+    TodaySkeleton(statusText: TodayCopy.gettingLocation)
+  }
+  .preferredColorScheme(.dark)
 }
 
 #Preview("Today — iPhone") {
