@@ -3,14 +3,15 @@ import Foundation
 import MapboxMaps
 import UIKit
 
-/// DayCast-native 30 mi range ring: ice accent stroke + dark halo + glass capsule label.
+/// DayCast-native 50 mi range ring: ice accent stroke + dark halo + glass capsule label.
 /// Not a RadarScope gray ring / white pill clone.
 enum RadarRangeRingOverlay {
   static let sourceID = "range-ring-source"
   static let haloLayerID = "range-ring-halo"
   static let lineLayerID = "range-ring-line"
   static let labelLayerID = "range-ring-label"
-  static let labelImageID = "daycast-range-ring-label"
+  /// Miles in the id so a 30→50 rebuild cannot keep a stale capsule image.
+  static var labelImageID: String { "daycast-range-ring-label-\(RadarRangeRing.label)" }
 
   private static let accent = UIColor(red: 139 / 255, green: 184 / 255, blue: 240 / 255, alpha: 0.62)
   private static let halo = UIColor(red: 5 / 255, green: 7 / 255, blue: 12 / 255, alpha: 0.42)

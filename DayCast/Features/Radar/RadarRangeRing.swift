@@ -1,10 +1,10 @@
 import CoreLocation
 import Foundation
 
-/// Geodesic 30-mile range ring around Home / the selected city.
+/// Geodesic 50-mile range ring around the confirmed selected location.
 /// Geometry only — Mapbox paint lives in `RadarRangeRingOverlay`.
 enum RadarRangeRing {
-  static let radiusMiles = 30.0
+  static let radiusMiles = 50.0
   static let metersPerMile = 1609.344
   static let radiusMeters = radiusMiles * metersPerMile
   static var label: String { RadarChromeCopy.rangeRingLabel }
@@ -12,6 +12,37 @@ enum RadarRangeRing {
   static let labelBearingDegrees = 135.0
   static let steps = 72
   static let earthRadiusMeters = 6_371_000.0
+
+  /// Ring center for Mapbox + geodesic math. Same value must be passed to both.
+  ///
+  /// - Near Me (`isCurrent`): live device GPS only. Never `SavedLocation.oliveBranch`.
+  /// - Saved city chip: that chip's exact coordinate (Olive Branch only if that chip is selected).
+  /// - Near Me without a GPS fix, or no selection: `nil` (hide the ring).
+  static func confirmedCenter(
+    selectedLocation: SavedLocation?,
+    deviceCoordinate: CLLocationCoordinate2D?
+  ) -> CLLocationCoordinate2D? {
+    guard let selected = selectedLocation else { return nil }
+    if selected.isCurrent {
+      return Self.validCoordinate(deviceCoordinate)
+    }
+    return Self.validCoordinate(selected.coordinate)
+  }
+
+  /// Near Me is the active chip but GPS has not produced a coordinate.
+  static func showsLocationUnavailable(
+    selectedLocation: SavedLocation?,
+    deviceCoordinate: CLLocationCoordinate2D?
+  ) -> Bool {
+    selectedLocation?.isCurrent == true
+      && confirmedCenter(
+        selectedLocation: selectedLocation, deviceCoordinate: deviceCoordinate) == nil
+  }
+
+  static func validCoordinate(_ coordinate: CLLocationCoordinate2D?) -> CLLocationCoordinate2D? {
+    guard let coordinate, CLLocationCoordinate2DIsValid(coordinate) else { return nil }
+    return coordinate
+  }
 
   static func destination(
     from origin: CLLocationCoordinate2D,
