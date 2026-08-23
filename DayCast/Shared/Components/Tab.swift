@@ -148,7 +148,7 @@ enum CompactTab: String, CaseIterable, Identifiable {
     case .today: "sun.max.fill"
     case .forecast: "calendar"
     case .radar: "map.fill"
-    case .alerts: "bell.badge.fill"
+    case .alerts: AlertsHonesty.tabSymbolIdle
     case .more: "ellipsis"
     }
   }
@@ -200,6 +200,8 @@ struct TabBarSuppressionPreferenceKey: PreferenceKey {
 }
 
 struct CompactTabBar: View {
+  @Environment(WeatherStore.self) private var store
+  @Environment(SevereWeatherStore.self) private var severeStore
   @Binding var selection: WeatherStore.Tab
   @Binding var showMoreHub: Bool
   private let tabs = CompactTab.allCases
@@ -249,7 +251,8 @@ struct CompactTabBar: View {
           tabContent(for: tab)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(tab.title)
+        .accessibilityLabel(accessibilityLabel(for: tab))
+        .accessibilityValue(accessibilityValue(for: tab))
         .accessibilityHint(tab == .more ? "Opens Locations, Settings, and Storm Spotter" : "")
         .accessibilityIdentifier(DayCastAccessibility.Tabs.item(tab))
         .frame(maxWidth: .infinity)
@@ -269,6 +272,31 @@ struct CompactTabBar: View {
     .ignoresSafeArea(.keyboard)
   }
 
+  private var alertsChrome: AlertsHonesty.Chrome {
+    let locID = store.currentLocation?.id.uuidString
+    let hasSPC =
+      locID != nil
+      && severeStore.context.locationID == locID
+      && severeStore.context.hasSPCContent
+    return AlertsHonesty.chrome(
+      nwsAlertCount: store.displayableActiveAlerts.count,
+      hasSevereProducts: hasSPC
+    )
+  }
+
+  private func iconName(for tab: CompactTab) -> String {
+    tab == .alerts ? alertsChrome.tabSymbolName : tab.icon
+  }
+
+  private func accessibilityLabel(for tab: CompactTab) -> String {
+    tab == .alerts ? alertsChrome.tabAccessibilityLabel : tab.title
+  }
+
+  private func accessibilityValue(for tab: CompactTab) -> String {
+    guard tab == .alerts else { return "" }
+    return alertsChrome.tabAccessibilityValue ?? ""
+  }
+
   private func tabContent(for tab: CompactTab) -> some View {
     let active = tab.isSelected(for: selection)
     return VStack(spacing: 3) {
@@ -279,14 +307,16 @@ struct CompactTabBar: View {
             .matchedGeometryEffect(id: "pill", in: namespace)
             .frame(width: 40, height: 28)
         }
-        Image(systemName: tab.icon)
+        Image(systemName: iconName(for: tab))
           .font(DesignTokens.Typography.symbol(20))
           .foregroundStyle(active ? activeColor : inactiveColor)
+          .accessibilityHidden(true)
       }
       .frame(height: 28)
       Text(tab.title)
         .font(DesignTokens.Typography.micro())
         .foregroundStyle(active ? DesignTokens.Palette.textPrimary : inactiveColor)
+        .accessibilityHidden(true)
     }
     .padding(.vertical, 4)
   }

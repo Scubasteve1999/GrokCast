@@ -7,7 +7,7 @@ struct AlertsFeedCard: View {
 
   /// NWS rows keep “Active Alerts”. Outlook-only must not pretend there is a warning.
   private var sectionTitle: String {
-    alerts.isEmpty ? "Severe outlook" : "Active Alerts"
+    AlertsHonesty.todaySlotTitle(nwsAlertCount: alerts.count)
   }
 
   var body: some View {
@@ -24,6 +24,7 @@ struct AlertsFeedCard: View {
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .tracking(DesignTokens.Typography.cardLabelTracking)
+        .accessibilityLabel(AlertsHonesty.todaySlotAccessibility(nwsAlertCount: alerts.count))
 
       if let severeContext {
         SevereContextCard(context: severeContext)

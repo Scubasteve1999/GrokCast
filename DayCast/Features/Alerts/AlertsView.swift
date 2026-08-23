@@ -51,6 +51,13 @@ struct AlertsView: View {
     store.alertsLoadState == .failed
   }
 
+  private var honesty: AlertsHonesty.Chrome {
+    AlertsHonesty.chrome(
+      nwsAlertCount: activeAlerts.count,
+      hasSevereProducts: hasSevereProducts
+    )
+  }
+
   var body: some View {
     NavigationStack {
       Group {
@@ -83,13 +90,7 @@ struct AlertsView: View {
   private var alertsSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
-
-        FigmaAccentSectionLabel(
-          title: "ACTIVE NOW",
-          icon: "bolt.fill",
-          color: DesignTokens.Palette.danger
-        )
+        FigmaScreenTitle(title: AlertsHonesty.tabTitle)
 
         ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.medium)
         ShimmerBlock(width: nil, height: 88, cornerRadius: DesignTokens.Radius.medium)
@@ -105,16 +106,26 @@ struct AlertsView: View {
   private var alertsList: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
+        FigmaScreenTitle(title: honesty.screenTitle)
+          .accessibilityIdentifier(DayCastAccessibility.Alerts.screenTitle)
+          .accessibilityLabel(honesty.screenAccessibilityLabel)
 
         if alertsFetchFailed {
           alertsErrorBanner
         }
 
-        if !activeAlerts.isEmpty {
+        if let caption = honesty.noActiveAlertsCaption {
+          Text(caption)
+            .font(DesignTokens.Typography.callout())
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityIdentifier(DayCastAccessibility.Alerts.noActiveCaption)
+        }
+
+        if honesty.showsActiveNow {
           VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
             FigmaAccentSectionLabel(
-              title: "ACTIVE NOW",
+              title: AlertsHonesty.activeNow,
               icon: "bolt.fill",
               color: DesignTokens.Palette.danger
             )
@@ -186,7 +197,9 @@ struct AlertsView: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
           Text(alert.event)
-            .font(isActive ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection())
+            .font(
+              isActive ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection()
+            )
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .multilineTextAlignment(.leading)
           Spacer(minLength: 0)
@@ -242,10 +255,13 @@ struct AlertsView: View {
 
   private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {
     if isActive {
-      let until = alert.expires.map {
-        $0.formatted(date: .omitted, time: .shortened)
-      } ?? "Active"
-      let area = alert.areaDesc?.components(separatedBy: ";").first?.trimmingCharacters(in: .whitespaces) ?? ""
+      let until =
+        alert.expires.map {
+          $0.formatted(date: .omitted, time: .shortened)
+        } ?? "Active"
+      let area =
+        alert.areaDesc?.components(separatedBy: ";").first?.trimmingCharacters(in: .whitespaces)
+        ?? ""
       if area.isEmpty { return "Until \(until)" }
       return "Until \(until) · \(area)"
     }
@@ -352,7 +368,7 @@ struct AlertsView: View {
   private var errorState: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
+        FigmaScreenTitle(title: AlertsHonesty.tabTitle)
 
         ContentUnavailableView {
           Label(
@@ -386,7 +402,7 @@ struct AlertsView: View {
   private var emptyState: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Alerts")
+        FigmaScreenTitle(title: AlertsHonesty.tabTitle)
 
         ContentUnavailableView {
           Label("No Alerts", systemImage: "checkmark.shield")

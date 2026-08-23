@@ -137,13 +137,20 @@ struct SevereProductsSections: View {
 struct SevereContextCard: View {
   let context: SevereWeatherContext
 
+  private var hasNWSSevere: Bool {
+    context.alerts.contains { $0.isSevereEvent && !$0.isExpired }
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       HStack(spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: "exclamationmark.triangle.fill")
+        Image(systemName: hasNWSSevere ? "exclamationmark.triangle.fill" : "cloud.bolt.rain.fill")
           .font(DesignTokens.Typography.metric())
-          .foregroundStyle(DesignTokens.Palette.warning)
-        Text("Severe weather")
+          .foregroundStyle(
+            hasNWSSevere ? DesignTokens.Palette.warning : DesignTokens.Palette.textSecondary
+          )
+          .accessibilityHidden(true)
+        Text(hasNWSSevere ? "Severe weather" : "Outlook")
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer()
@@ -173,8 +180,11 @@ struct SevereContextCard: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .elevatedCardStyle(
       background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.warning.opacity(0.45),
+      stroke: hasNWSSevere
+        ? DesignTokens.Palette.warning.opacity(0.45)
+        : DesignTokens.Palette.cardStroke,
       cornerRadius: DesignTokens.Card.cornerRadiusMedium
     )
+    .accessibilityElement(children: .combine)
   }
 }

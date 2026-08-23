@@ -278,7 +278,7 @@ final class WeatherStore {
       case .today: "sun.max"
       case .forecast: "calendar"
       case .radar: "map.fill"
-      case .alerts: "bell.badge.fill"
+      case .alerts: "bell.fill"
       case .grok: "sparkles"
       case .locations: "mappin.and.ellipse"
       case .settings: "gearshape"

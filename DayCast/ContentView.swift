@@ -106,7 +106,13 @@ struct MainTabView: View {
 
       AlertsView()
         .hidesSystemTabBar()
-        .tabItem { Label("Alerts", systemImage: WeatherStore.Tab.alerts.icon) }
+        .tabItem {
+          Label(
+            "Alerts",
+            systemImage: AlertsHonesty.tabSymbolName(
+              nwsAlertCount: store.displayableActiveAlerts.count)
+          )
+        }
         .tag(CompactTab.alerts)
 
       moreHubPage
@@ -135,7 +141,13 @@ struct MainTabView: View {
 
       AlertsView()
         .hidesSystemTabBar()
-        .tabItem { Label("Alerts", systemImage: WeatherStore.Tab.alerts.icon) }
+        .tabItem {
+          Label(
+            "Alerts",
+            systemImage: AlertsHonesty.tabSymbolName(
+              nwsAlertCount: store.displayableActiveAlerts.count)
+          )
+        }
         .tag(WeatherStore.Tab.alerts)
 
       GrokAIView()

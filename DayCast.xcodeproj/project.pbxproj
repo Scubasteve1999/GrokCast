@@ -51,6 +51,7 @@
 		203B53CF7B3146C485CE6546 /* MinutecastEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A4170D1BC4E06D4121736 /* MinutecastEngineTests.swift */; };
 		22D7E611E649E3A1D8A2499B /* ShortTermPrecipModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03953D7F2CEF9DB27ED09B08 /* ShortTermPrecipModels.swift */; };
 		25A0008DA0F62706D76864A7 /* WidgetAlertStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F2BAC2624670EB888754267 /* WidgetAlertStyle.swift */; };
+		267828B39AA4CDC0D5199898 /* AlertsHonesty.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFF3590A0973C13109C05D5 /* AlertsHonesty.swift */; };
 		27AAA4C12F0C5229C8D61995 /* DayCastNotificationSounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33D76647C127F11670AACA6 /* DayCastNotificationSounds.swift */; };
 		28269C00FDF35380F4BEE88B /* NIFCFireService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C459B2B538D805B36EF7F19 /* NIFCFireService.swift */; };
 		2A03B37C13B771A968BA57A0 /* DailyRowSkeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C96F869480EBCC4B93303B00 /* DailyRowSkeleton.swift */; };
@@ -301,6 +302,7 @@
 		F9D998D406765CBFE7B50250 /* HourlyPrecipCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12DD1D8B6B726888B5B8FB3 /* HourlyPrecipCard.swift */; };
 		FA2E66D15B1CD3A123EF9B8D /* Location.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC74F6B8148799773943BC1 /* Location.swift */; };
 		FA7759EB5A9607847EDC67C9 /* DayCastWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F126D6CA6D476D7E478C8C68 /* DayCastWidgets.swift */; };
+		FA883D53A7AD6E42C7A237EC /* AlertsHonestyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06C4CF3AE9F67AC93E96FFE /* AlertsHonestyTests.swift */; };
 		FAA148AE9E644CA696A53EFE /* RadarPlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681B8EFA71DA2E012D77F4E3 /* RadarPlaybackTests.swift */; };
 		FABE8812FFF191D5DBE0AC4A /* MinutecastEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F891C2FF47A42F3D04BA76 /* MinutecastEngine.swift */; };
 		FB49DF39846A466D7CECB299 /* WidgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D54D05FF7603861597E4E41 /* WidgetEmptyStateView.swift */; };
@@ -589,11 +591,13 @@
 		D83F27355A300AE91A235E60 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
 		D9E93B8A9BDBA651F3869AD7 /* WidgetWeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetWeatherSnapshot.swift; sourceTree = "<group>"; };
 		DCAC0710F528EB769BB289CD /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		DCFF3590A0973C13109C05D5 /* AlertsHonesty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsHonesty.swift; sourceTree = "<group>"; };
 		DD9055CADE036BA74D5EAE82 /* NIFCDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NIFCDecodingTests.swift; sourceTree = "<group>"; };
 		DEBC7B9A7F8668AF9E21B3B1 /* HourlyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyRow.swift; sourceTree = "<group>"; };
 		DF60006BBBE01ED0E41F5C1A /* PushRegistrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationService.swift; sourceTree = "<group>"; };
 		E053D7B5845BCADCD574D492 /* StreamingText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingText.swift; sourceTree = "<group>"; };
 		E06696FC568085178B018376 /* RadarLiveCameraPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarLiveCameraPolicyTests.swift; sourceTree = "<group>"; };
+		E06C4CF3AE9F67AC93E96FFE /* AlertsHonestyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsHonestyTests.swift; sourceTree = "<group>"; };
 		E159F0CF84BB07AFC93BE8C2 /* RadarDataset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarDataset.swift; sourceTree = "<group>"; };
 		E1891FEFDB161B6C30D06811 /* RadarTimelineConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarTimelineConfig.swift; sourceTree = "<group>"; };
 		E334557A34D21749D249EDC3 /* MapsGLRadarHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapsGLRadarHost.swift; sourceTree = "<group>"; };
@@ -880,6 +884,7 @@
 			isa = PBXGroup;
 			children = (
 				7C66B6B55D978BA67FACD2C5 /* AirQualityAndMoonTests.swift */,
+				E06C4CF3AE9F67AC93E96FFE /* AlertsHonestyTests.swift */,
 				F5968B2DDDFA5030234844E4 /* AnalyticsTests.swift */,
 				4DC2649897A5248798FC2528 /* AskGrokPendingPromptTests.swift */,
 				5B8CD09B18AEB31753F1D0FC /* BriefingThreadTests.swift */,
@@ -1282,6 +1287,7 @@
 			children = (
 				4B3755E452B347A5E02F45C9 /* AlertDetailView.swift */,
 				49A6923E2CAB5B5F85E5F2F1 /* AlertsGrokSummaryCard.swift */,
+				DCFF3590A0973C13109C05D5 /* AlertsHonesty.swift */,
 				F36EB23E021FF59E36BD97EF /* AlertsView.swift */,
 				3600D9B80B037243C58F7DA5 /* NWSAlertStyle.swift */,
 				AD0B4FF922C20F425A11ED9C /* SevereProductsSections.swift */,
@@ -1528,6 +1534,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				662FB7A56C20251F3670FDDF /* AirQualityAndMoonTests.swift in Sources */,
+				FA883D53A7AD6E42C7A237EC /* AlertsHonestyTests.swift in Sources */,
 				6B7C8626026ADAEA876BEB22 /* AnalyticsTests.swift in Sources */,
 				E7EBF7B5BEC2B76F5F481583 /* AskGrokPendingPromptTests.swift in Sources */,
 				AC2125AA2CD18AD4C917FD6C /* BriefingThreadTests.swift in Sources */,
@@ -1578,6 +1585,7 @@
 				A3B90F5C9499A110DD4DF709 /* AlertNotificationService.swift in Sources */,
 				1B7CBFB9F526920FDAC80271 /* AlertsFeedCard.swift in Sources */,
 				2AE069319A85E956E7B7ECEF /* AlertsGrokSummaryCard.swift in Sources */,
+				267828B39AA4CDC0D5199898 /* AlertsHonesty.swift in Sources */,
 				C259A97A4457E590D946FA34 /* AlertsView.swift in Sources */,
 				78F8E4424B75DA8F917F7EA6 /* Analytics.swift in Sources */,
 				DC80AB399AE9C47486C939A6 /* AppDelegate.swift in Sources */,
