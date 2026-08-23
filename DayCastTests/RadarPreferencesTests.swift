@@ -43,11 +43,23 @@ final class RadarPreferencesTests: XCTestCase {
   #endif
 
   func testTodayRadarCardUsesOneRadarLabel() {
-    XCTAssertEqual(RadarFeedCopy.title, "Radar")
-    XCTAssertEqual(RadarFeedCopy.accessibilityLabel, "Radar. Opens the Radar tab.")
-    XCTAssertFalse(RadarFeedCopy.title.localizedCaseInsensitiveContains("Live Radar"))
-    XCTAssertFalse(RadarFeedCopy.title.localizedCaseInsensitiveContains("Open"))
-    XCTAssertFalse(RadarFeedCopy.accessibilityLabel.localizedCaseInsensitiveContains("Live Radar"))
+    let rain = RadarFeedCopy.title(conditionCode: 61)
+    let dry = RadarFeedCopy.title(conditionCode: 0)
+    XCTAssertEqual(rain, "Rain now · Site Doppler")
+    XCTAssertEqual(dry, "Local is clear · National radar")
+    XCTAssertEqual(
+      RadarFeedCopy.accessibilityLabel(conditionCode: 61),
+      "Rain now. Site Doppler. Opens the Radar tab."
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.accessibilityLabel(conditionCode: 0),
+      "Local is clear. National radar. Opens the Radar tab."
+    )
+    for copy in [rain, dry] {
+      XCTAssertFalse(copy.localizedCaseInsensitiveContains("Live Radar"), copy)
+      XCTAssertFalse(copy.localizedCaseInsensitiveContains("Mosaic"), copy)
+      XCTAssertFalse(copy.localizedCaseInsensitiveContains("Radar. Opens"), copy)
+    }
   }
 
   func testTodayRadarPreviewUsesMapsGLOnLight() {

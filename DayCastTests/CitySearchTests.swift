@@ -147,7 +147,10 @@ final class CitySearchTests: XCTestCase {
 
   func testChipBarEmptyStripDoesNotCatchTaps() {
     XCTAssertTrue(LocationChipBar.emptyStripPassesHitsThrough)
-    XCTAssertEqual(RadarFeedCard.accessibilityLabel, RadarFeedCopy.accessibilityLabel)
+    XCTAssertEqual(
+      RadarFeedCard.accessibilityLabel(conditionCode: 0),
+      RadarFeedCopy.accessibilityLabel(conditionCode: 0)
+    )
   }
 
   func testSavedRowVoiceOverNamesTheCity() {

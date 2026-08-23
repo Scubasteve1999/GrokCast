@@ -198,8 +198,12 @@ final class AirQualityAndMoonTests: XCTestCase {
 
   func testRadarFeedCardVoiceOverIsOneLabeledControl() {
     XCTAssertEqual(
-      RadarFeedCard.accessibilityLabel,
-      RadarFeedCopy.accessibilityLabel
+      RadarFeedCard.accessibilityLabel(conditionCode: 61),
+      RadarFeedCopy.accessibilityLabel(conditionCode: 61)
+    )
+    XCTAssertEqual(
+      RadarFeedCard.accessibilityLabel(conditionCode: 0),
+      "Local is clear. National radar. Opens the Radar tab."
     )
   }
 

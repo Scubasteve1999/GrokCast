@@ -202,7 +202,7 @@ struct TodayFeedView: View {
         store.selectedTab = .forecast
       }
     case .radar:
-      RadarFeedCard {
+      RadarFeedCard(weather: weather) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
       }
     case .daily:

@@ -82,6 +82,62 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertEqual(RadarLiveOpenPolicy.clearHint(siteID: ""), "Local is clear")
   }
 
+  func testProductMatchingLocalNowFollowsLiveOpenRule() {
+    XCTAssertEqual(
+      RadarLiveOpenPolicy.productMatchingLocalNow(hasPrecip: true),
+      .siteDoppler
+    )
+    XCTAssertEqual(
+      RadarLiveOpenPolicy.productMatchingLocalNow(hasPrecip: false),
+      .nationalRadar
+    )
+  }
+
+  func testTodayRadarTeaserCopyMatchesPolicy() {
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 61),
+      "Rain now · Site Doppler"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 95),
+      "Storm now · Site Doppler"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 71),
+      "Snow now · Site Doppler"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 66),
+      "Sleet now · Site Doppler"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 51),
+      "Rain now · Site Doppler"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 0),
+      "Local is clear · National radar"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 3),
+      "Local is clear · National radar"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.title(conditionCode: 0, siteID: "NQA"),
+      "NQA is clear · National radar"
+    )
+    let strings = [
+      RadarFeedCopy.title(conditionCode: 61),
+      RadarFeedCopy.title(conditionCode: 0),
+      RadarFeedCopy.accessibilityLabel(conditionCode: 61),
+      RadarFeedCopy.accessibilityLabel(conditionCode: 0),
+    ]
+    for copy in strings {
+      XCTAssertFalse(copy.localizedCaseInsensitiveContains("Mosaic"), copy)
+      XCTAssertFalse(copy == "Radar. Opens the Radar tab.", copy)
+    }
+  }
+
   func testUserVisibleLabelsNeverSayMosaic() {
     XCTAssertEqual(RadarProduct.reflectivity.displayName, "National radar")
     XCTAssertEqual(RadarProduct.superResReflectivity.displayName, "Site Doppler")

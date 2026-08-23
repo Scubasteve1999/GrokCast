@@ -28,6 +28,18 @@ enum RadarLiveOpenPolicy {
     return .nationalRadar
   }
 
+  /// Today teaser: local now is the wet signal. Does not fetch tiles.
+  /// National is assumed available (the Today preview is already National).
+  static func productMatchingLocalNow(hasPrecip: Bool) -> Product {
+    productToPresent(
+      userExplicitlyChoseSiteDoppler: false,
+      siteDopplerLoaded: true,
+      siteHasPrecipInLiveWindow: hasPrecip,
+      siteFailedOrStale: false,
+      nationalAvailable: true
+    )
+  }
+
   static func clearHint(siteID: String?) -> String {
     if let siteID, !siteID.isEmpty { return "\(siteID) is clear" }
     return "Local is clear"
