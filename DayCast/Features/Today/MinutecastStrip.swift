@@ -28,25 +28,20 @@ struct MinutecastStrip: View {
         if let sourceLabel, !sourceLabel.isEmpty {
           Text(sourceLabel)
             .font(DesignTokens.Typography.micro())
-            .tracking(1.0)
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
-        Text("MINUTECAST")
-          .font(DesignTokens.Typography.micro())
-          .tracking(1.2)
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
 
       if !summary.strip.isEmpty {
-        HStack(spacing: 3) {
+        HStack(alignment: .bottom, spacing: 4) {
           ForEach(summary.strip) { slot in
-            RoundedRectangle(cornerRadius: 2)
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
               .fill(barColor(for: slot))
               .frame(maxWidth: .infinity)
               .frame(height: barHeight(for: slot))
           }
         }
-        .frame(height: 28, alignment: .bottom)
+        .frame(height: 32, alignment: .bottom)
       }
 
       if let disagreementCaption, !disagreementCaption.isEmpty {
@@ -56,27 +51,39 @@ struct MinutecastStrip: View {
       }
     }
     .padding(.vertical, DesignTokens.Spacing.space12)
-    .padding(.horizontal, DesignTokens.Spacing.space12)
+    .padding(.horizontal, DesignTokens.Spacing.space16)
     .cardStyle(cornerRadius: DesignTokens.Radius.small)
     .accessibilityElement(children: .combine)
-    .accessibilityLabel(
-      disagreementCaption.map { "Minutecast. \(summary.message). \($0)" }
-        ?? "Minutecast. \(summary.message)"
-    )
+    .accessibilityLabel(Self.accessibilityLabel(
+      message: summary.message,
+      disagreementCaption: disagreementCaption
+    ))
+  }
+
+  /// VoiceOver for the strip. Product name is “Next hour”, not Minutecast.
+  static func accessibilityLabel(
+    message: String,
+    disagreementCaption: String? = nil
+  ) -> String {
+    let caption = disagreementCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if caption.isEmpty {
+      return "Next hour. \(message)"
+    }
+    return "Next hour. \(message). \(caption)"
   }
 
   private func barColor(for slot: MinutelyForecast) -> Color {
     let wet = slot.precipitation >= 0.008 || slot.precipChance >= 45
     if wet {
-      return DesignTokens.Palette.accentCool.opacity(0.35 + Double(min(slot.precipChance, 100)) / 200)
+      return DesignTokens.Palette.accentCool.opacity(0.45 + Double(min(slot.precipChance, 100)) / 200)
     }
-    return DesignTokens.Palette.cardStroke.opacity(0.6)
+    return DesignTokens.Palette.cardStroke.opacity(0.7)
   }
 
   private func barHeight(for slot: MinutelyForecast) -> CGFloat {
     let wet = slot.precipitation >= 0.008 || slot.precipChance >= 45
-    guard wet else { return 6 }
-    return 6 + CGFloat(min(slot.precipChance, 100)) / 100 * 22
+    guard wet else { return 8 }
+    return 8 + CGFloat(min(slot.precipChance, 100)) / 100 * 24
   }
 }
 

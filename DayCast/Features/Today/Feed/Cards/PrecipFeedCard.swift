@@ -54,8 +54,25 @@ struct PrecipFeedCard: View {
     }
     .buttonStyle(.plain)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Next hour. \(summary.message). Opens forecast.")
+    .accessibilityLabel(
+      Self.accessibilityLabel(
+        message: summary.message,
+        disagreementCaption: disagreementCaption
+      )
+    )
     .accessibilityAddTraits(.isButton)
+  }
+
+  /// One VoiceOver string for the card. Children stay visual-only.
+  static func accessibilityLabel(
+    message: String,
+    disagreementCaption: String? = nil
+  ) -> String {
+    let caption = disagreementCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if caption.isEmpty {
+      return "Next hour. \(message). Opens forecast."
+    }
+    return "Next hour. \(message). \(caption). Opens forecast."
   }
 }
 

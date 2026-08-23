@@ -436,13 +436,13 @@ private struct TodaySkeletonPanel: View {
     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium, style: .continuous))
   }
 
-  /// Minutecast strip: caption + message + 16 thin bars at 28pt.
+  /// Next hour precip strip: caption + message + intensity bars.
   private var precipSlotSkeleton: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       ShimmerBlock(width: 88, height: 12, cornerRadius: 4)
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         ShimmerBlock(width: 168, height: 12, cornerRadius: 4)
-        HStack(alignment: .bottom, spacing: 3) {
+        HStack(alignment: .bottom, spacing: 4) {
           ForEach(0..<16, id: \.self) { index in
             RoundedRectangle(cornerRadius: 2, style: .continuous)
               .fill(DesignTokens.Palette.cardElevated)
@@ -451,17 +451,17 @@ private struct TodaySkeletonPanel: View {
               .shimmer()
           }
         }
-        .frame(height: 28, alignment: .bottom)
+        .frame(height: 32, alignment: .bottom)
       }
       .padding(.vertical, DesignTokens.Spacing.space12)
-      .padding(.horizontal, DesignTokens.Spacing.space12)
+      .padding(.horizontal, DesignTokens.Spacing.space16)
       .cardStyle(cornerRadius: DesignTokens.Radius.small)
     }
   }
 
   private func precipBarHeight(at index: Int) -> CGFloat {
-    // Quiet variation so the strip reads as minutecast, not identical ticks.
-    let pattern: [CGFloat] = [8, 8, 10, 16, 22, 18, 10, 8]
+    // Quiet variation so the strip reads as intensity, not identical ticks.
+    let pattern: [CGFloat] = [8, 8, 10, 16, 24, 18, 10, 8]
     return pattern[index % pattern.count]
   }
 
