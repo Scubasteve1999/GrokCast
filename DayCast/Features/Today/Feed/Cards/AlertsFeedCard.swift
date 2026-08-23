@@ -5,9 +5,22 @@ struct AlertsFeedCard: View {
   var severeContext: SevereWeatherContext? = nil
   var onSelect: (NWSAlert) -> Void
 
+  /// NWS rows keep “Active Alerts”. Outlook-only must not pretend there is a warning.
+  private var sectionTitle: String {
+    alerts.isEmpty ? "Severe outlook" : "Active Alerts"
+  }
+
   var body: some View {
+    if alerts.isEmpty && severeContext == nil {
+      EmptyView()
+    } else {
+      cardBody
+    }
+  }
+
+  private var cardBody: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text("Active Alerts")
+      Text(sectionTitle)
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .tracking(DesignTokens.Typography.cardLabelTracking)
@@ -59,6 +72,7 @@ struct AlertsFeedCard: View {
     .padding(DesignTokens.Spacing.space16)
     .cardStyle()
     .accessibilityElement(children: .contain)
+    .accessibilityIdentifier(DayCastAccessibility.Today.alertsSlot)
   }
 
   private func tint(for alert: NWSAlert) -> Color {

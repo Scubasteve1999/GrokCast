@@ -111,19 +111,14 @@ struct AlertsView: View {
           alertsErrorBanner
         }
 
-        VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-          FigmaAccentSectionLabel(
-            title: "ACTIVE NOW",
-            icon: "bolt.fill",
-            color: DesignTokens.Palette.danger
-          )
+        if !activeAlerts.isEmpty {
+          VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
+            FigmaAccentSectionLabel(
+              title: "ACTIVE NOW",
+              icon: "bolt.fill",
+              color: DesignTokens.Palette.danger
+            )
 
-          if activeAlerts.isEmpty {
-            Text("No active alerts right now")
-              .font(DesignTokens.Typography.callout())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-              .frame(maxWidth: .infinity, alignment: .leading)
-          } else {
             AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
 
             VStack(spacing: DesignTokens.Spacing.space12) {

@@ -21,7 +21,7 @@ enum FeedAssembler {
     case .now:
       return snapshot.hasWeather
     case .alerts:
-      return snapshot.alertCount > 0
+      return snapshot.showAlertsSlot
     case .aiInsight:
       return snapshot.hasWeather && snapshot.showAIInsight
     case .hourly:

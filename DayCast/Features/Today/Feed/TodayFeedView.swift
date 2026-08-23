@@ -42,7 +42,8 @@ struct TodayFeedView: View {
       weather: weather,
       alerts: store.displayableActiveAlerts,
       showFireCard: showFire,
-      showAIInsight: !briefSafety.isFeatureHidden
+      showAIInsight: !briefSafety.isFeatureHidden,
+      hasSevereContext: todaySevereContext != nil
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)

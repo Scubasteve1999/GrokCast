@@ -14,6 +14,11 @@ struct FeedSnapshot: Equatable, Sendable {
   var showFireCard: Bool
   /// AI brief card shows whenever we have weather; the card owns loading / empty copy.
   var showAIInsight: Bool
+  /// SPC Day 1 ≥ Slight, MD, or severe watch/warning — earns the Today alerts slot without NWS rows.
+  var hasSevereContext: Bool = false
+
+  /// NWS point alerts **or** earned severe context (outlook / MD / watch).
+  var showAlertsSlot: Bool { alertCount > 0 || hasSevereContext }
 
   static let empty = FeedSnapshot(
     hasWeather: false,
@@ -24,6 +29,7 @@ struct FeedSnapshot: Equatable, Sendable {
     hasAQI: false,
     hasSunriseOrSunset: false,
     showFireCard: false,
-    showAIInsight: false
+    showAIInsight: false,
+    hasSevereContext: false
   )
 }

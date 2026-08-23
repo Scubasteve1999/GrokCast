@@ -83,6 +83,62 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertEqual(FeedAssembler.items(from: snapshot), [.now, .alerts, .radar])
   }
 
+  func testAlertsSlotShowsForSevereContextWithoutNWSAlerts() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 0,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: true,
+      hasAQI: false,
+      hasSunriseOrSunset: false,
+      showFireCard: false,
+      showAIInsight: false,
+      hasSevereContext: true
+    )
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(items.first, .now)
+    XCTAssertEqual(items.dropFirst().first, .alerts)
+    XCTAssertEqual(Array(items.prefix(4)), [.now, .alerts, .precip, .hourly])
+  }
+
+  func testBuilderSevereContextEarnsAlertsSlotWithZeroNWS() {
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Tampa", latitude: 27.95, longitude: -82.46),
+      currentTemp: 75,
+      feelsLike: 76,
+      conditionCode: 61,
+      conditionText: "Rain",
+      humidity: 80,
+      windSpeed: 8,
+      uvIndex: 2,
+      precipitationChance: 70,
+      high: 82,
+      low: 70,
+      symbolName: "cloud.rain.fill",
+      fetchedAt: Date(),
+      timezoneIdentifier: "America/New_York",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: [],
+      daily: [],
+      minutely15: []
+    )
+    let snapshot = FeedSnapshotBuilder.make(
+      weather: weather,
+      alerts: [],
+      hasSevereContext: true
+    )
+    XCTAssertEqual(snapshot.alertCount, 0)
+    XCTAssertTrue(snapshot.hasSevereContext)
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(items.first, .now)
+    XCTAssertEqual(items.dropFirst().first, .alerts)
+  }
+
   func testFireCardIndependentOfWeatherExtras() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
