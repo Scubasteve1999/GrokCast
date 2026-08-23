@@ -38,8 +38,9 @@ class DayCastUITestCase: XCTestCase {
   }
 
   /// Walk the first-launch welcome card → pre-permission sheet → system prompt so
-  /// Today can reach real content. `WeatherStore` already defaults `currentLocation`
-  /// to Olive Branch, MS, so no GPS fix is required once permission is granted.
+  /// Today can reach real content. After Allow the store auto-calls
+  /// `useCurrentDeviceLocation()` once (sim GPS is Olive Branch). Denied stays
+  /// on LocationPermissionView — never a silent default city.
   func completeOnboardingIfNeeded() {
     let getStarted = app.buttons["Get Started"]
     if getStarted.waitForExistence(timeout: 5) {

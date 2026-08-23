@@ -303,6 +303,26 @@ final class WeatherStore {
 
   private let savedLocationsKey = "daycast_saved_locations"
   private let hasRequestedLocationPermissionKey = "daycast_has_requested_location_permission"
+  private let hasAttemptedDeviceLocationKey = "daycast_has_attempted_device_location"
+
+  /// True after the first real GPS attempt (`useCurrentDeviceLocation`). Denied
+  /// without a locate does not count — enabling in Settings can still auto-acquire.
+  var hasAttemptedDeviceLocation = false
+
+  /// First-run / GPS wait: Today shows the feed-shaped skeleton instead of Olive Branch.
+  var isAcquiringDeviceLocation = false
+
+  /// GPS failed and Today is showing the default city (never a Near Me pin).
+  var isShowingDefaultLocationFallback = false
+
+  /// Banner copy when GPS fails and Olive Branch weather is on screen as recovery.
+  nonisolated static let gpsFallbackHonestyMessage =
+    "Could not get your GPS. Showing default Olive Branch, MS — not your position."
+
+  var isLocationAuthorized: Bool {
+    let status = locationService.authorizationStatus
+    return status == .authorizedWhenInUse || status == .authorizedAlways
+  }
 
   // NWS: primary for DayCastWeather via grid (--primary-source --grid-system); alerts/obs remain additive hybrid US-only non-fatal
   var activeAlerts: [NWSAlert] = []
@@ -378,6 +398,9 @@ final class WeatherStore {
   /// Coalesces concurrent cold-launch initial load callers (e.g. racing .task vs sig delivery).
   private var initialLoadTask: Task<Void, Never>?
 
+  /// Coalesces first-run auto GPS so Allow + .task cannot request location twice.
+  private var deviceLocationAcquireTask: Task<Void, Never>?
+
   /// Shared Grok AI view model — survives tab switches so in-flight streams and history persist.
   private var _grokAIViewModel: GrokAIViewModel?
   var grokAIViewModel: GrokAIViewModel {
@@ -400,18 +423,32 @@ final class WeatherStore {
     }
 
     let task = Task<Void, Never> { @MainActor in
-      if self.currentWeather == nil {
-        await self.refreshWeather()
-      } else {
-        // Stale-while-revalidate: cached snapshot already on screen; refresh quietly.
-        Task { await self.refreshWeather() }
+      defer { self.initialLoadTask = nil }
+
+      if Self.shouldAutoAcquireDeviceLocation(
+        hasAttempted: self.hasAttemptedDeviceLocation,
+        isAuthorized: self.isLocationAuthorized,
+        savedLocations: self.savedLocations)
+      {
+        await self.acquireDeviceLocationIfNeeded()
+        self.hasCompletedInitialLoad = true
+        self.lastSignificantRefreshDate = Date()
+        return
       }
 
-      // Intentional: mark complete even on fetch failure so sig-handler refreshes are not
-      // blocked forever on launch; user can tap RETRY for manual recovery.
-      self.hasCompletedInitialLoad = true
-      self.lastSignificantRefreshDate = Date()
-      self.initialLoadTask = nil
+      if self.isLocationAuthorized {
+        if self.currentWeather == nil {
+          await self.refreshWeather()
+        } else {
+          // Stale-while-revalidate: cached snapshot already on screen; refresh quietly.
+          Task { await self.refreshWeather() }
+        }
+        // Intentional: mark complete even on fetch failure so sig-handler refreshes are not
+        // blocked forever on launch; user can tap RETRY for manual recovery.
+        self.hasCompletedInitialLoad = true
+        self.lastSignificantRefreshDate = Date()
+      }
+      // Not authorized yet: leave incomplete so Allow can load GPS/weather.
     }
 
     initialLoadTask = task
@@ -427,7 +464,25 @@ final class WeatherStore {
       savedLocations = [SavedLocation.oliveBranch]
     }
     currentLocation = savedLocations.first
-    hydrateCachedWeatherIfNeeded()
+    hasAttemptedDeviceLocation = UserDefaults.standard.bool(
+      forKey: hasAttemptedDeviceLocationKey)
+    // Returning users who already have a GPS pin or a chosen city should not
+    // get a surprise locate on upgrade. First-run default Olive Branch stays
+    // unmarked so Allow can auto-acquire once.
+    if isLocationAuthorized {
+      let firstRunDefault = Self.isFirstRunDefaultLocations(savedLocations)
+      if !firstRunDefault && !hasAttemptedDeviceLocation {
+        hasAttemptedDeviceLocation = true
+        UserDefaults.standard.set(true, forKey: hasAttemptedDeviceLocationKey)
+      }
+    }
+    // Do not hydrate Olive Branch as "you" before the first GPS attempt.
+    if !Self.shouldSkipPlaceholderWeather(
+      hasAttemptedDeviceLocation: hasAttemptedDeviceLocation,
+      savedLocations: savedLocations)
+    {
+      hydrateCachedWeatherIfNeeded()
+    }
 
     // Load + auto-complete first-launch flag for prior users (any non-.notDetermined status means
     // they have seen a permission prompt before). Only pure new installs (never prompted) see the
@@ -488,17 +543,11 @@ final class WeatherStore {
     _notificationSoundsEnabled = DayCastNotificationSounds.isEnabled
 
     // Do NOT auto-request device location on every cold launch.
-    // This avoids immediate location permission prompts and reduces work
-    // that contributes to ExtendedLaunchMetrics noise.
-    //
-    // "My location" is updated only on explicit user action via the
-    // "Use my position" buttons (in TodayView, LocationsView, etc.).
-    // Those paths call useCurrentDeviceLocation(), which updates the
-    // isCurrent entry, sets it as current, and refreshes weather + NWS alerts.
-    //
-    // The starting location is whatever was last saved (defaults to
-    // Olive Branch, MS). The MainTabView .task will lazily refresh
-    // weather for it if needed.
+    // First Allow (whenInUse/always, never attempted, default Olive Branch
+    // only) calls useCurrentDeviceLocation() once via
+    // handleLocationAuthorizationChange / performInitialLoadIfNeeded.
+    // Later launches load last-saved weather. Toolbar / Use my position
+    // remain the explicit GPS paths.
   }
 
   func loadSavedLocations() {
@@ -616,10 +665,13 @@ final class WeatherStore {
       grokBriefOneLiner: grokBriefOneLiner
     )
 
-    guard liveActivityEnabled, EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared),
+    guard liveActivityEnabled,
+      EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared),
       let name = currentLocation?.name
     else {
-      if !liveActivityEnabled || !EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared) {
+      if !liveActivityEnabled
+        || !EntitlementChecker.canUseLiveActivity(subscription: SubscriptionManager.shared)
+      {
         WeatherLiveActivityManager.end()
       }
       return
@@ -818,6 +870,7 @@ final class WeatherStore {
   }
 
   func selectLocation(_ location: SavedLocation) {
+    isShowingDefaultLocationFallback = false
     currentLocation = location
     if currentWeather?.location.id != location.id {
       isLoadingWeather = true
@@ -969,8 +1022,8 @@ final class WeatherStore {
   /// refreshes Open-Meteo weather + NWS alerts + nearest station observation for it.
   ///
   /// This is the only path that triggers a fresh device location request.
-  /// Called from UI buttons ("Use my position") and from Storm Spotter flows
-  /// when they want the most accurate "my location" data.
+  /// Called from UI buttons ("Use my position"), first Allow auto-acquire, and
+  /// Storm Spotter flows when they want the most accurate "my location" data.
   @MainActor
   func useCurrentDeviceLocation() async {
     markLocationPermissionRequested()
@@ -983,6 +1036,14 @@ final class WeatherStore {
       return
     }
 
+    hasAttemptedDeviceLocation = true
+    UserDefaults.standard.set(true, forKey: hasAttemptedDeviceLocationKey)
+    // Skeleton only when there is no city on screen — don't cover last-good weather.
+    if displayedWeather == nil {
+      isAcquiringDeviceLocation = true
+    }
+    defer { isAcquiringDeviceLocation = false }
+
     locationService.requestLocationPermission()
 
     do {
@@ -993,6 +1054,7 @@ final class WeatherStore {
 
       // Set currentLocation to the (now unique) isCurrent entry, or fall back
       currentLocation = savedLocations.first(where: { $0.isCurrent }) ?? savedLocations.first
+      isShowingDefaultLocationFallback = false
       await refreshWeather()
 
       lastSignificantRefreshDate = Date()  // mark fresh so a near-term sig delivery doesn't re-fetch
@@ -1002,12 +1064,11 @@ final class WeatherStore {
         ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
         : "Could not get your location: \(OpenMeteoService.userFriendlyMessage(for: error))"
       weatherError = locError
-      // Fallback to default (Olive Branch, MS) so we don't stay stuck on NO SIGNAL.
-      // This ensures the user sees usable weather data even if GPS fails (common on sim).
+      // Recovery so the user isn't stuck on NO SIGNAL — but never as Near Me.
       await fallbackToDefaultLocationWeather()
-      // If the default load also failed (transient), prefer keeping the original location context
-      // rather than overwriting with a generic service error. RETRY will re-attempt everything.
-      if currentWeather == nil {
+      if currentWeather != nil {
+        weatherError = Self.gpsFallbackHonestyMessage
+      } else {
         weatherError = locError
       }
     }
@@ -1015,23 +1076,14 @@ final class WeatherStore {
 
   /// Ensures we have a usable default location (Olive Branch, MS) set as currentLocation
   /// and loads its weather forecast. Used as recovery when GPS "use my position" fails
-  /// (e.g. simulator without location fix) so the user isn't left stuck in NO SIGNAL.
+  /// so the user isn't left stuck in NO SIGNAL. Never marks the default `isCurrent`.
   @MainActor
   func fallbackToDefaultLocationWeather() async {
-    // Find existing default by coords (stable even if persisted with different id)
-    if let existingDefault = savedLocations.first(where: {
-      abs($0.latitude - 34.9618) < 0.01 && abs($0.longitude + 89.8295) < 0.01
-    }) {
-      currentLocation = existingDefault
-    } else {
-      // Add the canonical default (has stable id)
-      let def = SavedLocation.oliveBranch
-      savedLocations.append(def)
-      saveLocations()
-      currentLocation = def
-    }
-
-    // Falling back to default location (log removed for release)
+    let applied = Self.applyingDefaultOliveBranchFallback(to: savedLocations)
+    savedLocations = applied.saved
+    currentLocation = applied.location
+    isShowingDefaultLocationFallback = true
+    saveLocations()
 
     // Always (re)load the weather for it. This is what transitions out of NO SIGNAL
     // once currentWeather becomes non-nil.
@@ -1049,6 +1101,106 @@ final class WeatherStore {
       isLoadingWeather = true  // ensure loading state for UI
       await refreshWeather()
     }
+  }
+
+  /// First-run default: only Olive Branch, never a GPS pin.
+  nonisolated static func isDefaultOliveBranch(_ location: SavedLocation) -> Bool {
+    let olive = SavedLocation.oliveBranch
+    return abs(location.latitude - olive.latitude) < 0.01
+      && abs(location.longitude - olive.longitude) < 0.01
+  }
+
+  nonisolated static func isFirstRunDefaultLocations(_ saved: [SavedLocation]) -> Bool {
+    saved.allSatisfy { !$0.isCurrent }
+      && (saved.isEmpty
+        || (saved.count == 1 && isDefaultOliveBranch(saved[0])))
+  }
+
+  nonisolated static func shouldSkipPlaceholderWeather(
+    hasAttemptedDeviceLocation: Bool,
+    savedLocations: [SavedLocation]
+  ) -> Bool {
+    !hasAttemptedDeviceLocation && isFirstRunDefaultLocations(savedLocations)
+  }
+
+  nonisolated static func shouldAutoAcquireDeviceLocation(
+    hasAttempted: Bool,
+    isAuthorized: Bool,
+    savedLocations: [SavedLocation]
+  ) -> Bool {
+    guard isAuthorized, !hasAttempted else { return false }
+    return isFirstRunDefaultLocations(savedLocations)
+  }
+
+  /// GPS-fail recovery: Olive Branch as a named city, never `isCurrent` / Near Me.
+  nonisolated static func applyingDefaultOliveBranchFallback(to saved: [SavedLocation]) -> (
+    location: SavedLocation, saved: [SavedLocation]
+  ) {
+    var next = saved
+    if let idx = next.firstIndex(where: { isDefaultOliveBranch($0) }) {
+      var loc = next[idx]
+      loc.isCurrent = false
+      next[idx] = loc
+      return (loc, next)
+    }
+    let def = SavedLocation.oliveBranch
+    next.append(def)
+    return (def, next)
+  }
+
+  /// Sync: flip the waiting flag before the async locate so Today cannot flash Olive Branch.
+  func noteAuthorizationMayNeedDeviceLocation() {
+    if Self.shouldAutoAcquireDeviceLocation(
+      hasAttempted: hasAttemptedDeviceLocation,
+      isAuthorized: isLocationAuthorized,
+      savedLocations: savedLocations)
+    {
+      isAcquiringDeviceLocation = true
+    }
+  }
+
+  /// After Allow (or Settings enable): one GPS attempt, then initial weather if needed.
+  func handleLocationAuthorizationChange() async {
+    noteAuthorizationMayNeedDeviceLocation()
+    if Self.shouldAutoAcquireDeviceLocation(
+      hasAttempted: hasAttemptedDeviceLocation,
+      isAuthorized: isLocationAuthorized,
+      savedLocations: savedLocations)
+    {
+      await acquireDeviceLocationIfNeeded()
+      if !hasCompletedInitialLoad {
+        hasCompletedInitialLoad = true
+        lastSignificantRefreshDate = Date()
+      }
+      return
+    }
+    if !hasCompletedInitialLoad {
+      await performInitialLoadIfNeeded()
+    }
+  }
+
+  func acquireDeviceLocationIfNeeded() async {
+    if let existing = deviceLocationAcquireTask {
+      await existing.value
+      return
+    }
+    guard
+      Self.shouldAutoAcquireDeviceLocation(
+        hasAttempted: hasAttemptedDeviceLocation,
+        isAuthorized: isLocationAuthorized,
+        savedLocations: savedLocations)
+    else { return }
+
+    isAcquiringDeviceLocation = true
+    let task = Task<Void, Never> { @MainActor in
+      defer {
+        self.isAcquiringDeviceLocation = false
+        self.deviceLocationAcquireTask = nil
+      }
+      await self.useCurrentDeviceLocation()
+    }
+    deviceLocationAcquireTask = task
+    await task.value
   }
 
   // MARK: - NWS Alerts + Observations (hybrid, additive to Open-Meteo)
@@ -1417,7 +1569,10 @@ final class WeatherStore {
   }
 
   func addLocation(_ location: SavedLocation) -> Bool {
-    guard EntitlementChecker.canAddLocation(currentCount: savedLocations.count, subscription: SubscriptionManager.shared) else {
+    guard
+      EntitlementChecker.canAddLocation(
+        currentCount: savedLocations.count, subscription: SubscriptionManager.shared)
+    else {
       return false
     }
     guard

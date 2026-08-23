@@ -11,51 +11,55 @@ struct MainTabView: View {
 
   var body: some View {
     tabRoot
-    .onPreferenceChange(TabBarSuppressionPreferenceKey.self) { suppressTabBar = $0 }
-    .safeAreaInset(edge: .bottom, spacing: 0) {
-      Group {
-        if horizontalSizeClass == .compact && !suppressTabBar {
-          CompactTabBar(
-            selection: Bindable(store).selectedTab,
-            showMoreHub: $showMoreHub,
-            namespace: tabBarNamespace
-          )
-        } else {
-          EmptyView().frame(height: 0)
+      .onPreferenceChange(TabBarSuppressionPreferenceKey.self) { suppressTabBar = $0 }
+      .safeAreaInset(edge: .bottom, spacing: 0) {
+        Group {
+          if horizontalSizeClass == .compact && !suppressTabBar {
+            CompactTabBar(
+              selection: Bindable(store).selectedTab,
+              showMoreHub: $showMoreHub,
+              namespace: tabBarNamespace
+            )
+          } else {
+            EmptyView().frame(height: 0)
+          }
         }
       }
-    }
-    .sheet(isPresented: $showMoreHub) {
-      MoreHubSheet()
-        .presentationDetents([.medium, .large], selection: $moreHubDetent)
-    }
-    .onChange(of: showMoreHub) { _, isOpen in
-      if isOpen { moreHubDetent = .large }
-    }
-    .onOpenURL { url in
-      handleDeepLink(url)
-    }
-    .onReceive(NotificationCenter.default.publisher(for: .dayCastDeepLink)) { notification in
-      if let url = notification.userInfo?["url"] as? URL {
+      .sheet(isPresented: $showMoreHub) {
+        MoreHubSheet()
+          .presentationDetents([.medium, .large], selection: $moreHubDetent)
+      }
+      .onChange(of: showMoreHub) { _, isOpen in
+        if isOpen { moreHubDetent = .large }
+      }
+      .onOpenURL { url in
         handleDeepLink(url)
       }
-    }
-    .task {
-      await store.performInitialLoadIfNeeded()
-      Task { await store.scheduleBackgroundAlertRefreshIfEnabled() }
-    }
-    .appReviewPrompting()
-    .onAppear {
-      Analytics.trackFirstOpenIfNeeded()
-      Analytics.track(.appOpen)
-      Analytics.track(AnalyticsEvent.tabEvent(for: store.selectedTab))
-    }
-    .onChange(of: store.selectedTab) { _, tab in
-      Analytics.track(AnalyticsEvent.tabEvent(for: tab))
-      if WeatherStore.Tab.moreHub.contains(tab) {
-        lastMoreDestination = tab
+      .onReceive(NotificationCenter.default.publisher(for: .dayCastDeepLink)) { notification in
+        if let url = notification.userInfo?["url"] as? URL {
+          handleDeepLink(url)
+        }
       }
-    }
+      .task {
+        await store.performInitialLoadIfNeeded()
+        Task { await store.scheduleBackgroundAlertRefreshIfEnabled() }
+      }
+      .onChange(of: store.locationService.authorizationStatus) { _, _ in
+        store.noteAuthorizationMayNeedDeviceLocation()
+        Task { await store.handleLocationAuthorizationChange() }
+      }
+      .appReviewPrompting()
+      .onAppear {
+        Analytics.trackFirstOpenIfNeeded()
+        Analytics.track(.appOpen)
+        Analytics.track(AnalyticsEvent.tabEvent(for: store.selectedTab))
+      }
+      .onChange(of: store.selectedTab) { _, tab in
+        Analytics.track(AnalyticsEvent.tabEvent(for: tab))
+        if WeatherStore.Tab.moreHub.contains(tab) {
+          lastMoreDestination = tab
+        }
+      }
   }
 
   @ViewBuilder

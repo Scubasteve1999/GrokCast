@@ -265,9 +265,15 @@ struct TodayFeedView: View {
         .foregroundStyle(DesignTokens.Palette.danger)
         .lineLimit(2)
       Spacer(minLength: DesignTokens.Spacing.space8)
-      Button("Retry") {
+      Button(store.isShowingDefaultLocationFallback ? "Use my position" : "Retry") {
         Haptic.impact(.medium)
-        Task { await store.refreshWeather() }
+        Task {
+          if store.isShowingDefaultLocationFallback {
+            await store.useCurrentDeviceLocation()
+          } else {
+            await store.refreshWeather()
+          }
+        }
       }
       .font(DesignTokens.Typography.caption())
       .buttonStyle(.bordered)
