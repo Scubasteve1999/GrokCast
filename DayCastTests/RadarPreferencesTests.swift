@@ -225,8 +225,6 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.lightningLayerSwitch, "Lightning")
     XCTAssertEqual(RadarChromeCopy.motionTracks, "Motion tracks")
     XCTAssertEqual(RadarChromeCopy.lightningAttribution, "Lightning · Vaisala Xweather")
-    XCTAssertEqual(RadarChromeCopy.rangeRingLabel, "50 mi")
-    XCTAssertEqual(RadarChromeCopy.rangeRingLocationUnavailable, "Location unavailable")
   }
 
   func testStormcellsFollowMapsGLRainGate() {

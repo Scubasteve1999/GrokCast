@@ -18,26 +18,6 @@ struct RadarView: View {
     store.currentLocation?.coordinate ?? SavedLocation.oliveBranch.coordinate
   }
 
-  /// Live GPS when present. Ring center for Near Me uses this, never Olive Branch default.
-  private var rangeRingDeviceCoordinate: CLLocationCoordinate2D? {
-    store.locationService.currentLocation?.coordinate
-  }
-
-  /// Same coordinate as geodesic ring math + Mapbox apply. Nil hides the ring.
-  private var rangeRingCenter: CLLocationCoordinate2D? {
-    RadarRangeRing.confirmedCenter(
-      selectedLocation: store.currentLocation,
-      deviceCoordinate: rangeRingDeviceCoordinate
-    )
-  }
-
-  private var showsRangeRingLocationUnavailable: Bool {
-    RadarRangeRing.showsLocationUnavailable(
-      selectedLocation: store.currentLocation,
-      deviceCoordinate: rangeRingDeviceCoordinate
-    )
-  }
-
   /// On-map dBZ key follows the paint: National and N0B both floor at 15 green.
   private var showsReflectivityColorbar: Bool {
     radarState.showRadarOverlay && !radarState.selectedProduct.isVelocityProduct
@@ -190,7 +170,6 @@ struct RadarView: View {
                 radarState: radarState,
                 opacity: radarOpacity,
                 defaultMapCenter: selectedMapCenter,
-                rangeRingCenter: rangeRingCenter,
                 recenterDefaultTrigger: recenterDefaultTrigger,
                 recenterUserCoordinate: recenterUserCoordinate,
                 fireSnapshot: fireStore.snapshot,
@@ -224,15 +203,6 @@ struct RadarView: View {
               .padding(.horizontal, DesignTokens.Spacing.space12)
               .padding(.vertical, 6)
               .background(DesignTokens.Palette.cardBackground.opacity(0.92), in: Capsule())
-          }
-          if showsRangeRingLocationUnavailable {
-            Text(RadarChromeCopy.rangeRingLocationUnavailable)
-              .font(DesignTokens.Typography.micro())
-              .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-              .padding(.horizontal, DesignTokens.Spacing.space12)
-              .padding(.vertical, 6)
-              .background(DesignTokens.Palette.cardBackground.opacity(0.92), in: Capsule())
-              .accessibilityLabel(RadarChromeCopy.rangeRingLocationUnavailable)
           }
         }
         .padding(.top, 8)
