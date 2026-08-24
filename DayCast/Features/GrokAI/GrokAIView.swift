@@ -627,6 +627,7 @@ private struct GrokAIViewContent: View {
             }
           }
           .fontWeight(.semibold)
+          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
         }
       }
     }

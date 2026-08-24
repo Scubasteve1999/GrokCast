@@ -109,6 +109,22 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertEqual(SkyCheckDeskCopy.photoGlyph, "camera")
     XCTAssertEqual(SkyCheckDeskCopy.cameraSource, "Camera")
     XCTAssertEqual(SkyCheckDeskCopy.librarySource, "Photo Library")
+    XCTAssertEqual(
+      SkyCheckDeskCopy.alreadyChecking,
+      "Already checking this sky. Try when this one finishes.")
+    XCTAssertEqual(
+      SkyCheckDeskCopy.alreadyAnswering,
+      "Already answering. Try when this one finishes.")
+    XCTAssertEqual(
+      SkyCheckDeskCopy.generationBusyMessage(isCheckingSky: true),
+      SkyCheckDeskCopy.alreadyChecking)
+    XCTAssertEqual(
+      SkyCheckDeskCopy.generationBusyMessage(isCheckingSky: false),
+      SkyCheckDeskCopy.alreadyAnswering)
+    XCTAssertFalse(
+      SkyCheckDeskCopy.alreadyChecking.localizedCaseInsensitiveContains("spotter"))
+    XCTAssertFalse(
+      SkyCheckDeskCopy.alreadyAnswering.localizedCaseInsensitiveContains("spotter"))
   }
 
   func testSkyCheckQuickPromptsDropFieldAndRadarRead() {

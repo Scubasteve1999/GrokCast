@@ -171,6 +171,16 @@ final class GrokAIViewModel {
   func analyzeStormPhoto(imageData: Data, userNotes: String?) async {
     syncThread(to: weatherStore.currentLocation?.id)
     await historyLoadTask?.value
+
+    // Same lock as askGrok — one in-flight generation. Do not cancel-and-restart.
+    guard !isStreaming && !isGeneratingImage else {
+      if generationTask == nil {
+        errorMessage = SkyCheckDeskCopy.generationBusyMessage(
+          isCheckingSky: stormAnalysisMode)
+      }
+      return
+    }
+
     generationTask?.cancel()
     generationWasCancelled = false
     stormAnalysisMode = true

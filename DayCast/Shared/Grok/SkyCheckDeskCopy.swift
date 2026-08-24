@@ -21,7 +21,16 @@ enum SkyCheckDeskCopy {
   static let notesHelper = "Add optional notes about what you see."
   static let notesPlaceholder = "Optional notes"
   static let notesConfirm = "Check"
+  static let alreadyChecking =
+    "Already checking this sky. Try when this one finishes."
+  static let alreadyAnswering =
+    "Already answering. Try when this one finishes."
   static let photoTurnCaption = "Check this sky photo"
+
+  /// One in-flight generation. Photo check vs chat/Imagine.
+  static func generationBusyMessage(isCheckingSky: Bool) -> String {
+    isCheckingSky ? alreadyChecking : alreadyAnswering
+  }
   /// Take action / morning OPEN_GROK — one public name, not Ask AI / Ask Grok.
   static let landingActionTitle = "Sky Check"
 
