@@ -686,8 +686,8 @@ private struct GrokAIViewContent: View {
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.vertical, DesignTokens.Spacing.space12)
             .cardStyle(
-              background: DesignTokens.Palette.accent.opacity(0.22),
-              stroke: DesignTokens.Palette.accent.opacity(0.35),
+              background: DesignTokens.Palette.cardElevated,
+              stroke: DesignTokens.Palette.accent.opacity(0.28),
               cornerRadius: DesignTokens.Card.cornerRadiusMedium
             )
           Text(timeString(from: message.timestamp))
