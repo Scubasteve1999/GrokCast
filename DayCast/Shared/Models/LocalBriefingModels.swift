@@ -2,6 +2,7 @@ import Foundation
 
 /// One NWS office product card on Alerts → Local briefing.
 /// Stable ids (`afd-{productId}-km{index}` / `pns-{productId}`). Never `UUID()`.
+/// `imageURL` is a real `https` image from the source product text, else nil.
 struct LocalBriefingItem: Identifiable, Codable, Equatable, Sendable {
   let id: String
   let title: String
@@ -10,6 +11,7 @@ struct LocalBriefingItem: Identifiable, Codable, Equatable, Sendable {
   let url: URL
   let productCode: String
   let officeID: String
+  let imageURL: URL?
 
   func relativeIssuedLabel(relativeTo now: Date = Date()) -> String {
     let interval = max(0, now.timeIntervalSince(issuedAt))
@@ -137,6 +139,7 @@ enum LocalBriefingParser {
 
     if let afd, isAFDFresh(afd.issuedAt, now: now) {
       let bullets = keyMessageBullets(fromAFD: afd.text)
+      let afdImageURL = firstImageURL(in: afd.text)
       for (index, title) in bullets.enumerated() {
         if items.count >= maxCards { break }
         guard !title.isEmpty, !seenTitles.contains(title) else { continue }
@@ -149,7 +152,8 @@ enum LocalBriefingParser {
             issuedAt: afd.issuedAt,
             url: productPageURL(cwa: trimmedCWA, productCode: "AFD"),
             productCode: "AFD",
-            officeID: trimmedCWA
+            officeID: trimmedCWA,
+            imageURL: afdImageURL
           )
         )
       }
@@ -171,7 +175,8 @@ enum LocalBriefingParser {
           issuedAt: product.issuedAt,
           url: productPageURL(cwa: trimmedCWA, productCode: "PNS"),
           productCode: "PNS",
-          officeID: trimmedCWA
+          officeID: trimmedCWA,
+          imageURL: firstImageURL(in: product.text)
         )
       )
     }
@@ -179,7 +184,58 @@ enum LocalBriefingParser {
     return Array(items.prefix(maxCards))
   }
 
+  /// First obvious image `https` URL in product text. Soft-fail → nil. Never invents.
+  static func firstImageURL(in text: String) -> URL? {
+    guard let regex = httpsURLRegex else { return nil }
+    let ns = text as NSString
+    let full = NSRange(location: 0, length: ns.length)
+    let matches = regex.matches(in: text, options: [], range: full)
+    for match in matches {
+      let raw = stripTrailingURLPunctuation(ns.substring(with: match.range))
+      guard let url = URL(string: raw), isObviousImageURL(url) else { continue }
+      return url
+    }
+    return nil
+  }
+
   // MARK: - Internals
+
+  private static let httpsURLRegex: NSRegularExpression? = try? NSRegularExpression(
+    pattern: #"https://[^\s<>]+"#,
+    options: [.caseInsensitive]
+  )
+
+  private static let imagePathExtensions: Set<String> = ["jpg", "jpeg", "png", "webp", "gif"]
+
+  private static func stripTrailingURLPunctuation(_ raw: String) -> String {
+    var result = raw
+    while let last = result.last, ".,;:!?)]}>\"'".contains(last) {
+      result.removeLast()
+    }
+    return result
+  }
+
+  private static func isObviousImageURL(_ url: URL) -> Bool {
+    guard url.scheme?.lowercased() == "https" else { return false }
+    guard let host = url.host?.lowercased(), !host.isEmpty else { return false }
+    if imagePathExtensions.contains(url.pathExtension.lowercased()) { return true }
+    return isKnownWeatherImageHost(host, path: url.path)
+  }
+
+  /// `media.weather.gov` is a media host. Other weather.gov / noaa.gov hosts only
+  /// when the path is an image directory — never `product.php` / office pages.
+  private static func isKnownWeatherImageHost(_ host: String, path: String) -> Bool {
+    if host == "media.weather.gov" || host.hasSuffix(".media.weather.gov") {
+      return true
+    }
+    let isNOAAFamily =
+      host == "weather.gov" || host.hasSuffix(".weather.gov")
+      || host == "noaa.gov" || host.hasSuffix(".noaa.gov")
+    guard isNOAAFamily else { return false }
+    let lower = path.lowercased()
+    return lower.contains("/images/") || lower.contains("/media/") || lower.contains("/img/")
+      || lower.contains("/graphics/")
+  }
 
   private static func keyMessagesBlock(from text: String) -> String? {
     let upper = text.uppercased()

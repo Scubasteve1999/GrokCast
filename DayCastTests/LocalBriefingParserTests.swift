@@ -82,6 +82,7 @@ final class LocalBriefingParserTests: XCTestCase {
       XCTAssertEqual(card.sourceName, "NWS Memphis")
       XCTAssertEqual(card.productCode, "AFD")
       XCTAssertEqual(card.officeID, "MEG")
+      XCTAssertNil(card.imageURL)
       XCTAssertTrue(card.url.absoluteString.contains("issuedby=MEG"), card.url.absoluteString)
       XCTAssertTrue(card.url.absoluteString.contains("product=AFD"), card.url.absoluteString)
       XCTAssertFalse(card.title.contains("Desert Southwest"))
@@ -155,6 +156,7 @@ final class LocalBriefingParserTests: XCTestCase {
     XCTAssertEqual(items[0].id, "pns-survey")
     XCTAssertEqual(items[0].title, "NWS Damage Survey for 08/16/26 Tornado Event")
     XCTAssertEqual(items[0].productCode, "PNS")
+    XCTAssertNil(items[0].imageURL)
     XCTAssertTrue(items[0].url.absoluteString.contains("issuedby=MEG"))
     XCTAssertTrue(items[0].url.absoluteString.contains("product=PNS"))
   }
@@ -193,6 +195,7 @@ final class LocalBriefingParserTests: XCTestCase {
     XCTAssertEqual(items.count, 3)
     XCTAssertEqual(items.map(\.productCode), ["AFD", "AFD", "PNS"])
     XCTAssertEqual(items[2].title, "NWS Damage Survey for 08/16/26 Tornado Event")
+    XCTAssertTrue(items.allSatisfy { $0.imageURL == nil })
   }
 
   func testThreeKeyMessagesFillRailWithoutPNS() {
@@ -264,20 +267,6 @@ final class LocalBriefingParserTests: XCTestCase {
     XCTAssertEqual(items[2].title, "Flash Flood Watch for the Mid-South")
   }
 
-  func testAssembledThunderstormKeyMessagesGetUniqueHeroes() {
-    let items = LocalBriefingParser.assemble(
-      cwa: "MEG",
-      officeName: "Memphis, TN",
-      afd: (id: "heroes", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithKeyMessages),
-      pns: [],
-      now: now
-    )
-    XCTAssertEqual(
-      LocalBriefingHero.uniqueHeroes(for: items.map(\.title)),
-      [.storm, .lightning]
-    )
-  }
-
   func testOfficeNameFallbackIsNWSCWA() {
     XCTAssertEqual(LocalBriefingParser.sourceName(officeName: nil, cwa: "MEG"), "NWS MEG")
     XCTAssertEqual(
@@ -324,133 +313,115 @@ final class LocalBriefingParserTests: XCTestCase {
     )
   }
 
-  // MARK: - Hero stills
+  // MARK: - Source image URLs
 
-  func testHeroKeywordTable() {
-    XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Thunderstorms increase late tonight"),
-      .storm
+  func testAFDKeyMessageWithoutURLHasNilImageURL() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (id: "no-img", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithKeyMessages),
+      pns: [],
+      now: now
     )
-    XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Scattered TSTM expected this afternoon"),
-      .storm
+    XCTAssertEqual(items.count, 2)
+    XCTAssertTrue(items.allSatisfy { $0.imageURL == nil })
+  }
+
+  func testProductTextWithImageURLSetsImageURL() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: nil,
+      pns: [
+        (
+          id: "survey-photo", issuedAt: now.addingTimeInterval(-3600),
+          text: Self.pnsStormSurveyWithImage
+        )
+      ],
+      now: now
     )
+    XCTAssertEqual(items.count, 1)
     XCTAssertEqual(
-      LocalBriefingHero.matching(
-        title: "NWS Damage Survey for 08/16/26 Tornado Event"
+      items[0].imageURL,
+      URL(string: "https://media.weather.gov/meg/survey.jpg")
+    )
+    XCTAssertEqual(items[0].sourceName, "NWS Memphis")
+    XCTAssertEqual(items[0].id, "pns-survey-photo")
+  }
+
+  func testAFDProductWithImageURLSetsImageURLOnCards() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (
+        id: "afd-img", issuedAt: now.addingTimeInterval(-1800),
+        text: Self.afdWithKeyMessagesAndImage
       ),
-      .storm
+      pns: [],
+      now: now
     )
+    XCTAssertEqual(items.count, 2)
+    let expected = URL(string: "https://www.weather.gov/images/meg/outlook.png")
+    XCTAssertEqual(items[0].imageURL, expected)
+    XCTAssertEqual(items[1].imageURL, expected)
+    XCTAssertEqual(items.map(\.id), ["afd-afd-img-km0", "afd-afd-img-km1"])
+  }
+
+  func testNonImageHTTPSLinksAreRejected() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: nil,
+      pns: [
+        (
+          id: "links", issuedAt: now.addingTimeInterval(-3600),
+          text: Self.pnsWithNonImageLinks
+        )
+      ],
+      now: now
+    )
+    XCTAssertEqual(items.count, 1)
+    XCTAssertNil(items[0].imageURL)
+  }
+
+  func testFirstValidImageURLWins() {
     XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Tornado warning until 8 PM"),
-      .storm
+      LocalBriefingParser.firstImageURL(
+        in: """
+          See https://forecast.weather.gov/product.php?site=NWS&issuedby=MEG&product=AFD
+          then https://www.weather.gov/images/meg/survey.png
+          and https://media.weather.gov/later.jpg
+          """),
+      URL(string: "https://www.weather.gov/images/meg/survey.png")
     )
+  }
+
+  func testJPEGExtensionOnArbitraryHTTPSHostIsKept() {
     XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Lightning and tornado debris"),
-      .lightning
+      LocalBriefingParser.firstImageURL(in: "Photo https://cdn.example.com/damage.jpeg"),
+      URL(string: "https://cdn.example.com/damage.jpeg")
     )
+  }
+
+  func testMediaWeatherGovHostWithoutExtensionIsKept() {
     XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Flash flood warning for DeSoto County"),
-      .flood
+      LocalBriefingParser.firstImageURL(
+        in: "Graphic: https://media.weather.gov/meg/KMEG_storm_survey"),
+      URL(string: "https://media.weather.gov/meg/KMEG_storm_survey")
     )
-    XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Wildfire smoke reduces visibility"),
-      .haze
-    )
-    XCTAssertEqual(
-      LocalBriefingHero.matching(title: "Dense smoke and haze across the Mid-South"),
-      .haze
-    )
-    XCTAssertEqual(
-      LocalBriefingHero.matching(title: "High pressure remains parked over the region"),
-      .dawn
-    )
-    XCTAssertNil(LocalBriefingHero.matching(title: "A quiet pattern continues"))
+  }
+
+  func testHTTPImageURLIsRejected() {
     XCTAssertNil(
-      LocalBriefingHero.matching(
-        title: "Near to slightly above normal temperatures are expected across the Mid-South"
-      )
+      LocalBriefingParser.firstImageURL(in: "http://media.weather.gov/foo.jpg")
     )
-    XCTAssertNil(LocalBriefingHero.matching(title: "Heat continues through the weekend."))
-    XCTAssertNil(
-      LocalBriefingHero.matching(title: "Additional chances are expected through midweek"))
   }
 
-  func testHeroUniquenessDoesNotCloneThunderstormCrops() {
-    let titles = [
-      "Thunderstorms increase late tonight into Monday",
-      "Additional chances for showers and thunderstorms through midweek",
-      "Flash flood watch for the Mid-South",
-    ]
+  func testTrailingPunctuationIsStrippedFromImageURL() {
     XCTAssertEqual(
-      LocalBriefingHero.uniqueHeroes(for: titles),
-      [.storm, .lightning, .flood]
+      LocalBriefingParser.firstImageURL(in: "see https://media.weather.gov/foo.jpg."),
+      URL(string: "https://media.weather.gov/foo.jpg")
     )
-  }
-
-  func testUnmatchedTemperatureHeadlineGetsNoHero() {
-    let titles = [
-      "Near to slightly above normal temperatures are expected across the Mid-South for most of the week, but extreme heat is not expected."
-    ]
-    XCTAssertEqual(LocalBriefingHero.uniqueHeroes(for: titles), [nil])
-  }
-
-  func testTwoThunderstormsNeverGetFloodOrUnmatchedSky() {
-    let titles = [
-      "Thunderstorms increase late tonight into Monday",
-      "Additional chances for showers and thunderstorms through midweek",
-    ]
-    let heroes = LocalBriefingHero.uniqueHeroes(for: titles)
-    XCTAssertEqual(heroes, [.storm, .lightning])
-    XCTAssertFalse(heroes.contains(.flood))
-    XCTAssertFalse(heroes.contains(.haze))
-    XCTAssertFalse(heroes.contains(.dawn))
-    XCTAssertFalse(heroes.contains(.sky))
-  }
-
-  func testUniquenessMustNotLieWithUnmatchedTitles() {
-    let titles = [
-      "Near to slightly above normal temperatures are expected",
-      "A quiet pattern continues",
-      "Flash flood watch for the Mid-South",
-    ]
-    XCTAssertEqual(
-      LocalBriefingHero.uniqueHeroes(for: titles),
-      [nil, nil, .flood]
-    )
-  }
-
-  func testThirdThunderstormDuplicatesStormRatherThanFlood() {
-    let titles = [
-      "Thunderstorms increase late tonight",
-      "Additional chances for showers and thunderstorms through midweek",
-      "Scattered thunderstorms return Friday",
-    ]
-    XCTAssertEqual(
-      LocalBriefingHero.uniqueHeroes(for: titles),
-      [.storm, .lightning, .storm]
-    )
-  }
-
-  func testLiveMEGKeyMessagesAssignHeroesHonestly() {
-    let titles = [
-      "Shower and thunderstorm chances increase late tonight into Monday, with organized severe weather not expected.",
-      "Additional chances for showers and thunderstorms are expected through midweek.",
-      "Near to slightly above normal temperatures are expected across the Mid-South for most of the week, but extreme heat is not expected.",
-    ]
-    XCTAssertEqual(
-      LocalBriefingHero.uniqueHeroes(for: titles),
-      [.storm, .lightning, nil]
-    )
-  }
-
-  func testHeroAssetNamesMatchCatalog() {
-    XCTAssertEqual(LocalBriefingHero.storm.assetName, "NewsHeroStorm")
-    XCTAssertEqual(LocalBriefingHero.lightning.assetName, "NewsHeroLightning")
-    XCTAssertEqual(LocalBriefingHero.sky.assetName, "NewsHeroSky")
-    XCTAssertEqual(LocalBriefingHero.flood.assetName, "NewsHeroFlood")
-    XCTAssertEqual(LocalBriefingHero.haze.assetName, "NewsHeroHaze")
-    XCTAssertEqual(LocalBriefingHero.dawn.assetName, "NewsHeroDawn")
   }
 
   func testProductListDecodesGraph() throws {
@@ -605,6 +576,67 @@ final class LocalBriefingParserTests: XCTestCase {
 
     The National Weather Service has surveyed damage from Saturday's
     storms across DeSoto County.
+    """
+
+  private static let pnsStormSurveyWithImage = """
+    000
+    NOUS44 KMEG 170155
+    PNSMEG
+
+    Public Information Statement
+    National Weather Service Memphis TN
+    855 PM CDT Sat Aug 16 2026
+
+    ...NWS Damage Survey for 08/16/26 Tornado Event...
+
+    .TORNADO NEAR OLIVE BRANCH IN DESOTO COUNTY MISSISSIPPI...
+
+    The National Weather Service has surveyed damage from Saturday's
+    storms across DeSoto County.
+
+    Survey photo:
+    https://media.weather.gov/meg/survey.jpg
+    """
+
+  private static let pnsWithNonImageLinks = """
+    000
+    NOUS44 KMEG 170155
+    PNSMEG
+
+    Public Information Statement
+    National Weather Service Memphis TN
+    855 PM CDT Sat Aug 16 2026
+
+    ...NWS Damage Survey for 08/16/26 Tornado Event...
+
+    Full discussion:
+    https://forecast.weather.gov/product.php?site=NWS&issuedby=MEG&product=PNS
+    Office page: https://www.weather.gov/meg/
+    Alert feed: https://api.weather.gov/alerts/active
+    """
+
+  private static let afdWithKeyMessagesAndImage = """
+    000
+    FXUS64 KMEG 232334 AAA
+    AFDMEG
+
+    Area Forecast Discussion...UPDATED
+    National Weather Service Memphis TN
+    634 PM CDT Sun Aug 23 2026
+
+    .KEY MESSAGES...
+    Issued at 634 PM CDT Sun Aug 23 2026
+
+    - Shower and thunderstorm chances increase late tonight into
+      Monday, with organized severe weather not expected.
+
+    - Additional chances for showers and thunderstorms are expected
+      through midweek.
+
+    &&
+
+    .DISCUSSION...
+    Graphic: https://www.weather.gov/images/meg/outlook.png
     """
 
   private static let pnsFloodWatch = """
