@@ -51,6 +51,9 @@ enum DayCastAccessibility {
 
   enum Grok {
     static let stormSpotterAnalyze = "daycast.grok.stormSpotter.analyze"
+    static let skyCheckCamera = "daycast.grok.skyCheck.camera"
+    static let skyCheckLibrary = "daycast.grok.skyCheck.library"
+    static let skyCheckCameraFail = "daycast.grok.skyCheck.cameraFail"
     static let chatField = "daycast.grok.chatField"
     static let screenTitle = "daycast.grok.screenTitle"
   }

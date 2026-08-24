@@ -106,6 +106,9 @@ final class StormSpotterHonestyTests: XCTestCase {
       SkyCheckDeskCopy.hedge,
       "Not an NWS product or warning. Rotation and hail are inferred, not certified.")
     XCTAssertEqual(SkyCheckDeskCopy.checkAnotherCTA, "Check another")
+    XCTAssertEqual(SkyCheckDeskCopy.photoGlyph, "camera")
+    XCTAssertEqual(SkyCheckDeskCopy.cameraSource, "Camera")
+    XCTAssertEqual(SkyCheckDeskCopy.librarySource, "Photo Library")
   }
 
   func testSkyCheckQuickPromptsDropFieldAndRadarRead() {

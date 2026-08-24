@@ -19,7 +19,7 @@ Live listing is **6798461672**. Do not use the retired record `6780682022`.
 
 ### Photos or Videos
 
-Storm Spotter: the user picks a photo in `PhotosPicker`. The resized image is sent to xAI through the Pro proxy for analysis. Library is not scanned. Camera is not used.
+Sky Check: the user takes a sky photo with the camera or picks one in `PhotosPicker`. Camera and library both feed the same analysis path. The resized image is sent to xAI through the Pro proxy. Library is not scanned. Camera is used only when the user chooses Camera.
 
 ### Other User Content
 

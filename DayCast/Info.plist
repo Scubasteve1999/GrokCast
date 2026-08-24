@@ -44,6 +44,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>DayCast uses the camera so you can check a sky photo in Sky Check.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>DayCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -5,6 +5,15 @@ import Foundation
 enum SkyCheckDeskCopy {
   static let photoCTA = "Check this sky"
   static let checkAnotherCTA = "Check another"
+  static let cameraSource = "Camera"
+  static let librarySource = "Photo Library"
+  static let photoGlyph = "camera"
+  static let cameraUnavailable =
+    "This device has no camera. Pick a photo from the library."
+  static let cameraDenied =
+    "Camera access is off. Pick a photo from the library."
+  static let photoLoadFailed =
+    "Couldn't load that photo. Try another image (JPEG/PNG)."
   static let emptyPitch =
     "Ask about your weather. Check a sky photo when you want eyes on the sky."
   static let hedge =

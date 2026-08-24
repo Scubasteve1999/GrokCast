@@ -107,6 +107,7 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        NSCameraUsageDescription: "DayCast uses the camera so you can check a sky photo in Sky Check."
         NSLocationWhenInUseUsageDescription: "DayCast uses your location to show accurate local weather forecasts and AI-powered insights."
         NSLocationAlwaysAndWhenInUseUsageDescription: "DayCast can use Apple’s low-power Significant Location Changes to refresh weather when you travel a significant distance. This is not continuous GPS tracking. You can turn this off in Settings."
         NSPhotoLibraryAddUsageDescription: "DayCast saves AI-generated weather images to your Photo Library when you choose Save."

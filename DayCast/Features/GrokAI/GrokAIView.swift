@@ -1,3 +1,4 @@
+import AVFoundation
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -13,9 +14,12 @@ private struct GrokAIViewContent: View {
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
   @State private var question: String = ""
+  @State private var showPhotoSourceChooser = false
   @State private var showPhotoPicker = false
+  @State private var showCameraPicker = false
   @State private var selectedPhotoItem: PhotosPickerItem?
   @State private var pendingImageData: Data?
+  @State private var photoCaptureFailMessage: String?
   @State private var showNotesSheet = false
   @State private var stormNotes: String = ""
 
@@ -41,152 +45,159 @@ private struct GrokAIViewContent: View {
           .accessibilityHidden(true)
 
         NavigationStack {
-        ScrollViewReader { proxy in
-          ScrollView {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-              headerSection
-              if !weatherStore.canUseGrok {
-                GrokAPIKeyEmptyStateView(
-                  store: weatherStore,
-                  subscription: SubscriptionManager.shared
-                )
-              }
-
-              if showsDeskIntro(viewModel: viewModel) {
-                deskIntroCopy
-              }
-
-              quickPromptsSection(viewModel: viewModel)
-
-              if prefersFigmaStudioLayout, showsPhotoWell(viewModel: viewModel) {
-                skyCheckPhotoWell(viewModel: viewModel)
-              }
-
-              ForEach(viewModel.conversationHistory) { message in
-                messageBubble(for: message)
-                  .id(message.id)
-              }
-
-              if viewModel.stormAnalysisMode,
-                let thumbnailData = viewModel.stormThumbnailData,
-                let uiImage = UIImage(data: thumbnailData)
-              {
-                Image(uiImage: uiImage)
-                  .resizable()
-                  .scaledToFill()
-                  .frame(maxWidth: 120, maxHeight: 80)
-                  .clipShape(RoundedRectangle(cornerRadius: 8))
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                      .stroke(Color.white.opacity(0.15), lineWidth: 1)
+          ScrollViewReader { proxy in
+            ScrollView {
+              VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+                headerSection
+                if !weatherStore.canUseGrok {
+                  GrokAPIKeyEmptyStateView(
+                    store: weatherStore,
+                    subscription: SubscriptionManager.shared
                   )
-                  .id("storm-thumb")
-              }
-
-              if viewModel.isStreaming {
-                streamingResponse(viewModel: viewModel)
-              }
-
-              if viewModel.isGeneratingImage {
-                responseCard {
-                  HStack(spacing: 12) {
-                    ProgressView()
-                      .tint(.white)
-                    Text("Generating image…")
-                      .font(DesignTokens.Typography.caption())
-                      .foregroundStyle(DesignTokens.Palette.textSecondary)
-                  }
-                  .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .id("generating-image")
-              }
 
-              if let imageData = viewModel.lastStormImageData,
-                !viewModel.stormAnalysisMode,
-                !viewModel.stormAnalysisText.isEmpty
-              {
-                stormShareRow(
-                  viewModel: viewModel, imageData: imageData, analysis: viewModel.stormAnalysisText)
-              }
-
-              if prefersFigmaStudioLayout, showsPhotoCTAButton(viewModel: viewModel) {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-                  skyCheckPhotoCTAButton(viewModel: viewModel)
-                  if hasCompletedPhotoCheck(viewModel: viewModel) {
-                    Text(SkyCheckDeskCopy.hedge)
-                      .font(DesignTokens.Typography.caption())
-                      .foregroundStyle(DesignTokens.Palette.textTertiary)
-                      .fixedSize(horizontal: false, vertical: true)
-                  }
+                if showsDeskIntro(viewModel: viewModel) {
+                  deskIntroCopy
                 }
-              }
 
-              if let error = viewModel.errorMessage {
-                GrokErrorView(
-                  message: error,
-                  retryAction: {
-                    guard !(viewModel.isStreaming || viewModel.isGeneratingImage) else { return }
-                    Task {
-                      if viewModel.lastStormImageData != nil {
-                        await viewModel.retryStormAnalysis()
-                        return
-                      }
-                      guard
-                        let lastUser = viewModel.conversationHistory.last(where: {
-                          $0.role == .user
-                        })
-                      else { return }
-                      await viewModel.askGrok(question: lastUser.content)
+                quickPromptsSection(viewModel: viewModel)
+
+                if prefersFigmaStudioLayout, showsPhotoWell(viewModel: viewModel) {
+                  skyCheckPhotoWell(viewModel: viewModel)
+                }
+
+                ForEach(viewModel.conversationHistory) { message in
+                  messageBubble(for: message)
+                    .id(message.id)
+                }
+
+                if viewModel.stormAnalysisMode,
+                  let thumbnailData = viewModel.stormThumbnailData,
+                  let uiImage = UIImage(data: thumbnailData)
+                {
+                  Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: 120, maxHeight: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+                    .id("storm-thumb")
+                }
+
+                if viewModel.isStreaming {
+                  streamingResponse(viewModel: viewModel)
+                }
+
+                if viewModel.isGeneratingImage {
+                  responseCard {
+                    HStack(spacing: 12) {
+                      ProgressView()
+                        .tint(.white)
+                      Text("Generating image…")
+                        .font(DesignTokens.Typography.caption())
+                        .foregroundStyle(DesignTokens.Palette.textSecondary)
                     }
-                  },
-                  isStormError: viewModel.lastStormImageData != nil
-                )
-                .id("error")
-              }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                  }
+                  .id("generating-image")
+                }
 
-              Color.clear
-                .frame(height: 1)
-                .id("thread-bottom")
-                .accessibilityHidden(true)
+                if let imageData = viewModel.lastStormImageData,
+                  !viewModel.stormAnalysisMode,
+                  !viewModel.stormAnalysisText.isEmpty
+                {
+                  stormShareRow(
+                    viewModel: viewModel, imageData: imageData,
+                    analysis: viewModel.stormAnalysisText)
+                }
+
+                if prefersFigmaStudioLayout, showsPhotoCTAButton(viewModel: viewModel) {
+                  VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+                    skyCheckPhotoCTAButton(viewModel: viewModel)
+                    if hasCompletedPhotoCheck(viewModel: viewModel) {
+                      Text(SkyCheckDeskCopy.hedge)
+                        .font(DesignTokens.Typography.caption())
+                        .foregroundStyle(DesignTokens.Palette.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                  }
+                }
+
+                if let error = viewModel.errorMessage {
+                  GrokErrorView(
+                    message: error,
+                    retryAction: {
+                      guard !(viewModel.isStreaming || viewModel.isGeneratingImage) else { return }
+                      Task {
+                        if viewModel.lastStormImageData != nil {
+                          await viewModel.retryStormAnalysis()
+                          return
+                        }
+                        guard
+                          let lastUser = viewModel.conversationHistory.last(where: {
+                            $0.role == .user
+                          })
+                        else { return }
+                        await viewModel.askGrok(question: lastUser.content)
+                      }
+                    },
+                    isStormError: viewModel.lastStormImageData != nil
+                  )
+                  .id("error")
+                }
+
+                Color.clear
+                  .frame(height: 1)
+                  .id("thread-bottom")
+                  .accessibilityHidden(true)
+              }
+              .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
+              .padding(.top, DesignTokens.Layout.topPadding)
+              .padding(.bottom, DesignTokens.Spacing.space8)
             }
-            .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
-            .padding(.top, DesignTokens.Layout.topPadding)
-            .padding(.bottom, DesignTokens.Spacing.space8)
-          }
-          .scrollDismissesKeyboard(.interactively)
-          .background { skyCheckWeatherBackground }
-          .onChange(of: viewModel.conversationHistory.count) {
-            scrollToBottom(proxy: proxy)
-          }
-          .onChange(of: viewModel.responseText) {
-            if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
-          }
-          .onChange(of: viewModel.stormAnalysisText) {
-            if viewModel.isStreaming && viewModel.stormAnalysisMode {
+            .scrollDismissesKeyboard(.interactively)
+            .background { skyCheckWeatherBackground }
+            .onChange(of: viewModel.conversationHistory.count) {
+              scrollToBottom(proxy: proxy)
+            }
+            .onChange(of: viewModel.responseText) {
+              if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
+            }
+            .onChange(of: viewModel.stormAnalysisText) {
+              if viewModel.isStreaming && viewModel.stormAnalysisMode {
+                scrollToBottom(proxy: proxy)
+              }
+            }
+            .onChange(of: viewModel.isStreaming) {
+              if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
+            }
+            .onChange(of: viewModel.isGeneratingImage) {
+              if viewModel.isGeneratingImage { scrollToBottom(proxy: proxy) }
+            }
+            .onChange(of: isInputFocused) {
               scrollToBottom(proxy: proxy)
             }
           }
-          .onChange(of: viewModel.isStreaming) {
-            if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
-          }
-          .onChange(of: viewModel.isGeneratingImage) {
-            if viewModel.isGeneratingImage { scrollToBottom(proxy: proxy) }
-          }
-          .onChange(of: isInputFocused) {
-            scrollToBottom(proxy: proxy)
-          }
+          .navigationTitle("")
+          .navigationBarTitleDisplayMode(.inline)
+          .weatherShowsThroughNavigationBar()
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .weatherShowsThroughNavigationBar()
-      }
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        inputArea(viewModel: viewModel)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+          VStack(alignment: .leading, spacing: 0) {
+            if photoCaptureFailMessage != nil {
+              skyCheckPhotoCaptureFailLine
+                .padding(.bottom, DesignTokens.Spacing.space8)
+            }
+            inputArea(viewModel: viewModel)
+          }
           .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
           .padding(.top, DesignTokens.Spacing.space8)
           .padding(.bottom, prefersFigmaStudioLayout ? DesignTokens.Spacing.space12 : 8)
           .background(composerTrayBackground)
-      }
+        }
         .padding(
           .bottom,
           SkyCheckChatChrome.tabBarClearance(
@@ -222,23 +233,45 @@ private struct GrokAIViewContent: View {
     .onReceive(NotificationCenter.default.publisher(for: AskGrokPendingPrompt.didChange)) { _ in
       consumePendingAskGrok(viewModel: viewModel)
     }
+    .confirmationDialog(
+      skyCheckPhotoCTATitle(viewModel: viewModel),
+      isPresented: $showPhotoSourceChooser,
+      titleVisibility: .visible
+    ) {
+      Button(SkyCheckDeskCopy.cameraSource) {
+        beginPhotoSource(.camera)
+      }
+      .accessibilityIdentifier(DayCastAccessibility.Grok.skyCheckCamera)
+      Button(SkyCheckDeskCopy.librarySource) {
+        beginPhotoSource(.photoLibrary)
+      }
+      .accessibilityIdentifier(DayCastAccessibility.Grok.skyCheckLibrary)
+      Button("Cancel", role: .cancel) {}
+    }
     .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
     .onChange(of: selectedPhotoItem) { _, newItem in
       guard let newItem else { return }
       Task {
         do {
-          if let data = try await newItem.loadTransferable(type: Data.self) {
-            pendingImageData = data
-            stormNotes = ""
-            showNotesSheet = true
-          } else {
-            viewModel.errorMessage = "Couldn't load that photo. Try another image (JPEG/PNG)."
-          }
+          let data = try await newItem.loadTransferable(type: Data.self)
+          applyPendingImage(data, viewModel: viewModel)
         } catch {
-          viewModel.errorMessage = "Couldn't load that photo. Try another image (JPEG/PNG)."
+          applyPendingImage(nil, viewModel: viewModel)
         }
         selectedPhotoItem = nil
       }
+    }
+    .fullScreenCover(isPresented: $showCameraPicker) {
+      SkyCheckCameraPicker(
+        onCapture: { data in
+          showCameraPicker = false
+          applyPendingImage(data, viewModel: viewModel)
+        },
+        onCancel: {
+          showCameraPicker = false
+        }
+      )
+      .ignoresSafeArea()
     }
     .sheet(isPresented: $showNotesSheet) {
       stormNotesSheet(viewModel: viewModel)
@@ -339,7 +372,70 @@ private struct GrokAIViewContent: View {
         }
         return
       }
-      showPhotoPicker = true
+      showPhotoSourceChooser = true
+    }
+  }
+
+  private func beginPhotoSource(_ source: SkyCheckPhotoSource) {
+    Task { @MainActor in
+      // Let the chooser dismiss before stacking Camera / PhotosPicker.
+      try? await Task.sleep(for: .milliseconds(400))
+      switch source {
+      case .camera:
+        startCameraCapture()
+      case .photoLibrary:
+        showPhotoPicker = true
+      }
+    }
+  }
+
+  private func startCameraCapture() {
+    let gate = SkyCheckCameraGate.evaluate(
+      isSourceAvailable: SkyCheckPhotoIntake.isCameraSourceAvailable,
+      authorization: AVCaptureDevice.authorizationStatus(for: .video)
+    )
+    switch gate {
+    case .ready:
+      photoCaptureFailMessage = nil
+      showCameraPicker = true
+    case .needsAuthorization:
+      Task { @MainActor in
+        let granted = await AVCaptureDevice.requestAccess(for: .video)
+        if granted {
+          photoCaptureFailMessage = nil
+          showCameraPicker = true
+        } else {
+          photoCaptureFailMessage = SkyCheckDeskCopy.cameraDenied
+        }
+      }
+    case .unavailable:
+      photoCaptureFailMessage = SkyCheckDeskCopy.cameraUnavailable
+    case .denied:
+      photoCaptureFailMessage = SkyCheckDeskCopy.cameraDenied
+    }
+  }
+
+  private func applyPendingImage(_ data: Data?, viewModel: GrokAIViewModel) {
+    switch SkyCheckPhotoIntake.pendingImage(from: data) {
+    case .success(let imageData):
+      photoCaptureFailMessage = nil
+      pendingImageData = imageData
+      stormNotes = ""
+      showNotesSheet = true
+    case .failure(let failure):
+      pendingImageData = nil
+      viewModel.errorMessage = failure.userMessage
+    }
+  }
+
+  @ViewBuilder
+  private var skyCheckPhotoCaptureFailLine: some View {
+    if let photoCaptureFailMessage {
+      Text(photoCaptureFailMessage)
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityIdentifier(DayCastAccessibility.Grok.skyCheckCameraFail)
     }
   }
 
@@ -365,7 +461,7 @@ private struct GrokAIViewContent: View {
           .clipped()
 
         VStack(spacing: DesignTokens.Spacing.space8) {
-          Image(systemName: "photo")
+          Image(systemName: SkyCheckDeskCopy.photoGlyph)
             .font(DesignTokens.Typography.symbol(DesignTokens.Layout.heroIconSize))
             .accessibilityHidden(true)
           Text(skyCheckPhotoCTATitle(viewModel: viewModel))
@@ -392,10 +488,13 @@ private struct GrokAIViewContent: View {
 
   private func skyCheckPhotoCTAButton(viewModel: GrokAIViewModel) -> some View {
     Button(action: openSkyCheckPicker) {
-      Label(skyCheckPhotoCTATitle(viewModel: viewModel), systemImage: "photo")
-        .font(DesignTokens.Typography.subsection())
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DesignTokens.Spacing.space4)
+      Label(
+        skyCheckPhotoCTATitle(viewModel: viewModel),
+        systemImage: SkyCheckDeskCopy.photoGlyph
+      )
+      .font(DesignTokens.Typography.subsection())
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, DesignTokens.Spacing.space4)
     }
     .buttonStyle(.borderedProminent)
     .tint(DesignTokens.Palette.accent)

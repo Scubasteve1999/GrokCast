@@ -102,12 +102,13 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     // The More hub is the only in-app path into the Grok tab (it has no CompactTabBar item).
     openMoreHubThen(.grok)
 
-    let analyze = app.buttons["Check this sky"]
+    let analyze = skyCheckPhotoCTA()
+    let labeled = app.buttons["Check this sky"]
     let stormHeader = app.staticTexts.matching(
       NSPredicate(format: "label CONTAINS[c] %@", "SKY CHECK")
     ).firstMatch
 
-    let sawCTA = analyze.waitForExistence(timeout: 12)
+    let sawCTA = analyze.waitForExistence(timeout: 12) || labeled.waitForExistence(timeout: 2)
     let sawHeader = stormHeader.waitForExistence(timeout: 4)
 
     XCTAssertTrue(
@@ -115,10 +116,74 @@ final class CriticalFlowsUITests: DayCastUITestCase {
       "Sky Check analysis entry point missing from Sky Check"
     )
 
-    // Tap CTA only far enough to confirm it is hittable (system photo picker may appear).
+    // Scroll if the CTA sits below a persisted thread; do not open the chooser.
     if sawCTA {
-      XCTAssertTrue(analyze.isHittable)
+      let cta = analyze.exists ? analyze : labeled
+      if !cta.isHittable {
+        _ = revealSkyCheckPhotoCTA(timeout: 4)
+      }
+      XCTAssertTrue(cta.isHittable || skyCheckPhotoCTA().isHittable)
     }
+  }
+
+  // MARK: - 3c. Sky Check Camera / Photo Library chooser
+
+  func testSkyCheckPhotoChooserOffersCameraAndLibrary() throws {
+    XCTAssertTrue(waitForTabBar())
+    openMoreHubThen(.grok)
+
+    let analyze = revealSkyCheckPhotoCTA()
+    XCTAssertTrue(
+      waitForHittable(analyze, timeout: 6), "Check this sky / Check another not hittable")
+    analyze.tap()
+
+    let camera = app.buttons.matching(
+      NSPredicate(format: "identifier == %@", "daycast.grok.skyCheck.camera")
+    ).firstMatch
+    let library = app.buttons.matching(
+      NSPredicate(format: "identifier == %@", "daycast.grok.skyCheck.library")
+    ).firstMatch
+    XCTAssertTrue(camera.waitForExistence(timeout: 6), "Camera missing from Sky Check chooser")
+    XCTAssertTrue(
+      library.waitForExistence(timeout: 2), "Photo Library missing from Sky Check chooser")
+    saveSkyCheckCameraStill(named: "01-chooser-camera-library.jpg")
+
+    library.tap()
+    let closePicker = app.buttons["Close"].firstMatch
+    let pickerCancel = app.buttons["Cancel"].firstMatch
+    XCTAssertTrue(
+      closePicker.waitForExistence(timeout: 8) || pickerCancel.waitForExistence(timeout: 2),
+      "Photo Library picker did not appear")
+    _ = app.images.firstMatch.waitForExistence(timeout: 8)
+    saveSkyCheckCameraStill(named: "03-library-picker.jpg")
+  }
+
+  func testSkyCheckSimulatorCameraFailsHonestly() throws {
+    XCTAssertTrue(waitForTabBar())
+    openMoreHubThen(.grok)
+
+    let analyze = revealSkyCheckPhotoCTA()
+    XCTAssertTrue(waitForHittable(analyze, timeout: 6))
+    analyze.tap()
+
+    let camera = app.buttons.matching(
+      NSPredicate(format: "identifier == %@", "daycast.grok.skyCheck.camera")
+    ).firstMatch
+    XCTAssertTrue(camera.waitForExistence(timeout: 6), "Camera missing from Sky Check chooser")
+    camera.tap()
+
+    let fail = app.staticTexts[
+      "This device has no camera. Pick a photo from the library."
+    ]
+    let failById = app.staticTexts["daycast.grok.skyCheck.cameraFail"]
+    XCTAssertTrue(
+      fail.waitForExistence(timeout: 8) || failById.waitForExistence(timeout: 2),
+      "Simulator camera tap must fail honestly; library still works"
+    )
+    saveSkyCheckCameraStill(named: "02-sim-camera-fail.jpg")
+    XCTAssertTrue(
+      analyze.waitForExistence(timeout: 2) || skyCheckPhotoCTA().waitForExistence(timeout: 2),
+      "Photo CTA should remain after camera fail so library stays available")
   }
 
   // MARK: - 3b. Sky Check composer sits above CompactTabBar
@@ -214,11 +279,13 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(opened, "Could not find DayCast Pro entry in Settings")
 
     let paywallSignal =
-      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Forecast radar")).firstMatch
+      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Forecast radar"))
+      .firstMatch
       .waitForExistence(timeout: 6)
       || app.buttons["Restore Purchases"].waitForExistence(timeout: 4)
-      || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Unlimited saved")).firstMatch
-      .waitForExistence(timeout: 4)
+      || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Unlimited saved"))
+        .firstMatch
+        .waitForExistence(timeout: 4)
 
     XCTAssertTrue(paywallSignal, "Paywall sheet did not present expected content")
   }
@@ -266,6 +333,18 @@ final class CriticalFlowsUITests: DayCastUITestCase {
       underClock.isEmpty,
       "Thread text under the status bar: \(underClock.prefix(5).map(\.label))"
     )
+  }
+
+  private func saveSkyCheckCameraStill(named filename: String) {
+    let dir = URL(
+      fileURLWithPath:
+        "/Users/bigstevedev/Projects/GrokCast/scratch/sky-check-camera-2026-08-24"
+    )
+    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    guard let data = XCUIScreen.main.screenshot().image.jpegData(compressionQuality: 0.8) else {
+      return
+    }
+    try? data.write(to: dir.appendingPathComponent(filename))
   }
 
   private func saveSkyCheckStill(named filename: String) {

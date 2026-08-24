@@ -143,6 +143,27 @@ class DayCastUITestCase: XCTestCase {
     ) == .completed
   }
 
+  /// Photo well when the desk is empty; after a thread exists the same
+  /// identifier is the Check this sky / Check another button below the bubbles.
+  func skyCheckPhotoCTA() -> XCUIElement {
+    app.descendants(matching: .any).matching(
+      NSPredicate(format: "identifier == %@", "daycast.grok.stormSpotter.analyze")
+    ).firstMatch
+  }
+
+  @discardableResult
+  func revealSkyCheckPhotoCTA(timeout: TimeInterval = 12) -> XCUIElement {
+    let cta = skyCheckPhotoCTA()
+    XCTAssertTrue(cta.waitForExistence(timeout: timeout), "Sky Check photo CTA missing")
+    if cta.isHittable { return cta }
+    let scroll = app.scrollViews.firstMatch
+    for _ in 0..<6 {
+      if scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
+      if cta.isHittable { return cta }
+    }
+    return cta
+  }
+
   func waitForDisappearance(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
     XCTWaiter.wait(
       for: [

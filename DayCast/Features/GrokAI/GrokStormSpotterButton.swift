@@ -14,7 +14,7 @@ struct GrokStormSpotterButton: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 8) {
-        Image(systemName: "photo")
+        Image(systemName: SkyCheckDeskCopy.photoGlyph)
           .font(DesignTokens.Typography.subsection())
 
         Text(SkyCheckDeskCopy.photoCTA)
