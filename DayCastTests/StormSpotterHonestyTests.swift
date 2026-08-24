@@ -4,6 +4,11 @@ import XCTest
 
 final class StormSpotterHonestyTests: XCTestCase {
 
+  override func tearDown() {
+    _ = AskGrokPendingPrompt.take()
+    super.tearDown()
+  }
+
   func testVisionPromptIsFieldFirstNotWitty() {
     let prompt = GrokPrompts.stormSpotterSystemPrompt
     XCTAssertFalse(
@@ -82,7 +87,87 @@ final class StormSpotterHonestyTests: XCTestCase {
   func testPhotoTurnCaptionWorksWithoutLocationOrNotes() {
     let messages = GrokAIViewModel.photoTurnMessages(
       locationName: nil, thumbnail: nil, analysis: "Shelf cloud.", notes: "  ")
-    XCTAssertEqual(messages.first?.content, "Analyze this storm photo")
+    XCTAssertEqual(messages.first?.content, SkyCheckDeskCopy.photoTurnCaption)
     XCTAssertFalse(messages.first?.content.contains("Notes:") ?? true)
+  }
+
+  func testPublicCTAIsASkyPhotoVerb() {
+    XCTAssertEqual(SkyCheckDeskCopy.photoCTA, "Check this sky")
+    XCTAssertFalse(SkyCheckDeskCopy.photoCTA.contains("Analyze Storm Photo"))
+    XCTAssertFalse(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("field read"))
+    XCTAssertFalse(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("wall cloud"))
+    XCTAssertFalse(SkyCheckDeskCopy.notesHelper.localizedCaseInsensitiveContains("wall cloud"))
+    XCTAssertFalse(SkyCheckDeskCopy.notesPlaceholder.localizedCaseInsensitiveContains("Observer"))
+    XCTAssertEqual(
+      SkyCheckDeskCopy.hedge,
+      "Not an NWS product or warning. Rotation and hail are inferred, not certified.")
+    XCTAssertEqual(SkyCheckDeskCopy.checkAnotherCTA, "Check another")
+  }
+
+  func testSkyCheckQuickPromptsDropFieldAndRadarRead() {
+    XCTAssertFalse(SkyCheckDeskCopy.prompts.isEmpty)
+    for prompt in SkyCheckDeskCopy.prompts {
+      XCTAssertFalse(
+        prompt.title.localizedCaseInsensitiveContains("Radar read"),
+        "Sky Check must not impersonate Explain Radar: \(prompt.title)")
+      XCTAssertFalse(prompt.title.localizedCaseInsensitiveContains("Imagine"))
+      XCTAssertFalse(prompt.body.localizedCaseInsensitiveContains("SRV"))
+      XCTAssertFalse(prompt.body.localizedCaseInsensitiveContains("field radar"))
+      XCTAssertFalse(prompt.body.localizedCaseInsensitiveContains("storm-relative"))
+    }
+    let titles = SkyCheckDeskCopy.prompts.map(\.title)
+    XCTAssertFalse(titles.contains("Radar read"))
+    XCTAssertFalse(titles.contains("Imagine the scene"))
+  }
+
+  func testSkyCheckChatPromptIsPublicDeskNotFieldFirst() {
+    let noWeather = GrokPrompts.skyCheckChatSystemPrompt(conditionsBlock: nil)
+    let withWeather = GrokPrompts.skyCheckChatSystemPrompt(
+      conditionsBlock: "Current conditions for Olive Branch, MS:\n- Temperature: 82°F")
+    for prompt in [noWeather, withWeather] {
+      XCTAssertTrue(prompt.contains("Sky Check"))
+      XCTAssertFalse(prompt.localizedCaseInsensitiveContains("field-first"))
+      XCTAssertFalse(prompt.localizedCaseInsensitiveContains("watching severe weather"))
+      XCTAssertFalse(prompt.localizedCaseInsensitiveContains("SRV"))
+      XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent radar"))
+      XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent warnings"))
+    }
+  }
+
+  func testMoreUnlockedSubtitleIsPhotoCheckAndQuestions() {
+    let copy = GrokAccessRules.moreHubGrokSubtitle(canUseAI: true)
+    XCTAssertEqual(copy, "Photo check and weather questions")
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("briefings"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("chat"))
+  }
+
+  func testTakeAndMorningLandOnSkyCheckReadyToType() {
+    XCTAssertEqual(SkyCheckDeskCopy.landingActionTitle, "Sky Check")
+    XCTAssertFalse(SkyCheckDeskCopy.landingActionTitle.localizedCaseInsensitiveContains("Ask AI"))
+    XCTAssertFalse(SkyCheckDeskCopy.landingActionTitle.localizedCaseInsensitiveContains("Ask Grok"))
+    _ = AskGrokPendingPrompt.take()
+    AskGrokPendingPrompt.set(.focusInput)
+    XCTAssertEqual(AskGrokPendingPrompt.take(), .focusInput)
+  }
+
+  @MainActor
+  func testOpenReadyToTypeSelectsGrokTabAndQueuesFocus() {
+    let store = WeatherStore.shared
+    let previous = store.selectedTab
+    _ = AskGrokPendingPrompt.take()
+    SkyCheckLanding.openReadyToType(on: store)
+    XCTAssertEqual(store.selectedTab, .grok)
+    // Live GrokAIView may consume the queued focus; leftover must still be focus-only.
+    if let leftover = AskGrokPendingPrompt.take() {
+      XCTAssertEqual(leftover, .focusInput)
+    }
+    store.selectedTab = previous
+  }
+
+  func testShareReportUsesNotesNotObserverNotes() {
+    let share = ShareableBriefText.stormSpotterReport(
+      locationName: "Southaven, MS", observerNotes: "looking southwest", analysis: "Shelf cloud.")
+    XCTAssertTrue(share.contains("Notes: looking southwest"))
+    XCTAssertFalse(share.contains("Observer notes:"))
   }
 }

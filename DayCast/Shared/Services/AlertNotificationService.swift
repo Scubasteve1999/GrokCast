@@ -169,6 +169,7 @@ final class AlertNotificationService: NSObject, UNUserNotificationCenterDelegate
       url = DayCastDeepLinks.forecastURL
     case "OPEN_GROK":
       url = DayCastDeepLinks.grokURL
+      SkyCheckLanding.queueReadyToType()
     case "OPEN_ALERTS":
       url = DayCastDeepLinks.alertsURL
     case "VIEW_RADAR":

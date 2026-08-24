@@ -103,7 +103,7 @@ struct GrokBriefCard: View {
     .contentShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
     .onTapGesture {
       guard presentation == .figma, !safety.isFeatureHidden else { return }
-      store.selectedTab = .grok
+      SkyCheckLanding.openReadyToType(on: store)
     }
     .sheet(isPresented: $showingReport) {
       if let briefText {
@@ -240,9 +240,9 @@ struct GrokBriefCard: View {
       .foregroundStyle(DesignTokens.Palette.accent)
 
       Button {
-        store.selectedTab = .grok
+        SkyCheckLanding.openReadyToType(on: store)
       } label: {
-        Text("Ask AI")
+        Text(SkyCheckDeskCopy.landingActionTitle)
           .font(DesignTokens.Typography.caption())
       }
       .buttonStyle(.bordered)

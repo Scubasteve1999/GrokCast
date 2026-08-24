@@ -273,29 +273,33 @@ private struct GrokAIViewContent: View {
           {
             HStack(spacing: 8) {
               ProgressView().scaleEffect(0.85)
-              Text("Analyzing your photo…")
+              Text("Checking your photo…")
                 .font(DesignTokens.Typography.callout())
                 .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
-          } else if viewModel.stormAnalysisMode && !viewModel.stormAnalysisText.isEmpty {
-            Text(viewModel.stormAnalysisText)
-              .font(DesignTokens.Typography.callout())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-              .fixedSize(horizontal: false, vertical: true)
+          } else if !viewModel.stormAnalysisText.isEmpty {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+              Text(viewModel.stormAnalysisText)
+                .font(DesignTokens.Typography.callout())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+              if !viewModel.stormAnalysisMode {
+                Text(SkyCheckDeskCopy.hedge)
+                  .font(DesignTokens.Typography.caption())
+                  .foregroundStyle(DesignTokens.Palette.textTertiary)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+            }
           } else {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-              Text(
-                "Upload a storm photo for a field read of sky features, storm structure, and what to watch next."
-              )
-              .font(DesignTokens.Typography.callout())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-              .fixedSize(horizontal: false, vertical: true)
-              Text(
-                "Not an NWS product or warning. Rotation and hail are inferred, not certified."
-              )
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-              .fixedSize(horizontal: false, vertical: true)
+              Text(SkyCheckDeskCopy.emptyPitch)
+                .font(DesignTokens.Typography.callout())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+              Text(SkyCheckDeskCopy.hedge)
+                .font(DesignTokens.Typography.caption())
+                .foregroundStyle(DesignTokens.Palette.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
             }
           }
 
@@ -310,7 +314,7 @@ private struct GrokAIViewContent: View {
               showPhotoPicker = true
             }
           } label: {
-            Label("Analyze Storm Photo", systemImage: "photo")
+            Label(skyCheckPhotoCTATitle(viewModel: viewModel), systemImage: "photo")
               .font(DesignTokens.Typography.subsection())
               .frame(maxWidth: .infinity)
               .padding(.vertical, DesignTokens.Spacing.space4)
@@ -355,53 +359,16 @@ private struct GrokAIViewContent: View {
     ]
 
     return LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.space12) {
-      GrokQuickPromptButton(
-        title: "Threat check",
-        icon: "exclamationmark.triangle.fill",
-        layout: .figmaTile
-      ) {
-        askQuickPrompt(
-          "Threat check for my location: watches, warnings, SPC Day-1 risk, and what I should monitor next.",
-          viewModel: viewModel
-        )
+      ForEach(SkyCheckDeskCopy.prompts, id: \.title) { prompt in
+        GrokQuickPromptButton(
+          title: prompt.title,
+          icon: prompt.icon,
+          layout: .figmaTile
+        ) {
+          askQuickPrompt(prompt.body, viewModel: viewModel)
+        }
+        .disabled(disabled)
       }
-      .disabled(disabled)
-
-      GrokQuickPromptButton(
-        title: "Outside now?",
-        icon: "car.fill",
-        layout: .figmaTile
-      ) {
-        askQuickPrompt(
-          "Is it dangerous to be outside near me? Should I postpone travel? Timing, hazards, and what to watch if I need to be out.",
-          viewModel: viewModel
-        )
-      }
-      .disabled(disabled)
-
-      GrokQuickPromptButton(
-        title: "Radar read",
-        icon: "dot.radiowaves.right",
-        layout: .figmaTile
-      ) {
-        askQuickPrompt(
-          "Give me a field radar read for my area: what cells matter, motion, and whether SRV or reflectivity is more useful right now.",
-          viewModel: viewModel
-        )
-      }
-      .disabled(disabled)
-
-      GrokQuickPromptButton(
-        title: "Outlook",
-        icon: "cloud.bolt.fill",
-        layout: .figmaTile
-      ) {
-        askQuickPrompt(
-          "Summarize the severe outlook for my area today and the next day — SPC risk, timing, and what would change the call.",
-          viewModel: viewModel
-        )
-      }
-      .disabled(disabled)
     }
   }
 
@@ -414,38 +381,12 @@ private struct GrokAIViewContent: View {
 
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 8) {
-          GrokQuickPromptButton(title: "Threat check") {
-            askQuickPrompt(
-              "Threat check for my location: watches, warnings, SPC Day-1 risk, and what I should monitor next.",
-              viewModel: viewModel
-            )
+          ForEach(SkyCheckDeskCopy.prompts, id: \.title) { prompt in
+            GrokQuickPromptButton(title: prompt.title) {
+              askQuickPrompt(prompt.body, viewModel: viewModel)
+            }
+            .disabled(aiActionsDisabled)
           }
-          .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Outside now?") {
-            askQuickPrompt(
-              "Is it dangerous to be outside near me? Should I postpone travel? Timing, hazards, and what to watch if I need to be out.",
-              viewModel: viewModel
-            )
-          }
-          .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Radar read") {
-            askQuickPrompt(
-              "Give me a field radar read for my area: what cells matter, motion, and whether SRV or reflectivity is more useful right now.",
-              viewModel: viewModel
-            )
-          }
-          .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Severe outlook") {
-            askQuickPrompt(
-              "Summarize the severe outlook for my area today and the next day — SPC risk, timing, and what would change the call.",
-              viewModel: viewModel
-            )
-          }
-          .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Imagine the scene") {
-            Task { await viewModel.generateWeatherImage() }
-          }
-          .disabled(aiActionsDisabled)
           GrokStormSpotterButton {
             Task {
               guard weatherStore.canUseGrok else {
@@ -478,26 +419,11 @@ private struct GrokAIViewContent: View {
       }
       .disabled(aiActionsDisabled)
     } else {
-      HStack(spacing: 12) {
-        GrokInputBar(text: $question, isFocused: $isInputFocused) {
-          Task {
-            await viewModel.askGrok(question: question)
-            question = ""
-          }
+      GrokInputBar(text: $question, isFocused: $isInputFocused) {
+        Task {
+          await viewModel.askGrok(question: question)
+          question = ""
         }
-
-        Button {
-          Task {
-            await viewModel.generateWeatherImage(description: question.isEmpty ? nil : question)
-            question = ""
-          }
-        } label: {
-          Image(systemName: "sparkles")
-            .font(DesignTokens.Typography.metric())
-            .foregroundStyle(.white.opacity(0.85))
-        }
-        .disabled(aiActionsDisabled)
-        .help("Generate image from weather + prompt")
       }
       .disabled(aiActionsDisabled)
     }
@@ -506,11 +432,11 @@ private struct GrokAIViewContent: View {
   private func stormNotesSheet(viewModel: GrokAIViewModel) -> some View {
     NavigationStack {
       VStack(alignment: .leading, spacing: 16) {
-        Text("Add optional notes about what you see (wall cloud, rotation, hail size, etc.)")
+        Text(SkyCheckDeskCopy.notesHelper)
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(.secondary)
 
-        TextField("Observer notes (optional)", text: $stormNotes, axis: .vertical)
+        TextField(SkyCheckDeskCopy.notesPlaceholder, text: $stormNotes, axis: .vertical)
           .lineLimit(2...5)
           .textFieldStyle(.plain)
           .padding(12)
@@ -529,7 +455,7 @@ private struct GrokAIViewContent: View {
           }
         }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Analyze") {
+          Button(SkyCheckDeskCopy.notesConfirm) {
             guard let imageData = pendingImageData else { return }
             let notes = stormNotes.trimmingCharacters(in: .whitespacesAndNewlines)
             showNotesSheet = false
@@ -794,6 +720,14 @@ private struct GrokAIViewContent: View {
       }
     }
     .preferredColorScheme(.dark)
+  }
+
+  private func skyCheckPhotoCTATitle(viewModel: GrokAIViewModel) -> String {
+    let completed =
+      viewModel.lastStormImageData != nil
+      && !viewModel.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      && !viewModel.stormAnalysisMode
+    return completed ? SkyCheckDeskCopy.checkAnotherCTA : SkyCheckDeskCopy.photoCTA
   }
 
   private func askQuickPrompt(_ prompt: String, viewModel: GrokAIViewModel) {

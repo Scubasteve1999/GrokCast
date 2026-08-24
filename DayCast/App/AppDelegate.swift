@@ -130,7 +130,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     )
     let askGrok = UNNotificationAction(
       identifier: "OPEN_GROK",
-      title: "Ask AI",
+      title: SkyCheckDeskCopy.landingActionTitle,
       options: [.foreground]
     )
     let morningBrief = UNNotificationCategory(

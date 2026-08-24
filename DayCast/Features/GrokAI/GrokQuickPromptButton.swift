@@ -70,7 +70,7 @@ struct GrokQuickPromptButton: View {
 }
 
 #Preview {
-  GrokQuickPromptButton(title: "What should I wear?") {
+  GrokQuickPromptButton(title: SkyCheckDeskCopy.outlook.title) {
     // action
   }
   .padding()

@@ -41,6 +41,7 @@ struct GrokInputBar: View {
         .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .focused($isFocused)
+        .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
         .lineLimit(1...4)
         .submitLabel(.send)
         .onSubmit {
@@ -71,6 +72,7 @@ struct GrokInputBar: View {
         .textFieldStyle(.plain)
         .font(DesignTokens.Typography.body())
         .focused($isFocused)
+        .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(

@@ -117,7 +117,6 @@ struct AppStoreScreenshotGrok: View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
           screenshotTile("Threat check", icon: "exclamationmark.triangle.fill")
           screenshotTile("Outside now?", icon: "car.fill")
-          screenshotTile("Radar read", icon: "dot.radiowaves.right")
           screenshotTile("Outlook", icon: "cloud.bolt.fill")
         }
         VStack(alignment: .leading, spacing: 8) {

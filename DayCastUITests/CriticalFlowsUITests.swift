@@ -102,7 +102,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     // The More hub is the only in-app path into the Grok tab (it has no CompactTabBar item).
     openMoreHubThen(.grok)
 
-    let analyze = app.buttons["Analyze Storm Photo"]
+    let analyze = app.buttons["Check this sky"]
     let stormHeader = app.staticTexts.matching(
       NSPredicate(format: "label CONTAINS[c] %@", "SKY CHECK")
     ).firstMatch

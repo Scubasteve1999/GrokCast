@@ -131,7 +131,7 @@ enum GrokPrompts {
     }
 
     if let notes = userNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
-      context += "\n\nObserver notes: \(notes)"
+      context += "\n\nUser notes: \(notes)"
     }
 
     return context
@@ -232,5 +232,33 @@ enum GrokPrompts {
       """
 
     return prompt
+  }
+
+  /// Chat-desk identity. Not field-first / chase / SRV. Do not invent radar reads.
+  static let skyCheckChatIdentity = """
+    You are Sky Check in DayCast — an honest weather desk for the public. \
+    Answer questions about the sky, hazards, timing, and what to watch next. \
+    Do not invent radar reads or warnings.
+    """
+
+  static func skyCheckChatSystemPrompt(
+    conditionsBlock: String?,
+    alertLines: String = "",
+    severeExtra: String = ""
+  ) -> String {
+    guard let conditionsBlock else {
+      return """
+        \(skyCheckChatIdentity) \
+        Lifestyle advice only if the user asks. Be concise. Do not invent warnings.
+        """
+    }
+    return """
+      \(skyCheckChatIdentity) \
+      Lifestyle advice (outfits, walks) only if the user asks.
+
+      \(conditionsBlock)
+      \(alertLines)\(severeExtra)
+      Be concise and practical. Lead with what's happening and what to watch next. Do not invent warnings.
+      """
   }
 }

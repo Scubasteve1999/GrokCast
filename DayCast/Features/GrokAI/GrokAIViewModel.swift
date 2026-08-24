@@ -409,11 +409,7 @@ final class GrokAIViewModel {
 
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
-      return """
-        You are Sky Check in DayCast — field-first weather intelligence \
-        for people watching severe weather. Prioritize hazards, timing, and radar cues. \
-        Lifestyle advice only if the user asks. Be concise. Do not invent warnings.
-        """
+      return GrokPrompts.skyCheckChatSystemPrompt(conditionsBlock: nil)
     }
 
     let location = weatherStore.currentLocation?.name ?? "your location"
@@ -435,15 +431,11 @@ final class GrokAIViewModel {
       GrokPrompts.severeContextBlock(context: SevereWeatherStore.shared.context)
       .map { "\n\($0)\n" } ?? ""
 
-    return """
-      You are Sky Check in DayCast — field-first weather intelligence \
-      for people watching severe weather. Prioritize hazards, timing, radar cues, \
-      and actionable monitoring. Lifestyle advice (outfits, walks) only if the user asks.
-
-      \(conditions)
-      \(alertLines)\(severeExtra)
-      Be concise and practical. Lead with risk and what to watch next. Do not invent warnings.
-      """
+    return GrokPrompts.skyCheckChatSystemPrompt(
+      conditionsBlock: conditions,
+      alertLines: alertLines,
+      severeExtra: severeExtra
+    )
   }
 
   private func isImageGenerationRequest(_ text: String) -> Bool {

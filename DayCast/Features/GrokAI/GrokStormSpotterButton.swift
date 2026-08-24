@@ -3,7 +3,7 @@
 //
 //  Extracted from GrokAIView.swift:191 (quickPromptsSection; original inline structs ~341).
 //  Button used to trigger storm photo analysis in GrokAI.
-//  Visuals/behavior identical (composition in horizontal scroll row); "Analyze Storm Photo" label per verbatim provided extraction body.
+//  Visuals/behavior identical (composition in horizontal scroll row); public CTA is a civilian sky/photo verb.
 //
 
 import SwiftUI
@@ -17,7 +17,7 @@ struct GrokStormSpotterButton: View {
         Image(systemName: "photo")
           .font(DesignTokens.Typography.subsection())
 
-        Text("Analyze Storm Photo")
+        Text(SkyCheckDeskCopy.photoCTA)
           .font(DesignTokens.Typography.subsection())
           .tracking(DesignTokens.Typography.cardLabelTracking)
       }

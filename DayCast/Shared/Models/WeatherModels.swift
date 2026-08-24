@@ -58,7 +58,7 @@ struct ChatMessage: Identifiable, Equatable {
   /// Caption for a Sky Check photo turn in the city thread.
   static func stormSpotterUserCaption(locationName: String?, notes: String?) -> String {
     let place = locationName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    var text = "Analyze this storm photo"
+    var text = SkyCheckDeskCopy.photoTurnCaption
     if !place.isEmpty {
       text += " (\(place))"
     }
@@ -90,33 +90,3 @@ struct ChatMessage: Identifiable, Equatable {
   }
 }
 
-enum QuickPrompt: String, CaseIterable, Identifiable {
-  case grokTake = "Today's Take"
-  case outfit = "What to Wear"
-  case activity = "Good for a Walk?"
-  case weekend = "Weekend Outlook"
-  case fun = "Fun Weather Fact"
-
-  var id: String { rawValue }
-  var icon: String {
-    switch self {
-    case .grokTake: "sparkles"
-    case .outfit: "tshirt"
-    case .activity: "figure.walk"
-    case .weekend: "calendar"
-    case .fun: "lightbulb"
-    }
-  }
-  var prompt: String {
-    switch self {
-    case .grokTake: "Give me a short, witty Grok-style summary of today's weather and vibe."
-    case .outfit:
-      "Based on the current weather, temperature, wind, and UV, recommend what I should wear today. Be specific and fun."
-    case .activity:
-      "Is today a good day for an outdoor walk or hike? Consider temperature, precipitation chance, wind, and air quality if available. Give a yes/no with reason."
-    case .weekend: "Summarize the weekend forecast in 2-3 sentences with activity suggestions."
-    case .fun:
-      "Tell me one interesting or surprising fact about today's weather or season in this location."
-    }
-  }
-}

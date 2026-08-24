@@ -38,7 +38,7 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertTrue(allowed)
     XCTAssertEqual(
       GrokAccessRules.moreHubGrokSubtitle(canUseAI: allowed),
-      "Photo analysis, briefings, and chat")
+      "Photo check and weather questions")
     XCTAssertFalse(
       GrokAccessRules.moreHubGrokSubtitle(canUseAI: allowed)
         .localizedCaseInsensitiveContains("key"))

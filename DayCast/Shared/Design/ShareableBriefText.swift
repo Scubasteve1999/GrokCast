@@ -53,7 +53,7 @@ enum ShareableBriefText {
       "",
     ]
     if let notes = observerNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
-      lines.append("Observer notes: \(notes)")
+      lines.append("Notes: \(notes)")
       lines.append("")
     }
     lines.append(analysis)
