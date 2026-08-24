@@ -54,7 +54,7 @@ final class LocalBriefingParserTests: XCTestCase {
 
   // MARK: - AFD KEY MESSAGES
 
-  func testAFDMEGKeyMessagesYieldsFirstBulletAndProductURL() {
+  func testAFDMEGKeyMessagesYieldsBothBulletsAndSharedProductURL() {
     let issued = now.addingTimeInterval(-2 * 3600)
     let items = LocalBriefingParser.assemble(
       cwa: "MEG",
@@ -65,19 +65,30 @@ final class LocalBriefingParserTests: XCTestCase {
       pns: [],
       now: now
     )
-    XCTAssertEqual(items.count, 1)
-    let card = items[0]
-    XCTAssertEqual(card.id, "afd-d7681823-d4be-4d15-93b2-e5d65d79dd0a")
+    XCTAssertEqual(items.count, 2)
+    let first = items[0]
+    let second = items[1]
+    XCTAssertEqual(first.id, "afd-d7681823-d4be-4d15-93b2-e5d65d79dd0a-km0")
     XCTAssertEqual(
-      card.title,
+      first.title,
       "Shower and thunderstorm chances increase late tonight into Monday, with organized severe weather not expected."
     )
-    XCTAssertEqual(card.sourceName, "NWS Memphis")
-    XCTAssertEqual(card.productCode, "AFD")
-    XCTAssertEqual(card.officeID, "MEG")
-    XCTAssertTrue(card.url.absoluteString.contains("issuedby=MEG"), card.url.absoluteString)
-    XCTAssertTrue(card.url.absoluteString.contains("product=AFD"), card.url.absoluteString)
-    XCTAssertEqual(card.relativeIssuedLabel(relativeTo: now), "2h ago")
+    XCTAssertEqual(second.id, "afd-d7681823-d4be-4d15-93b2-e5d65d79dd0a-km1")
+    XCTAssertEqual(
+      second.title,
+      "Additional chances for showers and thunderstorms are expected through midweek."
+    )
+    for card in items {
+      XCTAssertEqual(card.sourceName, "NWS Memphis")
+      XCTAssertEqual(card.productCode, "AFD")
+      XCTAssertEqual(card.officeID, "MEG")
+      XCTAssertTrue(card.url.absoluteString.contains("issuedby=MEG"), card.url.absoluteString)
+      XCTAssertTrue(card.url.absoluteString.contains("product=AFD"), card.url.absoluteString)
+      XCTAssertFalse(card.title.contains("Desert Southwest"))
+      XCTAssertFalse(card.title.localizedCaseInsensitiveContains("DISCUSSION"))
+    }
+    XCTAssertEqual(first.url, second.url)
+    XCTAssertEqual(first.relativeIssuedLabel(relativeTo: now), "2h ago")
   }
 
   func testAFDWithoutKeyMessagesYieldsNoItem() {
@@ -112,7 +123,7 @@ final class LocalBriefingParserTests: XCTestCase {
       pns: [],
       now: now
     )
-    XCTAssertEqual(items.count, 1)
+    XCTAssertEqual(items.count, 2)
   }
 
   // MARK: - PNS filter
@@ -180,9 +191,91 @@ final class LocalBriefingParserTests: XCTestCase {
       now: now
     )
     XCTAssertEqual(items.count, 3)
+    XCTAssertEqual(items.map(\.productCode), ["AFD", "AFD", "PNS"])
+    XCTAssertEqual(items[2].title, "NWS Damage Survey for 08/16/26 Tornado Event")
+  }
+
+  func testThreeKeyMessagesFillRailWithoutPNS() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (
+        id: "afd-3", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithThreeKeyMessages
+      ),
+      pns: [
+        (id: "survey", issuedAt: now.addingTimeInterval(-3600), text: Self.pnsStormSurvey)
+      ],
+      now: now
+    )
+    XCTAssertEqual(items.count, 3)
+    XCTAssertEqual(items.map(\.productCode), ["AFD", "AFD", "AFD"])
+    XCTAssertEqual(items.map(\.id), ["afd-afd-3-km0", "afd-afd-3-km1", "afd-afd-3-km2"])
+    XCTAssertFalse(items.contains { $0.productCode == "PNS" })
+  }
+
+  func testDuplicateKeyMessageTitleIsSkipped() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (
+        id: "dup", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithDuplicateKeyMessages
+      ),
+      pns: [],
+      now: now
+    )
+    XCTAssertEqual(items.count, 2)
+    XCTAssertEqual(items.map(\.id), ["afd-dup-km0", "afd-dup-km2"])
+    XCTAssertEqual(items[0].title, "Heat continues through the weekend.")
+    XCTAssertEqual(items[1].title, "Storm chances return Monday.")
+  }
+
+  func testPNSTitleMatchingKeyMessageIsDeduped() {
+    let matchingHeadline = "Flash flood risk rises Monday along slow-moving storms"
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (id: "match", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithOneKeyMessage),
+      pns: [
+        (
+          id: "dup-pns", issuedAt: now.addingTimeInterval(-3600),
+          text: Self.pnsWithHeadline(matchingHeadline)
+        )
+      ],
+      now: now
+    )
+    XCTAssertEqual(items.count, 1)
     XCTAssertEqual(items[0].productCode, "AFD")
-    XCTAssertEqual(items[1].productCode, "PNS")
-    XCTAssertEqual(items[2].productCode, "PNS")
+    XCTAssertEqual(items[0].id, "afd-match-km0")
+    XCTAssertFalse(items.contains { $0.productCode == "PNS" })
+  }
+
+  func testPNSFillsRemainingSlotsWhenFewerThanThreeKeyMessages() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (id: "afd-1", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithKeyMessages),
+      pns: [
+        (id: "flood-watch", issuedAt: now.addingTimeInterval(-3600), text: Self.pnsFloodWatch)
+      ],
+      now: now
+    )
+    XCTAssertEqual(items.map(\.productCode), ["AFD", "AFD", "PNS"])
+    XCTAssertEqual(items[2].id, "pns-flood-watch")
+    XCTAssertEqual(items[2].title, "Flash Flood Watch for the Mid-South")
+  }
+
+  func testAssembledThunderstormKeyMessagesGetUniqueHeroes() {
+    let items = LocalBriefingParser.assemble(
+      cwa: "MEG",
+      officeName: "Memphis, TN",
+      afd: (id: "heroes", issuedAt: now.addingTimeInterval(-1800), text: Self.afdWithKeyMessages),
+      pns: [],
+      now: now
+    )
+    XCTAssertEqual(
+      LocalBriefingHero.uniqueHeroes(for: items.map(\.title)),
+      [.storm, .lightning]
+    )
   }
 
   func testOfficeNameFallbackIsNWSCWA() {
@@ -344,6 +437,65 @@ final class LocalBriefingParserTests: XCTestCase {
     Southwest. Do not dump this as a briefing card.
     """
 
+  private static let afdWithThreeKeyMessages = """
+    000
+    FXUS64 KMEG 232334
+    AFDMEG
+
+    Area Forecast Discussion
+    National Weather Service Memphis TN
+    634 PM CDT Sun Aug 23 2026
+
+    .KEY MESSAGES...
+
+    - Heat continues through the weekend with little relief overnight.
+
+    - Flash flood risk rises Monday along slow-moving storms.
+
+    - Overnight fog is possible in low-lying areas midweek.
+
+    &&
+
+    .DISCUSSION...
+    Do not dump this as a briefing card.
+    """
+
+  private static let afdWithDuplicateKeyMessages = """
+    000
+    FXUS64 KMEG 232334
+    AFDMEG
+
+    Area Forecast Discussion
+    National Weather Service Memphis TN
+    634 PM CDT Sun Aug 23 2026
+
+    .KEY MESSAGES...
+
+    - Heat continues through the weekend.
+
+    - Heat continues through the weekend.
+
+    - Storm chances return Monday.
+
+    &&
+    """
+
+  private static let afdWithOneKeyMessage = """
+    000
+    FXUS64 KMEG 232334
+    AFDMEG
+
+    Area Forecast Discussion
+    National Weather Service Memphis TN
+    634 PM CDT Sun Aug 23 2026
+
+    .KEY MESSAGES...
+
+    - Flash flood risk rises Monday along slow-moving storms
+
+    &&
+    """
+
   private static let afdWithoutKeyMessages = """
     000
     FXUS64 KMEG 232334
@@ -389,4 +541,34 @@ final class LocalBriefingParserTests: XCTestCase {
     The National Weather Service has surveyed damage from Saturday's
     storms across DeSoto County.
     """
+
+  private static let pnsFloodWatch = """
+    000
+    NOUS44 KMEG 232000
+    PNSMEG
+
+    Public Information Statement
+    National Weather Service Memphis TN
+    300 PM CDT Sun Aug 23 2026
+
+    ...Flash Flood Watch for the Mid-South...
+
+    Slow-moving storms may produce flooding in low-lying areas.
+    """
+
+  private static func pnsWithHeadline(_ headline: String) -> String {
+    """
+    000
+    NOUS44 KMEG 232000
+    PNSMEG
+
+    Public Information Statement
+    National Weather Service Memphis TN
+    300 PM CDT Sun Aug 23 2026
+
+    ...\(headline)...
+
+    Additional storm details follow.
+    """
+  }
 }

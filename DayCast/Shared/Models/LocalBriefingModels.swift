@@ -1,7 +1,7 @@
 import Foundation
 
 /// One NWS office product card on Alerts → Local briefing.
-/// Stable ids (`afd-{productId}` / `pns-{productId}`). Never `UUID()`.
+/// Stable ids (`afd-{productId}-km{index}` / `pns-{productId}`). Never `UUID()`.
 struct LocalBriefingItem: Identifiable, Codable, Equatable, Sendable {
   let id: String
   let title: String
@@ -72,7 +72,8 @@ enum LocalBriefingParser {
     return comps.url!
   }
 
-  /// First KEY MESSAGES bullet. Missing block → no AFD card (do not dump DISCUSSION).
+  /// First KEY MESSAGES bullet, or nil if the block is missing/empty.
+  /// Assemble uses the full `keyMessageBullets` list; this remains the one-line wrapper.
   static func firstKeyMessage(fromAFD text: String) -> String? {
     keyMessageBullets(fromAFD: text).first
   }
@@ -132,21 +133,26 @@ enum LocalBriefingParser {
     guard !trimmedCWA.isEmpty else { return [] }
     let source = sourceName(officeName: officeName, cwa: trimmedCWA)
     var items: [LocalBriefingItem] = []
+    var seenTitles = Set<String>()
 
-    if let afd, isAFDFresh(afd.issuedAt, now: now),
-      let title = firstKeyMessage(fromAFD: afd.text)
-    {
-      items.append(
-        LocalBriefingItem(
-          id: "afd-\(afd.id)",
-          title: title,
-          sourceName: source,
-          issuedAt: afd.issuedAt,
-          url: productPageURL(cwa: trimmedCWA, productCode: "AFD"),
-          productCode: "AFD",
-          officeID: trimmedCWA
+    if let afd, isAFDFresh(afd.issuedAt, now: now) {
+      let bullets = keyMessageBullets(fromAFD: afd.text)
+      for (index, title) in bullets.enumerated() {
+        if items.count >= maxCards { break }
+        guard !title.isEmpty, !seenTitles.contains(title) else { continue }
+        seenTitles.insert(title)
+        items.append(
+          LocalBriefingItem(
+            id: "afd-\(afd.id)-km\(index)",
+            title: title,
+            sourceName: source,
+            issuedAt: afd.issuedAt,
+            url: productPageURL(cwa: trimmedCWA, productCode: "AFD"),
+            productCode: "AFD",
+            officeID: trimmedCWA
+          )
         )
-      )
+      }
     }
 
     let sortedPNS = pns.sorted { $0.issuedAt > $1.issuedAt }
@@ -155,6 +161,8 @@ enum LocalBriefingParser {
       guard isPNSFresh(product.issuedAt, now: now) else { continue }
       guard let title = pnsHeadline(from: product.text), !title.isEmpty else { continue }
       guard shouldKeepPNS(title: title, body: product.text) else { continue }
+      guard !seenTitles.contains(title) else { continue }
+      seenTitles.insert(title)
       items.append(
         LocalBriefingItem(
           id: "pns-\(product.id)",
