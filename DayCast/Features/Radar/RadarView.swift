@@ -18,7 +18,7 @@ struct RadarView: View {
     store.currentLocation?.coordinate ?? SavedLocation.oliveBranch.coordinate
   }
 
-  /// On-map dBZ key follows the paint: National and N0B both floor at 15 green.
+  /// On-map dBZ key follows the paint: National floors at 15 green; Site N0B at 25.
   private var showsReflectivityColorbar: Bool {
     radarState.showRadarOverlay && !radarState.selectedProduct.isVelocityProduct
   }

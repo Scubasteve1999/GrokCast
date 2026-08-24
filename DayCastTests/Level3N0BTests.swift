@@ -17,15 +17,18 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(lut[146], 40, accuracy: 0.01)
   }
 
-  func testClearAirBytesAreTransparentAnd15GreenStays() {
+  func testClearAirBytesAreTransparentAnd25GreenStays() {
     let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
     let rgba = Level3N0BDecoder.rgbaLUT(from: lut)
+    XCTAssertEqual(Level3N0BDecoder.precipFloorDbz, 25, accuracy: 0.001)
     XCTAssertEqual(rgba[86].3, 0, "10 dBZ cyan floor must not paint")
     XCTAssertEqual(rgba[2].3, 0)
-    let a15 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15)
-    XCTAssertEqual(rgba[96].3, UInt8((a15 * 255).rounded()), "15 dBZ green stays, underlay alpha")
-    XCTAssertEqual(rgba[96].0, 0)
-    XCTAssertEqual(rgba[96].1, UInt8((255 * a15).rounded()), "15 dBZ is premul NWS #00FF00")
+    XCTAssertEqual(rgba[96].3, 0, "15 dBZ lime is below the Site paint floor")
+    XCTAssertEqual(rgba[106].3, 0, "20 dBZ is below the Site paint floor")
+    let a25 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25)
+    XCTAssertEqual(rgba[116].3, UInt8((a25 * 255).rounded()), "25 dBZ green stays, underlay alpha")
+    XCTAssertEqual(rgba[116].0, 0)
+    XCTAssertEqual(rgba[116].1, UInt8((144 * a25).rounded()), "25 dBZ is premul NWS #009000")
     let a40 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 40)
     XCTAssertEqual(rgba[146].0, UInt8((255 * a40).rounded()), "40 dBZ is premul NWS #FF9000")
     XCTAssertEqual(rgba[146].1, UInt8((144 * a40).rounded()))
@@ -97,9 +100,10 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(sweep.radials.count, 1)
     XCTAssertEqual(sweep.gateByte(rangeMeters: 100, azimuth: 90), 146)
     XCTAssertEqual(sweep.rgbaLUT[Int(86)].3, 0)
-    XCTAssertGreaterThan(sweep.rgbaLUT[Int(96)].3, 0)
-    XCTAssertLessThan(sweep.rgbaLUT[Int(96)].3, 255, "15 dBZ underlay is not fully opaque")
-    XCTAssertGreaterThan(sweep.rgbaLUT[Int(96)].3, 190, "15 dBZ fill is saturated")
+    XCTAssertEqual(sweep.rgbaLUT[Int(96)].3, 0, "15 dBZ is below the 25 dBZ paint floor")
+    XCTAssertGreaterThan(sweep.rgbaLUT[Int(116)].3, 0, "25 dBZ paints")
+    XCTAssertLessThan(sweep.rgbaLUT[Int(116)].3, 255, "25 dBZ underlay is not fully opaque")
+    XCTAssertGreaterThan(sweep.rgbaLUT[Int(116)].3, 220, "25 dBZ fill is saturated")
   }
 
   func testOrganizedPrecipIgnoresClearAirClutterRing() {
@@ -283,9 +287,11 @@ final class Level3N0BTests: XCTestCase {
 
     let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
     let rgba = Level3N0BDecoder.rgbaLUT(from: lut)
-    XCTAssertEqual(rgba[96].3, UInt8((0.80 * 255).rounded()))
-    XCTAssertGreaterThan(rgba[96].3, 190, "15 dBZ fill is saturated vs the faded 0.42 underlay")
-    XCTAssertLessThan(rgba[96].3, 255, "15 dBZ is not a fully solid sheet")
+    XCTAssertEqual(rgba[96].3, 0, "15 dBZ no longer paints on Site")
+    XCTAssertEqual(rgba[106].3, 0, "20 dBZ no longer paints on Site")
+    XCTAssertEqual(rgba[116].3, UInt8((0.90 * 255).rounded()))
+    XCTAssertGreaterThan(rgba[116].3, 220, "25 dBZ fill is saturated vs the faded 0.42 underlay")
+    XCTAssertLessThan(rgba[116].3, 255, "25 dBZ is not a fully solid sheet")
     let a45 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45)
     XCTAssertGreaterThan(a45, 0.9)
     let byte45 = 156
@@ -296,17 +302,17 @@ final class Level3N0BTests: XCTestCase {
   }
 
   func testPolarPremulTimesGlobalOpacityStaysPremul() {
-    let stopAlpha = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15)
+    let stopAlpha = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25)
     let global = RadarPreferences.defaultRadarOpacity
-    let premulG = (255.0 * stopAlpha).rounded()
+    let premulG = (144.0 * stopAlpha).rounded()
     let premulA = (stopAlpha * 255).rounded()
     let outG = premulG * global
     let outA = premulA * global
     XCTAssertGreaterThan(outA, 0)
     let unpremulG = outG / outA * 255
-    XCTAssertEqual(unpremulG, 255, accuracy: 2, "no wash / white rays from opacity multiply")
-    XCTAssertLessThan(outA / 255, 0.90, "15 dBZ * default slider still shows some underlay")
-    XCTAssertGreaterThan(outA / 255, 0.70, "15 dBZ fill stays strong after slider")
+    XCTAssertEqual(unpremulG, 144, accuracy: 2, "no wash / white rays from opacity multiply")
+    XCTAssertLessThan(outA / 255, 0.95, "25 dBZ * default slider still shows some underlay")
+    XCTAssertGreaterThan(outA / 255, 0.75, "25 dBZ fill stays strong after slider")
 
     let coreAlpha = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45)
     let coreA = (coreAlpha * 255).rounded() * global
@@ -361,14 +367,20 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertGreaterThan(outer, inner * 2.5, "far-range gates must be wider wedges")
   }
 
-  func testMetalMeshSkipsClearAirAndKeeps15Green() {
-    let sweep = Self.spokeSweep(azimuth: 90, byte: 96, bins: 40)
+  func testMetalMeshSkipsClearAirAndKeeps25Green() {
+    let light = Self.spokeSweep(azimuth: 90, byte: 96, bins: 40)
+    let lightMesh = Level3PolarGateMesh.build(sweep: light)
+    XCTAssertEqual(lightMesh.triangleCount, 0, "15 dBZ lime must not emit trapezoids")
+
+    let sweep = Self.spokeSweep(azimuth: 90, byte: 116, bins: 40)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
     XCTAssertGreaterThan(mesh.vertices.count, 0)
-    let a15 = UInt8((MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15) * 255).rounded())
-    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a == a15 })
+    let a25 = UInt8((MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25) * 255).rounded())
+    XCTAssertTrue(mesh.vertices.allSatisfy { $0.a == a25 })
     XCTAssertEqual(mesh.vertices.first?.r, 0)
-    XCTAssertEqual(mesh.vertices.first?.g, a15, "premul #00FF00")
+    XCTAssertEqual(
+      mesh.vertices.first?.g, UInt8((144 * MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25)).rounded()),
+      "premul #009000")
 
     let clear = Self.spokeSweep(azimuth: 90, byte: 86, bins: 40)
     let empty = Level3PolarGateMesh.build(sweep: clear)
@@ -408,11 +420,11 @@ final class Level3N0BTests: XCTestCase {
 
     var pattern = [UInt8](repeating: 0, count: 16)
     pattern[8] = 146
-    pattern[9] = 96
-    pattern[10] = 96
+    pattern[9] = 116
+    pattern[10] = 116
     let sweep = Self.spokeSweep(azimuth: 90, byte: 146, bins: 16, gatePattern: pattern)
     let mesh = Level3PolarGateMesh.build(sweep: sweep)
-    XCTAssertEqual(mesh.triangleCount, 4, "same-byte 96 run still merges; 146 stays its own trap")
+    XCTAssertEqual(mesh.triangleCount, 4, "same-byte 116 run still merges; 146 stays its own trap")
     XCTAssertEqual(mesh.vertices.count, 12)
 
     for t in 0..<2 {

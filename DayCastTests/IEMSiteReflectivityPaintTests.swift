@@ -28,7 +28,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
   }
 
   func testKeysCyanBlueAndDustyClearAirKeepsPrecip() {
-    // NWS 16-level: 0/5/10 dBZ cyan-blue are clutter. 15 dBZ green is rain.
+    // NWS 16-level: 0/5/10 cyan-blue plus 15–20 lime are clutter. 25 dBZ is rain.
     XCTAssertTrue(clutter(0x00, 0xEC, 0xEC))  // 0 dBZ cyan
     XCTAssertTrue(clutter(0x01, 0xA0, 0xF6))  // 5 dBZ blue
     XCTAssertTrue(clutter(0x00, 0x00, 0xF6))  // 10 dBZ blue
@@ -42,11 +42,12 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertTrue(clutter(0x52, 0xD6, 0xA2))
     XCTAssertTrue(clutter(0x43, 0xD6, 0x7E))
     XCTAssertTrue(clutter(0x3C, 0xD6, 0x6D))
+    XCTAssertTrue(clutter(0x00, 0xFF, 0x00))  // 15 dBZ lime — Site floor 25
+    XCTAssertTrue(clutter(0x00, 0xC8, 0x00))  // 20 dBZ
+    XCTAssertTrue(clutter(0x11, 0xD5, 0x18))  // IEM 15 green
+    XCTAssertTrue(clutter(0x35, 0xD6, 0x5B))
 
-    XCTAssertFalse(clutter(0x00, 0xFF, 0x00))  // 15 dBZ green
-    XCTAssertFalse(clutter(0x00, 0xC8, 0x00))  // 20 dBZ
-    XCTAssertFalse(clutter(0x11, 0xD5, 0x18))  // IEM bright green
-    XCTAssertFalse(clutter(0x35, 0xD6, 0x5B))
+    XCTAssertFalse(clutter(0x00, 0x90, 0x00))  // 25 dBZ dark green
     XCTAssertFalse(clutter(0xFF, 0xFF, 0x00))  // yellow
     XCTAssertFalse(clutter(0xFF, 0x90, 0x00))  // orange
     XCTAssertFalse(clutter(0xFF, 0x00, 0x00))  // red
@@ -60,7 +61,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
   }
 
   func testKeysIsolatedGreenGateKeepsOrganizedRain() {
-    // 8x8: isolated green speckle, 3x3 rain cell, cyan haze, yellow core.
+    // 8x8: isolated 15 lime speckle, 3x3 25 dBZ cell, cyan haze, yellow core.
     var pixels = [UInt8](repeating: 0, count: 8 * 8 * 4)
     func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
       let o = (y * 8 + x) * 4
@@ -69,10 +70,10 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       pixels[o + 2] = b
       pixels[o + 3] = 255
     }
-    set(1, 1, r: 0x11, g: 0xD5, b: 0x18)  // isolated light gate
+    set(1, 1, r: 0x11, g: 0xD5, b: 0x18)  // isolated 15 dBZ lime
     for y in 4...6 {
       for x in 4...6 {
-        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+        set(x, y, r: 0x00, g: 0x90, b: 0x00)
       }
     }
     set(0, 0, r: 0x01, g: 0xA0, b: 0xF6)  // cyan clutter
@@ -89,16 +90,16 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       return (out[o], out[o + 1], out[o + 2])
     }
 
-    XCTAssertEqual(alpha(1, 1), 0, "isolated green gate must drop")
+    XCTAssertEqual(alpha(1, 1), 0, "isolated 15 dBZ lime must drop")
     XCTAssertEqual(alpha(0, 0), 0, "cyan clutter must drop")
     XCTAssertEqual(alpha(7, 0), 0, "slate clutter must drop")
-    XCTAssertEqual(alpha(5, 5), 255, "organized green rain must stay")
-    XCTAssertEqual(rgb(5, 5).1, 0xD5)
+    XCTAssertEqual(alpha(5, 5), 255, "organized 25 dBZ green must stay")
+    XCTAssertEqual(rgb(5, 5).1, 0x90)
     XCTAssertEqual(alpha(3, 5), 255, "organized yellow must stay")
     XCTAssertEqual(rgb(3, 5).0, 0xFF)
   }
 
-  func testKeysKhakiLeakAndTealFringeKeepsOrganizedFifteenGreen() {
+  func testKeysKhakiLeakAndTealFringeKeepsOrganizedTwentyFiveGreen() {
     var pixels = [UInt8](repeating: 0, count: 8 * 8 * 4)
     func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
       let o = (y * 8 + x) * 4
@@ -107,14 +108,14 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       pixels[o + 2] = b
       pixels[o + 3] = 255
     }
-    // Organized 15 dBZ green cell.
+    // Organized 25 dBZ dark-green cell.
     for y in 4...6 {
       for x in 4...6 {
-        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+        set(x, y, r: 0x00, g: 0x90, b: 0x00)
       }
     }
-    set(5, 3, r: 0x35, g: 0xD6, b: 0x5B)  // IEM bright green attached
-    set(5, 4, r: 0xFF, g: 0xFF, b: 0x00)  // yellow core — 15 dBZ fringe stays
+    set(5, 3, r: 0x35, g: 0xD6, b: 0x5B)  // IEM 15–20 lime attached — keys out
+    set(5, 4, r: 0xFF, g: 0xFF, b: 0x00)  // yellow core — 25 dBZ fringe stays
     set(1, 1, r: 0xA3, g: 0xA0, b: 0x68)  // khaki leak
     set(2, 1, r: 0xB0, g: 0xAF, b: 0x7E)
     set(0, 6, r: 0x59, g: 0xD6, b: 0xB3)  // teal fringe
@@ -136,16 +137,18 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertEqual(alpha(0, 6), 0, "teal fringe must drop")
     XCTAssertEqual(alpha(1, 6), 0, "mint-teal fringe must drop")
     XCTAssertEqual(alpha(7, 7), 0, "isolated orange gate must drop")
-    XCTAssertEqual(alpha(5, 5), 255, "organized 15 dBZ green must stay")
-    XCTAssertEqual(rgb(5, 5).1, 0xD5)
-    XCTAssertEqual(alpha(5, 3), 255, "organized IEM bright green must stay")
-    XCTAssertEqual(rgb(5, 3).1, 0xD6)
+    XCTAssertEqual(alpha(5, 3), 0, "15–20 IEM lime is below the Site paint floor")
+    XCTAssertEqual(alpha(5, 5), 255, "organized 25 dBZ green must stay")
+    XCTAssertEqual(rgb(5, 5).1, 0x90)
+    XCTAssertEqual(alpha(5, 4), 255, "yellow core must stay")
+    XCTAssertEqual(rgb(5, 4).0, 0xFF)
   }
 
   func testKeysBiologicalGreenMixedIntoClearAirKeepsOrganizedRain() {
     // 16×16 cyan sweep (IEM clear-air) with a 4×4 15 dBZ green bloom in
-    // the middle — that is KNQA biological, not rain. A 3×3 green cell on
-    // transparent air in the corner is light rain and must stay.
+    // the middle — that is KNQA biological, not rain. A 3×3 25 dBZ cell on
+    // transparent air in the corner is rain and must stay. Light 15 lime
+    // attached to yellow is now below the paint floor.
     let side = 16
     var pixels = [UInt8](repeating: 0, count: side * side * 4)
     func set(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
@@ -155,7 +158,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       pixels[o + 2] = b
       pixels[o + 3] = 255
     }
-    // Right half: cyan clear-air + 4×4 biological green.
+    // Right half: cyan clear-air + 4×4 biological 15 dBZ green.
     for y in 0..<side {
       for x in 8..<side {
         set(x, y, r: 0x60, g: 0xB4, b: 0xD4)
@@ -166,13 +169,14 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
         set(x, y, r: 0x11, g: 0xD5, b: 0x18)
       }
     }
-    // Left half stays transparent with an organized 3×3 rain cell + yellow core.
+    // Left: 25 dBZ cell + yellow core. Extra 15 lime on the fringe must drop.
     for y in 1...3 {
       for x in 1...3 {
-        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+        set(x, y, r: 0x00, g: 0x90, b: 0x00)
       }
     }
     set(2, 2, r: 0xFF, g: 0xFF, b: 0x00)
+    set(0, 1, r: 0x11, g: 0xD5, b: 0x18)
 
     let png = makePNG(width: side, height: side, rgba: pixels)
     let keyed = IEMSiteReflectivityPaint.keyClutter(in: png)
@@ -181,20 +185,29 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
 
     XCTAssertEqual(alpha(11, 7), 0, "biological 15 dBZ green in cyan bloom must drop")
     XCTAssertEqual(alpha(10, 6), 0, "bloom edge green must drop")
-    XCTAssertEqual(alpha(1, 1), 255, "15 dBZ green attached to a yellow core must stay")
+    XCTAssertEqual(alpha(0, 1), 0, "15 dBZ lime attached to a cell is below the paint floor")
+    XCTAssertEqual(alpha(1, 1), 255, "25 dBZ green attached to a yellow core must stay")
     XCTAssertEqual(alpha(2, 2), 255, "yellow storm core must stay")
-    XCTAssertFalse(
+    XCTAssertTrue(
       IEMSiteReflectivityPaint.isClutterStop(red: 0x11, green: 0xD5, blue: 0x18, alpha: 255),
-      "do not invent a dBZ < 20 chroma cutoff"
+      "15 dBZ IEM lime is below the Site paint floor"
+    )
+    XCTAssertTrue(
+      IEMSiteReflectivityPaint.isClutterStop(red: 0x00, green: 0xFF, blue: 0x00, alpha: 255))
+    XCTAssertTrue(
+      IEMSiteReflectivityPaint.isClutterStop(red: 0x00, green: 0xC8, blue: 0x00, alpha: 255))
+    XCTAssertFalse(
+      IEMSiteReflectivityPaint.isClutterStop(red: 0x00, green: 0x90, blue: 0x00, alpha: 255),
+      "25 dBZ dark green stays"
     )
     XCTAssertFalse(
-      IEMSiteReflectivityPaint.isStormCore(red: 0x11, green: 0xD5, blue: 0x18, alpha: 255))
+      IEMSiteReflectivityPaint.isStormCore(red: 0x00, green: 0x90, blue: 0x00, alpha: 255))
     XCTAssertTrue(
       IEMSiteReflectivityPaint.isStormCore(red: 0xFF, green: 0xFF, blue: 0x00, alpha: 255))
   }
 
   func testRefinesOverzoomedGatesWithoutMixingBins() {
-    // 32×32 nearest-upsampled 2×2 gates (IEM z10). Organized 15 dBZ green
+    // 32×32 nearest-upsampled 2×2 gates (IEM z10). Organized 25 dBZ green
     // with a yellow core. Interiors stay discrete; rain/clear edges AA.
     let side = 32
     var pixels = [UInt8](repeating: 0, count: side * side * 4)
@@ -207,7 +220,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     }
     for y in 8..<24 {
       for x in 8..<24 {
-        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+        set(x, y, r: 0x00, g: 0x90, b: 0x00)
       }
     }
     for y in 14..<18 {
@@ -233,9 +246,9 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
 
     let green = pixel(10, 10)
     XCTAssertEqual(green.a, 255)
-    XCTAssertEqual(green.r, 0x11)
-    XCTAssertEqual(green.g, 0xD5)
-    XCTAssertEqual(green.b, 0x18)
+    XCTAssertEqual(green.r, 0x00)
+    XCTAssertEqual(green.g, 0x90)
+    XCTAssertEqual(green.b, 0x00)
 
     var edgeAA = false
     var lime = false
@@ -244,7 +257,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
         let p = pixel(x, y)
         if p.a > 0 && p.a < 255 { edgeAA = true }
         // Green+yellow mix that is not either stop.
-        let isGreen = p.r == 0x11 && p.g == 0xD5 && p.b == 0x18
+        let isGreen = p.r == 0x00 && p.g == 0x90 && p.b == 0x00
         let isYellow = p.r == 0xFF && p.g == 0xFF && p.b == 0x00
         if p.a == 255 && !isGreen && !isYellow {
           lime = true
@@ -252,7 +265,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
       }
     }
     XCTAssertTrue(edgeAA, "rain/clear boundary must anti-alias")
-    XCTAssertFalse(lime, "must not paint pastel smear between 15 and 30 dBZ")
+    XCTAssertFalse(lime, "must not paint pastel smear between 25 and 30 dBZ")
   }
 
   func testDoesNotRefineNativeOnePixelGates() {
@@ -267,7 +280,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     }
     for y in 8...20 {
       for x in 8...20 {
-        set(x, y, r: 0x11, g: 0xD5, b: 0x18)
+        set(x, y, r: 0x00, g: 0x90, b: 0x00)
       }
     }
     set(14, 14, r: 0xFF, g: 0xFF, b: 0x00)
@@ -321,7 +334,7 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     let greenPNG = makePNG(width: 8, height: 8, rgba: green)
     XCTAssertLessThan(
       IEMSiteReflectivityPaint.organizedPrecipPixelCount(in: greenPNG), 6,
-      "post–clutter-key 15 dBZ green does not count as wet; one yellow speckle is not a cell")
+      "post–clutter-key light green does not count as wet; one yellow speckle is not a cell")
     XCTAssertFalse(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: greenPNG, minPixels: 6))
 
     var wet = [UInt8](repeating: 0, count: 8 * 8 * 4)

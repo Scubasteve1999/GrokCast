@@ -22,9 +22,10 @@ enum MapsGLRadarPalette {
 
   /// Official NWS 16-level hex. 0/5/10 dBZ cyan-blue stay alpha 0 so National
   /// and MapsGL do not paint a blue clear-air skirt (bilinear + LUT-snap
-  /// grew one when 5/10 were opaque). Visible rain floors at 15 green.
+  /// grew one when 5/10 were opaque). National visible rain floors at 15 green.
   /// 20+ dBZ is solid so yellow/orange/red/purple cores punch.
-  /// Site Doppler uses `polarUnderlayAlpha(forDbz:)` (same hex, stronger fill).
+  /// Site Doppler paint/legend floors at `Level3N0BDecoder.precipFloorDbz` (25)
+  /// and uses `polarUnderlayAlpha(forDbz:)` (same hex, stronger fill).
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
     Stop(dbz: 5, hex: "#01A0F6", alpha: 0),
@@ -127,24 +128,31 @@ enum MapsGLRadarPalette {
   }
 
   /// Painted bands only — skip alpha-0 stops so the key matches the map.
-  /// National and N0B both key 0/5/10 cyan-blue. `keysClearAir: true` is the
-  /// site-product legend (same 15+ floor; skips the motion-tracks a11y note).
+  /// National floors at 15 green (`keysClearAir: false`). Site N0B
+  /// (`keysClearAir: true`) floors at `Level3N0BDecoder.precipFloorDbz` (25)
+  /// so the colorbar does not advertise the clear-air lime we no longer paint.
   static var visibleReflectivityStops: [Stop] {
     paintedReflectivityStops(keysClearAir: false)
   }
 
   static func paintedReflectivityStops(keysClearAir: Bool) -> [Stop] {
     if keysClearAir {
-      return reflectivityStops.filter { $0.dbz >= 15 }
+      return reflectivityStops.filter {
+        $0.dbz >= Double(Level3N0BDecoder.precipFloorDbz)
+      }
     }
     return reflectivityStops.filter { $0.alpha > 0 }
   }
 
   /// Compact ticks a phone can read. Every value is a real painted stop.
+  /// National mosaic — starts at 15 green.
   static let legendTickDbz: [Double] = [15, 20, 35, 50, 65, 70]
 
   static func legendTicks(keysClearAir: Bool) -> [Double] {
-    keysClearAir ? [15, 30, 45, 60, 70] : legendTickDbz
+    if keysClearAir {
+      return [Double(Level3N0BDecoder.precipFloorDbz), 30, 45, 60, 70]
+    }
+    return legendTickDbz
   }
 
   static func shouldUseMapsGL(

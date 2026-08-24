@@ -642,7 +642,7 @@ struct RadarMiniLegend: View {
   }
 
   var showsVelocity: Bool
-  /// N0B and National both key 0/5/10 cyan-blue; legend starts at 15 green.
+  /// National starts at 15 green; Site N0B (`keysClearAir`) starts at 25.
   var keysClearAir: Bool = false
   var style: Style = .panel
 
@@ -737,7 +737,8 @@ struct RadarMiniLegend: View {
 }
 
 /// Vertical dBZ key on Live Radar. Stops match the paint: 0/5/10 cyan-blue
-/// are keyed out on National and N0B, so the legend starts at 15 green.
+/// are keyed out on both products. National starts at 15 green; Site N0B
+/// (`keysClearAir`) starts at 25 so the bar matches the raised paint floor.
 struct RadarMapColorbar: View {
   var keysClearAir: Bool = false
 

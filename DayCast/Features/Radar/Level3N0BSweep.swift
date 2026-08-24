@@ -19,7 +19,7 @@ struct Level3N0BSweep {
   let azIndex: [UInt16]
   /// Packed dBZ for bytes 0...255. NaN = missing / range fold.
   let dbzLUT: [Float]
-  /// Premultiplied RGBA for each data byte after the 15 dBZ clutter key.
+  /// Premultiplied RGBA for each data byte after the 25 dBZ paint floor.
   let rgbaLUT: [(UInt8, UInt8, UInt8, UInt8)]
   let hasOrganizedPrecip: Bool
 

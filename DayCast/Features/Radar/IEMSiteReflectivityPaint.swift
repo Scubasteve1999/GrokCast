@@ -8,10 +8,13 @@ import UniformTypeIdentifiers
 /// the -32 to ~10 dBZ floor plus biological/ground clutter. MapsGL already
 /// zeros the 0/5/10 dBZ cyan-blue stops; this keys the matching baked pixels to
 /// transparent on the PNG before Mapbox paints. Isolated leftover gates
-/// (speckle) drop. Organized green/yellow/orange/red stays.
+/// (speckle) drop.
 ///
-/// Not a dBZ < 20 cutoff: 15 dBZ NWS green (`#00FF00` / IEM `#11D518`) keeps.
-/// Not opacity, blur, glow, or sat/hue retint.
+/// Paint floor matches polar N0B (`Level3N0BDecoder.precipFloorDbz` = 25):
+/// light 15–20 dBZ lime (`#00FF00` / `#00C800` / IEM `#11D518`) keys out so
+/// Site PNG cannot reintroduce the Memphis clear-air star. Dark 25 dBZ
+/// (`#009000`) and yellow+ stay. Not a second dBZ decoder — chroma/value
+/// keep rules only. Not opacity, blur, glow, or sat/hue retint.
 ///
 /// Past ~z9, IEM's own tiles are nearest-upsampled cartesian gates. After
 /// clutter-key, recover that native grid and palette-snap upsample so close
@@ -32,15 +35,19 @@ enum IEMSiteReflectivityPaint {
   /// IEM 15 dBZ green is hue ~122 (`#11D518`); `#35D65B` is ~134. Hue 138+
   /// is the 8-bit teal-cyan ramp toward 10 dBZ, not organized light rain.
   static let precipHueEnd: Double = 138
-  /// Biological bloom is 15 dBZ green mixed into the cyan/blue clear-air
+  /// Light 15–20 dBZ lime (NWS `#00FF00` val 100, `#00C800` val ~78, IEM
+  /// `#11D518` val ~84). Dark 25 dBZ `#009000` is val ~56 and stays.
+  static let lightPrecipGreenMinValue: Double = 68
+  /// Biological bloom is light green mixed into the cyan/blue clear-air
   /// sweep. A 5×5 neighborhood with more chroma-clutter than precip is not a
-  /// rain cell. Not a dBZ < 20 cutoff — 15 dBZ green attached to a cell stays.
+  /// rain cell. Light 15–20 lime is clutter even when attached to a cell
+  /// (matches polar floor 25).
   static let bloomMixRadius = 2
   static let bloomEatPasses = 3
   /// True yellow/orange/red. IEM olive 25 dBZ (~hue 66–70) is not a cell core.
   static let stormCoreHueEnd: Double = 65
 
-  /// Yellow+ storm-core pixels after clutter-key. Leftover 15 dBZ green is not wet.
+  /// Yellow+ storm-core pixels after clutter-key. Leftover light green is not wet.
   static let organizedPrecipMinPixels = 40
 
   static func shouldProcess(url: String) -> Bool {
@@ -106,10 +113,12 @@ enum IEMSiteReflectivityPaint {
     if sat < dustyMaxSaturation && val < 88 { return true }
     // Magenta / purple hail (and high-end N0B).
     if hue > 260 && hue < 340 && sat >= 20 { return false }
-    // Red / orange / yellow.
+    // Red / orange / yellow / IEM olive 25.
     if hue < 70 || hue >= 340 { return false }
-    // Green through IEM `#35D65B`. Teal-cyan 8-bit floor is clutter.
-    if hue >= 70 && hue < precipHueEnd { return false }
+    // Dark 25 dBZ `#009000` (hue 120, val ~56). Light 15–20 lime is clutter.
+    if hue >= 70 && hue < precipHueEnd {
+      return val >= lightPrecipGreenMinValue
+    }
     // Remaining: cyan / blue / slate (NWS 0–10 dBZ + clear-air).
     return true
   }
@@ -217,9 +226,9 @@ enum IEMSiteReflectivityPaint {
     }
   }
 
-  /// Drop 15 dBZ greens whose neighborhood is the clear-air sweep, not a cell.
+  /// Drop leftover greens whose neighborhood is the clear-air sweep, not a cell.
   /// Each pass treats eaten greens as clutter so bloom cores shrink; storm
-  /// interiors (green/yellow surrounded by precip) keep.
+  /// interiors (dark green/yellow surrounded by precip) keep.
   private static func eatClearAirBloom(
     keep: inout [UInt8], clutter: inout [UInt8], width: Int, height: Int
   ) {
@@ -260,8 +269,8 @@ enum IEMSiteReflectivityPaint {
     }
   }
 
-  /// IEM N0B biological cores are organized 15 dBZ green with no yellow.
-  /// NWS MEG / CONUS N0Q stay dry. A cell has yellow/orange/red; 15 dBZ
+  /// IEM N0B biological cores are organized light green with no yellow.
+  /// NWS MEG / CONUS N0Q stay dry. A cell has yellow/orange/red; dark 25 dBZ
   /// green attached to that cell stays. Green-only blobs are not precip.
   private static func dropBloomCoresWithoutStorm(
     filtered: inout [UInt8],

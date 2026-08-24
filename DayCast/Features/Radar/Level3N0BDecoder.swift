@@ -6,7 +6,10 @@ enum Level3N0BDecoder {
   static let productCode: UInt16 = 153
   static let superResRangeKm = 460.0
   static let superResGateMeters = 250.0
-  static let precipFloorDbz: Float = 15
+  /// Site Doppler paint floor. Gates below this are transparent (clear-air /
+  /// biological / AP bloom). Hard NWS 5 dBZ bins at and above this stay.
+  /// Wet probe is a separate ≥30 rule (`organizedPrecip`).
+  static let precipFloorDbz: Float = 25
   private static let crlfcr = Data([0x0D, 0x0D, 0x0A])
   private static let bzipMagic = Data([0x42, 0x5A, 0x68])
 
@@ -39,7 +42,7 @@ enum Level3N0BDecoder {
       let dbz = dbzLUT[b]
       if dbz.isNaN || dbz < precipFloorDbz { continue }
       let band = min(70, max(0, (Double(dbz) / 5).rounded(.down) * 5))
-      if band < 15 { continue }
+      if band < Double(precipFloorDbz) { continue }
       guard let stop = stops.last(where: { $0.dbz <= band && $0.alpha > 0 }) else { continue }
       table[b] = premul(hex: stop.hex, alpha: MapsGLRadarPalette.polarUnderlayAlpha(forDbz: band))
     }

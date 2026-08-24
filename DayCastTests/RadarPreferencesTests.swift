@@ -205,14 +205,17 @@ final class RadarPreferencesTests: XCTestCase {
 
   func testN0BColorbarOmitsKeyedCyanBlueStops() {
     let n0b = MapsGLRadarPalette.paintedReflectivityStops(keysClearAir: true)
-    XCTAssertEqual(n0b.first?.dbz, 15)
-    XCTAssertEqual(n0b.first?.hex, "#00FF00")
+    XCTAssertEqual(n0b.first?.dbz, 25)
+    XCTAssertEqual(n0b.first?.hex, "#009000")
     XCTAssertFalse(n0b.contains { $0.dbz == 5 })
     XCTAssertFalse(n0b.contains { $0.dbz == 10 })
+    XCTAssertFalse(n0b.contains { $0.dbz == 15 }, "Site legend must not start at 15 lime")
+    XCTAssertFalse(n0b.contains { $0.dbz == 20 })
     XCTAssertFalse(n0b.contains { $0.hex == "#01A0F6" })
     XCTAssertFalse(n0b.contains { $0.hex == "#0000F6" })
+    XCTAssertFalse(n0b.contains { $0.hex == "#00FF00" })
     XCTAssertTrue(n0b.contains { $0.dbz == 40 && $0.hex == "#FF9000" })
-    XCTAssertEqual(MapsGLRadarPalette.legendTicks(keysClearAir: true), [15, 30, 45, 60, 70])
+    XCTAssertEqual(MapsGLRadarPalette.legendTicks(keysClearAir: true), [25, 30, 45, 60, 70])
     for tick in MapsGLRadarPalette.legendTicks(keysClearAir: true) {
       XCTAssertNotNil(n0b.first { $0.dbz == tick })
     }
