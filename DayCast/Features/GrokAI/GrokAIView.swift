@@ -333,11 +333,11 @@ private struct GrokAIViewContent: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Text(SkyCheckDeskCopy.emptyPitch)
         .font(DesignTokens.Typography.callout())
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
         .fixedSize(horizontal: false, vertical: true)
       Text(SkyCheckDeskCopy.hedge)
         .font(DesignTokens.Typography.caption())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
         .fixedSize(horizontal: false, vertical: true)
     }
   }

@@ -11,7 +11,7 @@ import SwiftUI
 
 enum GrokInputBarLayout {
   case standard
-  /// Figma Briefing Studio: elevated pill, tertiary placeholder.
+  /// Compact Sky Check: elevated pill, secondary placeholder on dark fill.
   case figma
 }
 
@@ -25,6 +25,13 @@ struct GrokInputBar: View {
     text.trimmingCharacters(in: .whitespaces).isEmpty
   }
 
+  /// Gray system placeholder washes out on `cardElevated`. Secondary still
+  /// reads quieter than typed primary.
+  private var weatherPrompt: Text {
+    Text("Ask about the weather…")
+      .foregroundStyle(DesignTokens.Palette.textSecondary)
+  }
+
   var body: some View {
     switch layout {
     case .standard:
@@ -36,15 +43,20 @@ struct GrokInputBar: View {
 
   private var figmaBar: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      TextField("Ask about the weather…", text: $text, axis: .vertical)
-        .textFieldStyle(.plain)
-        .font(DesignTokens.Typography.body())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .focused($isFocused)
-        .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
-        .lineLimit(1...4)
-        .submitLabel(.send)
-        .onSubmit(send)
+      TextField(
+        "Ask about the weather…",
+        text: $text,
+        prompt: weatherPrompt,
+        axis: .vertical
+      )
+      .textFieldStyle(.plain)
+      .font(DesignTokens.Typography.body())
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+      .focused($isFocused)
+      .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
+      .lineLimit(1...4)
+      .submitLabel(.send)
+      .onSubmit(send)
 
       Button(action: send) {
         Image(systemName: "arrow.up.circle.fill")
@@ -69,20 +81,26 @@ struct GrokInputBar: View {
 
   private var standardBar: some View {
     HStack(spacing: 8) {
-      TextField("Ask about the weather…", text: $text, axis: .vertical)
-        .textFieldStyle(.plain)
-        .font(DesignTokens.Typography.body())
-        .focused($isFocused)
-        .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-          RoundedRectangle(cornerRadius: 20)
-            .fill(Color.white.opacity(0.1))
-        )
-        .lineLimit(1...4)
-        .submitLabel(.send)
-        .onSubmit(send)
+      TextField(
+        "Ask about the weather…",
+        text: $text,
+        prompt: weatherPrompt,
+        axis: .vertical
+      )
+      .textFieldStyle(.plain)
+      .font(DesignTokens.Typography.body())
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+      .focused($isFocused)
+      .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
+      .padding(.horizontal, 14)
+      .padding(.vertical, 10)
+      .background(
+        RoundedRectangle(cornerRadius: 20)
+          .fill(Color.white.opacity(0.1))
+      )
+      .lineLimit(1...4)
+      .submitLabel(.send)
+      .onSubmit(send)
 
       Button(action: send) {
         Image(systemName: "arrow.up.circle.fill")

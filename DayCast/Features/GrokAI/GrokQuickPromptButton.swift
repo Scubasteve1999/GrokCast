@@ -17,7 +17,7 @@ struct GrokQuickPromptButton: View {
       Text(title)
         .font(DesignTokens.Typography.callout())
         .tracking(DesignTokens.Typography.cardLabelTracking)
-        .foregroundStyle(.white.opacity(DesignTokens.Opacity.iconWhite))
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
         .lineLimit(1)
         .minimumScaleFactor(0.85)
         .padding(.horizontal, DesignTokens.Spacing.space12)
@@ -25,7 +25,14 @@ struct GrokQuickPromptButton: View {
         .frame(maxWidth: .infinity, alignment: .center)
         .background(
           Capsule()
-            .fill(Color.white.opacity(0.08))
+            .fill(DesignTokens.Palette.cardElevated)
+        )
+        .overlay(
+          Capsule()
+            .stroke(
+              DesignTokens.Palette.cardStroke,
+              lineWidth: DesignTokens.Card.strokeWidth
+            )
         )
     }
     .buttonStyle(.plain)

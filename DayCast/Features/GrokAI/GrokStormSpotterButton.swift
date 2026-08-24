@@ -21,12 +21,19 @@ struct GrokStormSpotterButton: View {
           .font(DesignTokens.Typography.subsection())
           .tracking(DesignTokens.Typography.cardLabelTracking)
       }
-      .foregroundStyle(.white)
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
       .padding(.horizontal, 16)
       .padding(.vertical, 10)
       .background(
         Capsule()
-          .fill(Color.white.opacity(0.1))
+          .fill(DesignTokens.Palette.cardElevated)
+      )
+      .overlay(
+        Capsule()
+          .stroke(
+            DesignTokens.Palette.cardStroke,
+            lineWidth: DesignTokens.Card.strokeWidth
+          )
       )
     }
     .buttonStyle(.plain)
