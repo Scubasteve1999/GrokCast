@@ -85,5 +85,7 @@ final class ShareAttributionTests: XCTestCase {
     let storm = ShareableBriefText.stormSpotterReport(
       locationName: "Southaven, MS", observerNotes: nil, analysis: "Shelf cloud, outflow dominant.")
     XCTAssertTrue(storm.contains("ct=share_storm_report"))
+    XCTAssertTrue(storm.contains("DayCast Sky Check"))
+    XCTAssertTrue(storm.contains("#DayCastSkyCheck"))
   }
 }

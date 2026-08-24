@@ -14,6 +14,24 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("not a warning"))
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("observed"))
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("inferred"))
+    XCTAssertTrue(prompt.contains("Sky Check"))
+    XCTAssertFalse(
+      prompt.localizedCaseInsensitiveContains("storm spotter assistant"),
+      "Model-facing identity should be Sky Check, not storm spotter assistant")
+  }
+
+  func testUserFacingCopyUsesSkyCheckNotStormSpotter() {
+    XCTAssertTrue(PaywallFeature.grokAI.headline.contains("Sky Check"))
+    XCTAssertFalse(PaywallFeature.grokAI.headline.localizedCaseInsensitiveContains("storm spotter"))
+    XCTAssertTrue(PaywallFeature.grokAI.subheadline.contains("Sky Check"))
+    XCTAssertFalse(
+      PaywallFeature.grokAI.subheadline.localizedCaseInsensitiveContains("Storm Spotter"))
+
+    let share = ShareableBriefText.stormSpotterReport(
+      locationName: "Southaven, MS", observerNotes: nil, analysis: "Shelf cloud.")
+    XCTAssertTrue(share.contains("DayCast Sky Check"))
+    XCTAssertTrue(share.contains("#DayCastSkyCheck"))
+    XCTAssertFalse(share.localizedCaseInsensitiveContains("Storm Spotter"))
   }
 
   func testPaywallGrokAIDoesNotClaimProNeverUnlocksHostedAI() {

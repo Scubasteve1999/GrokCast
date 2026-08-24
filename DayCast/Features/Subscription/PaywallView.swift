@@ -70,7 +70,7 @@ struct PaywallView: View {
       paywallRow(
         "AI weather intelligence",
         "sparkles",
-        "Chat, Today's Take, Explain Radar, morning brief, and Storm Spotter photo analysis"
+        "Chat, Today's Take, Explain Radar, morning brief, and Sky Check photo analysis"
       )
       paywallRow(
         "Forecast radar (FUTURE)",
@@ -269,7 +269,7 @@ enum PaywallFeature {
 
   var headline: String {
     switch self {
-    case .grokAI: "Tools for storm spotters"
+    case .grokAI: "Sky Check and AI weather"
     case .radarFuture: "See what's coming"
     case .locations: "Track every location"
     case .liveActivity: "Weather on your Lock Screen"
@@ -281,7 +281,7 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "DayCast Pro unlocks Storm Spotter, Today's Take, Explain Radar, and AI chat — or bring your own xAI key in Settings."
+      "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat — or bring your own xAI key in Settings."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:

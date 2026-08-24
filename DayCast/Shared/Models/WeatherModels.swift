@@ -55,7 +55,7 @@ struct ChatMessage: Identifiable, Equatable {
       originalNotes: nil, generatedImageURL: nil)
   }
 
-  /// Caption for a Storm Spotter photo turn in the city thread.
+  /// Caption for a Sky Check photo turn in the city thread.
   static func stormSpotterUserCaption(locationName: String?, notes: String?) -> String {
     let place = locationName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     var text = "Analyze this storm photo"
@@ -69,7 +69,7 @@ struct ChatMessage: Identifiable, Equatable {
     return text
   }
 
-  /// User photo + assistant write-up for a completed Storm Spotter analysis.
+  /// User photo + assistant write-up for a completed Sky Check analysis.
   static func stormSpotterPhotoTurn(
     locationName: String?,
     thumbnail: Data?,

@@ -6,7 +6,7 @@ import Observation
 final class GrokAIViewModel {
   var responseText: String = ""
   /// Dedicated storm-photo write-up. Compact card and share use this so later
-  /// chat tokens in `responseText` cannot appear inside Storm Spotter chrome.
+  /// chat tokens in `responseText` cannot appear inside Sky Check chrome.
   var stormAnalysisText: String = ""
   var isStreaming: Bool = false
   var errorMessage: String?
@@ -410,8 +410,8 @@ final class GrokAIViewModel {
   private func buildWeatherSystemPrompt() -> String {
     guard let current = weatherStore.currentWeather else {
       return """
-        You are the Storm Spotter assistant inside DayCast — field-first weather intelligence \
-        for storm spotters and severe-weather watchers. Prioritize hazards, timing, and radar cues. \
+        You are Sky Check in DayCast — field-first weather intelligence \
+        for people watching severe weather. Prioritize hazards, timing, and radar cues. \
         Lifestyle advice only if the user asks. Be concise. Do not invent warnings.
         """
     }
@@ -436,8 +436,8 @@ final class GrokAIViewModel {
       .map { "\n\($0)\n" } ?? ""
 
     return """
-      You are the Storm Spotter assistant inside DayCast — field-first weather intelligence \
-      for storm spotters and severe-weather watchers. Prioritize hazards, timing, radar cues, \
+      You are Sky Check in DayCast — field-first weather intelligence \
+      for people watching severe weather. Prioritize hazards, timing, radar cues, \
       and actionable monitoring. Lifestyle advice (outfits, walks) only if the user asks.
 
       \(conditions)

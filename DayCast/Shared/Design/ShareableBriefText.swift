@@ -48,8 +48,8 @@ enum ShareableBriefText {
     analysis: String
   ) -> String {
     var lines = [
-      "DayCast Storm Spotter — \(locationName)",
-      "#DayCastStormSpotter",
+      "DayCast Sky Check — \(locationName)",
+      "#DayCastSkyCheck",
       "",
     ]
     if let notes = observerNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {

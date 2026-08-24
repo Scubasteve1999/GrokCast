@@ -112,16 +112,16 @@ struct AppStoreScreenshotGrok: View {
     ZStack {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
       VStack(alignment: .leading, spacing: 16) {
-        Text("Storm Spotter")
+        Text("Sky Check")
           .font(DesignTokens.Typography.title())
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
           screenshotTile("Threat check", icon: "exclamationmark.triangle.fill")
-          screenshotTile("Chase window", icon: "car.fill")
+          screenshotTile("Outside now?", icon: "car.fill")
           screenshotTile("Radar read", icon: "dot.radiowaves.right")
           screenshotTile("Outlook", icon: "cloud.bolt.fill")
         }
         VStack(alignment: .leading, spacing: 8) {
-          Label("STORM SPOTTER ANALYSIS", systemImage: "cloud.bolt.rain.fill")
+          Label("SKY CHECK", systemImage: "cloud.bolt.rain.fill")
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.danger)
           Text("Scud cloud with weak rotation aloft — monitor radar for the next 30–45 minutes.")

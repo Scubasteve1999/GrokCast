@@ -94,7 +94,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     )
   }
 
-  // MARK: - 3. Storm Spotter entry from More
+  // MARK: - 3. Sky Check entry from More
 
   func testStormSpotterCTAExistsInBriefingStudio() throws {
     XCTAssertTrue(waitForTabBar())
@@ -104,7 +104,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
 
     let analyze = app.buttons["Analyze Storm Photo"]
     let stormHeader = app.staticTexts.matching(
-      NSPredicate(format: "label CONTAINS[c] %@", "STORM SPOTTER")
+      NSPredicate(format: "label CONTAINS[c] %@", "SKY CHECK")
     ).firstMatch
 
     let sawCTA = analyze.waitForExistence(timeout: 12)
@@ -112,7 +112,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
 
     XCTAssertTrue(
       sawCTA || sawHeader,
-      "Storm Spotter analysis entry point missing from Storm Spotter"
+      "Sky Check analysis entry point missing from Sky Check"
     )
 
     // Tap CTA only far enough to confirm it is hittable (system photo picker may appear).

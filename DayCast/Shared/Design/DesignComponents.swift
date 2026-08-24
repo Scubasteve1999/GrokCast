@@ -266,7 +266,7 @@ struct MoreHubSheet: View {
 
   private func moreTitle(for tab: WeatherStore.Tab) -> String {
     switch tab {
-    case .grok: "Storm Spotter"
+    case .grok: "Sky Check"
     default: tab.rawValue
     }
   }

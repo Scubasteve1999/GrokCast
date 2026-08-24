@@ -79,7 +79,7 @@ class DayCastUITestCase: XCTestCase {
     var identifier: String { "daycast.tab.\(rawValue)" }
   }
 
-  /// Raw values are `WeatherStore.Tab.rawValue` — note Storm Spotter's is "AI".
+  /// Raw values are `WeatherStore.Tab.rawValue` — note Sky Check's is "AI".
   enum MoreHubDestination: String {
     case grok = "AI"
     case locations = "Locations"

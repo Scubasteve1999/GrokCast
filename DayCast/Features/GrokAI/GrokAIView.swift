@@ -48,7 +48,7 @@ private struct GrokAIViewContent: View {
                   subscription: SubscriptionManager.shared
                 )
               }
-              // Storm Spotter first — core DayCast feature, not buried under lifestyle prompts.
+              // Sky Check first — core DayCast feature, not buried under lifestyle prompts.
               figmaStormSpotterCard(viewModel: viewModel)
               quickPromptsSection(viewModel: viewModel)
 
@@ -97,7 +97,7 @@ private struct GrokAIViewContent: View {
                   .id("storm-thumb")
               }
 
-              // Regular width only: compact streams inside the Storm Spotter card.
+              // Regular width only: compact streams inside the Sky Check card.
               if viewModel.stormAnalysisMode && !prefersFigmaStudioLayout {
                 GrokAIResponseView(
                   response: viewModel.stormAnalysisText.isEmpty ? nil : viewModel.stormAnalysisText,
@@ -235,10 +235,10 @@ private struct GrokAIViewContent: View {
   private var headerSection: some View {
     Group {
       if prefersFigmaStudioLayout {
-        FigmaScreenTitle(title: "Storm Spotter", style: .studio)
+        FigmaScreenTitle(title: "Sky Check", style: .studio)
       } else {
         VStack(alignment: .leading, spacing: 6) {
-          Text("STORM SPOTTER")
+          Text("SKY CHECK")
             .font(DesignTokens.Typography.caption())
             .tracking(2)
             .foregroundStyle(.white.opacity(0.5))
@@ -263,7 +263,7 @@ private struct GrokAIViewContent: View {
       if prefersFigmaStudioLayout {
         VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
           FigmaAccentSectionLabel(
-            title: "STORM SPOTTER ANALYSIS",
+            title: "SKY CHECK",
             icon: "cloud.bolt.rain.fill",
             color: DesignTokens.Palette.danger
           )
@@ -368,12 +368,12 @@ private struct GrokAIViewContent: View {
       .disabled(disabled)
 
       GrokQuickPromptButton(
-        title: "Chase window",
+        title: "Outside now?",
         icon: "car.fill",
         layout: .figmaTile
       ) {
         askQuickPrompt(
-          "Is there a chase or spotter window today near me? Timing, setup, and hazards if I go mobile.",
+          "Is it dangerous to be outside near me? Should I postpone travel? Timing, hazards, and what to watch if I need to be out.",
           viewModel: viewModel
         )
       }
@@ -421,9 +421,9 @@ private struct GrokAIViewContent: View {
             )
           }
           .disabled(aiActionsDisabled)
-          GrokQuickPromptButton(title: "Chase window") {
+          GrokQuickPromptButton(title: "Outside now?") {
             askQuickPrompt(
-              "Is there a chase or spotter window today near me? Timing, setup, and hazards if I go mobile.",
+              "Is it dangerous to be outside near me? Should I postpone travel? Timing, hazards, and what to watch if I need to be out.",
               viewModel: viewModel
             )
           }
@@ -519,7 +519,7 @@ private struct GrokAIViewContent: View {
         Spacer()
       }
       .padding(20)
-      .navigationTitle("Storm Spotter")
+      .navigationTitle("Sky Check")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -674,7 +674,7 @@ private struct GrokAIViewContent: View {
       if let uiImage = UIImage(data: imageData) {
         ShareLink(
           item: StormSpotterPhotoShare(imageData: imageData),
-          preview: SharePreview("Storm Spotter Photo", image: Image(uiImage: uiImage))
+          preview: SharePreview("Sky Check Photo", image: Image(uiImage: uiImage))
         ) {
           Label("Share Photo", systemImage: "photo")
         }
@@ -687,7 +687,7 @@ private struct GrokAIViewContent: View {
         )
       }
 
-      ShareLink(item: shareText, subject: Text("DayCast Storm Spotter")) {
+      ShareLink(item: shareText, subject: Text("DayCast Sky Check")) {
         Label("Share Report", systemImage: "square.and.arrow.up")
       }
       .buttonStyle(.bordered)

@@ -173,7 +173,7 @@ enum CompactTab: String, CaseIterable, Identifiable {
   }
 
   /// Compact `TabView` may only have these five pages. Extra destinations
-  /// (Storm Spotter, Locations, Settings) share the More page so UIKit
+  /// (Sky Check, Locations, Settings) share the More page so UIKit
   /// never installs its own More navigation stack and back button.
   static func primary(for tab: WeatherStore.Tab) -> CompactTab {
     switch tab {
@@ -253,7 +253,7 @@ struct CompactTabBar: View {
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel(for: tab))
         .accessibilityValue(accessibilityValue(for: tab))
-        .accessibilityHint(tab == .more ? "Opens Locations, Settings, and Storm Spotter" : "")
+        .accessibilityHint(tab == .more ? "Opens Locations, Settings, and Sky Check" : "")
         .accessibilityIdentifier(DayCastAccessibility.Tabs.item(tab))
         .frame(maxWidth: .infinity)
       }

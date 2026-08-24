@@ -1,7 +1,7 @@
 import CoreTransferable
 import UniformTypeIdentifiers
 
-/// PNG payload for Storm Spotter community photo sharing.
+/// PNG payload for Sky Check community photo sharing.
 struct StormSpotterPhotoShare: Transferable {
   let imageData: Data
 
