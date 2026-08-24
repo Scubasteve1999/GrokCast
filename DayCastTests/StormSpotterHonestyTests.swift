@@ -116,6 +116,7 @@ final class StormSpotterHonestyTests: XCTestCase {
       XCTAssertFalse(prompt.body.localizedCaseInsensitiveContains("storm-relative"))
     }
     let titles = SkyCheckDeskCopy.prompts.map(\.title)
+    XCTAssertEqual(titles, ["Threat check", "Outside now?", "Outlook"])
     XCTAssertFalse(titles.contains("Radar read"))
     XCTAssertFalse(titles.contains("Imagine the scene"))
   }

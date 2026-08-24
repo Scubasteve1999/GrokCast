@@ -264,14 +264,14 @@ private struct GrokAIViewContent: View {
         VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
           FigmaAccentSectionLabel(
             title: "SKY CHECK",
-            icon: "cloud.bolt.rain.fill",
-            color: DesignTokens.Palette.danger
+            icon: "cloud.bolt.fill",
+            color: DesignTokens.Palette.accent
           )
 
           if viewModel.stormAnalysisMode && viewModel.isStreaming
             && viewModel.stormAnalysisText.isEmpty
           {
-            HStack(spacing: 8) {
+            HStack(spacing: DesignTokens.Spacing.space8) {
               ProgressView().scaleEffect(0.85)
               Text("Checking your photo…")
                 .font(DesignTokens.Typography.callout())
@@ -290,7 +290,9 @@ private struct GrokAIViewContent: View {
                   .fixedSize(horizontal: false, vertical: true)
               }
             }
+            skyCheckPhotoCTAButton(viewModel: viewModel)
           } else {
+            skyCheckPhotoWell(viewModel: viewModel)
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
               Text(SkyCheckDeskCopy.emptyPitch)
                 .font(DesignTokens.Typography.callout())
@@ -302,43 +304,94 @@ private struct GrokAIViewContent: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
           }
-
-          Button {
-            Task {
-              guard weatherStore.canUseGrok else {
-                if PaywallCoordinator.shared.canUnlockGrokViaPro {
-                  PaywallCoordinator.shared.present(.grokAI)
-                }
-                return
-              }
-              showPhotoPicker = true
-            }
-          } label: {
-            Label(skyCheckPhotoCTATitle(viewModel: viewModel), systemImage: "photo")
-              .font(DesignTokens.Typography.subsection())
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, DesignTokens.Spacing.space4)
-          }
-          .buttonStyle(.borderedProminent)
-          .tint(DesignTokens.Palette.danger)
-          .disabled(aiActionsDisabled)
-          .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
         }
         .padding(DesignTokens.Spacing.space16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle(
           background: DesignTokens.Palette.cardElevated,
-          stroke: DesignTokens.Palette.danger.opacity(0.45),
+          stroke: DesignTokens.Palette.cardStroke,
           cornerRadius: DesignTokens.Card.cornerRadiusMedium
         )
       }
     }
   }
 
+  private func openSkyCheckPicker() {
+    Task {
+      guard weatherStore.canUseGrok else {
+        if PaywallCoordinator.shared.canUnlockGrokViaPro {
+          PaywallCoordinator.shared.present(.grokAI)
+        }
+        return
+      }
+      showPhotoPicker = true
+    }
+  }
+
+  /// Empty / library affordance — photography well, not a danger badge.
+  private func skyCheckPhotoWell(viewModel: GrokAIViewModel) -> some View {
+    Button(action: openSkyCheckPicker) {
+      ZStack {
+        Image("NewsHeroDawn")
+          .resizable()
+          .scaledToFill()
+          .frame(maxWidth: .infinity)
+          .frame(height: DesignTokens.Spacing.space48 * 3, alignment: .top)
+          .overlay {
+            LinearGradient(
+              colors: [
+                DesignTokens.Palette.bgPrimary.opacity(0.18),
+                DesignTokens.Palette.bgPrimary.opacity(0.52),
+              ],
+              startPoint: .top,
+              endPoint: .bottom
+            )
+          }
+          .clipped()
+
+        VStack(spacing: DesignTokens.Spacing.space8) {
+          Image(systemName: "photo")
+            .font(DesignTokens.Typography.symbol(DesignTokens.Layout.heroIconSize))
+            .accessibilityHidden(true)
+          Text(skyCheckPhotoCTATitle(viewModel: viewModel))
+            .font(DesignTokens.Typography.subsection())
+        }
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+      }
+      .frame(maxWidth: .infinity)
+      .clipShape(
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+          .stroke(DesignTokens.Palette.accent.opacity(0.35), lineWidth: 1)
+      )
+      .contentShape(
+        RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+      )
+    }
+    .buttonStyle(.plain)
+    .disabled(aiActionsDisabled)
+    .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
+  }
+
+  private func skyCheckPhotoCTAButton(viewModel: GrokAIViewModel) -> some View {
+    Button(action: openSkyCheckPicker) {
+      Label(skyCheckPhotoCTATitle(viewModel: viewModel), systemImage: "photo")
+        .font(DesignTokens.Typography.subsection())
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DesignTokens.Spacing.space4)
+    }
+    .buttonStyle(.borderedProminent)
+    .tint(DesignTokens.Palette.accent)
+    .disabled(aiActionsDisabled)
+    .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
+  }
+
   private func quickPromptsSection(viewModel: GrokAIViewModel) -> some View {
     Group {
       if prefersFigmaStudioLayout {
-        figmaPromptGrid(viewModel: viewModel)
+        compactPromptRow(viewModel: viewModel)
       } else {
         standardQuickPromptsSection(viewModel: viewModel)
       }
@@ -351,20 +404,11 @@ private struct GrokAIViewContent: View {
       || weatherStore.grokAIViewModel.isGeneratingImage
   }
 
-  private func figmaPromptGrid(viewModel: GrokAIViewModel) -> some View {
+  private func compactPromptRow(viewModel: GrokAIViewModel) -> some View {
     let disabled = aiActionsDisabled
-    let columns = [
-      GridItem(.flexible(), spacing: DesignTokens.Spacing.space12),
-      GridItem(.flexible(), spacing: DesignTokens.Spacing.space12),
-    ]
-
-    return LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.space12) {
+    return HStack(spacing: DesignTokens.Spacing.space8) {
       ForEach(SkyCheckDeskCopy.prompts, id: \.title) { prompt in
-        GrokQuickPromptButton(
-          title: prompt.title,
-          icon: prompt.icon,
-          layout: .figmaTile
-        ) {
+        GrokQuickPromptButton(title: prompt.title) {
           askQuickPrompt(prompt.body, viewModel: viewModel)
         }
         .disabled(disabled)
@@ -388,15 +432,7 @@ private struct GrokAIViewContent: View {
             .disabled(aiActionsDisabled)
           }
           GrokStormSpotterButton {
-            Task {
-              guard weatherStore.canUseGrok else {
-                if PaywallCoordinator.shared.canUnlockGrokViaPro {
-                  PaywallCoordinator.shared.present(.grokAI)
-                }
-                return
-              }
-              showPhotoPicker = true
-            }
+            openSkyCheckPicker()
           }
           .disabled(aiActionsDisabled)
         }

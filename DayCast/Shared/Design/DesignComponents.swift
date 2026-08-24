@@ -289,7 +289,7 @@ struct MoreHubSheet: View {
 
   private func moreTint(for tab: WeatherStore.Tab) -> Color {
     switch tab {
-    case .grok: DesignTokens.Palette.danger
+    case .grok: DesignTokens.Palette.accent
     case .locations: DesignTokens.Palette.accentCool
     case .settings: DesignTokens.Palette.textSecondary
     default: DesignTokens.Palette.accent

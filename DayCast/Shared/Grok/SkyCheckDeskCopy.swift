@@ -42,7 +42,7 @@ enum SkyCheckDeskCopy {
       "What's the weather outlook for my area today and tomorrow — timing and anything severe I should know."
   )
 
-  /// Compact 2×2 grid and regular chips share this set. No Radar read, no Imagine.
+  /// Compact 3-chip row and regular chips share this set. No Radar read, no Imagine.
   static let prompts: [QuickPrompt] = [threatCheck, outsideNow, outlook]
 }
 

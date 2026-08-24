@@ -111,42 +111,53 @@ struct AppStoreScreenshotGrok: View {
   var body: some View {
     ZStack {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
-      VStack(alignment: .leading, spacing: 16) {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         Text("Sky Check")
           .font(DesignTokens.Typography.title())
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-          screenshotTile("Threat check", icon: "exclamationmark.triangle.fill")
-          screenshotTile("Outside now?", icon: "car.fill")
-          screenshotTile("Outlook", icon: "cloud.bolt.fill")
-        }
-        VStack(alignment: .leading, spacing: 8) {
-          Label("SKY CHECK", systemImage: "cloud.bolt.rain.fill")
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+          Label("SKY CHECK", systemImage: "cloud.bolt.fill")
             .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.danger)
-          Text("Scud cloud with weak rotation aloft — monitor radar for the next 30–45 minutes.")
+            .foregroundStyle(DesignTokens.Palette.accent)
+          ZStack {
+            Image("NewsHeroDawn")
+              .resizable()
+              .scaledToFill()
+              .frame(maxWidth: .infinity)
+              .frame(height: DesignTokens.Spacing.space48 * 3, alignment: .top)
+              .clipped()
+            Label("Check this sky", systemImage: "photo")
+              .font(DesignTokens.Typography.subsection())
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+          }
+          .clipShape(
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+          )
+          Text("Check a sky photo for what's overhead and what to watch next.")
             .font(DesignTokens.Typography.body())
         }
-        .padding(16)
-        .glassCardStyle(strokeTint: DesignTokens.Palette.danger.opacity(0.45))
+        .padding(DesignTokens.Spacing.space16)
+        .glassCardStyle(strokeTint: DesignTokens.Palette.cardStroke)
+        HStack(spacing: DesignTokens.Spacing.space8) {
+          screenshotChip("Threat check")
+          screenshotChip("Outside now?")
+          screenshotChip("Outlook")
+        }
         Spacer(minLength: 0)
       }
-      .padding(24)
+      .padding(DesignTokens.Spacing.space24)
       .foregroundStyle(DesignTokens.Palette.textPrimary)
     }
     .preferredColorScheme(.dark)
   }
 
-  private func screenshotTile(_ title: String, icon: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Image(systemName: icon)
-        .font(DesignTokens.Typography.metric())
-        .foregroundStyle(DesignTokens.Palette.accent)
-      Text(title)
-        .font(DesignTokens.Typography.caption())
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(14)
-    .glassCardStyle()
+  private func screenshotChip(_ title: String) -> some View {
+    Text(title)
+      .font(DesignTokens.Typography.callout())
+      .lineLimit(1)
+      .minimumScaleFactor(0.85)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, DesignTokens.Spacing.space8)
+      .background(Color.white.opacity(0.08), in: Capsule())
   }
 }
 
