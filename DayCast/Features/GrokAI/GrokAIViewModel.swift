@@ -102,11 +102,8 @@ final class GrokAIViewModel {
       return
     }
 
-    // Detect image generation requests in free-text (or route quick prompts that match)
-    if isImageGenerationRequest(question) {
-      await generateWeatherImage(description: question)
-      return
-    }
+    // Imagine stays on Today. Never steal Sky Check weather questions — including
+    // "picture of the sky" / photo analysis — into image generation.
 
     // Show thinking immediately so actions feel responsive during weather prefetch.
     generationTask?.cancel()
@@ -408,41 +405,71 @@ final class GrokAIViewModel {
   }
 
   private func buildWeatherSystemPrompt() -> String {
-    guard let current = weatherStore.currentWeather else {
-      return GrokPrompts.skyCheckChatSystemPrompt(conditionsBlock: nil)
-    }
+    let locationName =
+      weatherStore.currentLocation?.name
+      ?? weatherStore.currentWeather?.location.name
+      ?? "your location"
+    let locationKey = weatherStore.currentLocation?.id.uuidString
+    let severe = SevereWeatherStore.shared.context
+    let shortTerm = ShortTermPrecipStore.shared.context
+    let briefing = LocalBriefingStore.shared
 
-    let location = weatherStore.currentLocation?.name ?? "your location"
-    let unit = weatherStore.temperatureUnit
-    let conditions = GrokPrompts.currentConditionsBlock(
-      weather: current, locationName: location, unit: unit)
-
-    let alerts = weatherStore.displayableActiveAlerts.prefix(5)
-    var alertLines = ""
-    if !alerts.isEmpty {
-      alertLines =
-        "\nActive NWS alerts:\n"
-        + alerts.map { a in
-          let sev = a.severity ?? "Unknown"
-          return "- \(a.event) (\(sev))"
-        }.joined(separator: "\n") + "\n"
-    }
-    let severeExtra =
-      GrokPrompts.severeContextBlock(context: SevereWeatherStore.shared.context)
-      .map { "\n\($0)\n" } ?? ""
+    let severeContext: SevereWeatherContext? =
+      locationKey != nil && severe.locationID == locationKey ? severe : nil
+    let shortTermContext: ShortTermPrecipContext? = {
+      guard let locationKey,
+        shortTerm.locationID == locationKey,
+        shortTerm.hasHRRRSlots,
+        shortTerm.isUsableHRRR()
+      else { return nil }
+      return shortTerm
+    }()
+    let briefingItems: [LocalBriefingItem] = {
+      guard let locationKey, briefing.locationID == locationKey, !briefing.items.isEmpty else {
+        return []
+      }
+      return briefing.items
+    }()
 
     return GrokPrompts.skyCheckChatSystemPrompt(
-      conditionsBlock: conditions,
-      alertLines: alertLines,
-      severeExtra: severeExtra
+      weather: weatherStore.currentWeather,
+      locationName: locationName,
+      unit: weatherStore.temperatureUnit,
+      alerts: Array(weatherStore.displayableActiveAlerts.prefix(5)),
+      severeContext: severeContext,
+      shortTermContext: shortTermContext,
+      nearestStationObservation: weatherStore.currentNWSObservation,
+      briefingItems: briefingItems
     )
   }
 
-  private func isImageGenerationRequest(_ text: String) -> Bool {
+  /// Imagine stays on Today. Weather / sky-photo questions must stay in chat.
+  static func isImageGenerationRequest(_ text: String) -> Bool {
     let lower = text.lowercased()
-    return lower.contains("image") || lower.contains("picture") || lower.contains("imagine")
-      || lower.contains("draw") || lower.contains("visualize") || lower.contains("generate a scene")
+    if looksLikeSkyPhotoOrWeatherQuestion(lower) { return false }
+    return lower.contains("imagine")
+      || lower.contains("draw")
+      || lower.contains("visualize")
+      || lower.contains("generate a scene")
       || lower.contains("show me the weather as")
+      || (lower.contains("generate") && (lower.contains("image") || lower.contains("picture")))
+  }
+
+  private static func looksLikeSkyPhotoOrWeatherQuestion(_ lower: String) -> Bool {
+    let analysisSignals = [
+      "picture of the sky", "photo of the sky", "picture of the clouds",
+      "photo of the clouds", "sky photo", "sky picture", "check this sky",
+      "analyze this", "analyse this", "what's in this photo", "whats in this photo",
+      "this photo", "this picture", "look at this",
+    ]
+    if analysisSignals.contains(where: lower.contains) { return true }
+    let mentionsMedia =
+      lower.contains("picture") || lower.contains("photo") || lower.contains("image")
+    let mentionsWeather =
+      lower.contains("sky") || lower.contains("cloud") || lower.contains("storm")
+      || lower.contains("weather") || lower.contains("radar") || lower.contains("outlook")
+      || lower.contains("warning") || lower.contains("watch")
+    return mentionsMedia && mentionsWeather
   }
 
   private func buildImagePrompt(userDescription: String?) -> String {

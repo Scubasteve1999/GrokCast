@@ -67,25 +67,8 @@ enum GrokPrompts {
       weather: weather, locationName: weather.location.name, unit: unit)
     context += "\n- Precipitation chance: \(weather.precipitationChance)%"
 
-    if let obs = nearestStationObservation {
-      let timeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-      }()
-      let timeStr = timeFormatter.string(from: obs.observedAt)
-      context +=
-        "\n\n**Nearest official NWS station observation (\(obs.stationId) as of \(timeStr)):**"
-      if let t = obs.temperatureF {
-        context += "\nTemperature: \(unit.formatFromFahrenheit(t))"
-      }
-      if let w = obs.windSpeedMph {
-        context += "\nWind: \(unit.formatWindFromMph(w))"
-        if let dir = obs.windDirectionDegrees {
-          context += " from \(dir)°"
-        }
-      }
+    if let obsBlock = nwsObservationBlock(nearestStationObservation, unit: unit) {
+      context += "\n\n" + obsBlock
     }
 
     // WeatherStore CAP alerts win when severe context's embedded fetch was empty/failed.
@@ -135,6 +118,83 @@ enum GrokPrompts {
     }
 
     return context
+  }
+
+  /// Official nearest-station observation. Shared by vision and Sky Check chat.
+  static func nwsObservationBlock(
+    _ observation: NWSObservation?,
+    unit: TemperatureUnit
+  ) -> String? {
+    guard let obs = observation else { return nil }
+    let timeFormatter: DateFormatter = {
+      let f = DateFormatter()
+      f.dateFormat = "HH:mm"
+      f.locale = Locale(identifier: "en_US_POSIX")
+      return f
+    }()
+    let timeStr = timeFormatter.string(from: obs.observedAt)
+    var block =
+      "**Nearest official NWS station observation (\(obs.stationId) as of \(timeStr)):**"
+    if let t = obs.temperatureF {
+      block += "\nTemperature: \(unit.formatFromFahrenheit(t))"
+    }
+    if let w = obs.windSpeedMph {
+      block += "\nWind: \(unit.formatWindFromMph(w))"
+      if let dir = obs.windDirectionDegrees {
+        block += " from \(dir)°"
+      }
+    }
+    return block
+  }
+
+  /// Next ~12–24 hourly slots (temp, precip %, amount when present).
+  static func hourlyOutlookBlock(
+    hourly: [HourlyForecast],
+    unit: TemperatureUnit,
+    timeZone: TimeZone,
+    now: Date = Date(),
+    maxHours: Int = 24
+  ) -> String? {
+    let cutoff = now.addingTimeInterval(-45 * 60)
+    var upcoming = hourly.filter { $0.time >= cutoff }
+    if upcoming.isEmpty { upcoming = hourly }
+    let slice = Array(upcoming.prefix(maxHours))
+    guard !slice.isEmpty else { return nil }
+
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = timeZone
+    formatter.dateFormat = "h a"
+
+    var lines: [String] = ["**Next 12–24 hours:**"]
+    for hour in slice {
+      var bit =
+        "- \(formatter.string(from: hour.time)): \(unit.format(hour.temp)), \(hour.precipChance)% precip"
+      let liquid = (hour.rain ?? 0) + (hour.showers ?? 0)
+      let snow = hour.snowfall ?? 0
+      if let amount = precipAmountText(liquid: liquid, snow: snow) {
+        bit += ", \(amount)"
+      }
+      lines.append(bit)
+    }
+    return lines.joined(separator: "\n")
+  }
+
+  /// AFD KEY MESSAGES / PNS titles as issued. Chat must not rewrite this text.
+  static func localBriefingBlock(items: [LocalBriefingItem]) -> String? {
+    let usable = items.filter {
+      !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    guard !usable.isEmpty else { return nil }
+    let source = usable.first?.sourceName ?? "NWS"
+    var lines: [String] = [
+      "**NWS local briefing (\(source)):**",
+      "Quoted as issued from AFD/PNS. Do not rewrite or invent AFD text.",
+    ]
+    for item in usable.prefix(LocalBriefingParser.maxCards) {
+      lines.append("- [\(item.productCode)] \(item.title)")
+    }
+    return lines.joined(separator: "\n")
   }
 
   /// Short-term (0–90 min) precip block when CONUS HRRR slots are available.
@@ -238,13 +298,84 @@ enum GrokPrompts {
   static let skyCheckChatIdentity = """
     You are Sky Check in DayCast — an honest weather desk for the public. \
     Answer questions about the sky, hazards, timing, and what to watch next. \
-    Do not invent radar reads or warnings.
+    Use only the data provided. Cite NWS, HRRR, or AFD when you use those blocks. \
+    Do not invent radar reads, warnings, or numbers that are not in the data.
     """
 
   static func skyCheckChatSystemPrompt(
     conditionsBlock: String?,
     alertLines: String = "",
     severeExtra: String = ""
+  ) -> String {
+    skyCheckChatSystemPrompt(
+      conditionsBlock: conditionsBlock,
+      groundedBlocks: alertLines + severeExtra
+    )
+  }
+
+  /// Grounded Sky Check chat. Reuses current-conditions / obs / HRRR / severe / AFD builders.
+  static func skyCheckChatSystemPrompt(
+    weather: DayCastWeather?,
+    locationName: String,
+    unit: TemperatureUnit = .fahrenheit,
+    alerts: [NWSAlert] = [],
+    severeContext: SevereWeatherContext? = nil,
+    shortTermContext: ShortTermPrecipContext? = nil,
+    nearestStationObservation: NWSObservation? = nil,
+    briefingItems: [LocalBriefingItem] = [],
+    now: Date = Date()
+  ) -> String {
+    guard let weather else {
+      return skyCheckChatSystemPrompt(conditionsBlock: nil)
+    }
+
+    let conditions = currentConditionsBlock(
+      weather: weather, locationName: locationName, unit: unit)
+
+    var extras: [String] = []
+    if let obs = nwsObservationBlock(nearestStationObservation, unit: unit) {
+      extras.append(obs)
+    }
+    if let hourly = hourlyOutlookBlock(
+      hourly: weather.hourly,
+      unit: unit,
+      timeZone: weather.locationTimeZone,
+      now: now
+    ) {
+      extras.append(hourly)
+    }
+    if let shortTerm = shortTermPrecipBlock(
+      context: shortTermContext,
+      openMeteoSlots: weather.minutely15
+    ) {
+      extras.append(shortTerm)
+    }
+
+    let alertPrefix = Array(alerts.prefix(5))
+    if !alertPrefix.isEmpty {
+      let lines = alertPrefix.map { a in
+        let sev = a.severity ?? "Unknown"
+        return "- \(a.event) (\(sev))"
+      }.joined(separator: "\n")
+      extras.append("Active NWS alerts:\n" + lines)
+    }
+    if let severe = severeContextBlock(context: severeContext), !severe.isEmpty {
+      extras.append(severe)
+    }
+    if let briefing = localBriefingBlock(items: briefingItems) {
+      extras.append(briefing)
+    }
+
+    let grounded = extras.isEmpty ? "" : "\n" + extras.joined(separator: "\n\n") + "\n"
+    return skyCheckChatSystemPrompt(
+      conditionsBlock: conditions,
+      groundedBlocks: grounded
+    )
+  }
+
+  static func skyCheckChatSystemPrompt(
+    conditionsBlock: String?,
+    groundedBlocks: String
   ) -> String {
     guard let conditionsBlock else {
       return """
@@ -257,7 +388,7 @@ enum GrokPrompts {
       Lifestyle advice (outfits, walks) only if the user asks.
 
       \(conditionsBlock)
-      \(alertLines)\(severeExtra)
+      \(groundedBlocks)
       Be concise and practical. Lead with what's happening and what to watch next. Do not invent warnings.
       """
   }

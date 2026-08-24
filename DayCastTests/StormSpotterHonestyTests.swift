@@ -94,8 +94,12 @@ final class StormSpotterHonestyTests: XCTestCase {
   func testPublicCTAIsASkyPhotoVerb() {
     XCTAssertEqual(SkyCheckDeskCopy.photoCTA, "Check this sky")
     XCTAssertFalse(SkyCheckDeskCopy.photoCTA.contains("Analyze Storm Photo"))
+    XCTAssertTrue(SkyCheckDeskCopy.emptyPitch.lowercased().hasPrefix("ask about your weather"))
+    XCTAssertTrue(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("sky photo"))
     XCTAssertFalse(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("field read"))
     XCTAssertFalse(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("wall cloud"))
+    XCTAssertFalse(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("Ask Grok"))
+    XCTAssertFalse(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("Ask AI"))
     XCTAssertFalse(SkyCheckDeskCopy.notesHelper.localizedCaseInsensitiveContains("wall cloud"))
     XCTAssertFalse(SkyCheckDeskCopy.notesPlaceholder.localizedCaseInsensitiveContains("Observer"))
     XCTAssertEqual(
@@ -135,11 +139,178 @@ final class StormSpotterHonestyTests: XCTestCase {
     }
   }
 
-  func testMoreUnlockedSubtitleIsPhotoCheckAndQuestions() {
+  func testSkyCheckChatPromptGroundsHourlyHRRRAFDAndObservation() {
+    let now = Date(timeIntervalSince1970: 1_787_547_600)  // 2026-08-24 09:00 UTC
+    let hourly = [
+      HourlyForecast(
+        time: now.addingTimeInterval(3600),
+        temp: 84,
+        precipChance: 40,
+        weatherCode: 61,
+        symbolName: "cloud.rain.fill",
+        rain: 0.2,
+        showers: nil,
+        snowfall: nil,
+        isDay: true
+      ),
+      HourlyForecast(
+        time: now.addingTimeInterval(2 * 3600),
+        temp: 82,
+        precipChance: 20,
+        weatherCode: 1,
+        symbolName: "cloud.fill",
+        rain: nil,
+        showers: nil,
+        snowfall: nil,
+        isDay: true
+      ),
+    ]
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch, MS", latitude: 34.96, longitude: -89.83),
+      currentTemp: 81,
+      feelsLike: 83,
+      conditionCode: 1,
+      conditionText: "Partly cloudy",
+      humidity: 55,
+      windSpeed: 8,
+      uvIndex: 6,
+      precipitationChance: 20,
+      high: 86,
+      low: 70,
+      symbolName: "cloud.sun.fill",
+      fetchedAt: now,
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: hourly,
+      daily: [],
+      minutely15: []
+    )
+    let obs = NWSObservation(
+      stationId: "KMEM",
+      observedAt: now,
+      temperatureF: 82,
+      windSpeedMph: 5,
+      windDirectionDegrees: 270
+    )
+    let hrrr = ShortTermPrecipContext(
+      locationID: "loc-olive",
+      fetchedAt: now,
+      source: .hrrr,
+      slots: [
+        MinutelyForecast(time: now.addingTimeInterval(15 * 60), precipitation: 0.12, precipChance: 80)
+      ],
+      summary: nil
+    )
+    let briefing = LocalBriefingItem(
+      id: "afd-test-km0",
+      title: "Shower and thunderstorm chances increase late tonight.",
+      sourceName: "NWS Memphis",
+      issuedAt: now,
+      url: URL(string: "https://forecast.weather.gov/product.php?product=AFD")!,
+      productCode: "AFD",
+      officeID: "MEG",
+      imageURL: nil
+    )
+
+    let prompt = GrokPrompts.skyCheckChatSystemPrompt(
+      weather: weather,
+      locationName: "Olive Branch, MS",
+      unit: .fahrenheit,
+      alerts: [],
+      severeContext: nil,
+      shortTermContext: hrrr,
+      nearestStationObservation: obs,
+      briefingItems: [briefing],
+      now: now
+    )
+
+    XCTAssertTrue(prompt.contains("Sky Check"))
+    XCTAssertTrue(prompt.contains("84°F"), prompt)
+    XCTAssertTrue(prompt.contains("40% precip"), prompt)
+    XCTAssertTrue(prompt.contains("0.2\""), prompt)
+    XCTAssertTrue(prompt.contains("Next 12–24 hours"), prompt)
+    XCTAssertTrue(prompt.contains("KMEM"), prompt)
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Nearest official NWS"), prompt)
+    XCTAssertTrue(prompt.contains("HRRR"), prompt)
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Short-term precip"), prompt)
+    XCTAssertTrue(prompt.contains("AFD"), prompt)
+    XCTAssertTrue(prompt.contains("NWS Memphis"), prompt)
+    XCTAssertTrue(
+      prompt.contains("Shower and thunderstorm chances increase late tonight."), prompt)
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Do not rewrite"), prompt)
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Cite NWS, HRRR, or AFD"), prompt)
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent radar"), prompt)
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("N0B"))
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("Site Doppler"))
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("MRMS"))
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("RadarExplain"))
+  }
+
+  func testSkyCheckChatPromptOmitsMissingGroundingBlocks() {
+    let now = Date(timeIntervalSince1970: 1_787_547_600)
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch, MS", latitude: 34.96, longitude: -89.83),
+      currentTemp: 81,
+      feelsLike: 83,
+      conditionCode: 0,
+      conditionText: "Clear",
+      humidity: 40,
+      windSpeed: 5,
+      uvIndex: 4,
+      precipitationChance: 0,
+      high: 86,
+      low: 70,
+      symbolName: "sun.max.fill",
+      fetchedAt: now,
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: [],
+      daily: [],
+      minutely15: []
+    )
+    let prompt = GrokPrompts.skyCheckChatSystemPrompt(
+      weather: weather,
+      locationName: "Olive Branch, MS",
+      unit: .fahrenheit,
+      now: now
+    )
+    XCTAssertTrue(prompt.contains("81°F"))
+    XCTAssertFalse(prompt.contains("Next 12–24 hours"))
+    XCTAssertFalse(prompt.contains("HRRR 15-min"))
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("Nearest official NWS"))
+    XCTAssertFalse(prompt.contains("NWS local briefing"))
+    XCTAssertFalse(prompt.contains("[AFD]"))
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent radar"))
+  }
+
+  @MainActor
+  func testImageGenerationDetectorDoesNotStealSkyPhotoWeatherQuestions() {
+    XCTAssertFalse(
+      GrokAIViewModel.isImageGenerationRequest(
+        "What's the picture of the sky going to look like this afternoon?"))
+    XCTAssertFalse(
+      GrokAIViewModel.isImageGenerationRequest("Can you check this photo of the sky?"))
+    XCTAssertFalse(
+      GrokAIViewModel.isImageGenerationRequest("Analyze this sky photo for me."))
+    for prompt in SkyCheckDeskCopy.prompts {
+      XCTAssertFalse(
+        GrokAIViewModel.isImageGenerationRequest(prompt.body),
+        "Chip must stay in askGrok chat, not Imagine: \(prompt.title)")
+      XCTAssertFalse(prompt.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+  }
+
+  func testMoreUnlockedSubtitleIsWeatherQuestionsFirst() {
     let copy = GrokAccessRules.moreHubGrokSubtitle(canUseAI: true)
-    XCTAssertEqual(copy, "Photo check and weather questions")
+    XCTAssertEqual(copy, "Ask about your weather. Photo check when you want.")
+    XCTAssertTrue(copy.lowercased().hasPrefix("ask about your weather"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("briefings"))
-    XCTAssertFalse(copy.localizedCaseInsensitiveContains("chat"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Ask Grok"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Ask AI"))
   }
 
   func testTakeAndMorningLandOnSkyCheckReadyToType() {

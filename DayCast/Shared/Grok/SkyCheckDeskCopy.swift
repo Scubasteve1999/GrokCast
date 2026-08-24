@@ -1,12 +1,12 @@
 import Foundation
 
-/// Public Sky Check desk copy — photo check first, honest weather questions second.
+/// Public Sky Check desk copy — weather questions first, photo check second.
 /// Tests lock these strings so chaser/field tone cannot sneak back onto the civilian desk.
 enum SkyCheckDeskCopy {
   static let photoCTA = "Check this sky"
   static let checkAnotherCTA = "Check another"
   static let emptyPitch =
-    "Check a sky photo for what's overhead and what to watch next."
+    "Ask about your weather. Check a sky photo when you want eyes on the sky."
   static let hedge =
     "Not an NWS product or warning. Rotation and hail are inferred, not certified."
   static let notesHelper = "Add optional notes about what you see."

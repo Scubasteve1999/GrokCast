@@ -132,7 +132,7 @@ struct AppStoreScreenshotGrok: View {
           .clipShape(
             RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
           )
-          Text("Check a sky photo for what's overhead and what to watch next.")
+          Text(SkyCheckDeskCopy.emptyPitch)
             .font(DesignTokens.Typography.body())
         }
         .padding(DesignTokens.Spacing.space16)

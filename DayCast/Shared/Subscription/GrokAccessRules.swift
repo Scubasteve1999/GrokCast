@@ -49,7 +49,7 @@ enum GrokAccessRules {
   /// people to Settings for a key they no longer need.
   static func moreHubGrokSubtitle(canUseAI: Bool) -> String {
     canUseAI
-      ? "Photo check and weather questions"
+      ? "Ask about your weather. Photo check when you want."
       : "Included with DayCast Pro"
   }
 

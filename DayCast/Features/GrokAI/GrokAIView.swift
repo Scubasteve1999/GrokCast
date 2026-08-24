@@ -48,37 +48,20 @@ private struct GrokAIViewContent: View {
                   subscription: SubscriptionManager.shared
                 )
               }
-              // Sky Check first — core DayCast feature, not buried under lifestyle prompts.
-              figmaStormSpotterCard(viewModel: viewModel)
+
+              if showsDeskIntro(viewModel: viewModel) {
+                deskIntroCopy
+              }
+
               quickPromptsSection(viewModel: viewModel)
+
+              if prefersFigmaStudioLayout, showsPhotoWell(viewModel: viewModel) {
+                skyCheckPhotoWell(viewModel: viewModel)
+              }
 
               ForEach(viewModel.conversationHistory) { message in
                 messageBubble(for: message)
                   .id(message.id)
-              }
-
-              if viewModel.isStreaming && !viewModel.stormAnalysisMode {
-                GrokAIResponseView(
-                  response: viewModel.responseText.isEmpty ? nil : viewModel.responseText,
-                  isThinking: viewModel.responseText.isEmpty,
-                  isStreaming: !viewModel.responseText.isEmpty
-                )
-                .id(viewModel.responseText.isEmpty ? "thinking" : "streaming")
-              }
-
-              if viewModel.isGeneratingImage {
-                responseCard {
-                  HStack(spacing: 12) {
-                    ProgressView()
-                      .tint(.white)
-                    Text("GENERATING IMAGE...")
-                      .font(DesignTokens.Typography.caption())
-                      .tracking(1.5)
-                      .foregroundStyle(.secondary)
-                  }
-                  .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .id("generating-image")
               }
 
               if viewModel.stormAnalysisMode,
@@ -97,13 +80,23 @@ private struct GrokAIViewContent: View {
                   .id("storm-thumb")
               }
 
-              // Regular width only: compact streams inside the Sky Check card.
-              if viewModel.stormAnalysisMode && !prefersFigmaStudioLayout {
-                GrokAIResponseView(
-                  response: viewModel.stormAnalysisText.isEmpty ? nil : viewModel.stormAnalysisText,
-                  isThinking: viewModel.isStreaming && viewModel.stormAnalysisText.isEmpty,
-                  isStreaming: viewModel.isStreaming && !viewModel.stormAnalysisText.isEmpty
-                )
+              if viewModel.isStreaming {
+                streamingResponse(viewModel: viewModel)
+              }
+
+              if viewModel.isGeneratingImage {
+                responseCard {
+                  HStack(spacing: 12) {
+                    ProgressView()
+                      .tint(.white)
+                    Text("GENERATING IMAGE...")
+                      .font(DesignTokens.Typography.caption())
+                      .tracking(1.5)
+                      .foregroundStyle(.secondary)
+                  }
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .id("generating-image")
               }
 
               if let imageData = viewModel.lastStormImageData,
@@ -112,6 +105,18 @@ private struct GrokAIViewContent: View {
               {
                 stormShareRow(
                   viewModel: viewModel, imageData: imageData, analysis: viewModel.stormAnalysisText)
+              }
+
+              if prefersFigmaStudioLayout, showsPhotoCTAButton(viewModel: viewModel) {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+                  skyCheckPhotoCTAButton(viewModel: viewModel)
+                  if hasCompletedPhotoCheck(viewModel: viewModel) {
+                    Text(SkyCheckDeskCopy.hedge)
+                      .font(DesignTokens.Typography.caption())
+                      .foregroundStyle(DesignTokens.Palette.textTertiary)
+                      .fixedSize(horizontal: false, vertical: true)
+                  }
+                }
               }
 
               if let error = viewModel.errorMessage {
@@ -144,14 +149,17 @@ private struct GrokAIViewContent: View {
             scrollToBottom(proxy: proxy, viewModel: viewModel)
           }
           .onChange(of: viewModel.responseText) {
-            if viewModel.isStreaming && !viewModel.stormAnalysisMode {
+            if viewModel.isStreaming {
+              scrollToBottom(proxy: proxy, viewModel: viewModel)
+            }
+          }
+          .onChange(of: viewModel.stormAnalysisText) {
+            if viewModel.isStreaming && viewModel.stormAnalysisMode {
               scrollToBottom(proxy: proxy, viewModel: viewModel)
             }
           }
           .onChange(of: viewModel.isStreaming) {
-            if viewModel.isStreaming && !viewModel.stormAnalysisMode
-              && viewModel.responseText.isEmpty
-            {
+            if viewModel.isStreaming {
               scrollToBottom(proxy: proxy, viewModel: viewModel)
             }
           }
@@ -168,10 +176,10 @@ private struct GrokAIViewContent: View {
         inputArea(viewModel: viewModel)
           .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
           .padding(.top, 8)
-          .padding(.bottom, 8)
+          .padding(.bottom, prefersFigmaStudioLayout ? DesignTokens.Spacing.space12 : 8)
           .background(
             horizontalSizeClass == .compact
-              ? AnyShapeStyle(DesignTokens.Palette.bgPrimary.opacity(0.95))
+              ? AnyShapeStyle(.clear)
               : AnyShapeStyle(.ultraThinMaterial.opacity(isInputFocused ? 1 : 0.85))
           )
       }
@@ -258,62 +266,38 @@ private struct GrokAIViewContent: View {
     }
   }
 
-  private func figmaStormSpotterCard(viewModel: GrokAIViewModel) -> some View {
-    Group {
-      if prefersFigmaStudioLayout {
-        VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
-          FigmaAccentSectionLabel(
-            title: "SKY CHECK",
-            icon: "cloud.bolt.fill",
-            color: DesignTokens.Palette.accent
-          )
-
-          if viewModel.stormAnalysisMode && viewModel.isStreaming
-            && viewModel.stormAnalysisText.isEmpty
-          {
-            HStack(spacing: DesignTokens.Spacing.space8) {
-              ProgressView().scaleEffect(0.85)
-              Text("Checking your photo…")
-                .font(DesignTokens.Typography.callout())
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-            }
-          } else if !viewModel.stormAnalysisText.isEmpty {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-              Text(viewModel.stormAnalysisText)
-                .font(DesignTokens.Typography.callout())
-                .foregroundStyle(DesignTokens.Palette.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-              if !viewModel.stormAnalysisMode {
-                Text(SkyCheckDeskCopy.hedge)
-                  .font(DesignTokens.Typography.caption())
-                  .foregroundStyle(DesignTokens.Palette.textTertiary)
-                  .fixedSize(horizontal: false, vertical: true)
-              }
-            }
-            skyCheckPhotoCTAButton(viewModel: viewModel)
-          } else {
-            skyCheckPhotoWell(viewModel: viewModel)
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-              Text(SkyCheckDeskCopy.emptyPitch)
-                .font(DesignTokens.Typography.callout())
-                .foregroundStyle(DesignTokens.Palette.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-              Text(SkyCheckDeskCopy.hedge)
-                .font(DesignTokens.Typography.caption())
-                .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-          }
-        }
-        .padding(DesignTokens.Spacing.space16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle(
-          background: DesignTokens.Palette.cardElevated,
-          stroke: DesignTokens.Palette.cardStroke,
-          cornerRadius: DesignTokens.Card.cornerRadiusMedium
-        )
-      }
+  private var deskIntroCopy: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text(SkyCheckDeskCopy.emptyPitch)
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .fixedSize(horizontal: false, vertical: true)
+      Text(SkyCheckDeskCopy.hedge)
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .fixedSize(horizontal: false, vertical: true)
     }
+  }
+
+  private func showsDeskIntro(viewModel: GrokAIViewModel) -> Bool {
+    viewModel.conversationHistory.isEmpty
+      && !viewModel.stormAnalysisMode
+      && viewModel.responseText.isEmpty
+      && viewModel.stormAnalysisText.isEmpty
+  }
+
+  private func showsPhotoWell(viewModel: GrokAIViewModel) -> Bool {
+    showsDeskIntro(viewModel: viewModel)
+  }
+
+  private func showsPhotoCTAButton(viewModel: GrokAIViewModel) -> Bool {
+    !showsPhotoWell(viewModel: viewModel) && !viewModel.stormAnalysisMode
+  }
+
+  private func hasCompletedPhotoCheck(viewModel: GrokAIViewModel) -> Bool {
+    viewModel.lastStormImageData != nil
+      && !viewModel.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      && !viewModel.stormAnalysisMode
   }
 
   private func openSkyCheckPicker() {
@@ -667,11 +651,13 @@ private struct GrokAIViewContent: View {
 
   private func scrollToBottom(proxy: ScrollViewProxy, viewModel: GrokAIViewModel) {
     withAnimation {
-      if viewModel.isStreaming && !viewModel.stormAnalysisMode && !viewModel.responseText.isEmpty {
+      let streamText =
+        viewModel.stormAnalysisMode ? viewModel.stormAnalysisText : viewModel.responseText
+      if viewModel.isStreaming && !streamText.isEmpty {
         proxy.scrollTo("streaming", anchor: .bottom)
       } else if let last = viewModel.conversationHistory.last {
         proxy.scrollTo(last.id, anchor: .bottom)
-      } else if viewModel.isStreaming && !viewModel.stormAnalysisMode {
+      } else if viewModel.isStreaming {
         proxy.scrollTo("thinking", anchor: .bottom)
       } else if viewModel.isGeneratingImage {
         proxy.scrollTo("generating-image", anchor: .bottom)
@@ -759,11 +745,19 @@ private struct GrokAIViewContent: View {
   }
 
   private func skyCheckPhotoCTATitle(viewModel: GrokAIViewModel) -> String {
-    let completed =
-      viewModel.lastStormImageData != nil
-      && !viewModel.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-      && !viewModel.stormAnalysisMode
-    return completed ? SkyCheckDeskCopy.checkAnotherCTA : SkyCheckDeskCopy.photoCTA
+    hasCompletedPhotoCheck(viewModel: viewModel)
+      ? SkyCheckDeskCopy.checkAnotherCTA : SkyCheckDeskCopy.photoCTA
+  }
+
+  private func streamingResponse(viewModel: GrokAIViewModel) -> some View {
+    let streamText =
+      viewModel.stormAnalysisMode ? viewModel.stormAnalysisText : viewModel.responseText
+    return GrokAIResponseView(
+      response: streamText.isEmpty ? nil : streamText,
+      isThinking: streamText.isEmpty,
+      isStreaming: !streamText.isEmpty
+    )
+    .id(streamText.isEmpty ? "thinking" : "streaming")
   }
 
   private func askQuickPrompt(_ prompt: String, viewModel: GrokAIViewModel) {
