@@ -131,9 +131,13 @@ final class StormSpotterHonestyTests: XCTestCase {
       conditionsBlock: "Current conditions for Olive Branch, MS:\n- Temperature: 82°F")
     for prompt in [noWeather, withWeather] {
       XCTAssertTrue(prompt.contains("Sky Check"))
+      XCTAssertTrue(
+        prompt.localizedCaseInsensitiveContains(
+          "Lead with the answer a person would tell a friend"), prompt)
+      XCTAssertTrue(prompt.localizedCaseInsensitiveContains("No jargon unless they ask"), prompt)
       XCTAssertFalse(prompt.localizedCaseInsensitiveContains("field-first"))
       XCTAssertFalse(prompt.localizedCaseInsensitiveContains("watching severe weather"))
-      XCTAssertFalse(prompt.localizedCaseInsensitiveContains("SRV"))
+      XCTAssertFalse(prompt.localizedCaseInsensitiveContains("storm-relative"))
       XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent radar"))
       XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent warnings"))
     }
@@ -199,7 +203,8 @@ final class StormSpotterHonestyTests: XCTestCase {
       fetchedAt: now,
       source: .hrrr,
       slots: [
-        MinutelyForecast(time: now.addingTimeInterval(15 * 60), precipitation: 0.12, precipChance: 80)
+        MinutelyForecast(
+          time: now.addingTimeInterval(15 * 60), precipitation: 0.12, precipChance: 80)
       ],
       summary: nil
     )
@@ -231,6 +236,13 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertTrue(prompt.contains("40% precip"), prompt)
     XCTAssertTrue(prompt.contains("0.2\""), prompt)
     XCTAssertTrue(prompt.contains("Next 12–24 hours"), prompt)
+    XCTAssertTrue(prompt.contains("Today's high: 86°F"), prompt)
+    XCTAssertTrue(prompt.contains("Today's low: 70°F"), prompt)
+    XCTAssertTrue(prompt.contains("Precipitation chance: 20%"), prompt)
+    XCTAssertTrue(prompt.contains("UV index: 6"), prompt)
+    XCTAssertFalse(prompt.contains("US AQI"), prompt)
+    XCTAssertFalse(prompt.contains("Pollen:"), prompt)
+    XCTAssertFalse(prompt.contains("Daily outlook"), prompt)
     XCTAssertTrue(prompt.contains("KMEM"), prompt)
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Nearest official NWS"), prompt)
     XCTAssertTrue(prompt.contains("HRRR"), prompt)
@@ -242,10 +254,166 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Do not rewrite"), prompt)
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Cite NWS, HRRR, or AFD"), prompt)
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent radar"), prompt)
+    XCTAssertTrue(
+      prompt.localizedCaseInsensitiveContains("Lead with the answer a person would tell a friend"),
+      prompt)
     XCTAssertFalse(prompt.localizedCaseInsensitiveContains("N0B"))
     XCTAssertFalse(prompt.localizedCaseInsensitiveContains("Site Doppler"))
     XCTAssertFalse(prompt.localizedCaseInsensitiveContains("MRMS"))
     XCTAssertFalse(prompt.localizedCaseInsensitiveContains("RadarExplain"))
+  }
+
+  func testSkyCheckChatPromptIncludesDailyOutlookAirPollenAndAlertArea() {
+    let now = Date(timeIntervalSince1970: 1_787_547_600)  // 2026-08-24 00:00 CDT
+    let calendar = LocationTimezone.calendar(for: "America/Chicago")
+    let today = calendar.startOfDay(for: now)
+    let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+    let sunrise = Date(timeIntervalSince1970: 1_787_569_920)  // 6:12 AM CDT
+    let sunset = Date(timeIntervalSince1970: 1_787_617_920)  // 7:32 PM CDT
+    let daily = [
+      DailyForecast(
+        date: today,
+        high: 91,
+        low: 72,
+        precipChance: 30,
+        weatherCode: 61,
+        symbolName: "cloud.rain.fill",
+        uvMax: 8,
+        rainSum: 0.4,
+        showersSum: nil,
+        snowfallSum: nil,
+        sunrise: sunrise,
+        sunset: sunset
+      ),
+      DailyForecast(
+        date: tomorrow,
+        high: 88,
+        low: 70,
+        precipChance: 10,
+        weatherCode: 1,
+        symbolName: "cloud.fill",
+        uvMax: 7,
+        rainSum: 0.02,
+        showersSum: nil,
+        snowfallSum: nil,
+        sunrise: nil,
+        sunset: nil
+      ),
+    ]
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch, MS", latitude: 34.96, longitude: -89.83),
+      currentTemp: 81,
+      feelsLike: 83,
+      conditionCode: 1,
+      conditionText: "Partly cloudy",
+      humidity: 55,
+      windSpeed: 8,
+      uvIndex: 6.4,
+      precipitationChance: 20,
+      high: 91,
+      low: 72,
+      symbolName: "cloud.sun.fill",
+      fetchedAt: now,
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: 42,
+      pm25: 8,
+      pollenLevel: "Moderate",
+      hourly: [],
+      daily: daily,
+      minutely15: []
+    )
+    let alert = NWSAlert(
+      id: "alert-desoto",
+      event: "Severe Thunderstorm Warning",
+      severity: "Severe",
+      headline: "Severe Thunderstorm Warning for DeSoto County until 5 PM CDT",
+      description: nil,
+      instruction: nil,
+      expires: now.addingTimeInterval(3600),
+      areaDesc: "DeSoto, MS",
+      latitude: nil,
+      longitude: nil
+    )
+
+    let prompt = GrokPrompts.skyCheckChatSystemPrompt(
+      weather: weather,
+      locationName: "Olive Branch, MS",
+      unit: .fahrenheit,
+      alerts: [alert],
+      now: now
+    )
+
+    XCTAssertTrue(prompt.contains("Today's high: 91°F"), prompt)
+    XCTAssertTrue(prompt.contains("Today's low: 72°F"), prompt)
+    XCTAssertTrue(prompt.contains("UV index: 6"), prompt)
+    XCTAssertTrue(prompt.contains("US AQI: 42 (Good)"), prompt)
+    XCTAssertTrue(prompt.contains("Pollen: Moderate"), prompt)
+    XCTAssertTrue(prompt.contains("Daily outlook"), prompt)
+    XCTAssertTrue(prompt.contains("Today: Rain, high 91°F / low 72°F, 30% precip"), prompt)
+    XCTAssertTrue(prompt.contains("0.4\""), prompt)
+    XCTAssertTrue(prompt.contains("sunrise 6:12 AM"), prompt)
+    XCTAssertTrue(prompt.contains("sunset 7:32 PM"), prompt)
+    XCTAssertTrue(
+      prompt.contains("Tuesday: Mainly Clear, high 88°F / low 70°F, 10% precip"), prompt)
+    let tuesdayLine = prompt.split(separator: "\n").first { $0.contains("Tuesday:") }
+    XCTAssertNotNil(tuesdayLine, prompt)
+    XCTAssertFalse(tuesdayLine?.contains("sunrise") == true, String(tuesdayLine ?? ""))
+    XCTAssertFalse(tuesdayLine?.contains("sunset") == true, String(tuesdayLine ?? ""))
+    XCTAssertTrue(prompt.contains("Severe Thunderstorm Warning (Severe)"), prompt)
+    XCTAssertTrue(
+      prompt.contains("Severe Thunderstorm Warning for DeSoto County until 5 PM CDT"), prompt)
+    XCTAssertTrue(prompt.contains("DeSoto, MS"), prompt)
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("N0B"))
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("Site Doppler"))
+    XCTAssertFalse(prompt.localizedCaseInsensitiveContains("MRMS"))
+  }
+
+  func testVisionContextStaysThinWithoutChatDailyPack() {
+    let now = Date(timeIntervalSince1970: 1_787_547_600)
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch, MS", latitude: 34.96, longitude: -89.83),
+      currentTemp: 81,
+      feelsLike: 83,
+      conditionCode: 1,
+      conditionText: "Partly cloudy",
+      humidity: 55,
+      windSpeed: 8,
+      uvIndex: 6,
+      precipitationChance: 20,
+      high: 91,
+      low: 72,
+      symbolName: "cloud.sun.fill",
+      fetchedAt: now,
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: 42,
+      pm25: nil,
+      pollenLevel: "Moderate",
+      hourly: [],
+      daily: [
+        DailyForecast(
+          date: now,
+          high: 91,
+          low: 72,
+          precipChance: 30,
+          weatherCode: 61,
+          symbolName: "cloud.rain.fill",
+          uvMax: 8,
+          rainSum: 0.4,
+          showersSum: nil,
+          snowfallSum: nil,
+          sunrise: now,
+          sunset: now
+        )
+      ],
+      minutely15: []
+    )
+    let context = GrokPrompts.buildTechnicalStormContext(for: weather)
+    XCTAssertTrue(context.contains("Precipitation chance: 20%"))
+    XCTAssertFalse(context.contains("Daily outlook"))
+    XCTAssertFalse(context.contains("US AQI"))
+    XCTAssertFalse(context.contains("Pollen:"))
+    XCTAssertFalse(context.contains("UV index:"))
+    XCTAssertFalse(context.contains("Today's high:"))
   }
 
   func testSkyCheckChatPromptOmitsMissingGroundingBlocks() {
@@ -279,12 +447,72 @@ final class StormSpotterHonestyTests: XCTestCase {
       now: now
     )
     XCTAssertTrue(prompt.contains("81°F"))
+    XCTAssertTrue(prompt.contains("Today's high: 86°F"), prompt)
+    XCTAssertTrue(prompt.contains("Today's low: 70°F"), prompt)
+    XCTAssertTrue(prompt.contains("UV index: 4"), prompt)
+    XCTAssertFalse(prompt.contains("US AQI"))
+    XCTAssertFalse(prompt.contains("Pollen:"))
+    XCTAssertFalse(prompt.contains("Daily outlook"))
     XCTAssertFalse(prompt.contains("Next 12–24 hours"))
     XCTAssertFalse(prompt.contains("HRRR 15-min"))
     XCTAssertFalse(prompt.localizedCaseInsensitiveContains("Nearest official NWS"))
     XCTAssertFalse(prompt.contains("NWS local briefing"))
     XCTAssertFalse(prompt.contains("[AFD]"))
+    XCTAssertFalse(prompt.contains("Active NWS alerts"))
     XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not invent radar"))
+    XCTAssertTrue(
+      prompt.localizedCaseInsensitiveContains("Lead with the answer a person would tell a friend"),
+      prompt)
+  }
+
+  func testSkyCheckChatAlertBlockCapsAtFiveAndOmitsEmptyHeadline() {
+    let now = Date(timeIntervalSince1970: 1_787_547_600)
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch, MS", latitude: 34.96, longitude: -89.83),
+      currentTemp: 81,
+      feelsLike: 83,
+      conditionCode: 0,
+      conditionText: "Clear",
+      humidity: 40,
+      windSpeed: 5,
+      uvIndex: 4,
+      precipitationChance: 0,
+      high: 86,
+      low: 70,
+      symbolName: "sun.max.fill",
+      fetchedAt: now,
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: [],
+      daily: [],
+      minutely15: []
+    )
+    let alerts = (1...6).map { index in
+      NWSAlert(
+        id: "alert-\(index)",
+        event: "Flood Warning \(index)",
+        severity: "Moderate",
+        headline: index == 1 ? "Creek flooding in DeSoto County" : "Headline \(index)",
+        description: nil,
+        instruction: nil,
+        expires: now.addingTimeInterval(3600),
+        areaDesc: "DeSoto, MS",
+        latitude: nil,
+        longitude: nil
+      )
+    }
+    let prompt = GrokPrompts.skyCheckChatSystemPrompt(
+      weather: weather,
+      locationName: "Olive Branch, MS",
+      alerts: alerts,
+      now: now
+    )
+    XCTAssertTrue(prompt.contains("Creek flooding in DeSoto County"), prompt)
+    XCTAssertTrue(prompt.contains("Headline 5"), prompt)
+    XCTAssertFalse(prompt.contains("Headline 6"), prompt)
+    XCTAssertFalse(prompt.contains("Flood Warning 6"), prompt)
   }
 
   @MainActor

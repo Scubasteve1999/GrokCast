@@ -36,7 +36,8 @@ enum GrokPrompts {
     - Use standard meteorological terminology without becoming overly academic.
     """
 
-  /// Shared current-conditions block for chat, Imagine, and Storm Spotter.
+  /// Shared current-conditions block for Imagine and Storm Spotter vision.
+  /// Chat uses `chatCurrentConditionsBlock` so vision/Imagine stay lean.
   static func currentConditionsBlock(
     weather: DayCastWeather,
     locationName: String,
@@ -50,6 +51,30 @@ enum GrokPrompts {
     - Humidity: \(weather.humidity)%
     - Wind: \(unit.formatWind(weather.windSpeed))
     """
+  }
+
+  /// Chat-only now pack: thin current plus today's H/L, precip, UV, AQI, pollen when present.
+  static func chatCurrentConditionsBlock(
+    weather: DayCastWeather,
+    locationName: String,
+    unit: TemperatureUnit
+  ) -> String {
+    var block = currentConditionsBlock(
+      weather: weather, locationName: locationName, unit: unit)
+    block += "\n- Today's high: \(unit.format(weather.high))"
+    block += "\n- Today's low: \(unit.format(weather.low))"
+    block += "\n- Precipitation chance: \(weather.precipitationChance)%"
+    block += "\n- UV index: \(Int(weather.uvIndex.rounded()))"
+    if let aqi = weather.airQualityIndex {
+      let category = AirQualityCategory(usAQI: aqi).title
+      block += "\n- US AQI: \(aqi) (\(category))"
+    }
+    if let pollen = weather.pollenLevel?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !pollen.isEmpty
+    {
+      block += "\n- Pollen: \(pollen)"
+    }
+    return block
   }
 
   /// Builds a focused technical weather context for storm analysis.
@@ -180,6 +205,68 @@ enum GrokPrompts {
     return lines.joined(separator: "\n")
   }
 
+  /// Next ~7–10 daily slots (weekday, H/L, condition, precip %, amount ≥0.1").
+  /// Sunrise/sunset only for today. Skips an empty `daily` pack.
+  static func dailyOutlookBlock(
+    daily: [DailyForecast],
+    unit: TemperatureUnit,
+    timeZone: TimeZone,
+    calendar: Calendar,
+    now: Date = Date(),
+    maxDays: Int = 10
+  ) -> String? {
+    let slice = Array(daily.prefix(maxDays))
+    guard !slice.isEmpty else { return nil }
+
+    let weekdayFormatter = LocationTimezone.formatter(dateFormat: "EEEE", timeZone: timeZone)
+    let sunFormatter = LocationTimezone.formatter(dateFormat: "h:mm a", timeZone: timeZone)
+
+    var lines: [String] = ["**Daily outlook:**"]
+    for day in slice {
+      let condition = WeatherCondition(fromWMO: day.weatherCode).displayText
+      let label =
+        calendar.isDate(day.date, inSameDayAs: now)
+        ? "Today" : weekdayFormatter.string(from: day.date)
+      var bit =
+        "- \(label): \(condition), high \(unit.format(day.high)) / low \(unit.format(day.low)), \(day.precipChance)% precip"
+      let liquid = (day.rainSum ?? 0) + (day.showersSum ?? 0)
+      let snow = day.snowfallSum ?? 0
+      if let amount = precipAmountText(liquid: liquid, snow: snow) {
+        bit += ", \(amount)"
+      }
+      if calendar.isDate(day.date, inSameDayAs: now) {
+        if let sunrise = day.sunrise {
+          bit += ", sunrise \(sunFormatter.string(from: sunrise))"
+        }
+        if let sunset = day.sunset {
+          bit += ", sunset \(sunFormatter.string(from: sunset))"
+        }
+      }
+      lines.append(bit)
+    }
+    guard lines.count > 1 else { return nil }
+    return lines.joined(separator: "\n")
+  }
+
+  /// Compact NWS alert lines for chat: event, severity, headline, area. Cap ~5.
+  static func nwsAlertChatBlock(_ alerts: [NWSAlert], maxCount: Int = 5) -> String? {
+    let prefix = Array(alerts.prefix(maxCount))
+    guard !prefix.isEmpty else { return nil }
+    var lines: [String] = ["Active NWS alerts:"]
+    for alert in prefix {
+      let sev = alert.severity ?? "Unknown"
+      var line = "- \(alert.event) (\(sev))"
+      if let headline = alert.headline, !headline.isEmpty {
+        line += ": \(headline)"
+      }
+      if let area = alert.areaDesc, !area.isEmpty {
+        line += " — \(area)"
+      }
+      lines.append(line)
+    }
+    return lines.joined(separator: "\n")
+  }
+
   /// AFD KEY MESSAGES / PNS titles as issued. Chat must not rewrite this text.
   static func localBriefingBlock(items: [LocalBriefingItem]) -> String? {
     let usable = items.filter {
@@ -294,12 +381,15 @@ enum GrokPrompts {
     return prompt
   }
 
-  /// Chat-desk identity. Not field-first / chase / SRV. Do not invent radar reads.
+  /// Chat-desk identity. Lead with a friend's answer, then the number. Do not invent radar.
   static let skyCheckChatIdentity = """
     You are Sky Check in DayCast — an honest weather desk for the public. \
-    Answer questions about the sky, hazards, timing, and what to watch next. \
+    Lead with the answer a person would tell a friend, then the number and source. \
+    Cover whatever they asked if it is in the data — now, next hour, today, this week, alerts, air, pollen, UV, sun times. \
+    If it is not in the data, say you don't have it. Do not guess. \
     Use only the data provided. Cite NWS, HRRR, or AFD when you use those blocks. \
-    Do not invent radar reads, warnings, or numbers that are not in the data.
+    Do not invent radar reads, warnings, or numbers. \
+    No jargon unless they ask (dBZ, SRV, mesoscale).
     """
 
   static func skyCheckChatSystemPrompt(
@@ -329,7 +419,7 @@ enum GrokPrompts {
       return skyCheckChatSystemPrompt(conditionsBlock: nil)
     }
 
-    let conditions = currentConditionsBlock(
+    let conditions = chatCurrentConditionsBlock(
       weather: weather, locationName: locationName, unit: unit)
 
     var extras: [String] = []
@@ -344,20 +434,23 @@ enum GrokPrompts {
     ) {
       extras.append(hourly)
     }
+    if let daily = dailyOutlookBlock(
+      daily: weather.daily,
+      unit: unit,
+      timeZone: weather.locationTimeZone,
+      calendar: weather.locationCalendar,
+      now: now
+    ) {
+      extras.append(daily)
+    }
     if let shortTerm = shortTermPrecipBlock(
       context: shortTermContext,
       openMeteoSlots: weather.minutely15
     ) {
       extras.append(shortTerm)
     }
-
-    let alertPrefix = Array(alerts.prefix(5))
-    if !alertPrefix.isEmpty {
-      let lines = alertPrefix.map { a in
-        let sev = a.severity ?? "Unknown"
-        return "- \(a.event) (\(sev))"
-      }.joined(separator: "\n")
-      extras.append("Active NWS alerts:\n" + lines)
+    if let alertBlock = nwsAlertChatBlock(alerts) {
+      extras.append(alertBlock)
     }
     if let severe = severeContextBlock(context: severeContext), !severe.isEmpty {
       extras.append(severe)
@@ -380,16 +473,16 @@ enum GrokPrompts {
     guard let conditionsBlock else {
       return """
         \(skyCheckChatIdentity) \
-        Lifestyle advice only if the user asks. Be concise. Do not invent warnings.
+        Lifestyle advice (wear, walk, grill) only if the user asks. Be concise. Do not invent warnings.
         """
     }
     return """
       \(skyCheckChatIdentity) \
-      Lifestyle advice (outfits, walks) only if the user asks.
+      Lifestyle advice (wear, walk, grill) only if the user asks.
 
       \(conditionsBlock)
       \(groundedBlocks)
-      Be concise and practical. Lead with what's happening and what to watch next. Do not invent warnings.
+      Be concise. Lead with the answer, then the number. Do not invent warnings.
       """
   }
 }
