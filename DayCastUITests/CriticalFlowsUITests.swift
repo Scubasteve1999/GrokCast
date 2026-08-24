@@ -121,6 +121,47 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     }
   }
 
+  // MARK: - 3b. Sky Check composer sits above CompactTabBar
+
+  func testSkyCheckComposerIsHittableAboveTabBar() throws {
+    XCTAssertTrue(waitForTabBar())
+    openMoreHubThen(.grok)
+
+    let field = skyCheckChatField()
+    XCTAssertTrue(field.waitForExistence(timeout: 12), "Sky Check chat field missing")
+    XCTAssertTrue(waitForHittable(field, timeout: 6), "Chat field is not hittable")
+
+    let radar = app.buttons[Tab.radar.identifier]
+    let more = app.buttons[Tab.more.identifier]
+    XCTAssertTrue(radar.waitForExistence(timeout: 4), "Radar tab missing")
+    XCTAssertTrue(more.exists, "More tab missing")
+    XCTAssertTrue(radar.isHittable, "Radar tab should stay hittable with keyboard down")
+
+    XCTAssertLessThanOrEqual(
+      field.frame.maxY,
+      radar.frame.minY + 4,
+      "Composer overlaps the Radar tab (field.maxY \(field.frame.maxY) radar.minY \(radar.frame.minY))"
+    )
+    XCTAssertLessThanOrEqual(
+      field.frame.maxY,
+      more.frame.minY + 4,
+      "Composer overlaps the More tab"
+    )
+    saveSkyCheckStill(named: "01-keyboard-down.jpg")
+
+    field.tap()
+    XCTAssertTrue(
+      app.keyboards.element.waitForExistence(timeout: 6),
+      "Keyboard did not appear after focusing the composer"
+    )
+    XCTAssertTrue(field.isHittable, "Composer should ride the keyboard")
+    XCTAssertFalse(
+      radar.isHittable,
+      "CompactTabBar should hide while the Sky Check field is focused"
+    )
+    saveSkyCheckStill(named: "02-keyboard-up.jpg")
+  }
+
   // MARK: - 4. Deep links switch tabs
 
   func testDeepLinkOpensForecastAndAlerts() throws {
@@ -181,6 +222,24 @@ final class CriticalFlowsUITests: DayCastUITestCase {
   }
 
   // MARK: - Helpers
+
+  private func skyCheckChatField() -> XCUIElement {
+    app.descendants(matching: .any).matching(
+      NSPredicate(format: "identifier == %@", "daycast.grok.chatField")
+    ).firstMatch
+  }
+
+  private func saveSkyCheckStill(named filename: String) {
+    let dir = URL(
+      fileURLWithPath:
+        "/Users/bigstevedev/Projects/GrokCast/scratch/sky-check-chat-ux-2026-08-24"
+    )
+    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    guard let data = XCUIScreen.main.screenshot().image.jpegData(compressionQuality: 0.8) else {
+      return
+    }
+    try? data.write(to: dir.appendingPathComponent(filename))
+  }
 
   private func openDeepLink(_ urlString: String) {
     guard let url = URL(string: urlString) else {

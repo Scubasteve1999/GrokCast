@@ -27,17 +27,10 @@ private struct GrokAIViewContent: View {
   var body: some View {
     @Bindable var viewModel = weatherStore.grokAIViewModel
 
-    NavigationStack {
-      ZStack {
-        WeatherBackgroundView(
-          conditionCode: weatherStore.currentWeather?.conditionCode,
-          isDay: weatherStore.currentWeather.map {
-            WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay,
-          intensity: .staticOnly
-        )
-        .ignoresSafeArea()
+    ZStack {
+      skyCheckWeatherBackground
 
+      NavigationStack {
         ScrollViewReader { proxy in
           ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -89,10 +82,9 @@ private struct GrokAIViewContent: View {
                   HStack(spacing: 12) {
                     ProgressView()
                       .tint(.white)
-                    Text("GENERATING IMAGE...")
+                    Text("Generating image…")
                       .font(DesignTokens.Typography.caption())
-                      .tracking(1.5)
-                      .foregroundStyle(.secondary)
+                      .foregroundStyle(DesignTokens.Palette.textSecondary)
                   }
                   .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -141,48 +133,58 @@ private struct GrokAIViewContent: View {
                 )
                 .id("error")
               }
+
+              Color.clear
+                .frame(height: 1)
+                .id("thread-bottom")
+                .accessibilityHidden(true)
             }
-            .figmaScreenPadding(top: DesignTokens.Layout.topPadding)
+            .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
+            .padding(.top, DesignTokens.Layout.topPadding)
+            .padding(.bottom, DesignTokens.Spacing.space8)
           }
           .scrollDismissesKeyboard(.interactively)
+          .background { skyCheckWeatherBackground }
           .onChange(of: viewModel.conversationHistory.count) {
-            scrollToBottom(proxy: proxy, viewModel: viewModel)
+            scrollToBottom(proxy: proxy)
           }
           .onChange(of: viewModel.responseText) {
-            if viewModel.isStreaming {
-              scrollToBottom(proxy: proxy, viewModel: viewModel)
-            }
+            if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
           }
           .onChange(of: viewModel.stormAnalysisText) {
             if viewModel.isStreaming && viewModel.stormAnalysisMode {
-              scrollToBottom(proxy: proxy, viewModel: viewModel)
+              scrollToBottom(proxy: proxy)
             }
           }
           .onChange(of: viewModel.isStreaming) {
-            if viewModel.isStreaming {
-              scrollToBottom(proxy: proxy, viewModel: viewModel)
-            }
+            if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
           }
           .onChange(of: viewModel.isGeneratingImage) {
-            if viewModel.isGeneratingImage {
-              scrollToBottom(proxy: proxy, viewModel: viewModel)
-            }
+            if viewModel.isGeneratingImage { scrollToBottom(proxy: proxy) }
+          }
+          .onChange(of: isInputFocused) {
+            scrollToBottom(proxy: proxy)
           }
         }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .weatherShowsThroughNavigationBar()
       }
-      .navigationTitle("")
-      .navigationBarTitleDisplayMode(.inline)
       .safeAreaInset(edge: .bottom, spacing: 0) {
         inputArea(viewModel: viewModel)
           .padding(.horizontal, DesignTokens.Layout.horizontalPadding)
-          .padding(.top, 8)
+          .padding(.top, DesignTokens.Spacing.space8)
           .padding(.bottom, prefersFigmaStudioLayout ? DesignTokens.Spacing.space12 : 8)
-          .background(
-            horizontalSizeClass == .compact
-              ? AnyShapeStyle(.clear)
-              : AnyShapeStyle(.ultraThinMaterial.opacity(isInputFocused ? 1 : 0.85))
-          )
+          .background(composerTrayBackground)
       }
+      .padding(
+        .bottom,
+        SkyCheckChatChrome.tabBarClearance(
+          isCompact: prefersFigmaStudioLayout,
+          isInputFocused: isInputFocused
+        )
+      )
+      .animation(.easeInOut(duration: 0.25), value: isInputFocused)
     }
     .preference(key: TabBarSuppressionPreferenceKey.self, value: isInputFocused)
     .preferredColorScheme(.dark)
@@ -240,6 +242,21 @@ private struct GrokAIViewContent: View {
     horizontalSizeClass == .compact
   }
 
+  private var composerTrayBackground: AnyShapeStyle {
+    AnyShapeStyle(.ultraThinMaterial)
+  }
+
+  private var skyCheckWeatherBackground: some View {
+    WeatherBackgroundView(
+      conditionCode: weatherStore.currentWeather?.conditionCode,
+      isDay: weatherStore.currentWeather.map {
+        WeatherBackgroundView.isDay(from: $0.symbolName)
+      } ?? WeatherBackgroundView.inferredIsDay,
+      intensity: .staticOnly
+    )
+    .ignoresSafeArea()
+  }
+
   private var headerSection: some View {
     Group {
       if prefersFigmaStudioLayout {
@@ -270,7 +287,7 @@ private struct GrokAIViewContent: View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Text(SkyCheckDeskCopy.emptyPitch)
         .font(DesignTokens.Typography.callout())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
         .fixedSize(horizontal: false, vertical: true)
       Text(SkyCheckDeskCopy.hedge)
         .font(DesignTokens.Typography.caption())
@@ -301,6 +318,7 @@ private struct GrokAIViewContent: View {
   }
 
   private func openSkyCheckPicker() {
+    isInputFocused = false
     Task {
       guard weatherStore.canUseGrok else {
         if PaywallCoordinator.shared.canUnlockGrokViaPro {
@@ -426,27 +444,21 @@ private struct GrokAIViewContent: View {
 
   @ViewBuilder
   private func inputArea(viewModel: GrokAIViewModel) -> some View {
-    if prefersFigmaStudioLayout {
-      GrokInputBar(
-        text: $question,
-        isFocused: $isInputFocused,
-        layout: .figma
-      ) {
-        Task {
-          await viewModel.askGrok(question: question)
-          question = ""
-        }
-      }
-      .disabled(aiActionsDisabled)
-    } else {
-      GrokInputBar(text: $question, isFocused: $isInputFocused) {
-        Task {
-          await viewModel.askGrok(question: question)
-          question = ""
-        }
-      }
-      .disabled(aiActionsDisabled)
+    GrokInputBar(
+      text: $question,
+      isFocused: $isInputFocused,
+      layout: prefersFigmaStudioLayout ? .figma : .standard
+    ) {
+      sendQuestion(viewModel: viewModel)
     }
+    .disabled(aiActionsDisabled)
+  }
+
+  private func sendQuestion(viewModel: GrokAIViewModel) {
+    let text = question
+    question = ""
+    isInputFocused = false
+    Task { await viewModel.askGrok(question: text) }
   }
 
   private func stormNotesSheet(viewModel: GrokAIViewModel) -> some View {
@@ -509,17 +521,23 @@ private struct GrokAIViewContent: View {
 
   @ViewBuilder
   private func assistantMessageText(_ content: String) -> some View {
-    if let attributed = try? AttributedString(markdown: content) {
-      Text(attributed)
-    } else {
-      Text(content)
+    Group {
+      if let attributed = try? AttributedString(markdown: content) {
+        Text(attributed)
+      } else {
+        Text(content)
+      }
     }
+    .font(DesignTokens.Typography.body())
+    .foregroundStyle(DesignTokens.Palette.textPrimary)
   }
 
+  private var bubbleGutter: CGFloat { DesignTokens.Spacing.space48 }
+
   private func messageBubble(for message: ChatMessage) -> some View {
-    HStack {
+    HStack(alignment: .bottom, spacing: 0) {
       if message.role == .user {
-        Spacer(minLength: 60)
+        Spacer(minLength: bubbleGutter)
         VStack(alignment: .trailing, spacing: 4) {
           if let imageData = message.imageData, let uiImage = UIImage(data: imageData) {
             Image(uiImage: uiImage)
@@ -533,7 +551,9 @@ private struct GrokAIViewContent: View {
               )
           }
           Text(message.content)
+            .font(DesignTokens.Typography.body())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.vertical, DesignTokens.Spacing.space12)
             .cardStyle(
@@ -541,8 +561,6 @@ private struct GrokAIViewContent: View {
               stroke: DesignTokens.Palette.accent.opacity(0.35),
               cornerRadius: DesignTokens.Card.cornerRadiusMedium
             )
-            .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
-            .frame(maxWidth: 280, alignment: .trailing)
           Text(timeString(from: message.timestamp))
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -550,10 +568,11 @@ private struct GrokAIViewContent: View {
       } else if let url = message.generatedImageURL {
         VStack(alignment: .leading, spacing: 6) {
           Text(message.content)
+            .font(DesignTokens.Typography.body())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, DesignTokens.Spacing.space12)
             .padding(.vertical, DesignTokens.Spacing.space8)
-            .frame(maxWidth: 280, alignment: .leading)
           Button {
             previewImageURL = url
             previewCaption = message.content
@@ -570,7 +589,7 @@ private struct GrokAIViewContent: View {
               @unknown default: EmptyView()
               }
             }
-            .frame(maxWidth: 280)
+            .frame(maxWidth: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
             .overlay(
               RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
@@ -583,11 +602,12 @@ private struct GrokAIViewContent: View {
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
-        Spacer(minLength: 60)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Spacer(minLength: bubbleGutter)
       } else {
         VStack(alignment: .leading, spacing: 4) {
           assistantMessageText(message.content)
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.vertical, DesignTokens.Spacing.space12)
             .cardStyle(
@@ -595,13 +615,12 @@ private struct GrokAIViewContent: View {
               stroke: DesignTokens.Palette.cardStroke,
               cornerRadius: DesignTokens.Card.cornerRadiusMedium
             )
-            .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
-            .frame(maxWidth: 280, alignment: .leading)
           Text(timeString(from: message.timestamp))
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
-        Spacer(minLength: 60)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Spacer(minLength: bubbleGutter)
       }
     }
   }
@@ -649,19 +668,9 @@ private struct GrokAIViewContent: View {
     .padding(.vertical, 4)
   }
 
-  private func scrollToBottom(proxy: ScrollViewProxy, viewModel: GrokAIViewModel) {
+  private func scrollToBottom(proxy: ScrollViewProxy) {
     withAnimation {
-      let streamText =
-        viewModel.stormAnalysisMode ? viewModel.stormAnalysisText : viewModel.responseText
-      if viewModel.isStreaming && !streamText.isEmpty {
-        proxy.scrollTo("streaming", anchor: .bottom)
-      } else if let last = viewModel.conversationHistory.last {
-        proxy.scrollTo(last.id, anchor: .bottom)
-      } else if viewModel.isStreaming {
-        proxy.scrollTo("thinking", anchor: .bottom)
-      } else if viewModel.isGeneratingImage {
-        proxy.scrollTo("generating-image", anchor: .bottom)
-      }
+      proxy.scrollTo("thread-bottom", anchor: .bottom)
     }
   }
 
@@ -761,6 +770,7 @@ private struct GrokAIViewContent: View {
   }
 
   private func askQuickPrompt(_ prompt: String, viewModel: GrokAIViewModel) {
+    isInputFocused = false
     Task {
       await viewModel.askGrok(question: prompt)
     }

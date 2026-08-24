@@ -199,7 +199,20 @@ struct TabBarSuppressionPreferenceKey: PreferenceKey {
   }
 }
 
+/// Sky Check composer vs `CompactTabBar`. Tab pages do not reliably inherit the
+/// parent bar inset (NavigationStack resets bottom to the home indicator), so
+/// the field must pad by `CompactTabBar.chromeHeight` while the bar is visible.
+enum SkyCheckChatChrome {
+  static func tabBarClearance(isCompact: Bool, isInputFocused: Bool) -> CGFloat {
+    isCompact && !isInputFocused ? CompactTabBar.chromeHeight : 0
+  }
+}
+
 struct CompactTabBar: View {
+  /// Height of the bar chrome above the home indicator (top pad 8 + item 55 + bottom pad 6).
+  /// Used by Sky Check so the composer is not a sibling overlay on Radar/More.
+  static let chromeHeight: CGFloat = 69
+
   @Environment(WeatherStore.self) private var store
   @Environment(SevereWeatherStore.self) private var severeStore
   @Binding var selection: WeatherStore.Tab

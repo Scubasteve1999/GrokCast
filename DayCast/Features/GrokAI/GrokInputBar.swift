@@ -38,24 +38,25 @@ struct GrokInputBar: View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       TextField("Ask about the weather…", text: $text, axis: .vertical)
         .textFieldStyle(.plain)
-        .font(DesignTokens.Typography.callout())
+        .font(DesignTokens.Typography.body())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .focused($isFocused)
         .accessibilityIdentifier(DayCastAccessibility.Grok.chatField)
         .lineLimit(1...4)
         .submitLabel(.send)
-        .onSubmit {
-          guard !isSendDisabled else { return }
-          onSend()
-        }
+        .onSubmit(send)
 
-      if !isSendDisabled {
-        Button(action: onSend) {
-          Image(systemName: "arrow.up.circle.fill")
-            .font(DesignTokens.Typography.studioTitle())
-            .foregroundStyle(DesignTokens.Palette.accent)
-        }
+      Button(action: send) {
+        Image(systemName: "arrow.up.circle.fill")
+          .font(DesignTokens.Typography.studioTitle())
+          .symbolRenderingMode(.palette)
+          .foregroundStyle(
+            isSendDisabled ? DesignTokens.Palette.textTertiary : DesignTokens.Palette.bgPrimary,
+            isSendDisabled ? DesignTokens.Palette.cardStroke : DesignTokens.Palette.accent
+          )
       }
+      .disabled(isSendDisabled)
+      .accessibilityLabel("Send")
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
     .padding(.vertical, DesignTokens.Spacing.space12)
@@ -68,7 +69,7 @@ struct GrokInputBar: View {
 
   private var standardBar: some View {
     HStack(spacing: 8) {
-      TextField("Ask about the weather...", text: $text, axis: .vertical)
+      TextField("Ask about the weather…", text: $text, axis: .vertical)
         .textFieldStyle(.plain)
         .font(DesignTokens.Typography.body())
         .focused($isFocused)
@@ -80,16 +81,26 @@ struct GrokInputBar: View {
             .fill(Color.white.opacity(0.1))
         )
         .lineLimit(1...4)
+        .submitLabel(.send)
+        .onSubmit(send)
 
-      Button(action: onSend) {
+      Button(action: send) {
         Image(systemName: "arrow.up.circle.fill")
           .font(DesignTokens.Typography.title())
-          .foregroundStyle(isSendDisabled ? .gray : .white)
+          .foregroundStyle(
+            isSendDisabled ? DesignTokens.Palette.textTertiary : DesignTokens.Palette.textPrimary)
       }
       .disabled(isSendDisabled)
+      .accessibilityLabel("Send")
     }
     .padding(.horizontal)
     .padding(.vertical, 8)
+  }
+
+  private func send() {
+    guard !isSendDisabled else { return }
+    isFocused = false
+    onSend()
   }
 }
 

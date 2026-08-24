@@ -225,6 +225,7 @@
 		B257F5744117C510C2F3AD99 /* RadarTileTrafficMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32971976381AF1BF69D7B043 /* RadarTileTrafficMonitor.swift */; };
 		B385528E5B850D4B20A5A190 /* NWSAlertStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3600D9B80B037243C58F7DA5 /* NWSAlertStyle.swift */; };
 		B41A36D29CF539536FD2D385 /* ChaseRadarHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA77D2B6D45112F5E5BAA6D /* ChaseRadarHUD.swift */; };
+		B667EF69341E50F8471F60B1 /* SkyCheckChatLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3653C7C72253E31D861952 /* SkyCheckChatLayoutTests.swift */; };
 		BAA83D3DFA354BE964E0470A /* LocationTimezone.swift in Sources */ = {isa = PBXBuildFile; fileRef = F295E923861F93E0C3D128FB /* LocationTimezone.swift */; };
 		BC3F66EB1BF86F8A8D2C65AC /* TodayFirstRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44656C52DD09DEA3CC9AAA3E /* TodayFirstRunTests.swift */; };
 		BC61F0F3F686105C0F96B937 /* WeatherUnits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B80138E772C6C93B0032EA /* WeatherUnits.swift */; };
@@ -514,6 +515,7 @@
 		8A2B55D77A1C19C69EA9877F /* DailyFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyFeedCard.swift; sourceTree = "<group>"; };
 		8B559D513732DD98EFDB6DBC /* StormSpotterHonestyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormSpotterHonestyTests.swift; sourceTree = "<group>"; };
 		8B6434B70B5F0E3EFB201C3D /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		8E3653C7C72253E31D861952 /* SkyCheckChatLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckChatLayoutTests.swift; sourceTree = "<group>"; };
 		8EC9FD05C92AA2CD1D2C468F /* FeedSnapshotBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSnapshotBuilder.swift; sourceTree = "<group>"; };
 		8ED716BB00DFC3302C55FD9B /* LocationChipBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationChipBar.swift; sourceTree = "<group>"; };
 		8EDAD9B40005179C3FDDF599 /* DayCastScoreCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastScoreCard.swift; sourceTree = "<group>"; };
@@ -930,6 +932,7 @@
 				5CD6A5850A09B7C3A8BFB699 /* RadarTimelineTests.swift */,
 				2419540B11FE8973B64ED484 /* RadarWarningPolygonTests.swift */,
 				A51B41B30B8ECF4BE35BAD63 /* ShareAttributionTests.swift */,
+				8E3653C7C72253E31D861952 /* SkyCheckChatLayoutTests.swift */,
 				8B559D513732DD98EFDB6DBC /* StormSpotterHonestyTests.swift */,
 				44656C52DD09DEA3CC9AAA3E /* TodayFirstRunTests.swift */,
 				C6374EBD517612204AA51CD4 /* TodayHonestyTests.swift */,
@@ -1584,6 +1587,7 @@
 				9171B82B922FD84D5FAEFAC6 /* RadarTimelineTests.swift in Sources */,
 				D1141D95F5446FAE490E4815 /* RadarWarningPolygonTests.swift in Sources */,
 				6B43FE238B5A213D4B292D8D /* ShareAttributionTests.swift in Sources */,
+				B667EF69341E50F8471F60B1 /* SkyCheckChatLayoutTests.swift in Sources */,
 				3A1EA14FD5E0A5C951CA9E35 /* StormSpotterHonestyTests.swift in Sources */,
 				BC3F66EB1BF86F8A8D2C65AC /* TodayFirstRunTests.swift in Sources */,
 				1476A87CD6782DBB311698D9 /* TodayHonestyTests.swift in Sources */,
