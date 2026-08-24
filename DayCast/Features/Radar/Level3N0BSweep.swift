@@ -138,6 +138,17 @@ final class Level3N0BSweepStore: @unchecked Sendable {
     lock.unlock()
   }
 
+  /// Insert one volume without dropping Live's loop. Today preview must use this,
+  /// never `replace`, so opening the Radar tab still has its scans.
+  func upsert(_ sweep: Level3N0BSweep) {
+    let exact = Self.exactKey(site: sweep.siteID, timestamp: sweep.timestamp)
+    let minute = Self.minuteKey(site: sweep.siteID, timestamp: sweep.timestamp)
+    lock.lock()
+    byExact[exact] = sweep
+    byMinute[minute] = sweep
+    lock.unlock()
+  }
+
   func sweep(site: String, timestamp: Date) -> Level3N0BSweep? {
     lock.lock()
     defer { lock.unlock() }

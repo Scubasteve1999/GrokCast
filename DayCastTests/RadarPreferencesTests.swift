@@ -68,7 +68,12 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarPreviewSource.previewBaseMap, .light)
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
-    // Today card stays on the national mosaic even though Live Rain is now N0B.
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: false, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: true),
+      .nationalMapsGL
+    )
+    // Buried National teaser stays MapsGL. Hoisted path is Site Doppler, never a blank rect.
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: false, keysPresent: true)

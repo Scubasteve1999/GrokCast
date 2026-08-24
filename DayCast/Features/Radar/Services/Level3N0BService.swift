@@ -52,6 +52,20 @@ enum Level3N0BService {
     return nil
   }
 
+  /// Newest N0B volume for a Today Site Doppler teaser. Upserts into the shared
+  /// store and does **not** `replace` / `keepOnly` — those would evict Live's loop.
+  static func loadNewestSweep(
+    for site: IEMRadarService.Site,
+    now: Date = Date()
+  ) async -> Level3N0BSweep? {
+    let keys = await listKeys(
+      site: site.id, from: now.addingTimeInterval(-RadarLivePresentation.loopWindow), to: now)
+    guard let key = keys.last else { return nil }
+    guard let sweep = await downloadAndDecode(key: key, site: site) else { return nil }
+    Level3N0BSweepStore.shared.upsert(sweep)
+    return sweep
+  }
+
   static func loadFrames(
     site: IEMRadarService.Site,
     maxFrames: Int,

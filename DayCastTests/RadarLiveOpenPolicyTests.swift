@@ -151,6 +151,81 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     }
   }
 
+  func testHoistedSiteDopplerCopyNamesSiteAndScanAge() {
+    let age = ChaseRadarHUDLogic.scanAgeLine(
+      showsFuture: false, futureFrameLabel: "", ageMinutes: 3)
+    XCTAssertEqual(age, "SCAN 3m")
+    XCTAssertEqual(
+      RadarFeedCopy.siteTitle(conditionCode: 61, siteID: "NQA", ageLine: age),
+      "Rain now · NQA"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.siteTitle(conditionCode: 95, siteID: "NQA", ageLine: age),
+      "Storm now · NQA"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.siteTitle(conditionCode: 71, siteID: "NQA", ageLine: age),
+      "Snow now · NQA"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.siteTitle(conditionCode: 66, siteID: "NQA", ageLine: age),
+      "Sleet now · NQA"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.siteTitle(conditionCode: 0, siteID: "NQA", ageLine: age),
+      "NQA is clear · SCAN 3m"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.siteAccessibilityLabel(
+        conditionCode: 61, siteID: "NQA", ageLine: age),
+      "Rain now. NQA. Site Doppler. SCAN 3m. Opens the Radar tab."
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.siteAccessibilityLabel(
+        conditionCode: 0, siteID: "NQA", ageLine: age),
+      "NQA is clear. SCAN 3m. Site Doppler. Opens the Radar tab."
+    )
+    XCTAssertEqual(RadarFeedCopy.failLine(siteID: "NQA"), "NQA · scan unavailable")
+    XCTAssertEqual(
+      RadarFeedCopy.failLine(siteID: nil),
+      "Site Doppler · scan unavailable"
+    )
+    XCTAssertEqual(RadarFeedCopy.siteProductName, "Site Doppler")
+    let wet = RadarFeedCopy.siteTitle(conditionCode: 61, siteID: "NQA", ageLine: age)
+    XCTAssertFalse(wet.localizedCaseInsensitiveContains("National radar"))
+    XCTAssertFalse(wet.localizedCaseInsensitiveContains("Mosaic"))
+    XCTAssertTrue(wet.contains("NQA"))
+  }
+
+  func testHoistedPreviewNeverResolvesToBlankRect() {
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: true, hasDrawableSweep: true, mapboxPresent: true, mapsGLKeysPresent: true),
+      .siteDoppler
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: true, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: true),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: true, hasDrawableSweep: true, mapboxPresent: false, mapsGLKeysPresent: true),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: false, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: true),
+      .nationalMapsGL
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: false, hasDrawableSweep: false, mapboxPresent: false, mapsGLKeysPresent: true),
+      .unavailable
+    )
+    XCTAssertEqual(RadarPreviewSource.siteZoom, RadarLiveCameraPolicy.localZoom)
+  }
+
   func testUserVisibleLabelsNeverSayMosaic() {
     XCTAssertEqual(RadarProduct.reflectivity.displayName, "National radar")
     XCTAssertEqual(RadarProduct.superResReflectivity.displayName, "Site Doppler")

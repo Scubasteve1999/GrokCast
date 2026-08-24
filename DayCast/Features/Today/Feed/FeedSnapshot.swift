@@ -16,6 +16,8 @@ struct FeedSnapshot: Equatable, Sendable {
   var showAIInsight: Bool
   /// SPC Day 1 ≥ Slight, MD, or severe watch/warning — earns the Today alerts slot without NWS rows.
   var hasSevereContext: Bool = false
+  /// Open-Meteo Now is a precip condition (rain / storm / snow / sleet).
+  var isNowWet: Bool = false
 
   /// NWS point alerts **or** earned severe context (outlook / MD / watch).
   var showAlertsSlot: Bool { alertCount > 0 || hasSevereContext }
@@ -30,6 +32,7 @@ struct FeedSnapshot: Equatable, Sendable {
     hasSunriseOrSunset: false,
     showFireCard: false,
     showAIInsight: false,
-    hasSevereContext: false
+    hasSevereContext: false,
+    isNowWet: false
   )
 }

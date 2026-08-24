@@ -1,9 +1,32 @@
 import Foundation
 
 enum FeedAssembler {
+  /// Next hour is showing, alerts/outlook slot is showing, or Now is wet.
+  static func isRadarStory(_ snapshot: FeedSnapshot) -> Bool {
+    snapshot.hasPrecipContent || snapshot.showAlertsSlot || snapshot.isNowWet
+  }
+
   /// Returns visible feed items in product order. Cards with no meaningful data are omitted.
+  /// Calm days keep `defaultOrder` (radar buried below Daily). Story days hoist radar
+  /// after Now / Alerts / Next hour — they do not rewrite the calm spine.
   static func items(from snapshot: FeedSnapshot) -> [FeedItem] {
-    FeedItem.defaultOrder.filter { shouldShow($0, in: snapshot) }
+    var visible = FeedItem.defaultOrder.filter { shouldShow($0, in: snapshot) }
+    guard isRadarStory(snapshot), let radarAt = visible.firstIndex(of: .radar) else {
+      return visible
+    }
+    visible.remove(at: radarAt)
+    let anchor: FeedItem? = {
+      if visible.contains(.precip) { return .precip }
+      if visible.contains(.alerts) { return .alerts }
+      if visible.contains(.now) { return .now }
+      return nil
+    }()
+    if let anchor, let idx = visible.firstIndex(of: anchor) {
+      visible.insert(.radar, at: idx + 1)
+    } else {
+      visible.insert(.radar, at: 0)
+    }
+    return visible
   }
 
   /// Error/retry chrome plus cards. Banner sits above Now so a storm user sees it without scrolling.

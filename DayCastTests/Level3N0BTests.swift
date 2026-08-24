@@ -662,6 +662,22 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(after.hits, 22)
   }
 
+  func testSweepStoreUpsertKeepsExistingLiveVolume() {
+    let store = Level3N0BSweepStore.shared
+    store.removeAll()
+    defer { store.removeAll() }
+    let live = Self.spokeSweep(
+      azimuth: 90, byte: 146, bins: 4,
+      timestamp: Date(timeIntervalSince1970: 1_787_405_984))
+    let preview = Self.spokeSweep(
+      azimuth: 90, byte: 146, bins: 4,
+      timestamp: Date(timeIntervalSince1970: 1_787_406_164))
+    store.replace([live])
+    store.upsert(preview)
+    XCTAssertNotNil(store.sweep(site: live.siteID, timestamp: live.timestamp))
+    XCTAssertNotNil(store.sweep(site: preview.siteID, timestamp: preview.timestamp))
+  }
+
   func testMeshCacheKeepOnlyDropsOtherVolumes() {
     let cache = Level3PolarMeshCache.shared
     cache.removeAll()

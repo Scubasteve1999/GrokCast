@@ -15,8 +15,8 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
 
   var id: String { rawValue }
 
-  /// Storm-first glance: Now → Alerts → Next hour → Hourly → Daily, then secondaries.
-  /// Do not reorder casually — personalization comes later.
+  /// Calm-day spine: Now → Alerts → Next hour → Hourly → Daily, then secondaries.
+  /// Story days hoist `.radar` after Next hour via `FeedAssembler` — do not restack this list.
   static let defaultOrder: [FeedItem] = [
     .now,
     .alerts,
