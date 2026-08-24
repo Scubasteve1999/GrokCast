@@ -128,7 +128,7 @@ final class SkyCheckReplyCommitTests: XCTestCase {
     XCTAssertEqual(viewModel.conversationHistory[1].content, reply)
     XCTAssertTrue(viewModel.conversationHistory[1].isStormSpotterAnalysis)
     XCTAssertEqual(viewModel.stormAnalysisText, reply)
-    XCTAssertEqual(viewModel.responseText, reply)
+    XCTAssertTrue(viewModel.responseText.isEmpty, "Photo body must not copy into the chat buffer")
   }
 
   func testEmptyBodyDoesNotPersistHideLine() async {

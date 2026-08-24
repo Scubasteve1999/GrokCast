@@ -5,8 +5,8 @@ import Observation
 @Observable
 final class GrokAIViewModel {
   var responseText: String = ""
-  /// Dedicated storm-photo write-up. Compact card and share use this so later
-  /// chat tokens in `responseText` cannot appear inside Sky Check chrome.
+  /// Dedicated storm-photo write-up. Compact card and share read this buffer.
+  /// Photo tokens never land in `responseText`; chat tokens never grow this.
   var stormAnalysisText: String = ""
   var isStreaming: Bool = false
   var errorMessage: String?
@@ -147,7 +147,7 @@ final class GrokAIViewModel {
         {
           if Task.isCancelled || !self.isStreaming { break }
           tokenCount += 1
-          self.responseText += token
+          self.appendSkyCheckStreamToken(token)
         }
       } catch {
         if !(error is CancellationError) {
@@ -236,8 +236,7 @@ final class GrokAIViewModel {
           unit: weatherStore.temperatureUnit
         ) {
           if Task.isCancelled || !isStreaming { break }
-          self.stormAnalysisText += token
-          self.responseText += token
+          self.appendSkyCheckStreamToken(token)
         }
       } catch {
         if !(error is CancellationError) {
@@ -250,6 +249,7 @@ final class GrokAIViewModel {
       if !self.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         self.commitFinishedSkyCheckReply(self.stormAnalysisText, asPhotoTurn: true)
       } else if !Task.isCancelled && self.generationWasCancelled == false {
+        self.responseText = ""
         self.errorMessage =
           "Storm analysis returned an empty response. Check your connection and try again."
       }
@@ -275,6 +275,15 @@ final class GrokAIViewModel {
     return [turn.user, turn.assistant]
   }
 
+  /// One writer per job. Photo tokens never land in `responseText`.
+  func appendSkyCheckStreamToken(_ token: String) {
+    if stormAnalysisMode {
+      stormAnalysisText += token
+    } else {
+      responseText += token
+    }
+  }
+
   /// After a finished Sky Check stream. Screens, then commits. Never writes blocked raw.
   func commitFinishedSkyCheckReply(_ raw: String, asPhotoTurn: Bool) {
     let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -283,7 +292,7 @@ final class GrokAIViewModel {
     if let accepted = GrokContentFilter.acceptedSkyCheckText(trimmed) {
       if asPhotoTurn {
         stormAnalysisText = accepted
-        responseText = accepted
+        responseText = ""
         conversationHistory.append(
           contentsOf: Self.photoTurnMessages(
             locationName: weatherStore.currentLocation?.name,
