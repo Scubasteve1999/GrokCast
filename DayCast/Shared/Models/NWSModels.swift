@@ -382,12 +382,51 @@ struct NWSPointsResponse: Decodable {
 }
 
 struct NWSPointsProperties: Decodable {
-  let observationStations: String  // URL to the stations collection (e.g. /gridpoints/.../stations) - not an array anymore
+  let observationStations: String?  // URL to the stations collection (e.g. /gridpoints/.../stations) - not an array anymore
   // Grid fields for --grid-system / --primary-source (optional for tolerant non-US + obs compatibility)
   let gridId: String?
   let gridX: Int?
   let gridY: Int?
   let forecast: String?  // direct /forecast URL (often grid equivalent); impl derives strictly from grid* for exact flow
+  /// County Warning Area office id (`MEG` for Olive Branch). Absent outside NWS coverage.
+  let cwa: String?
+  let forecastOffice: String?
+}
+
+// MARK: - NWS text products (AFD / PNS for Local briefing)
+
+struct NWSTextProductCollection: Decodable {
+  let graph: [NWSTextProductSummary]
+
+  private enum CodingKeys: String, CodingKey {
+    case graph = "@graph"
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    graph = (try? container.decode([NWSTextProductSummary].self, forKey: .graph)) ?? []
+  }
+}
+
+struct NWSTextProductSummary: Decodable, Equatable, Sendable {
+  let id: String
+  let issuanceTime: String?
+  let productCode: String?
+  let issuingOffice: String?
+}
+
+struct NWSTextProduct: Decodable, Equatable, Sendable {
+  let id: String
+  let issuanceTime: String?
+  let productCode: String?
+  let issuingOffice: String?
+  let productName: String?
+  let productText: String?
+}
+
+struct NWSOfficeResponse: Decodable {
+  let id: String?
+  let name: String?
 }
 
 struct NWSObservationResponse: Decodable {

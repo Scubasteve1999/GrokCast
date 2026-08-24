@@ -6,6 +6,7 @@ struct SettingsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
   @Environment(GrokBriefSafety.self) private var briefSafety
+  @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(\.scenePhase) private var scenePhase
 
   @State private var apiKeyInput = ""
@@ -56,6 +57,19 @@ struct SettingsView: View {
 
         FigmaSectionLabel(title: "DISPLAY")
         displayCard
+
+        FigmaSectionLabel(title: "ALERTS")
+        SettingsGroupCard {
+          toggleRow(
+            title: "Storm reports",
+            subtitle: "Local storm reports from NWS/SPC. For spotters.",
+            icon: "mappin.and.ellipse",
+            isOn: Binding(
+              get: { severeStore.showsStormReports },
+              set: { severeStore.showsStormReports = $0 }
+            )
+          )
+        }
 
         FigmaSectionLabel(title: "DEVELOPER")
         SettingsGroupCard { developerKeySection }
@@ -758,4 +772,5 @@ final class LabeledUISwitch: UISwitch {
     .environment(WeatherStore())
     .environment(SubscriptionManager.shared)
     .environment(GrokBriefSafety())
+    .environment(SevereWeatherStore.shared)
 }

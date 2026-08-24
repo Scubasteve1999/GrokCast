@@ -12,9 +12,6 @@ struct SevereProductsSections: View {
       if !context.mesoscaleDiscussions.isEmpty {
         mdSection
       }
-      if !context.localStormReports.isEmpty {
-        lsrSection
-      }
     }
   }
 
@@ -95,47 +92,74 @@ struct SevereProductsSections: View {
     }
   }
 
-  private var lsrSection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-      FigmaAccentSectionLabel(
-        title: "NEARBY STORM REPORTS",
-        icon: "mappin.and.ellipse",
-        color: DesignTokens.Palette.danger
-      )
-
-      VStack(spacing: DesignTokens.Spacing.space12) {
-        ForEach(context.localStormReports.prefix(8)) { report in
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-            Text(report.title)
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-            if !report.subtitle.isEmpty {
-              Text(report.subtitle)
-                .font(DesignTokens.Typography.caption())
-                .foregroundStyle(DesignTokens.Palette.textSecondary)
-                .lineLimit(2)
-            }
-            if let remarks = report.remarks, !remarks.isEmpty {
-              Text(remarks)
-                .font(DesignTokens.Typography.micro())
-                .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .lineLimit(2)
-            }
-          }
-          .padding(DesignTokens.Spacing.space16)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .cardStyle(
-            background: DesignTokens.Palette.cardBackground,
-            stroke: DesignTokens.Palette.cardStroke,
-            cornerRadius: DesignTokens.Card.cornerRadiusMedium
-          )
-        }
-      }
-    }
-  }
-
   private var outlookColor: Color {
     SevereOutlookAccent.color(for: context.day1Outlook.category)
+  }
+}
+
+/// Spotter-mode LSR list. Hidden unless Settings → Storm reports is on.
+struct StormReportsSection: View {
+  let reports: [SPCLocalStormReport]
+
+  var body: some View {
+    if !reports.isEmpty {
+      VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
+        FigmaAccentSectionLabel(
+          title: "NEARBY STORM REPORTS",
+          icon: "mappin.and.ellipse",
+          color: DesignTokens.Palette.danger
+        )
+
+        VStack(spacing: DesignTokens.Spacing.space12) {
+          ForEach(reports.prefix(8)) { report in
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+              Text(report.title)
+                .font(DesignTokens.Typography.subsection())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+              if !report.subtitle.isEmpty {
+                Text(report.subtitle)
+                  .font(DesignTokens.Typography.caption())
+                  .foregroundStyle(DesignTokens.Palette.textSecondary)
+                  .lineLimit(2)
+              }
+              if let remarks = report.remarks, !remarks.isEmpty {
+                Text(remarks)
+                  .font(DesignTokens.Typography.micro())
+                  .foregroundStyle(DesignTokens.Palette.textTertiary)
+                  .lineLimit(2)
+              }
+            }
+            .padding(DesignTokens.Spacing.space16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .cardStyle(
+              background: DesignTokens.Palette.cardBackground,
+              stroke: DesignTokens.Palette.cardStroke,
+              cornerRadius: DesignTokens.Card.cornerRadiusMedium
+            )
+          }
+        }
+      }
+      .accessibilityIdentifier(DayCastAccessibility.Alerts.stormReports)
+    }
+  }
+}
+
+enum StormReportsVisibility {
+  static func isSectionVisible(reportCount: Int, preferenceEnabled: Bool) -> Bool {
+    preferenceEnabled && reportCount > 0
+  }
+}
+
+enum StormReportsPreference {
+  static let key = "daycast_storm_reports_enabled"
+
+  /// Overridable so tests run against an isolated suite. The unit-test bundle is
+  /// hosted by the app and shares its `standard` domain.
+  nonisolated(unsafe) static var store: UserDefaults = .standard
+
+  static var isEnabled: Bool {
+    get { store.bool(forKey: key) }
+    set { store.set(newValue, forKey: key) }
   }
 }
 

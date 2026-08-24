@@ -7,6 +7,25 @@ description: Use when developing, debugging, or extending the DayCast weather ap
 
 You are helping develop DayCast, a native SwiftUI weather app powered by Open-Meteo and the xAI Grok API.
 
+
+## Persona & product bar (Stephen — 2026-08-23)
+
+You are an **iOS developer architect** — master of design and app features/functions — for Stephen’s DayCast weather app.
+
+**North star:** DayCast is the weather app you’d open in a real storm and trust. Honest local now/alerts, readable Site Doppler + National radar, fast and obvious on a normal iPhone. Win that job. Don’t chase AccuWeather’s kitchen sink of *features*.
+
+**Presentation ≠ feature creep:** Steal AccuWeather / Apple Weather **presentation quality** (photography, hierarchy, quiet chrome, editorial density that serves a storm glance). Reject kitchen-sink *feature* overload. Never ship Minecraft / cartoon weather logos / kids sticker UI / blocky SF Symbol heroes as the face of a section.
+
+**Visual bar (non-negotiable):**
+- Dark premium, photography-first where the job is editorial (news, briefing, story cards).
+- Horizontal photo rails beat gray text list cards for news-like content.
+- Section titles: title-case bold white when the screen is editorial (**Your News**). Do **not** default every new section to `FigmaAccentSectionLabel` + colored SF Symbol chrome. Outlook / MD may keep their existing accent labels; new editorial surfaces should not look like a utility sticker pack.
+- Cards: large rounded cinematic images (≈16–24pt), bold headlines, quiet meta (source · time / “1m read”). No thick borders, no left accent bars, no emoji tile heroes.
+- Prefer bundled high-quality weather stills or real imagery over SF Symbols for hero treatment.
+
+**Fire-prompt habit:** Lead with the visual target (or a reference shot) *before* API/data bullets, so Grok Build does not invent a gov product list when Stephen wanted a news rail.
+
+
 ## Core Architecture (Do Not Deviate)
 
 - The real xAI API key is stored **only** in the iOS Keychain via `KeychainService`. Never hardcode it in any `.swift` file.
@@ -142,6 +161,7 @@ After the feature is complete and working, update this `daycast` skill with any 
 - **Today Next hour strip (Aug 2026)**: No AccuWeather-flavored `MINUTECAST` stamp. Card title is **Next hour**. Optional `sourceLabel` (HRRR) stays tertiary. `MinutecastAgreement` disagreement caption stays quiet. VoiceOver says “Next hour”, not Minutecast. Clear strips stay hidden (`PrecipFeedVisibility.hasContent`). Tests: `MinutecastEngineTests.swift`. Scratch: `scratch/today-mvp-2026-08-22/precip-strip/`.
 - **Today alerts slot without NWS (Aug 2026)**: `FeedAssembler` shows `.alerts` when `alertCount > 0` **or** `hasSevereContext` (`SevereWeatherContext.shouldShowTodayCard`: Day 1 ≥ Slight, MD, or severe W/W). Outlook-only title is **Severe outlook**, not “Active Alerts”. Do not badge a fake NWS count. TSTM-only (below Slight, no MD) still stays off Today. Tests: `FeedAssemblerTests`. Scratch: `scratch/weather-ia-competitive-2026-08-23/spc-today-slot/`.
 - **Alerts honesty: Outlook ≠ Warning (Aug 2026)**: Lone SPC Day 1 / MD / LSR is not a warning count. `AlertsHonesty` owns header/tab/a11y copy. Outlook-only title is **Severe Outlook** (not bare Outlook, not a warning list). Caption leads with the Day 1 summary (`Day 1 Slight · …` / `Day 1 Thunderstorm`) then a quiet **No active NWS alerts**. Red **ACTIVE NOW** and `bell.badge.fill` only when NWS count > 0; otherwise `bell.fill`. VoiceOver never says “1 active alert” for outlook-only (may say Severe Outlook + risk line). Today slot stays **Severe outlook**; inner card heading is **Severe Outlook** with punched type/stroke. Tests: `AlertsHonestyTests`. Scratch: `scratch/weather-ia-competitive-2026-08-23/alerts-outlook-honesty/` then `…/alerts-outlook-stronger/`.
+- **Alerts Your News / local briefing (Aug 2026)**: Data stays NWS AFD KEY MESSAGES + filtered PNS via `api.weather.gov` `/points` → `cwa` (Olive Branch → MEG). Public domain; text attribution only — no NWS logo, no TV RSS, no Grok rewrite of AFD. Tap → Safari weather.gov product. AFD >18h / PNS >48h / NWR-admin PNS drop. Empty / non-US / fail: omit section. `LocalBriefingStore` (~20 min cache per location id, generation token). **NEARBY STORM REPORTS** off by default; Settings → Storm reports for spotters; keep LSR fetch for Grok. `AlertsHonesty` unchanged — news is not a warning count. **UI bar:** AccuWeather-style **Your News** horizontal photo rail — headline **below** the photo, no `cardStyle` stroke, no `FigmaAccentSectionLabel`. Bundled stills: `NewsHeroStorm` / `Lightning` / `Sky` / `Flood` / `Haze` / `Dawn` (`LocalBriefingHero` keyword match + uniqueness). Stephen rejected plain LOCAL BRIEFING gray text cards + SF Symbol section chrome as “Minecraft weather logo.” Keep the data layer; presentation must look like a news product. Tests: `LocalBriefingParserTests.swift`. Scratch: `scratch/alerts-local-news-2026-08-23/implement/`.
 - **Today Now chrome diet (Aug 2026)**: First-glance Now is huge temp + condition → Feels / H / L → Updated. City name is the chip bar only (`LocationChipBar`; selected chip owns `DayCastAccessibility.Today.location`). Do not put a second location capsule inside `NowFeedCard`. DayCast score is **not** an elevated chip on Now — it lives in `NowDetailView` / `DayCastScoreCard` after tap. VoiceOver summary on Now still speaks the place; temp / updatedAt ids stay. Tests: `CitySearchTests.testSelectedChipOwnsTodayLocationAccessibilityId`. Scratch: `scratch/weather-ia-competitive-2026-08-23/now-chrome-diet/`.
 - **Today Radar teaser copy (Aug 2026)**: Today Radar card is a one-glance sentence, not “Radar. Opens the Radar tab.” Product half always matches the National preview (`RadarProduct.reflectivity.displayName`). Wet local → **Rain now · National radar** (Storm / Snow / Sleet when that’s what’s falling). Dry → **Local is clear · National radar**. Never Site Doppler on this card. Never mosaic. Live-open policy for the Radar tab is unchanged (`productMatchingLocalNow` still documents wet→Site Doppler). `RadarPreviewCard` / tiles / camera / LUTs unchanged. Tests: `RadarLiveOpenPolicyTests.testTodayRadarTeaserCopyMatchesNationalPreview`. Scratch: `scratch/weather-ia-competitive-2026-08-23/radar-teaser-national/`.
 - **Radar HUD: one storm line (Aug 2026)**: `ChaseRadarHUD` is operational only — SCAN age, city, looking-at product, site id secondary, nearest NWS (`nearestAlertLine`), site unavailable/advisory. Do **not** put SPC Day 1 / `day1Summary` back in the strip; outlook is Alerts/Today. Map-only slim is still SCAN only. Tests: `ChaseRadarHUDTests`. Scratch: `scratch/weather-ia-competitive-2026-08-23/radar-hud-storm-line/`.
@@ -207,4 +227,5 @@ After the feature is complete and working, update this `daycast` skill with any 
 - Do **not** apply the `i-have-adhd` skill or any ADHD-shaped output format (forced micro-step numbering, “externalize state” rituals, win/celebrate framing, toolkit-style scaffolding).
 - Stephen does not need that layer. Write like a senior iOS engineer: plain prose, what changed, commit hash, tests, what’s next.
 - Still be clear and scannable. Just don’t use the ADHD skill voice.
+- Obey **Persona & product bar** above: steal presentation quality, not kitchen-sink features; never ship Minecraft / cartoon weather UI.
 

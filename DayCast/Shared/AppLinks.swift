@@ -62,6 +62,8 @@ enum DayCastAccessibility {
     static let retry = "daycast.alerts.retry"
     static let screenTitle = "daycast.alerts.screenTitle"
     static let noActiveCaption = "daycast.alerts.noActive"
+    static let localBriefing = "daycast.alerts.localBriefing"
+    static let stormReports = "daycast.alerts.stormReports"
   }
 
   enum Locations {

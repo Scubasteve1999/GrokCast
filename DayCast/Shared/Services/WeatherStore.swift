@@ -1255,6 +1255,9 @@ final class WeatherStore {
         for: loc, force: force, alerts: alertsForSevere)
     }
     Task {
+      await LocalBriefingStore.shared.refresh(for: loc, force: force)
+    }
+    Task {
       await ShortTermPrecipStore.shared.refresh(for: loc, force: force)
     }
     // Fire data is independent — never await on the weather/alerts path.

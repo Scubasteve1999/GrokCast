@@ -22,6 +22,17 @@ final class SevereWeatherStore {
   private let spcService = SPCSevereService()
   private let nwsService = NWSService()
 
+  /// Settings → Storm reports. Default off. LSRs still fetch for Grok either way.
+  private var _showsStormReports = StormReportsPreference.isEnabled
+  var showsStormReports: Bool {
+    get { _showsStormReports }
+    set {
+      guard newValue != _showsStormReports else { return }
+      _showsStormReports = newValue
+      StormReportsPreference.isEnabled = newValue
+    }
+  }
+
   private init() {}
 
   /// Refresh severe products for `location`.

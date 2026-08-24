@@ -210,6 +210,7 @@ struct MainTabView: View {
   MainTabView()
     .environment(WeatherStore.shared)
     .environment(SevereWeatherStore.shared)
+    .environment(LocalBriefingStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(FireStore.shared)
     .environment(LightningStore.shared)

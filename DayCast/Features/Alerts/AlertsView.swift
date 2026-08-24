@@ -12,6 +12,7 @@ enum AlertRowLayout {
 struct AlertsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SevereWeatherStore.self) private var severeStore
+  @Environment(LocalBriefingStore.self) private var briefingStore
   @State private var selectedAlert: NWSAlert?
 
   private var activeAlerts: [NWSAlert] {
@@ -37,14 +38,37 @@ struct AlertsView: View {
     severeContextForLocation?.hasSPCContent == true
   }
 
-  /// Avoid flashing the empty state while SPC products are still loading.
+  private var hasVisibleOutlookOrMD: Bool {
+    guard let ctx = severeContextForLocation else { return false }
+    return ctx.day1Outlook.isMeaningful || !ctx.mesoscaleDiscussions.isEmpty
+  }
+
+  private var hasVisibleStormReports: Bool {
+    guard let ctx = severeContextForLocation else { return false }
+    return StormReportsVisibility.isSectionVisible(
+      reportCount: ctx.localStormReports.count,
+      preferenceEnabled: severeStore.showsStormReports
+    )
+  }
+
+  private var hasBriefing: Bool {
+    guard let locID = store.currentLocation?.id.uuidString else { return false }
+    return briefingStore.locationID == locID && !briefingStore.items.isEmpty
+  }
+
+  /// Avoid flashing the empty state while SPC / briefing products are still loading.
   private var isWaitingOnSevereProducts: Bool {
-    activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts
-      && severeStore.isRefreshing
+    !hasVisibleAlertBody
+      && (severeStore.isRefreshing || briefingStore.isRefreshing)
+  }
+
+  private var hasVisibleAlertBody: Bool {
+    !activeAlerts.isEmpty || !historicalAlerts.isEmpty || hasVisibleOutlookOrMD
+      || hasVisibleStormReports || hasBriefing
   }
 
   private var hasNoAlertContent: Bool {
-    activeAlerts.isEmpty && historicalAlerts.isEmpty && !hasSevereProducts
+    !hasVisibleAlertBody
   }
 
   private var alertsFetchFailed: Bool {
@@ -157,8 +181,16 @@ struct AlertsView: View {
           }
         }
 
-        if let severe = severeContextForLocation, severe.hasSPCContent {
+        if let severe = severeContextForLocation, hasVisibleOutlookOrMD {
           SevereProductsSections(context: severe)
+        }
+
+        if hasBriefing {
+          LocalBriefingSection(items: briefingStore.items)
+        }
+
+        if hasVisibleStormReports, let severe = severeContextForLocation {
+          StormReportsSection(reports: severe.localStormReports)
         }
 
         if !historicalAlerts.isEmpty {
@@ -467,4 +499,5 @@ struct AlertsView: View {
   return AlertsView()
     .environment(store)
     .environment(SevereWeatherStore.shared)
+    .environment(LocalBriefingStore.shared)
 }

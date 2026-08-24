@@ -108,33 +108,17 @@ final class NWSService {
   /// Uses the exact flow from the NWS hybrid plan: /points -> first observationStation -> /observations/latest.
   func fetchLatestObservation(for location: SavedLocation) async throws -> NWSObservation? {
     // 1. Get points for the lat/lon to discover observation stations
-    guard
-      let pointsURL = URL(string: "\(baseURL)/points/\(location.latitude),\(location.longitude)")
-    else {
-      return nil
-    }
-    var pointsRequest = URLRequest(url: pointsURL)
-    pointsRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-    pointsRequest.timeoutInterval = 15
-
-    let (pointsData, pointsResponse) = try await URLSession.shared.data(for: pointsRequest)
-    guard let pointsHTTP = pointsResponse as? HTTPURLResponse,
-      (200...299).contains(pointsHTTP.statusCode)
-    else {
-      return nil
-    }
-
     let points: NWSPointsResponse
     do {
-      points = try JSONDecoder().decode(NWSPointsResponse.self, from: pointsData)
+      points = try await fetchPoints(for: location)
     } catch {
-      // NWS points decode failed (logs removed for release)
       return nil
     }
 
     // observationStations is now a URL to the stations collection (not an array)
-    let stationsCollectionURLStr = points.properties.observationStations
-    guard let stationsCollectionURL = URL(string: stationsCollectionURLStr) else {
+    guard let stationsCollectionURLStr = points.properties.observationStations,
+      let stationsCollectionURL = URL(string: stationsCollectionURLStr)
+    else {
       return nil
     }
 
@@ -257,19 +241,78 @@ final class NWSService {
     else {
       throw NWSServiceError.invalidURL
     }
-    var pointsRequest = URLRequest(url: pointsURL)
-    pointsRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-    pointsRequest.timeoutInterval = 15
+    let pointsData = try await getData(url: pointsURL)
+    return try JSONDecoder().decode(NWSPointsResponse.self, from: pointsData)
+  }
 
-    let (pointsData, pointsResponse) = try await URLSession.shared.data(for: pointsRequest)
-    guard let pointsHTTP = pointsResponse as? HTTPURLResponse else {
+  /// CWA office id for the point (`MEG` for Olive Branch). nil for non-US / 404 / missing field.
+  func fetchCWA(for location: SavedLocation) async -> String? {
+    do {
+      let points = try await fetchPoints(for: location)
+      let cwa = points.properties.cwa?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      return cwa.isEmpty ? nil : cwa
+    } catch {
+      return nil
+    }
+  }
+
+  func fetchTextProductSummaries(type: String, cwa: String) async -> [NWSTextProductSummary] {
+    guard
+      let encodedType = type.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+      let encodedCWA = cwa.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+      let url = URL(string: "\(baseURL)/products/types/\(encodedType)/locations/\(encodedCWA)")
+    else { return [] }
+    do {
+      let data = try await getData(url: url)
+      return try JSONDecoder().decode(NWSTextProductCollection.self, from: data).graph
+    } catch {
+      return []
+    }
+  }
+
+  func fetchTextProduct(id: String) async -> NWSTextProduct? {
+    guard
+      let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+      let url = URL(string: "\(baseURL)/products/\(encoded)")
+    else { return nil }
+    do {
+      let data = try await getData(url: url)
+      return try JSONDecoder().decode(NWSTextProduct.self, from: data)
+    } catch {
+      return nil
+    }
+  }
+
+  func fetchOfficeName(cwa: String) async -> String? {
+    guard
+      let encoded = cwa.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+      let url = URL(string: "\(baseURL)/offices/\(encoded)")
+    else { return nil }
+    do {
+      let data = try await getData(url: url)
+      let name = try JSONDecoder().decode(NWSOfficeResponse.self, from: data).name?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      return name.isEmpty ? nil : name
+    } catch {
+      return nil
+    }
+  }
+
+  private func getData(url: URL, timeout: TimeInterval = 15) async throws -> Data {
+    try Task.checkCancellation()
+    var request = URLRequest(url: url)
+    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+    request.timeoutInterval = timeout
+    let (data, response) = try await URLSession.shared.data(for: request)
+    try Task.checkCancellation()
+    guard let http = response as? HTTPURLResponse else {
       throw NWSServiceError.networkError
     }
-    if !(200...299).contains(pointsHTTP.statusCode) {
-      let body = String(data: pointsData, encoding: .utf8) ?? ""
-      throw NWSServiceError.httpError(pointsHTTP.statusCode, body)
+    guard (200...299).contains(http.statusCode) else {
+      let body = String(data: data, encoding: .utf8) ?? ""
+      throw NWSServiceError.httpError(http.statusCode, body)
     }
-    return try JSONDecoder().decode(NWSPointsResponse.self, from: pointsData)
+    return data
   }
 
   func fetchForecast(for location: SavedLocation) async throws -> DayCastWeather {
