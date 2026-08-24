@@ -104,7 +104,6 @@ final class Level3N0BTests: XCTestCase {
 
   func testOrganizedPrecipIgnoresClearAirClutterRing() {
     let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
-    let gateWidth = 250.0
     let bins = 200
     let light15: UInt8 = 96
     let speckle25: UInt8 = 116
@@ -124,8 +123,7 @@ final class Level3N0BTests: XCTestCase {
           startAzimuth: Double(i) * 5, deltaAzimuth: 0.5, gates: gates))
     }
     XCTAssertFalse(
-      Level3N0BDecoder.organizedPrecip(
-        radials: radials, lut: lut, gateWidth: gateWidth),
+      Level3N0BDecoder.organizedPrecip(radials: radials, lut: lut),
       "near-site 15–25 dBZ ring past 20 km is clear-air clutter, not precip")
   }
 
@@ -137,12 +135,11 @@ final class Level3N0BTests: XCTestCase {
       Level3N0BSweep.Radial(startAzimuth: 90, deltaAzimuth: 0.5, gates: gates)
     ]
     XCTAssertTrue(
-      Level3N0BDecoder.organizedPrecip(
-        radials: radials, lut: lut, gateWidth: 250),
+      Level3N0BDecoder.organizedPrecip(radials: radials, lut: lut),
       "any ≥30 dBZ gate is a storm core")
   }
 
-  func testOrganizedPrecipDetects25dBZShowerShaft() {
+  func testOrganizedPrecipLong25dBZShaftIsNotWet() {
     let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
     var gates = [UInt8](repeating: 0, count: 160)
     for gi in 80..<88 {
@@ -151,10 +148,9 @@ final class Level3N0BTests: XCTestCase {
     let radials = [
       Level3N0BSweep.Radial(startAzimuth: 45, deltaAzimuth: 0.5, gates: gates)
     ]
-    XCTAssertTrue(
-      Level3N0BDecoder.organizedPrecip(
-        radials: radials, lut: lut, gateWidth: 250),
-      "contiguous ≥25 dBZ run of ~2 km is a shower")
+    XCTAssertFalse(
+      Level3N0BDecoder.organizedPrecip(radials: radials, lut: lut),
+      "8-gate (~2 km) 25 dBZ shaft is AP/biological clutter, not precip")
   }
 
   func testOrganizedPrecipShort25RunIsNotACell() {
@@ -167,8 +163,7 @@ final class Level3N0BTests: XCTestCase {
       Level3N0BSweep.Radial(startAzimuth: 45, deltaAzimuth: 0.5, gates: gates)
     ]
     XCTAssertFalse(
-      Level3N0BDecoder.organizedPrecip(
-        radials: radials, lut: lut, gateWidth: 250),
+      Level3N0BDecoder.organizedPrecip(radials: radials, lut: lut),
       "7 gates of 25 dBZ (~1.75 km) plus 15 dBZ fill is not organized precip")
   }
 

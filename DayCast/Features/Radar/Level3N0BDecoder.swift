@@ -147,8 +147,7 @@ enum Level3N0BDecoder {
       ? superResRangeKm * 1000 / Double(parsed.binCount)
       : superResGateMeters
     let azIndex = buildAzIndex(parsed.radials)
-    let wet = organizedPrecip(
-      radials: parsed.radials, lut: lut, gateWidth: gateWidth)
+    let wet = organizedPrecip(radials: parsed.radials, lut: lut)
 
     return Level3N0BSweep(
       siteID: siteHint ?? "",
@@ -242,33 +241,18 @@ enum Level3N0BDecoder {
     return table
   }
 
-  /// Wet iff any gate ≥30 dBZ, or a contiguous ≥25 dBZ run of ~2 km; 15 dBZ far-light does not count.
+  /// Wet iff any gate ≥30 dBZ. Clear-air / AP / biological 15–25 dBZ shafts do not count.
   static func organizedPrecip(
-    radials: [Level3N0BSweep.Radial], lut: [Float], gateWidth: Double
+    radials: [Level3N0BSweep.Radial], lut: [Float]
   ) -> Bool {
     let coreDbz: Float = 30
-    let cellDbz: Float = 25
-    let cellRunMinGates = max(1, Int((2_000 / max(gateWidth, 1)).rounded(.up)))
     for radial in radials {
-      var run = 0
       for byte in radial.gates {
         let idx = Int(byte)
-        guard idx < lut.count else {
-          run = 0
-          continue
-        }
+        guard idx < lut.count else { continue }
         let dbz = lut[idx]
-        if dbz.isNaN {
-          run = 0
-          continue
-        }
+        if dbz.isNaN { continue }
         if dbz >= coreDbz { return true }
-        if dbz >= cellDbz {
-          run += 1
-          if run >= cellRunMinGates { return true }
-        } else {
-          run = 0
-        }
       }
     }
     return false
