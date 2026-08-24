@@ -277,6 +277,7 @@
 		DB477610DBEF451DC629F5E2 /* RadarPreviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9441131245BEE8DBF12B28F0 /* RadarPreviewCard.swift */; };
 		DC7486C220FE951100A28D54 /* RadarLiveCameraPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB835BF1299432DB4CF2D4C6 /* RadarLiveCameraPolicy.swift */; };
 		DC80AB399AE9C47486C939A6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 367D66DD1DAF242B8EA18816 /* AppDelegate.swift */; };
+		DCC58A98CCAAE28D11A8EC25 /* SkyCheckContentFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A1113BF74E1508497BF87F /* SkyCheckContentFilterTests.swift */; };
 		DD2DE1219B8896359E42BCAA /* WidgetLocationIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5AF9E68C779614D061E015 /* WidgetLocationIntent.swift */; };
 		DD2E398A678774E34EFFA36A /* RadarPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */; };
 		DD4ECF7D5903D513DE461A08 /* IEMSiteReflectivityPaint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEBBBD67AF13BFEF4942CCC /* IEMSiteReflectivityPaint.swift */; };
@@ -508,6 +509,7 @@
 		7E8763535332B426FE071163 /* GrokBriefSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefSnapshot.swift; sourceTree = "<group>"; };
 		7FEF44D92A6853AF3843AAC7 /* DailyTempRangeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTempRangeBar.swift; sourceTree = "<group>"; };
 		80F2B43079235DE748C35B21 /* DynamicBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicBackgroundView.swift; sourceTree = "<group>"; };
+		82A1113BF74E1508497BF87F /* SkyCheckContentFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckContentFilterTests.swift; sourceTree = "<group>"; };
 		82AFDBD5FA7F7FC588A7F9B5 /* GrokBriefSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefSafety.swift; sourceTree = "<group>"; };
 		82DDFF7F2E222F230F3CBF9C /* FireProximityDedupe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireProximityDedupe.swift; sourceTree = "<group>"; };
 		831549C03C72C2A73EB2B70A /* DayCastWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DayCastWidgets.entitlements; sourceTree = "<group>"; };
@@ -944,6 +946,7 @@
 				A51B41B30B8ECF4BE35BAD63 /* ShareAttributionTests.swift */,
 				50FB1E08BB07C150BE98C654 /* SkyCheckBusyLockTests.swift */,
 				8E3653C7C72253E31D861952 /* SkyCheckChatLayoutTests.swift */,
+				82A1113BF74E1508497BF87F /* SkyCheckContentFilterTests.swift */,
 				FE2408F5BC13951D765A3137 /* SkyCheckPhotoIntakeTests.swift */,
 				8B559D513732DD98EFDB6DBC /* StormSpotterHonestyTests.swift */,
 				44656C52DD09DEA3CC9AAA3E /* TodayFirstRunTests.swift */,
@@ -1604,6 +1607,7 @@
 				6B43FE238B5A213D4B292D8D /* ShareAttributionTests.swift in Sources */,
 				7A0CC04C5813EB28367C2BBA /* SkyCheckBusyLockTests.swift in Sources */,
 				B667EF69341E50F8471F60B1 /* SkyCheckChatLayoutTests.swift in Sources */,
+				DCC58A98CCAAE28D11A8EC25 /* SkyCheckContentFilterTests.swift in Sources */,
 				D530CD08401FDFAB117200CB /* SkyCheckPhotoIntakeTests.swift in Sources */,
 				3A1EA14FD5E0A5C951CA9E35 /* StormSpotterHonestyTests.swift in Sources */,
 				BC3F66EB1BF86F8A8D2C65AC /* TodayFirstRunTests.swift in Sources */,

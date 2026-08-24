@@ -1,6 +1,8 @@
 import Foundation
 
-/// Client-side screen for Grok Today's Take text (App Review Guideline 4.7 filter).
+/// Client-side screen for Grok output (App Review Guideline 4.7).
+/// Today's Take / Explain Radar / Alerts use `maxCharacterCount`. Sky Check chat
+/// and vision use `skyCheckMaxCharacterCount` — weather answers are longer.
 enum GrokContentFilter {
   enum Verdict: Equatable, Sendable {
     case allowed
@@ -19,8 +21,10 @@ enum GrokContentFilter {
   }
 
   static let maxCharacterCount = 1_600
+  /// Sky Check chat / vision. ~3× a 1024-token vision body. Empty still blocks.
+  static let skyCheckMaxCharacterCount = 12_000
 
-  static func screen(_ text: String) -> Verdict {
+  static func screen(_ text: String, maxCharacterCount: Int = Self.maxCharacterCount) -> Verdict {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed.isEmpty { return .blocked(.empty) }
     if trimmed.count > maxCharacterCount { return .blocked(.tooLong) }
@@ -41,10 +45,16 @@ enum GrokContentFilter {
     return .allowed
   }
 
-  static func acceptedText(_ text: String) -> String? {
+  static func acceptedText(
+    _ text: String, maxCharacterCount: Int = Self.maxCharacterCount
+  ) -> String? {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard case .allowed = screen(trimmed) else { return nil }
+    guard case .allowed = screen(trimmed, maxCharacterCount: maxCharacterCount) else { return nil }
     return trimmed
+  }
+
+  static func acceptedSkyCheckText(_ text: String) -> String? {
+    acceptedText(text, maxCharacterCount: skyCheckMaxCharacterCount)
   }
 }
 

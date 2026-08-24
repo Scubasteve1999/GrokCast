@@ -17,9 +17,12 @@ final class GrokContentFilterTests: XCTestCase {
   }
 
   func testBlocksEmptyAndTooLong() {
+    XCTAssertEqual(GrokContentFilter.maxCharacterCount, 1_600)
     XCTAssertEqual(GrokContentFilter.screen("   "), .blocked(.empty))
     let long = String(repeating: "warm sunny afternoon ", count: 120)
     XCTAssertEqual(GrokContentFilter.screen(long), .blocked(.tooLong))
+    XCTAssertGreaterThan(long.count, GrokContentFilter.maxCharacterCount)
+    XCTAssertLessThan(long.count, GrokContentFilter.skyCheckMaxCharacterCount)
   }
 
   func testBlocksSexualHateSelfHarmAndViolence() {

@@ -15,7 +15,7 @@ final class GrokAIViewModel {
   var isGeneratingImage: Bool = false
 
   private let weatherStore: WeatherStore
-  private let conversationStore = GrokAIConversationStore()
+  private let conversationStore: GrokAIConversationStore
   @ObservationIgnored private nonisolated(unsafe) var generationTask: Task<Void, Never>?
   /// Identifies the current generation so a cancelled/superseded task's teardown can't
   /// clobber the state of the generation that replaced it.
@@ -32,8 +32,12 @@ final class GrokAIViewModel {
   /// Selected city whose thread is currently in `conversationHistory`.
   private var boundLocationID: UUID?
 
-  init(weatherStore: WeatherStore) {
+  init(
+    weatherStore: WeatherStore,
+    conversationStore: GrokAIConversationStore = GrokAIConversationStore()
+  ) {
     self.weatherStore = weatherStore
+    self.conversationStore = conversationStore
     boundLocationID = weatherStore.currentLocation?.id
 
     // Load persisted history before accepting new messages (prevents async overwrite race).
@@ -154,12 +158,8 @@ final class GrokAIViewModel {
       guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
 
-      // On completion, append the full assistant message to history
-      if !self.responseText.isEmpty {
-        let assistantMsg = ChatMessage.assistant(self.responseText)
-        self.conversationHistory.append(assistantMsg)
-        self.conversationHistory = self.trimHistory(self.conversationHistory)
-        self.persistCurrentHistory()
+      if !self.responseText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        self.commitFinishedSkyCheckReply(self.responseText, asPhotoTurn: false)
       } else if !Task.isCancelled && self.generationWasCancelled == false {
         self.errorMessage = "AI returned an empty response. Check your connection and try again."
       }
@@ -248,7 +248,7 @@ final class GrokAIViewModel {
       guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
       if !self.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        self.appendStormPhotoTurnToHistory()
+        self.commitFinishedSkyCheckReply(self.stormAnalysisText, asPhotoTurn: true)
       } else if !Task.isCancelled && self.generationWasCancelled == false {
         self.errorMessage =
           "Storm analysis returned an empty response. Check your connection and try again."
@@ -275,17 +275,46 @@ final class GrokAIViewModel {
     return [turn.user, turn.assistant]
   }
 
-  private func appendStormPhotoTurnToHistory() {
-    let analysis = stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !analysis.isEmpty else { return }
-    conversationHistory.append(
-      contentsOf: Self.photoTurnMessages(
-        locationName: weatherStore.currentLocation?.name,
-        thumbnail: stormThumbnailData,
-        analysis: analysis,
-        notes: lastStormNotes
+  /// After a finished Sky Check stream. Screens, then commits. Never writes blocked raw.
+  func commitFinishedSkyCheckReply(_ raw: String, asPhotoTurn: Bool) {
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+
+    if let accepted = GrokContentFilter.acceptedSkyCheckText(trimmed) {
+      if asPhotoTurn {
+        stormAnalysisText = accepted
+        responseText = accepted
+        conversationHistory.append(
+          contentsOf: Self.photoTurnMessages(
+            locationName: weatherStore.currentLocation?.name,
+            thumbnail: stormThumbnailData,
+            analysis: accepted,
+            notes: lastStormNotes
+          )
+        )
+      } else {
+        responseText = accepted
+        conversationHistory.append(ChatMessage.assistant(accepted))
+      }
+      conversationHistory = trimHistory(conversationHistory)
+      persistCurrentHistory()
+      return
+    }
+
+    responseText = ""
+    stormAnalysisText = ""
+    if asPhotoTurn {
+      conversationHistory.append(
+        ChatMessage.userWithPhoto(
+          text: ChatMessage.stormSpotterUserCaption(
+            locationName: weatherStore.currentLocation?.name,
+            notes: lastStormNotes
+          ),
+          imageData: stormThumbnailData
+        )
       )
-    )
+    }
+    conversationHistory.append(ChatMessage.assistant(SkyCheckDeskCopy.replyHidden))
     conversationHistory = trimHistory(conversationHistory)
     persistCurrentHistory()
   }
@@ -570,6 +599,10 @@ final class GrokAIViewModel {
   }
 
   // MARK: - SwiftData Persistence
+
+  func waitForHistoryLoad() async {
+    await historyLoadTask?.value
+  }
 
   private func loadPersistedHistory() async {
     do {

@@ -25,6 +25,8 @@ enum SkyCheckDeskCopy {
     "Already checking this sky. Try when this one finishes."
   static let alreadyAnswering =
     "Already answering. Try when this one finishes."
+  /// Finished Sky Check reply failed the 4.7 screen. Honest hide — not a lecture.
+  static let replyHidden = "Couldn't show that reply. Try another question."
   static let photoTurnCaption = "Check this sky photo"
 
   /// One in-flight generation. Photo check vs chat/Imagine.

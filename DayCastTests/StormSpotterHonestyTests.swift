@@ -93,6 +93,9 @@ final class StormSpotterHonestyTests: XCTestCase {
 
   func testPublicCTAIsASkyPhotoVerb() {
     XCTAssertEqual(SkyCheckDeskCopy.photoCTA, "Check this sky")
+    XCTAssertEqual(
+      SkyCheckDeskCopy.replyHidden,
+      "Couldn't show that reply. Try another question.")
     XCTAssertFalse(SkyCheckDeskCopy.photoCTA.contains("Analyze Storm Photo"))
     XCTAssertTrue(SkyCheckDeskCopy.emptyPitch.lowercased().hasPrefix("ask about your weather"))
     XCTAssertTrue(SkyCheckDeskCopy.emptyPitch.localizedCaseInsensitiveContains("sky photo"))
