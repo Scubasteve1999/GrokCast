@@ -94,7 +94,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     )
   }
 
-  // MARK: - 3. Storm Spotter entry from Briefing Studio
+  // MARK: - 3. Storm Spotter entry from More
 
   func testStormSpotterCTAExistsInBriefingStudio() throws {
     XCTAssertTrue(waitForTabBar())
@@ -112,7 +112,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
 
     XCTAssertTrue(
       sawCTA || sawHeader,
-      "Storm Spotter analysis entry point missing from Briefing Studio"
+      "Storm Spotter analysis entry point missing from Storm Spotter"
     )
 
     // Tap CTA only far enough to confirm it is hittable (system photo picker may appear).

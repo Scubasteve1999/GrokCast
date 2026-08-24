@@ -281,7 +281,7 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "AI chat needs an xAI developer key in Settings. DayCast Pro unlocks forecast radar, Live Activity, and unlimited locations — not hosted AI (yet)."
+      "DayCast Pro unlocks Storm Spotter, Today's Take, Explain Radar, and AI chat — or bring your own xAI key in Settings."
     case .radarFuture:
       "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
     case .locations:
@@ -289,7 +289,7 @@ enum PaywallFeature {
     case .liveActivity:
       "Pro shows DayCast Score and Minutecast on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:
-      "Schedule a local morning notification from your cached Today's Take. Generating that take needs an xAI key in Settings."
+      "Schedule a local morning notification from your cached Today's Take. Generating that take needs DayCast Pro or an xAI key in Settings."
     case .severeAlerts:
       "NWS warnings and watches with notifications are free for all users. Pro adds forecast radar, Lock Screen weather, and unlimited locations."
     }
@@ -297,7 +297,7 @@ enum PaywallFeature {
 
   var icon: String {
     switch self {
-    case .grokAI: "sparkles"
+    case .grokAI: "cloud.bolt.fill"
     case .radarFuture: "cloud.rain.fill"
     case .locations: "mappin.and.ellipse"
     case .liveActivity: "lock.rectangle.stack.fill"

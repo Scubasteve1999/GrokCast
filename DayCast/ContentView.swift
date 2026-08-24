@@ -152,7 +152,7 @@ struct MainTabView: View {
 
       GrokAIView()
         .hidesSystemTabBar()
-        .tabItem { Label("Storm Spotter", systemImage: "sparkles") }
+        .tabItem { Label("Storm Spotter", systemImage: "cloud.bolt.fill") }
         .tag(WeatherStore.Tab.grok)
 
       LocationsView()

@@ -112,7 +112,7 @@ struct AppStoreScreenshotGrok: View {
     ZStack {
       DesignTokens.Palette.bgPrimary.ignoresSafeArea()
       VStack(alignment: .leading, spacing: 16) {
-        Text("Briefing Studio")
+        Text("Storm Spotter")
           .font(DesignTokens.Typography.title())
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
           screenshotTile("Threat check", icon: "exclamationmark.triangle.fill")

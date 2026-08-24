@@ -39,125 +39,128 @@ private struct GrokAIViewContent: View {
         .ignoresSafeArea()
 
         ScrollViewReader { proxy in
-            ScrollView {
-              VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-                headerSection
-                if !weatherStore.canUseGrok {
-                  GrokAPIKeyEmptyStateView(
-                    store: weatherStore,
-                    subscription: SubscriptionManager.shared
-                  )
-                }
-                // Storm Spotter first — core DayCast feature, not buried under lifestyle prompts.
-                figmaStormSpotterCard(viewModel: viewModel)
-                quickPromptsSection(viewModel: viewModel)
-
-                ForEach(viewModel.conversationHistory) { message in
-                  messageBubble(for: message)
-                    .id(message.id)
-                }
-
-                if viewModel.isStreaming && !viewModel.stormAnalysisMode {
-                  GrokAIResponseView(
-                    response: viewModel.responseText.isEmpty ? nil : viewModel.responseText,
-                    isThinking: viewModel.responseText.isEmpty,
-                    isStreaming: !viewModel.responseText.isEmpty
-                  )
-                  .id(viewModel.responseText.isEmpty ? "thinking" : "streaming")
-                }
-
-                if viewModel.isGeneratingImage {
-                  responseCard {
-                    HStack(spacing: 12) {
-                      ProgressView()
-                        .tint(.white)
-                      Text("GENERATING IMAGE...")
-                        .font(DesignTokens.Typography.caption())
-                        .tracking(1.5)
-                        .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                  }
-                  .id("generating-image")
-                }
-
-                if let thumbnailData = viewModel.stormThumbnailData,
-                  let uiImage = UIImage(data: thumbnailData)
-                {
-                  Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: 120, maxHeight: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                    )
-                    .id("storm-thumb")
-                }
-
-                if viewModel.stormAnalysisMode {
-                  GrokAIResponseView(
-                    response: viewModel.responseText.isEmpty ? nil : viewModel.responseText,
-                    isThinking: viewModel.isStreaming && viewModel.responseText.isEmpty,
-                    isStreaming: viewModel.isStreaming && !viewModel.responseText.isEmpty
-                  )
-                }
-
-                if let imageData = viewModel.lastStormImageData,
-                  !viewModel.stormAnalysisMode,
-                  !viewModel.responseText.isEmpty
-                {
-                  stormShareRow(viewModel: viewModel, imageData: imageData, analysis: viewModel.responseText)
-                }
-
-                if let error = viewModel.errorMessage {
-                  GrokErrorView(
-                    message: error,
-                    retryAction: {
-                      guard !(viewModel.isStreaming || viewModel.isGeneratingImage) else { return }
-                      Task {
-                        if viewModel.lastStormImageData != nil {
-                          await viewModel.retryStormAnalysis()
-                          return
-                        }
-                        guard
-                          let lastUser = viewModel.conversationHistory.last(where: {
-                            $0.role == .user
-                          })
-                        else { return }
-                        await viewModel.askGrok(question: lastUser.content)
-                      }
-                    },
-                    isStormError: viewModel.lastStormImageData != nil
-                  )
-                  .id("error")
-                }
+          ScrollView {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+              headerSection
+              if !weatherStore.canUseGrok {
+                GrokAPIKeyEmptyStateView(
+                  store: weatherStore,
+                  subscription: SubscriptionManager.shared
+                )
               }
-              .figmaScreenPadding(top: DesignTokens.Layout.topPadding)
+              // Storm Spotter first — core DayCast feature, not buried under lifestyle prompts.
+              figmaStormSpotterCard(viewModel: viewModel)
+              quickPromptsSection(viewModel: viewModel)
+
+              ForEach(viewModel.conversationHistory) { message in
+                messageBubble(for: message)
+                  .id(message.id)
+              }
+
+              if viewModel.isStreaming && !viewModel.stormAnalysisMode {
+                GrokAIResponseView(
+                  response: viewModel.responseText.isEmpty ? nil : viewModel.responseText,
+                  isThinking: viewModel.responseText.isEmpty,
+                  isStreaming: !viewModel.responseText.isEmpty
+                )
+                .id(viewModel.responseText.isEmpty ? "thinking" : "streaming")
+              }
+
+              if viewModel.isGeneratingImage {
+                responseCard {
+                  HStack(spacing: 12) {
+                    ProgressView()
+                      .tint(.white)
+                    Text("GENERATING IMAGE...")
+                      .font(DesignTokens.Typography.caption())
+                      .tracking(1.5)
+                      .foregroundStyle(.secondary)
+                  }
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .id("generating-image")
+              }
+
+              if viewModel.stormAnalysisMode,
+                let thumbnailData = viewModel.stormThumbnailData,
+                let uiImage = UIImage(data: thumbnailData)
+              {
+                Image(uiImage: uiImage)
+                  .resizable()
+                  .scaledToFill()
+                  .frame(maxWidth: 120, maxHeight: 80)
+                  .clipShape(RoundedRectangle(cornerRadius: 8))
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                  )
+                  .id("storm-thumb")
+              }
+
+              // Regular width only: compact streams inside the Storm Spotter card.
+              if viewModel.stormAnalysisMode && !prefersFigmaStudioLayout {
+                GrokAIResponseView(
+                  response: viewModel.stormAnalysisText.isEmpty ? nil : viewModel.stormAnalysisText,
+                  isThinking: viewModel.isStreaming && viewModel.stormAnalysisText.isEmpty,
+                  isStreaming: viewModel.isStreaming && !viewModel.stormAnalysisText.isEmpty
+                )
+              }
+
+              if let imageData = viewModel.lastStormImageData,
+                !viewModel.stormAnalysisMode,
+                !viewModel.stormAnalysisText.isEmpty
+              {
+                stormShareRow(
+                  viewModel: viewModel, imageData: imageData, analysis: viewModel.stormAnalysisText)
+              }
+
+              if let error = viewModel.errorMessage {
+                GrokErrorView(
+                  message: error,
+                  retryAction: {
+                    guard !(viewModel.isStreaming || viewModel.isGeneratingImage) else { return }
+                    Task {
+                      if viewModel.lastStormImageData != nil {
+                        await viewModel.retryStormAnalysis()
+                        return
+                      }
+                      guard
+                        let lastUser = viewModel.conversationHistory.last(where: {
+                          $0.role == .user
+                        })
+                      else { return }
+                      await viewModel.askGrok(question: lastUser.content)
+                    }
+                  },
+                  isStormError: viewModel.lastStormImageData != nil
+                )
+                .id("error")
+              }
             }
-            .scrollDismissesKeyboard(.interactively)
-            .onChange(of: viewModel.conversationHistory.count) {
+            .figmaScreenPadding(top: DesignTokens.Layout.topPadding)
+          }
+          .scrollDismissesKeyboard(.interactively)
+          .onChange(of: viewModel.conversationHistory.count) {
+            scrollToBottom(proxy: proxy, viewModel: viewModel)
+          }
+          .onChange(of: viewModel.responseText) {
+            if viewModel.isStreaming && !viewModel.stormAnalysisMode {
               scrollToBottom(proxy: proxy, viewModel: viewModel)
             }
-            .onChange(of: viewModel.responseText) {
-              if viewModel.isStreaming && !viewModel.stormAnalysisMode {
-                scrollToBottom(proxy: proxy, viewModel: viewModel)
-              }
-            }
-            .onChange(of: viewModel.isStreaming) {
-              if viewModel.isStreaming && !viewModel.stormAnalysisMode
-                && viewModel.responseText.isEmpty
-              {
-                scrollToBottom(proxy: proxy, viewModel: viewModel)
-              }
-            }
-            .onChange(of: viewModel.isGeneratingImage) {
-              if viewModel.isGeneratingImage {
-                scrollToBottom(proxy: proxy, viewModel: viewModel)
-              }
+          }
+          .onChange(of: viewModel.isStreaming) {
+            if viewModel.isStreaming && !viewModel.stormAnalysisMode
+              && viewModel.responseText.isEmpty
+            {
+              scrollToBottom(proxy: proxy, viewModel: viewModel)
             }
           }
+          .onChange(of: viewModel.isGeneratingImage) {
+            if viewModel.isGeneratingImage {
+              scrollToBottom(proxy: proxy, viewModel: viewModel)
+            }
+          }
+        }
       }
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
@@ -232,10 +235,10 @@ private struct GrokAIViewContent: View {
   private var headerSection: some View {
     Group {
       if prefersFigmaStudioLayout {
-        FigmaScreenTitle(title: "Briefing Studio", style: .studio)
+        FigmaScreenTitle(title: "Storm Spotter", style: .studio)
       } else {
         VStack(alignment: .leading, spacing: 6) {
-          Text("WEATHER INTELLIGENCE")
+          Text("STORM SPOTTER")
             .font(DesignTokens.Typography.caption())
             .tracking(2)
             .foregroundStyle(.white.opacity(0.5))
@@ -265,25 +268,35 @@ private struct GrokAIViewContent: View {
             color: DesignTokens.Palette.danger
           )
 
-          if viewModel.stormAnalysisMode && viewModel.isStreaming && viewModel.responseText.isEmpty {
+          if viewModel.stormAnalysisMode && viewModel.isStreaming
+            && viewModel.stormAnalysisText.isEmpty
+          {
             HStack(spacing: 8) {
               ProgressView().scaleEffect(0.85)
               Text("Analyzing your photo…")
                 .font(DesignTokens.Typography.callout())
                 .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
-          } else if !viewModel.responseText.isEmpty,
-            viewModel.stormAnalysisMode || viewModel.lastStormImageData != nil
-          {
-            Text(viewModel.responseText)
+          } else if viewModel.stormAnalysisMode && !viewModel.stormAnalysisText.isEmpty {
+            Text(viewModel.stormAnalysisText)
               .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
           } else {
-            Text("Upload a storm photo for AI to assess rotation, wall clouds, and hail risk.")
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+              Text(
+                "Upload a storm photo for a field read of sky features, storm structure, and what to watch next."
+              )
               .font(DesignTokens.Typography.callout())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
               .fixedSize(horizontal: false, vertical: true)
+              Text(
+                "Not an NWS product or warning. Rotation and hail are inferred, not certified."
+              )
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+              .fixedSize(horizontal: false, vertical: true)
+            }
           }
 
           Button {
@@ -297,7 +310,7 @@ private struct GrokAIViewContent: View {
               showPhotoPicker = true
             }
           } label: {
-            Label("Analyze Storm Photo", systemImage: "camera.fill")
+            Label("Analyze Storm Photo", systemImage: "photo")
               .font(DesignTokens.Typography.subsection())
               .frame(maxWidth: .infinity)
               .padding(.vertical, DesignTokens.Spacing.space4)
@@ -562,6 +575,17 @@ private struct GrokAIViewContent: View {
       if message.role == .user {
         Spacer(minLength: 60)
         VStack(alignment: .trailing, spacing: 4) {
+          if let imageData = message.imageData, let uiImage = UIImage(data: imageData) {
+            Image(uiImage: uiImage)
+              .resizable()
+              .scaledToFill()
+              .frame(maxWidth: 120, maxHeight: 80)
+              .clipShape(RoundedRectangle(cornerRadius: 8))
+              .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color.white.opacity(0.15), lineWidth: 1)
+              )
+          }
           Text(message.content)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -636,7 +660,9 @@ private struct GrokAIViewContent: View {
     }
   }
 
-  private func stormShareRow(viewModel: GrokAIViewModel, imageData: Data, analysis: String) -> some View {
+  private func stormShareRow(viewModel: GrokAIViewModel, imageData: Data, analysis: String)
+    -> some View
+  {
     let location = weatherStore.currentLocation?.name ?? "My location"
     let shareText = ShareableBriefText.stormSpotterReport(
       locationName: location,

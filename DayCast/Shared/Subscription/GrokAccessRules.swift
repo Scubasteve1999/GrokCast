@@ -52,4 +52,8 @@ enum GrokAccessRules {
       ? "Photo analysis, briefings, and chat"
       : "Included with DayCast Pro"
   }
+
+  /// Locked Alerts summary line. Mentions Pro hosted AI and the BYOK path.
+  static let lockedAlertsSummaryCopy =
+    "DayCast Pro includes AI alert summaries — or add an xAI key in Settings."
 }

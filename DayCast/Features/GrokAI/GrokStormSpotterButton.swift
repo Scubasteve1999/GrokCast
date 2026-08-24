@@ -14,7 +14,7 @@ struct GrokStormSpotterButton: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 8) {
-        Image(systemName: "camera.fill")
+        Image(systemName: "photo")
           .font(DesignTokens.Typography.subsection())
 
         Text("Analyze Storm Photo")

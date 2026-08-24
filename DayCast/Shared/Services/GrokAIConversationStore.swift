@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// Whether Briefing Studio must swap the visible thread.
+/// Whether Storm Spotter must swap the visible thread.
 /// Same selected-city identity keeps the thread; a new identity does not inherit it.
 enum BriefingThreadScope {
   static func shouldReplace(boundLocationID: UUID?, selectedLocationID: UUID?) -> Bool {

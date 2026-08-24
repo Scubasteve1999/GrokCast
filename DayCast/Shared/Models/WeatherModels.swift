@@ -54,6 +54,40 @@ struct ChatMessage: Identifiable, Equatable {
       role: .user, content: text, imageData: imageData, isStormSpotterAnalysis: false,
       originalNotes: nil, generatedImageURL: nil)
   }
+
+  /// Caption for a Storm Spotter photo turn in the city thread.
+  static func stormSpotterUserCaption(locationName: String?, notes: String?) -> String {
+    let place = locationName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    var text = "Analyze this storm photo"
+    if !place.isEmpty {
+      text += " (\(place))"
+    }
+    let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if !trimmedNotes.isEmpty {
+      text += " — Notes: \(trimmedNotes)"
+    }
+    return text
+  }
+
+  /// User photo + assistant write-up for a completed Storm Spotter analysis.
+  static func stormSpotterPhotoTurn(
+    locationName: String?,
+    thumbnail: Data?,
+    analysis: String,
+    notes: String?
+  ) -> (user: ChatMessage, assistant: ChatMessage) {
+    let user = userWithPhoto(
+      text: stormSpotterUserCaption(locationName: locationName, notes: notes),
+      imageData: thumbnail
+    )
+    let assistant = ChatMessage(
+      role: .assistant,
+      content: analysis,
+      isStormSpotterAnalysis: true,
+      originalNotes: notes
+    )
+    return (user, assistant)
+  }
 }
 
 enum QuickPrompt: String, CaseIterable, Identifiable {

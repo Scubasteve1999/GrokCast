@@ -64,7 +64,7 @@ struct AlertsGrokSummaryCard: View {
             .font(DesignTokens.Typography.caption())
         }
       } else if !store.canUseGrok {
-        Text("Add an xAI key in Settings for AI alert summaries.")
+        Text(GrokAccessRules.lockedAlertsSummaryCopy)
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {
@@ -138,7 +138,7 @@ struct AlertsGrokSummaryCard: View {
             .font(DesignTokens.Typography.caption())
         }
       } else if !store.canUseGrok {
-        Text("Add an xAI key in Settings for AI alert summaries.")
+        Text(GrokAccessRules.lockedAlertsSummaryCopy)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       } else {

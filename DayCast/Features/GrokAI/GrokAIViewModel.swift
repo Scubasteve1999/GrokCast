@@ -5,6 +5,9 @@ import Observation
 @Observable
 final class GrokAIViewModel {
   var responseText: String = ""
+  /// Dedicated storm-photo write-up. Compact card and share use this so later
+  /// chat tokens in `responseText` cannot appear inside Storm Spotter chrome.
+  var stormAnalysisText: String = ""
   var isStreaming: Bool = false
   var errorMessage: String?
   var stormAnalysisMode: Bool = false
@@ -42,10 +45,12 @@ final class GrokAIViewModel {
   /// Swap the visible thread when the selected city identity changes.
   /// Same-city refresh / reopen is a no-op so that city's thread stays.
   func syncThread(to selectedLocationID: UUID?) {
-    guard BriefingThreadScope.shouldReplace(
-      boundLocationID: boundLocationID,
-      selectedLocationID: selectedLocationID
-    ) else { return }
+    guard
+      BriefingThreadScope.shouldReplace(
+        boundLocationID: boundLocationID,
+        selectedLocationID: selectedLocationID
+      )
+    else { return }
 
     if let boundLocationID {
       persistCurrentHistory(for: boundLocationID)
@@ -54,6 +59,7 @@ final class GrokAIViewModel {
       stopGeneration()
     }
     responseText = ""
+    stormAnalysisText = ""
     errorMessage = nil
     stormThumbnailData = nil
     stormAnalysisMode = false
@@ -173,6 +179,7 @@ final class GrokAIViewModel {
     stormAnalysisMode = true
     isStreaming = true
     responseText = ""
+    stormAnalysisText = ""
     errorMessage = nil
 
     lastStormImageData = imageData
@@ -219,6 +226,7 @@ final class GrokAIViewModel {
           unit: weatherStore.temperatureUnit
         ) {
           if Task.isCancelled || !isStreaming { break }
+          self.stormAnalysisText += token
           self.responseText += token
         }
       } catch {
@@ -229,10 +237,47 @@ final class GrokAIViewModel {
       // A newer generation replaced this one — don't touch shared state it now owns.
       guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
+      if !self.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        self.appendStormPhotoTurnToHistory()
+      } else if !Task.isCancelled && self.generationWasCancelled == false {
+        self.errorMessage =
+          "Storm analysis returned an empty response. Check your connection and try again."
+      }
       self.stormAnalysisMode = false
       self.generationTask = nil
     }
     await generationTask?.value
+  }
+
+  /// User photo + assistant write-up appended to the bound city thread.
+  static func photoTurnMessages(
+    locationName: String?,
+    thumbnail: Data?,
+    analysis: String,
+    notes: String?
+  ) -> [ChatMessage] {
+    let turn = ChatMessage.stormSpotterPhotoTurn(
+      locationName: locationName,
+      thumbnail: thumbnail,
+      analysis: analysis,
+      notes: notes
+    )
+    return [turn.user, turn.assistant]
+  }
+
+  private func appendStormPhotoTurnToHistory() {
+    let analysis = stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !analysis.isEmpty else { return }
+    conversationHistory.append(
+      contentsOf: Self.photoTurnMessages(
+        locationName: weatherStore.currentLocation?.name,
+        thumbnail: stormThumbnailData,
+        analysis: analysis,
+        notes: lastStormNotes
+      )
+    )
+    conversationHistory = trimHistory(conversationHistory)
+    persistCurrentHistory()
   }
 
   func retryStormAnalysis() async {
@@ -242,9 +287,12 @@ final class GrokAIViewModel {
 
   func clearResponse() {
     responseText = ""
+    stormAnalysisText = ""
     errorMessage = nil
     stormThumbnailData = nil
     stormAnalysisMode = false
+    lastStormImageData = nil
+    lastStormNotes = nil
     isGeneratingImage = false
     conversationHistory.removeAll()  // start fresh conversation for this city
 
@@ -539,7 +587,9 @@ final class GrokAIViewModel {
   func fetchWeatherBrief() async throws -> String {
     guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
     await ensureWeatherContext()
-    guard let weather = weatherStore.currentWeather else { throw StructuredFetchError.missingWeather }
+    guard let weather = weatherStore.currentWeather else {
+      throw StructuredFetchError.missingWeather
+    }
 
     let location = weatherStore.currentLocation?.name ?? weather.location.name
     let unit = weatherStore.temperatureUnit
