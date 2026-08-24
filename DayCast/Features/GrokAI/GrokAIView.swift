@@ -440,6 +440,8 @@ private struct GrokAIViewContent: View {
   }
 
   /// Empty / library affordance — photography well, not a danger badge.
+  /// Local dark pill behind the camera + CTA so white type punches on the
+  /// dawn horizon. Keep the well-wide dim light; do not crush NewsHeroDawn.
   private func skyCheckPhotoWell(viewModel: GrokAIViewModel) -> some View {
     Button(action: openSkyCheckPicker) {
       ZStack {
@@ -468,6 +470,19 @@ private struct GrokAIViewContent: View {
             .font(DesignTokens.Typography.subsection())
         }
         .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .padding(.horizontal, DesignTokens.Spacing.space20)
+        .padding(.vertical, DesignTokens.Spacing.space12)
+        .background(
+          RoundedRectangle(cornerRadius: DesignTokens.Radius.large, style: .continuous)
+            .fill(DesignTokens.Palette.bgPrimary.opacity(0.72))
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: DesignTokens.Radius.large, style: .continuous)
+            .stroke(
+              Color.white.opacity(0.16),
+              lineWidth: DesignTokens.Card.strokeWidth
+            )
+        )
       }
       .frame(maxWidth: .infinity)
       .clipShape(
