@@ -5,7 +5,9 @@ struct ChatMessage: Identifiable, Equatable {
   let role: Role
   let content: String
   let timestamp: Date
-  let imageData: Data?  // optional thumbnail for photo-based user messages (e.g. Storm Spotter); full data for API call + on assistant storm messages for regeneration (UI thumbnail only for .user)
+  /// Sky Check user-turn thumbnail (small JPEG). Full camera/library bytes stay
+  /// on the VM as `lastStormImageData` and are never written to SwiftData.
+  let imageData: Data?
   let isStormSpotterAnalysis: Bool
   let originalNotes: String?
   let generatedImageURL: URL?  // for Grok image generation results shown in chat

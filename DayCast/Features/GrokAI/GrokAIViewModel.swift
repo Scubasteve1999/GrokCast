@@ -181,7 +181,10 @@ final class GrokAIViewModel {
 
     lastStormImageData = imageData
     lastStormNotes = userNotes
-    stormThumbnailData = imageData.compressedForVision(maxDimension: 150, quality: 0.6)
+    stormThumbnailData = imageData.compressedForVision(
+      maxDimension: SkyCheckPersistedThumbnail.maxDimension,
+      quality: SkyCheckPersistedThumbnail.jpegQuality
+    )
 
     guard imageData.compressedForVision() != nil else {
       errorMessage = "Couldn't process that photo. Try a different image or format (JPEG/PNG)."
@@ -577,6 +580,8 @@ final class GrokAIViewModel {
   private func persistCurrentHistory(for locationID: UUID?) {
     guard let locationID else { return }
     // Snapshot to avoid capturing mutable state across the Task boundary
+    // User-turn `imageData` is already the 150px JPEG thumb. The store
+    // re-caps it and never writes `lastStormImageData` / vision bytes.
     let snapshot = conversationHistory
     Task {
       do {

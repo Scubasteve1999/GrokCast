@@ -2,7 +2,8 @@ import UIKit
 
 extension Data {
   /// Resizes for vision API calls (default max 1024px, JPEG 0.75) so base64
-  /// payloads stay under typical 422/400 limits. Also used for chat thumbnails.
+  /// payloads stay under typical 422/400 limits. Sky Check chat thumbs use
+  /// 150px / 0.6 via `SkyCheckPersistedThumbnail` (that JPEG is what SwiftData stores).
   func compressedForVision(maxDimension: CGFloat = 1024, quality: CGFloat = 0.75) -> Data? {
     guard let image = UIImage(data: self) else { return nil }
 

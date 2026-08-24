@@ -12,6 +12,8 @@ enum BriefingThreadScope {
 /// Dedicated SwiftData store for persisting Grok AI conversation history.
 /// Threads are keyed by selected `SavedLocation.id`. In-memory history in the
 /// ViewModel remains the source of truth at runtime for the bound city.
+/// Sky Check photo turns persist a capped JPEG thumb (`SkyCheckPersistedThumbnail`);
+/// camera/library originals and `lastStormImageData` never enter this store.
 final class GrokAIConversationStore {
   private let modelContainer: ModelContainer
   private let modelContext: ModelContext
@@ -62,20 +64,34 @@ final class GrokAIConversationStore {
   }
 
   /// Replaces the persisted thread for one city. Other cities are left intact.
+  /// User-turn thumbs are compressed + capped; other cities are not rewritten.
   func saveHistory(_ messages: [ChatMessage], for locationID: UUID) throws {
     try discardUnscopedMessages()
     try deleteAllPersisted(for: locationID, withoutSaving: true)
 
+    let thumbs = SkyCheckPersistedThumbnail.byMessageID(in: messages)
     for message in messages {
-      modelContext.insert(ChatMessageEntity(from: message, locationID: locationID))
+      modelContext.insert(
+        ChatMessageEntity(
+          from: message,
+          locationID: locationID,
+          thumbnailData: thumbs[message.id]
+        )
+      )
     }
     try modelContext.save()
   }
 
   /// Append a single message (used optionally for incremental saves).
   func append(_ message: ChatMessage, locationID: UUID) throws {
-    let entity = ChatMessageEntity(from: message, locationID: locationID)
+    let thumb =
+      message.role == .user
+      ? SkyCheckPersistedThumbnail.jpeg(from: message.imageData)
+      : nil
+    let entity = ChatMessageEntity(
+      from: message, locationID: locationID, thumbnailData: thumb)
     modelContext.insert(entity)
+    try pruneExcessThumbs(for: locationID)
     try modelContext.save()
   }
 
@@ -93,6 +109,24 @@ final class GrokAIConversationStore {
       modelContext.delete(entity)
     }
     try modelContext.save()
+  }
+
+  /// Oldest photo thumbs in this city become nil once `maxThumbsPerCity` is exceeded.
+  private func pruneExcessThumbs(for locationID: UUID) throws {
+    let descriptor = FetchDescriptor<ChatMessageEntity>(
+      predicate: #Predicate { $0.locationID == locationID },
+      sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+    )
+    let entities = try modelContext.fetch(descriptor)
+    var remaining = SkyCheckPersistedThumbnail.maxThumbsPerCity
+    for entity in entities {
+      guard entity.thumbnailData != nil else { continue }
+      if remaining > 0 {
+        remaining -= 1
+      } else {
+        entity.thumbnailData = nil
+      }
+    }
   }
 
   private func deleteAllPersisted(for locationID: UUID, withoutSaving: Bool) throws {

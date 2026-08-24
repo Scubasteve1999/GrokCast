@@ -310,6 +310,7 @@
 		F8B1A4CE80888BA56043B19B /* WidgetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 207E75902796DF5D36CF4FDF /* WidgetStyle.swift */; };
 		F9293FB84B7F263BD2110F77 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62C5BE657D13E3388F9E388E /* LocationService.swift */; };
 		F9D998D406765CBFE7B50250 /* HourlyPrecipCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12DD1D8B6B726888B5B8FB3 /* HourlyPrecipCard.swift */; };
+		FA089717B67683ED0967EF8D /* SkyCheckPersistedThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = D884FEDCA4E61CDA44DC3109 /* SkyCheckPersistedThumbnail.swift */; };
 		FA2E66D15B1CD3A123EF9B8D /* Location.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC74F6B8148799773943BC1 /* Location.swift */; };
 		FA7759EB5A9607847EDC67C9 /* DayCastWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F126D6CA6D476D7E478C8C68 /* DayCastWidgets.swift */; };
 		FA883D53A7AD6E42C7A237EC /* AlertsHonestyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06C4CF3AE9F67AC93E96FFE /* AlertsHonestyTests.swift */; };
@@ -606,6 +607,7 @@
 		D36D9A9CD5E52604358C6809 /* GrokBuildService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBuildService.swift; sourceTree = "<group>"; };
 		D4AEE70EEECAC60139311156 /* GrokQuickPromptButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokQuickPromptButton.swift; sourceTree = "<group>"; };
 		D83F27355A300AE91A235E60 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
+		D884FEDCA4E61CDA44DC3109 /* SkyCheckPersistedThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckPersistedThumbnail.swift; sourceTree = "<group>"; };
 		D9E93B8A9BDBA651F3869AD7 /* WidgetWeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetWeatherSnapshot.swift; sourceTree = "<group>"; };
 		DCAC0710F528EB769BB289CD /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		DCFF3590A0973C13109C05D5 /* AlertsHonesty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsHonesty.swift; sourceTree = "<group>"; };
@@ -1072,6 +1074,7 @@
 				A7B5FE3A26D1DE38086ED0EC /* GrokContentFilter.swift */,
 				832B84A64F640D16C5823816 /* GrokPrompts.swift */,
 				36673790B405C6EB3B77D5C7 /* SkyCheckDeskCopy.swift */,
+				D884FEDCA4E61CDA44DC3109 /* SkyCheckPersistedThumbnail.swift */,
 				F205123AA7F04F4E8DCB310B /* SkyCheckPhotoIntake.swift */,
 			);
 			path = Grok;
@@ -1792,6 +1795,7 @@
 				92E651343574221D8AAF3F1A /* ShortTermPrecipStore.swift in Sources */,
 				82FF2C9AB576CE6CB805120B /* SkyCheckCameraPicker.swift in Sources */,
 				09DA2AC04C923D6009DCCB32 /* SkyCheckDeskCopy.swift in Sources */,
+				FA089717B67683ED0967EF8D /* SkyCheckPersistedThumbnail.swift in Sources */,
 				A8AACF3D69AA080FC4AF7908 /* SkyCheckPhotoIntake.swift in Sources */,
 				051F439FEFFB64E08DC48F00 /* StormSpotterPhotoShare.swift in Sources */,
 				C8435868FF047316EC677E07 /* StreamingText.swift in Sources */,

@@ -652,6 +652,7 @@ private struct GrokAIViewContent: View {
       if message.role == .user {
         Spacer(minLength: bubbleGutter)
         VStack(alignment: .trailing, spacing: 4) {
+          // Legacy / missing / undecodable thumbs: text only — no broken-image chrome.
           if let imageData = message.imageData, let uiImage = UIImage(data: imageData) {
             Image(uiImage: uiImage)
               .resizable()
