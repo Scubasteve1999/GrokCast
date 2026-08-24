@@ -304,6 +304,26 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     XCTAssertEqual(IEMSiteReflectivityPaint.organizedPrecipPixelCount(in: dryPNG), 0)
     XCTAssertFalse(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: dryPNG, minPixels: 6))
 
+    var green = [UInt8](repeating: 0, count: 8 * 8 * 4)
+    func setGreen(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
+      let o = (y * 8 + x) * 4
+      green[o] = r
+      green[o + 1] = g
+      green[o + 2] = b
+      green[o + 3] = 255
+    }
+    for y in 2...5 {
+      for x in 2...5 {
+        setGreen(x, y, r: 0x11, g: 0xD5, b: 0x18)
+      }
+    }
+    setGreen(3, 3, r: 0xFF, g: 0xFF, b: 0x00)
+    let greenPNG = makePNG(width: 8, height: 8, rgba: green)
+    XCTAssertLessThan(
+      IEMSiteReflectivityPaint.organizedPrecipPixelCount(in: greenPNG), 6,
+      "post–clutter-key 15 dBZ green does not count as wet; one yellow speckle is not a cell")
+    XCTAssertFalse(IEMSiteReflectivityPaint.hasOrganizedPrecip(in: greenPNG, minPixels: 6))
+
     var wet = [UInt8](repeating: 0, count: 8 * 8 * 4)
     func setWet(_ x: Int, _ y: Int, r: UInt8, g: UInt8, b: UInt8) {
       let o = (y * 8 + x) * 4
@@ -314,10 +334,9 @@ final class IEMSiteReflectivityPaintTests: XCTestCase {
     }
     for y in 3...5 {
       for x in 3...5 {
-        setWet(x, y, r: 0x11, g: 0xD5, b: 0x18)
+        setWet(x, y, r: 0xFF, g: 0xFF, b: 0x00)
       }
     }
-    setWet(4, 4, r: 0xFF, g: 0xFF, b: 0x00)
     let wetPNG = makePNG(width: 8, height: 8, rgba: wet)
     XCTAssertGreaterThanOrEqual(
       IEMSiteReflectivityPaint.organizedPrecipPixelCount(in: wetPNG), 6)

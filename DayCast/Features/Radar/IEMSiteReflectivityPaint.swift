@@ -40,7 +40,7 @@ enum IEMSiteReflectivityPaint {
   /// True yellow/orange/red. IEM olive 25 dBZ (~hue 66–70) is not a cell core.
   static let stormCoreHueEnd: Double = 65
 
-  /// Opaque pixels remaining after clutter-key. Dry N0B is ~0; a cell is dozens+.
+  /// Yellow+ storm-core pixels after clutter-key. Leftover 15 dBZ green is not wet.
   static let organizedPrecipMinPixels = 40
 
   static func shouldProcess(url: String) -> Bool {
@@ -74,8 +74,15 @@ enum IEMSiteReflectivityPaint {
       context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
       var count = 0
       let total = width * height
-      for i in 0..<total where buffer[i * bytesPerPixel + 3] > 0 {
-        count += 1
+      for i in 0..<total {
+        let o = i * bytesPerPixel
+        let a = buffer[o + 3]
+        if a == 0 { continue }
+        if isStormCore(
+          red: buffer[o], green: buffer[o + 1], blue: buffer[o + 2], alpha: a)
+        {
+          count += 1
+        }
       }
       return count
     }

@@ -102,6 +102,76 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertGreaterThan(sweep.rgbaLUT[Int(96)].3, 190, "15 dBZ fill is saturated")
   }
 
+  func testOrganizedPrecipIgnoresClearAirClutterRing() {
+    let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
+    let gateWidth = 250.0
+    let bins = 200
+    let light15: UInt8 = 96
+    let speckle25: UInt8 = 116
+    var radials: [Level3N0BSweep.Radial] = []
+    for i in 0..<72 {
+      var gates = [UInt8](repeating: 0, count: bins)
+      for gi in 80..<160 {
+        gates[gi] = light15
+      }
+      if i % 8 == 0 {
+        gates[100] = speckle25
+        gates[120] = speckle25
+        gates[140] = speckle25
+      }
+      radials.append(
+        Level3N0BSweep.Radial(
+          startAzimuth: Double(i) * 5, deltaAzimuth: 0.5, gates: gates))
+    }
+    XCTAssertFalse(
+      Level3N0BDecoder.organizedPrecip(
+        radials: radials, lut: lut, gateWidth: gateWidth),
+      "near-site 15–25 dBZ ring past 20 km is clear-air clutter, not precip")
+  }
+
+  func testOrganizedPrecipDetectsStormCore() {
+    let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
+    var gates = [UInt8](repeating: 96, count: 160)
+    gates[90] = 126
+    let radials = [
+      Level3N0BSweep.Radial(startAzimuth: 90, deltaAzimuth: 0.5, gates: gates)
+    ]
+    XCTAssertTrue(
+      Level3N0BDecoder.organizedPrecip(
+        radials: radials, lut: lut, gateWidth: 250),
+      "any ≥30 dBZ gate is a storm core")
+  }
+
+  func testOrganizedPrecipDetects25dBZShowerShaft() {
+    let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
+    var gates = [UInt8](repeating: 0, count: 160)
+    for gi in 80..<88 {
+      gates[gi] = 116
+    }
+    let radials = [
+      Level3N0BSweep.Radial(startAzimuth: 45, deltaAzimuth: 0.5, gates: gates)
+    ]
+    XCTAssertTrue(
+      Level3N0BDecoder.organizedPrecip(
+        radials: radials, lut: lut, gateWidth: 250),
+      "contiguous ≥25 dBZ run of ~2 km is a shower")
+  }
+
+  func testOrganizedPrecipShort25RunIsNotACell() {
+    let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
+    var gates = [UInt8](repeating: 96, count: 160)
+    for gi in 80..<87 {
+      gates[gi] = 116
+    }
+    let radials = [
+      Level3N0BSweep.Radial(startAzimuth: 45, deltaAzimuth: 0.5, gates: gates)
+    ]
+    XCTAssertFalse(
+      Level3N0BDecoder.organizedPrecip(
+        radials: radials, lut: lut, gateWidth: 250),
+      "7 gates of 25 dBZ (~1.75 km) plus 15 dBZ fill is not organized precip")
+  }
+
   func testDecodesLiveAWSFileIfPresent() throws {
     let root = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent()

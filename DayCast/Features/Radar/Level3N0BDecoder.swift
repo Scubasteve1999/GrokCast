@@ -242,18 +242,32 @@ enum Level3N0BDecoder {
     return table
   }
 
+  /// Wet iff any gate ≥30 dBZ, or a contiguous ≥25 dBZ run of ~2 km; 15 dBZ far-light does not count.
   static func organizedPrecip(
     radials: [Level3N0BSweep.Radial], lut: [Float], gateWidth: Double
   ) -> Bool {
-    var lightFar = 0
+    let coreDbz: Float = 30
+    let cellDbz: Float = 25
+    let cellRunMinGates = max(1, Int((2_000 / max(gateWidth, 1)).rounded(.up)))
     for radial in radials {
-      for (gi, byte) in radial.gates.enumerated() {
-        let dbz = lut[Int(byte)]
-        if dbz.isNaN { continue }
-        if dbz >= 30 { return true }
-        if dbz >= precipFloorDbz, Double(gi) * gateWidth >= 20_000 {
-          lightFar += 1
-          if lightFar >= 40 { return true }
+      var run = 0
+      for byte in radial.gates {
+        let idx = Int(byte)
+        guard idx < lut.count else {
+          run = 0
+          continue
+        }
+        let dbz = lut[idx]
+        if dbz.isNaN {
+          run = 0
+          continue
+        }
+        if dbz >= coreDbz { return true }
+        if dbz >= cellDbz {
+          run += 1
+          if run >= cellRunMinGates { return true }
+        } else {
+          run = 0
         }
       }
     }
