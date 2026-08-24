@@ -2,7 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Keyword → bundled still for the Alerts **Your News** rail.
-/// Match the AFD KEY MESSAGE / PNS headline; no stored field on `LocalBriefingItem`.
+/// Match only on explicit weather-imagery cues. Vague / temperature headlines get no photo.
+/// No stored field on `LocalBriefingItem`.
 enum LocalBriefingHero: String, CaseIterable, Equatable, Sendable {
   case storm
   case lightning
@@ -22,37 +23,44 @@ enum LocalBriefingHero: String, CaseIterable, Equatable, Sendable {
     }
   }
 
-  /// When the preferred still is already on this rail, walk this order for the next unused crop.
-  static let uniquenessOrder: [LocalBriefingHero] = [
-    .storm, .lightning, .sky, .flood, .haze, .dawn,
-  ]
+  /// Honest substitutes when two thunderstorm headlines would otherwise clone the same crop.
+  private static let stormFamily: [LocalBriefingHero] = [.storm, .lightning]
 
-  static func matching(title: String) -> LocalBriefingHero {
+  static func matching(title: String) -> LocalBriefingHero? {
     let hay = title.lowercased()
     if hay.contains("lightning") { return .lightning }
     if containsAny(hay, ["flood", "inundat"]) { return .flood }
     if containsAny(hay, ["wildfire", "smoke", "haze", "fire weather"]) { return .haze }
-    if containsAny(hay, ["storm", "severe", "hail", "tornado", "wind", "warning", "watch"]) {
+    if containsAny(hay, ["storm", "severe", "hail", "tornado", "thunderstorm", "tstm"]) {
       return .storm
     }
-    if hay.contains("thunder") { return .lightning }
     if containsAny(hay, ["clear", "sunny", "fair", "dry", "pleasant", "high pressure"]) {
       return .dawn
     }
-    return .sky
+    return nil
   }
 
-  static func uniqueHeroes(for titles: [String]) -> [LocalBriefingHero] {
+  /// One slot per title. Never assigns a still the headline did not earn.
+  static func uniqueHeroes(for titles: [String]) -> [LocalBriefingHero?] {
     var used: Set<LocalBriefingHero> = []
     return titles.map { title in
-      let preferred = matching(title: title)
+      guard let preferred = matching(title: title) else { return nil }
       if used.insert(preferred).inserted {
         return preferred
       }
-      let pick = uniquenessOrder.first { !used.contains($0) } ?? preferred
-      used.insert(pick)
-      return pick
+      if isStormOrThunderTitle(title),
+        let unused = stormFamily.first(where: { !used.contains($0) })
+      {
+        used.insert(unused)
+        return unused
+      }
+      // Duplicate preferred is honest. Walking unused flood/haze/dawn is not.
+      return preferred
     }
+  }
+
+  private static func isStormOrThunderTitle(_ title: String) -> Bool {
+    containsAny(title.lowercased(), ["storm", "thunder", "tstm"])
   }
 
   private static func containsAny(_ haystack: String, _ needles: [String]) -> Bool {
@@ -77,7 +85,7 @@ struct LocalBriefingSection: View {
           .accessibilityAddTraits(.isHeader)
 
         ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space12) {
+          HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
             ForEach(Array(visible.enumerated()), id: \.element.id) { index, item in
               YourNewsCard(item: item, hero: heroes[index])
                 .containerRelativeFrame(.horizontal) { len, _ in min(280, len * 0.72) }
@@ -96,7 +104,7 @@ struct LocalBriefingSection: View {
 
 private struct YourNewsCard: View {
   let item: LocalBriefingItem
-  let hero: LocalBriefingHero
+  let hero: LocalBriefingHero?
 
   var body: some View {
     Button {
@@ -104,15 +112,17 @@ private struct YourNewsCard: View {
       UIApplication.shared.open(item.url)
     } label: {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        Color.clear
-          .aspectRatio(16 / 9, contentMode: .fit)
-          .overlay {
-            Image(hero.assetName)
-              .resizable()
-              .scaledToFill()
-          }
-          .clipped()
-          .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        if let hero {
+          Color.clear
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .overlay {
+              Image(hero.assetName)
+                .resizable()
+                .scaledToFill()
+            }
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
 
         Text(item.title)
           .font(DesignTokens.Typography.headline())

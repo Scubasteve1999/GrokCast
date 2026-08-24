@@ -332,6 +332,10 @@ final class LocalBriefingParserTests: XCTestCase {
       .storm
     )
     XCTAssertEqual(
+      LocalBriefingHero.matching(title: "Scattered TSTM expected this afternoon"),
+      .storm
+    )
+    XCTAssertEqual(
       LocalBriefingHero.matching(
         title: "NWS Damage Survey for 08/16/26 Tornado Event"
       ),
@@ -361,10 +365,15 @@ final class LocalBriefingParserTests: XCTestCase {
       LocalBriefingHero.matching(title: "High pressure remains parked over the region"),
       .dawn
     )
-    XCTAssertEqual(
-      LocalBriefingHero.matching(title: "A quiet pattern continues"),
-      .sky
+    XCTAssertNil(LocalBriefingHero.matching(title: "A quiet pattern continues"))
+    XCTAssertNil(
+      LocalBriefingHero.matching(
+        title: "Near to slightly above normal temperatures are expected across the Mid-South"
+      )
     )
+    XCTAssertNil(LocalBriefingHero.matching(title: "Heat continues through the weekend."))
+    XCTAssertNil(
+      LocalBriefingHero.matching(title: "Additional chances are expected through midweek"))
   }
 
   func testHeroUniquenessDoesNotCloneThunderstormCrops() {
@@ -376,6 +385,62 @@ final class LocalBriefingParserTests: XCTestCase {
     XCTAssertEqual(
       LocalBriefingHero.uniqueHeroes(for: titles),
       [.storm, .lightning, .flood]
+    )
+  }
+
+  func testUnmatchedTemperatureHeadlineGetsNoHero() {
+    let titles = [
+      "Near to slightly above normal temperatures are expected across the Mid-South for most of the week, but extreme heat is not expected."
+    ]
+    XCTAssertEqual(LocalBriefingHero.uniqueHeroes(for: titles), [nil])
+  }
+
+  func testTwoThunderstormsNeverGetFloodOrUnmatchedSky() {
+    let titles = [
+      "Thunderstorms increase late tonight into Monday",
+      "Additional chances for showers and thunderstorms through midweek",
+    ]
+    let heroes = LocalBriefingHero.uniqueHeroes(for: titles)
+    XCTAssertEqual(heroes, [.storm, .lightning])
+    XCTAssertFalse(heroes.contains(.flood))
+    XCTAssertFalse(heroes.contains(.haze))
+    XCTAssertFalse(heroes.contains(.dawn))
+    XCTAssertFalse(heroes.contains(.sky))
+  }
+
+  func testUniquenessMustNotLieWithUnmatchedTitles() {
+    let titles = [
+      "Near to slightly above normal temperatures are expected",
+      "A quiet pattern continues",
+      "Flash flood watch for the Mid-South",
+    ]
+    XCTAssertEqual(
+      LocalBriefingHero.uniqueHeroes(for: titles),
+      [nil, nil, .flood]
+    )
+  }
+
+  func testThirdThunderstormDuplicatesStormRatherThanFlood() {
+    let titles = [
+      "Thunderstorms increase late tonight",
+      "Additional chances for showers and thunderstorms through midweek",
+      "Scattered thunderstorms return Friday",
+    ]
+    XCTAssertEqual(
+      LocalBriefingHero.uniqueHeroes(for: titles),
+      [.storm, .lightning, .storm]
+    )
+  }
+
+  func testLiveMEGKeyMessagesAssignHeroesHonestly() {
+    let titles = [
+      "Shower and thunderstorm chances increase late tonight into Monday, with organized severe weather not expected.",
+      "Additional chances for showers and thunderstorms are expected through midweek.",
+      "Near to slightly above normal temperatures are expected across the Mid-South for most of the week, but extreme heat is not expected.",
+    ]
+    XCTAssertEqual(
+      LocalBriefingHero.uniqueHeroes(for: titles),
+      [.storm, .lightning, nil]
     )
   }
 
