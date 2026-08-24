@@ -30,7 +30,17 @@ private struct GrokAIViewContent: View {
     ZStack {
       skyCheckWeatherBackground
 
-      NavigationStack {
+      VStack(spacing: 0) {
+        Color.clear
+          .frame(
+            height: SkyCheckChatChrome.threadTopSafeArea(
+              safeAreaTop: SkyCheckChatChrome.windowSafeAreaTop
+            )
+          )
+          .frame(maxWidth: .infinity)
+          .accessibilityHidden(true)
+
+        NavigationStack {
         ScrollViewReader { proxy in
           ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -177,14 +187,16 @@ private struct GrokAIViewContent: View {
           .padding(.bottom, prefersFigmaStudioLayout ? DesignTokens.Spacing.space12 : 8)
           .background(composerTrayBackground)
       }
-      .padding(
-        .bottom,
-        SkyCheckChatChrome.tabBarClearance(
-          isCompact: prefersFigmaStudioLayout,
-          isInputFocused: isInputFocused
+        .padding(
+          .bottom,
+          SkyCheckChatChrome.tabBarClearance(
+            isCompact: prefersFigmaStudioLayout,
+            isInputFocused: isInputFocused
+          )
         )
-      )
-      .animation(.easeInOut(duration: 0.25), value: isInputFocused)
+        .clipped()
+        .animation(.easeInOut(duration: 0.25), value: isInputFocused)
+      }
     }
     .preference(key: TabBarSuppressionPreferenceKey.self, value: isInputFocused)
     .preferredColorScheme(.dark)
@@ -281,6 +293,7 @@ private struct GrokAIViewContent: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
+    .accessibilityIdentifier(DayCastAccessibility.Grok.screenTitle)
   }
 
   private var deskIntroCopy: some View {
@@ -521,11 +534,12 @@ private struct GrokAIViewContent: View {
 
   @ViewBuilder
   private func assistantMessageText(_ content: String) -> some View {
+    let display = SkyCheckMessageDisplay.markdown(content)
     Group {
-      if let attributed = try? AttributedString(markdown: content) {
+      if let attributed = try? AttributedString(markdown: display) {
         Text(attributed)
       } else {
-        Text(content)
+        Text(display)
       }
     }
     .font(DesignTokens.Typography.body())
@@ -785,6 +799,26 @@ private struct GrokAIViewContent: View {
     case .focusInput:
       isInputFocused = true
     }
+  }
+}
+
+/// Render-time honesty for assistant markdown. Grok often emits
+/// `MS.\n\n**Watch next**` (or `MS.**Watch next**`). SwiftUI `Text` can
+/// drop the paragraph break, so it reads `MS.Watch next`. Insert a space.
+/// Prompts are unchanged.
+enum SkyCheckMessageDisplay {
+  static func markdown(_ content: String) -> String {
+    let normalized = content.replacingOccurrences(of: "\r\n", with: "\n")
+    let afterBreak = normalized.replacingOccurrences(
+      of: #"([.!?])[ \t]*\n+[ \t]*(\*{1,2})"#,
+      with: "$1 $2",
+      options: .regularExpression
+    )
+    return afterBreak.replacingOccurrences(
+      of: #"([.!?])(\*{1,2}[^*])"#,
+      with: "$1 $2",
+      options: .regularExpression
+    )
   }
 }
 

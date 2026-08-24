@@ -206,6 +206,28 @@ enum SkyCheckChatChrome {
   static func tabBarClearance(isCompact: Bool, isInputFocused: Bool) -> CGFloat {
     isCompact && !isInputFocused ? CompactTabBar.chromeHeight : 0
   }
+
+  /// Viewport pad so title, chips, and bubbles cannot paint under the status
+  /// bar / Dynamic Island. Composer `safeAreaInset` lives outside
+  /// `NavigationStack`, which dropped the stack’s top safe-area contract —
+  /// restore it on the thread. Never treat `Layout.topPadding` (16pt) as this
+  /// inset.
+  static func threadTopSafeArea(safeAreaTop: CGFloat) -> CGFloat {
+    if safeAreaTop > 1 { return safeAreaTop }
+    return windowSafeAreaTop
+  }
+
+  /// Fallback when a sibling `ignoresSafeArea()` zeroes the environment inset.
+  static var windowSafeAreaTop: CGFloat {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    for scene in scenes {
+      let window = scene.windows.first(where: \.isKeyWindow) ?? scene.windows.first
+      if let top = window?.safeAreaInsets.top, top > 1 {
+        return top
+      }
+    }
+    return 59
+  }
 }
 
 struct CompactTabBar: View {

@@ -147,6 +147,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
       more.frame.minY + 4,
       "Composer overlaps the More tab"
     )
+    assertSkyCheckThreadClearsStatusBar()
     saveSkyCheckStill(named: "01-keyboard-down.jpg")
 
     field.tap()
@@ -159,6 +160,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
       radar.isHittable,
       "CompactTabBar should hide while the Sky Check field is focused"
     )
+    assertSkyCheckThreadClearsStatusBar()
     saveSkyCheckStill(named: "02-keyboard-up.jpg")
   }
 
@@ -229,10 +231,47 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     ).firstMatch
   }
 
+  private func skyCheckScreenTitle() -> XCUIElement {
+    app.descendants(matching: .any).matching(
+      NSPredicate(format: "identifier == %@", "daycast.grok.screenTitle")
+    ).firstMatch
+  }
+
+  /// Dynamic Island / status-bar clock lives above this. Thread content must not.
+  private var statusBarRegionMaxY: CGFloat { 54 }
+
+  private func assertSkyCheckThreadClearsStatusBar() {
+    let title = skyCheckScreenTitle()
+    if title.waitForExistence(timeout: 2) {
+      let minY = title.frame.minY
+      if minY >= 0 && minY < 2000 {
+        XCTAssertGreaterThan(
+          minY,
+          statusBarRegionMaxY,
+          "Sky Check title minY \(minY) is in the status-bar region"
+        )
+      }
+    }
+
+    let screen = app.windows.firstMatch.frame
+    let underClock = app.staticTexts.allElementsBoundByIndex.filter { el in
+      guard el.exists, el.isHittable, el.frame.width > 20, el.frame.height > 8 else {
+        return false
+      }
+      let frame = el.frame
+      guard screen.intersects(frame) else { return false }
+      return frame.minY > 0 && frame.minY < statusBarRegionMaxY
+    }
+    XCTAssertTrue(
+      underClock.isEmpty,
+      "Thread text under the status bar: \(underClock.prefix(5).map(\.label))"
+    )
+  }
+
   private func saveSkyCheckStill(named filename: String) {
     let dir = URL(
       fileURLWithPath:
-        "/Users/bigstevedev/Projects/GrokCast/scratch/sky-check-chat-ux-2026-08-24"
+        "/Users/bigstevedev/Projects/GrokCast/scratch/sky-check-statusbar-2026-08-24"
     )
     try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     guard let data = XCUIScreen.main.screenshot().image.jpegData(compressionQuality: 0.8) else {
