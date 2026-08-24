@@ -38,7 +38,7 @@ struct HourlyFeedCard: View {
             }
           }
         }
-        .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space8)
+        .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24)
       }
       .padding(DesignTokens.Spacing.space16)
       .cardStyle()

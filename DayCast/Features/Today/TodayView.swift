@@ -474,7 +474,7 @@ private struct TodaySkeletonPanel: View {
         }
         Spacer(minLength: 0)
       }
-      .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space8)
+      .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24)
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
