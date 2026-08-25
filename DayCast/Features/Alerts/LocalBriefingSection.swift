@@ -73,15 +73,10 @@ private struct YourNewsCard: View {
           .lineLimit(2)
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        HStack(spacing: DesignTokens.Spacing.space4) {
-          Image(systemName: "newspaper")
-            .font(DesignTokens.Typography.caption())
-            .accessibilityHidden(true)
-          Text("\(item.relativeIssuedLabel()) · \(item.sourceName)")
-            .font(DesignTokens.Typography.caption())
-            .lineLimit(1)
-        }
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        Text("\(item.relativeIssuedLabel()) · \(item.sourceName)")
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .lineLimit(1)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .contentShape(Rectangle())

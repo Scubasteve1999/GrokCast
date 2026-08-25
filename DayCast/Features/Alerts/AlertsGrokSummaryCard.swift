@@ -80,7 +80,7 @@ struct AlertsGrokSummaryCard: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle(
       background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
+      stroke: DesignTokens.Palette.cardHairline,
       cornerRadius: DesignTokens.Layout.cardRadius
     )
   }

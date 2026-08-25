@@ -165,11 +165,11 @@ struct AlertsView: View {
 
         if honesty.showsActiveNow {
           VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-            FigmaAccentSectionLabel(
-              title: AlertsHonesty.activeNow,
-              icon: "bolt.fill",
-              color: DesignTokens.Palette.danger
-            )
+            Text("Active Now")
+              .font(DesignTokens.Typography.subsection())
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .accessibilityAddTraits(.isHeader)
 
             AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
 
@@ -195,7 +195,11 @@ struct AlertsView: View {
 
         if !historicalAlerts.isEmpty {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-            FigmaSectionLabel(title: "RECENT")
+            Text("Recent")
+              .font(DesignTokens.Typography.subsection())
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(historicalAlerts) { alert in
@@ -239,29 +243,20 @@ struct AlertsView: View {
     let tint = NWSAlertStyle.tint(for: alert)
     return HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
       Image(systemName: NWSAlertStyle.iconName(for: alert))
-        .font(DesignTokens.Typography.metric())
+        .font(DesignTokens.Typography.symbol(16))
+        .symbolRenderingMode(.hierarchical)
         .foregroundStyle(tint)
-        .frame(width: 28)
+        .frame(width: 22)
+        .accessibilityHidden(true)
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
-          Text(alert.event)
-            .font(
-              isActive ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection()
-            )
-            .foregroundStyle(DesignTokens.Palette.textPrimary)
-            .multilineTextAlignment(.leading)
-          Spacer(minLength: 0)
-          if isActive {
-            Text("LIVE")
-              .font(DesignTokens.Typography.micro())
-              .tracking(1)
-              .padding(.horizontal, DesignTokens.Spacing.space8)
-              .padding(.vertical, DesignTokens.Spacing.space4)
-              .background(tint.opacity(0.2), in: Capsule())
-              .foregroundStyle(tint)
-          }
-        }
+        Text(alert.event)
+          .font(
+            isActive ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection()
+          )
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .multilineTextAlignment(.leading)
+          .frame(maxWidth: .infinity, alignment: .leading)
 
         Text(figmaMetaLine(for: alert, isActive: isActive))
           .font(DesignTokens.Typography.caption())
@@ -282,24 +277,20 @@ struct AlertsView: View {
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: isActive ? tint.opacity(0.45) : DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
-    )
-    .overlay(alignment: .leading) {
+    .background {
       if isActive {
-        UnevenRoundedRectangle(
-          topLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
-          bottomLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
-          bottomTrailingRadius: 0,
-          topTrailingRadius: 0
+        RoundedRectangle(
+          cornerRadius: DesignTokens.Card.cornerRadiusMedium,
+          style: .continuous
         )
-        .fill(tint)
-        .frame(width: 3)
-        .padding(.vertical, DesignTokens.Spacing.space8)
+        .fill(tint.opacity(0.12))
       }
     }
+    .cardStyle(
+      background: DesignTokens.Palette.cardBackground,
+      stroke: DesignTokens.Palette.cardHairline,
+      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+    )
   }
 
   private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {
@@ -359,16 +350,6 @@ struct AlertsView: View {
       }
 
       Spacer(minLength: 0)
-
-      if isActive {
-        Text("LIVE")
-          .font(DesignTokens.Typography.micro())
-          .tracking(1)
-          .padding(.horizontal, DesignTokens.Spacing.space8)
-          .padding(.vertical, DesignTokens.Spacing.space4)
-          .background(NWSAlertStyle.tint(for: alert).opacity(0.2), in: Capsule())
-          .foregroundStyle(NWSAlertStyle.tint(for: alert))
-      }
 
       Image(systemName: "chevron.right")
         .font(DesignTokens.Typography.caption())

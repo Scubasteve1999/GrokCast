@@ -17,15 +17,15 @@ struct SevereProductsSections: View {
 
   private var outlookSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-      FigmaAccentSectionLabel(
-        title: "DAY 1 OUTLOOK",
-        icon: "cloud.bolt.rain.fill",
-        color: outlookColor
-      )
+      Text("Day 1 Outlook")
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityAddTraits(.isHeader)
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        Text(context.day1Outlook.category.displayName.uppercased())
-          .font(DesignTokens.Typography.studioTitle())
+        Text(context.day1Outlook.category.displayName)
+          .font(DesignTokens.Typography.headline())
           .foregroundStyle(outlookColor)
 
         Text(context.day1Outlook.summaryLine)
@@ -40,32 +40,21 @@ struct SevereProductsSections: View {
       }
       .padding(DesignTokens.Spacing.space16)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .elevatedCardStyle(
-        background: DesignTokens.Palette.cardElevated,
-        stroke: outlookColor.opacity(0.45),
+      .cardStyle(
+        background: DesignTokens.Palette.cardBackground,
+        stroke: DesignTokens.Palette.cardHairline,
         cornerRadius: DesignTokens.Card.cornerRadiusMedium
       )
-      .overlay(alignment: .leading) {
-        UnevenRoundedRectangle(
-          topLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
-          bottomLeadingRadius: DesignTokens.Card.cornerRadiusMedium,
-          bottomTrailingRadius: 0,
-          topTrailingRadius: 0
-        )
-        .fill(outlookColor)
-        .frame(width: 3)
-        .padding(.vertical, DesignTokens.Spacing.space8)
-      }
     }
   }
 
   private var mdSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-      FigmaAccentSectionLabel(
-        title: "MESOSCALE DISCUSSIONS",
-        icon: "text.bubble.fill",
-        color: DesignTokens.Palette.warning
-      )
+      Text("Mesoscale Discussions")
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityAddTraits(.isHeader)
 
       VStack(spacing: DesignTokens.Spacing.space12) {
         ForEach(context.mesoscaleDiscussions.prefix(6)) { md in
@@ -84,7 +73,7 @@ struct SevereProductsSections: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .cardStyle(
             background: DesignTokens.Palette.cardBackground,
-            stroke: DesignTokens.Palette.cardStroke,
+            stroke: DesignTokens.Palette.cardHairline,
             cornerRadius: DesignTokens.Card.cornerRadiusMedium
           )
         }
@@ -104,11 +93,11 @@ struct StormReportsSection: View {
   var body: some View {
     if !reports.isEmpty {
       VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-        FigmaAccentSectionLabel(
-          title: "NEARBY STORM REPORTS",
-          icon: "mappin.and.ellipse",
-          color: DesignTokens.Palette.danger
-        )
+        Text("Nearby Storm Reports")
+          .font(DesignTokens.Typography.subsection())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .accessibilityAddTraits(.isHeader)
 
         VStack(spacing: DesignTokens.Spacing.space12) {
           ForEach(reports.prefix(8)) { report in
@@ -133,7 +122,7 @@ struct StormReportsSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .cardStyle(
               background: DesignTokens.Palette.cardBackground,
-              stroke: DesignTokens.Palette.cardStroke,
+              stroke: DesignTokens.Palette.cardHairline,
               cornerRadius: DesignTokens.Card.cornerRadiusMedium
             )
           }
