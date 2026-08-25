@@ -28,6 +28,7 @@ struct DailyFeedCard: View {
               periodHigh: periodHigh,
               calendar: weather.locationCalendar,
               timeZone: weather.locationTimeZone,
+              nowTemperature: weather.currentTemp,
               onSelect: {
                 withAnimation(.easeInOut(duration: 0.2)) {
                   if expandedDayID == day.id {

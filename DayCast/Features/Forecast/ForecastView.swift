@@ -417,6 +417,7 @@ private struct ForecastDailySection: View {
             periodHigh: periodHigh,
             calendar: weather.locationCalendar,
             timeZone: weather.locationTimeZone,
+            nowTemperature: weather.currentTemp,
             onSelect: { onSelect(day) }
           )
         }
