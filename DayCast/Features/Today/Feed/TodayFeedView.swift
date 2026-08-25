@@ -32,6 +32,18 @@ struct TodayFeedView: View {
     )
   }
 
+  private var nearbyFireSummary: FireFeedSummary? {
+    if let fireSummary { return fireSummary }
+    guard let alert = fireWeatherAlerts.first else { return nil }
+    return FireFeedSummary(
+      title: alert.event,
+      subtitle: alert.headline ?? "Fire weather conditions for your area",
+      distanceMiles: nil,
+      hotspotCount: 0,
+      incidentCount: 0
+    )
+  }
+
   private var snapshot: FeedSnapshot {
     let showFire = FireFeedVisibility.shouldShowCard(
       snapshot: fireStore.snapshot,
@@ -226,43 +238,35 @@ struct TodayFeedView: View {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         store.selectedTab = .forecast
       }
-    case .airQuality:
-      if let aqi = weather.airQualityIndex {
-        AirQualityFeedCard(aqi: aqi) {
-          Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
-          showAirQualityDetail = true
-        }
-      }
-    case .sunMoon:
-      SunMoonFeedCard(
+    case .nearby:
+      NearbyFeedCard(
+        aqi: weather.airQualityIndex,
+        hasNWSAirQualityAlert: store.displayableActiveAlerts.contains {
+          NearbyTileCopy.isAirQualityAlert($0.event)
+        },
+        fire: nearbyFireSummary,
         sunrise: todaySunTimes.sunrise,
         sunset: todaySunTimes.sunset,
-        timeZone: weather.locationTimeZone
-      ) {
-        Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
-        showSunMoonDetail = true
-      }
-    case .fire:
-      if let fireSummary {
-        FireFeedCard(summary: fireSummary) {
-          Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
-          showFireDetail = true
-        }
-      } else if !fireWeatherAlerts.isEmpty {
-        FireFeedCard(
-          summary: FireFeedSummary(
-            title: fireWeatherAlerts[0].event,
-            subtitle: fireWeatherAlerts[0].headline
-              ?? "Fire weather conditions for your area",
-            distanceMiles: nil,
-            hotspotCount: fireSummary?.hotspotCount ?? 0,
-            incidentCount: fireSummary?.incidentCount ?? 0
-          )
-        ) {
-          Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
-          showFireDetail = true
-        }
-      }
+        timeZone: weather.locationTimeZone,
+        onAirQuality: weather.airQualityIndex == nil
+          ? nil
+          : {
+            Analytics.track(.feedCardTap, parameters: ["card": "airQuality"])
+            showAirQualityDetail = true
+          },
+        onFire: nearbyFireSummary == nil
+          ? nil
+          : {
+            Analytics.track(.feedCardTap, parameters: ["card": "fire"])
+            showFireDetail = true
+          },
+        onSunMoon: (todaySunTimes.sunrise == nil && todaySunTimes.sunset == nil)
+          ? nil
+          : {
+            Analytics.track(.feedCardTap, parameters: ["card": "sunMoon"])
+            showSunMoonDetail = true
+          }
+      )
     }
   }
 

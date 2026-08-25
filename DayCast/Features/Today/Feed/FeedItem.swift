@@ -9,10 +9,8 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
   case yourNews
   case radar
   case daily
-  case fire
-  case airQuality
   case precip
-  case sunMoon
+  case nearby
 
   var id: String { rawValue }
 
@@ -27,9 +25,7 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
     .daily,
     .aiInsight,
     .radar,
-    .fire,
-    .airQuality,
-    .sunMoon,
+    .nearby,
   ]
 
   var analyticsName: String { rawValue }

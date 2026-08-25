@@ -55,14 +55,12 @@ enum FeedAssembler {
       return snapshot.hasWeather
     case .daily:
       return snapshot.hasWeather && snapshot.hasDaily
-    case .fire:
-      return snapshot.showFireCard
-    case .airQuality:
-      return snapshot.hasWeather && snapshot.hasAQI
     case .precip:
       return snapshot.hasWeather && snapshot.hasPrecipContent
-    case .sunMoon:
-      return snapshot.hasWeather && snapshot.hasSunriseOrSunset
+    case .nearby:
+      return snapshot.showFireCard
+        || (snapshot.hasWeather && snapshot.hasAQI)
+        || (snapshot.hasWeather && snapshot.hasSunriseOrSunset)
     }
   }
 }

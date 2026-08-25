@@ -85,7 +85,7 @@ final class TodayHonestyTests: XCTestCase {
   }
 
   func testErrorBannerLeadsFeedRows() {
-    let items: [FeedItem] = [.now, .hourly, .daily, .sunMoon]
+    let items: [FeedItem] = [.now, .hourly, .daily, .nearby]
     let rows = FeedAssembler.rows(
       items: items, weatherError: "The weather service timed out. Tap RETRY in a moment.")
     XCTAssertEqual(rows.first, .errorBanner)
@@ -97,7 +97,7 @@ final class TodayHonestyTests: XCTestCase {
     let rows = FeedAssembler.rows(items: items, weatherError: "No internet connection.")
     XCTAssertEqual(rows.first, .errorBanner)
     XCTAssertEqual(rows.dropFirst().first, .item(.now))
-    XCTAssertEqual(rows.last, .item(.sunMoon))
+    XCTAssertEqual(rows.last, .item(.nearby))
     XCTAssertNotEqual(rows.last, .errorBanner)
   }
 

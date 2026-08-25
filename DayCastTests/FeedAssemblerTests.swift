@@ -19,8 +19,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
       [
-        .now, .alerts, .precip, .radar, .hourly, .daily, .aiInsight, .fire, .airQuality,
-        .sunMoon,
+        .now, .alerts, .precip, .radar, .hourly, .daily, .aiInsight, .nearby,
       ]
     )
   }
@@ -42,7 +41,7 @@ final class FeedAssemblerTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       items,
-      [.now, .hourly, .daily, .aiInsight, .radar, .fire, .airQuality, .sunMoon]
+      [.now, .hourly, .daily, .aiInsight, .radar, .nearby]
     )
     XCTAssertLessThan(items.firstIndex(of: .daily)!, items.firstIndex(of: .radar)!)
     XCTAssertGreaterThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .hourly)!)
@@ -266,7 +265,7 @@ final class FeedAssemblerTests: XCTestCase {
       showFireCard: true,
       showAIInsight: false
     )
-    XCTAssertEqual(FeedAssembler.items(from: snapshot), [.now, .radar, .fire])
+    XCTAssertEqual(FeedAssembler.items(from: snapshot), [.now, .radar, .nearby])
   }
 
   func testAQIAndSunMoonAppearWhenFlagged() {
@@ -283,7 +282,7 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .radar, .airQuality, .sunMoon]
+      [.now, .radar, .nearby]
     )
   }
 

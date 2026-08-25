@@ -230,6 +230,48 @@ final class AirQualityAndMoonTests: XCTestCase {
     )
   }
 
+  func testNearbyAQINamesNWSAlertInsteadOfGood() {
+    XCTAssertTrue(NearbyTileCopy.isAirQualityAlert("Air Quality Alert"))
+    XCTAssertTrue(NearbyTileCopy.isAirQualityAlert("Air Quality Warning"))
+    XCTAssertFalse(NearbyTileCopy.isAirQualityAlert("Tornado Warning"))
+    XCTAssertEqual(
+      NearbyTileCopy.airQualitySupport(aqi: 50, hasNWSAirQualityAlert: false),
+      "Good"
+    )
+    XCTAssertEqual(
+      NearbyTileCopy.airQualitySupport(aqi: 50, hasNWSAirQualityAlert: true),
+      "NWS alert"
+    )
+    let voiced = NearbyTileCopy.airQualityAccessibility(aqi: 50, hasNWSAirQualityAlert: true)
+    XCTAssertTrue(voiced.contains("Air quality 50"))
+    XCTAssertTrue(voiced.contains("NWS air quality alert in effect"))
+    XCTAssertTrue(voiced.hasSuffix("Opens details."))
+  }
+
+  func testNearbyFireTileUsesCountAndMiles() {
+    let summary = FireFeedSummary(
+      title: "Active heat detection",
+      subtitle: "10 mi away · 2 nearby",
+      distanceMiles: 10,
+      hotspotCount: 2,
+      incidentCount: 0
+    )
+    XCTAssertEqual(NearbyTileCopy.fireValue(summary), "2 pts")
+    XCTAssertEqual(NearbyTileCopy.fireSupport(summary), "10 mi")
+  }
+
+  func testNearbySunTilePrefersUpcomingSunset() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+    let sunrise = Date(timeIntervalSince1970: 1_776_182_400)
+    let sunset = sunrise.addingTimeInterval(12 * 3_600)
+    let afternoon = sunrise.addingTimeInterval(8 * 3_600)
+    let sun = NearbyTileCopy.sunValue(
+      sunrise: sunrise, sunset: sunset, now: afternoon, timeZone: calendar.timeZone)
+    XCTAssertEqual(sun.support, "sunset")
+    XCTAssertFalse(sun.value.isEmpty)
+  }
+
   func testSunMoonFeedCardVoiceOverIsOneLabeledControl() {
     let label = SunMoonFeedCard.accessibilityLabel(
       sunrise: "6:08 AM",
