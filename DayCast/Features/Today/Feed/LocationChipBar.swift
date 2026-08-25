@@ -66,6 +66,13 @@ struct LocationChipBar: View {
     }
     .frame(maxWidth: .infinity)
     .fixedSize(horizontal: false, vertical: true)
+    .background(alignment: .top) {
+      DesignTokens.Palette.bgSecondary
+        .frame(height: Self.navOverlap)
+        .offset(y: -Self.navOverlap)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
     .contentShape(Rectangle())
   }
 
@@ -90,6 +97,9 @@ struct LocationChipBar: View {
 
   /// First-layout stand-in until the overlay reports its measured height.
   static let reservedHeight: CGFloat = 52
+
+  /// Layout-neutral overlap into the inline nav. Not part of `reservedHeight`.
+  static let navOverlap: CGFloat = 8
 }
 
 struct ChipBarHeightKey: PreferenceKey {

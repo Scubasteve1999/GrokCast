@@ -70,6 +70,16 @@ extension View {
       .toolbarColorScheme(.dark, for: .navigationBar)
       .background { TransparentNavigationBar() }
   }
+
+  /// Opaque `bgSecondary` slab from the status bar through the inline title,
+  /// matching `LocationChipBar` so Today is one header block — not a
+  /// transparent nav with Daily leaking through it.
+  func headerFillsNavigationBar() -> some View {
+    toolbarBackground(DesignTokens.Palette.bgSecondary, for: .navigationBar)
+      .toolbarBackground(.visible, for: .navigationBar)
+      .toolbarColorScheme(.dark, for: .navigationBar)
+      .background { HeaderFillNavigationBar() }
+  }
 }
 
 /// Makes the enclosing `UINavigationBar` a clear glass so Today’s weather
@@ -87,6 +97,9 @@ struct TransparentNavigationBar: UIViewControllerRepresentable {
 }
 
 final class TransparentNavigationBarController: UIViewController {
+  /// `nil` keeps the bar clear (sky). A fill makes one header slab with the chip plate.
+  var fill: UIColor?
+
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     clearNavigationBar()
@@ -98,10 +111,19 @@ final class TransparentNavigationBarController: UIViewController {
   }
 
   func clearNavigationBar() {
+    applyNavigationBarAppearance(fill: fill)
+  }
+
+  fileprivate func applyNavigationBarAppearance(fill: UIColor?) {
     guard let bar = enclosingNavigationController()?.navigationBar else { return }
     let appearance = UINavigationBarAppearance()
-    appearance.configureWithTransparentBackground()
-    appearance.backgroundColor = .clear
+    if let fill {
+      appearance.configureWithOpaqueBackground()
+      appearance.backgroundColor = fill
+    } else {
+      appearance.configureWithTransparentBackground()
+      appearance.backgroundColor = .clear
+    }
     appearance.backgroundEffect = nil
     appearance.shadowColor = .clear
     appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
@@ -109,8 +131,8 @@ final class TransparentNavigationBarController: UIViewController {
     bar.scrollEdgeAppearance = appearance
     bar.compactAppearance = appearance
     bar.compactScrollEdgeAppearance = appearance
-    bar.isTranslucent = true
-    bar.backgroundColor = .clear
+    bar.isTranslucent = fill == nil
+    bar.backgroundColor = fill ?? .clear
   }
 
   private func enclosingNavigationController() -> UINavigationController? {
@@ -121,6 +143,23 @@ final class TransparentNavigationBarController: UIViewController {
       current = controller.parent
     }
     return nil
+  }
+}
+
+/// Same UIKit hook as `TransparentNavigationBar`, but paints `bgSecondary`
+/// so scrolled feed cannot show through the title.
+struct HeaderFillNavigationBar: UIViewControllerRepresentable {
+  func makeUIViewController(context: Context) -> TransparentNavigationBarController {
+    let controller = TransparentNavigationBarController()
+    controller.fill = UIColor(DesignTokens.Palette.bgSecondary)
+    return controller
+  }
+
+  func updateUIViewController(
+    _ uiViewController: TransparentNavigationBarController, context: Context
+  ) {
+    uiViewController.fill = UIColor(DesignTokens.Palette.bgSecondary)
+    uiViewController.clearNavigationBar()
   }
 }
 

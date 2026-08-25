@@ -118,7 +118,7 @@ struct TodayView: View {
       .navigationTitle("Today")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarTitleDisplayMode(.inline)
-      .weatherShowsThroughNavigationBar()
+      .headerFillsNavigationBar()
       .toolbar {
         if #available(iOS 26.0, *) {
           ToolbarItem(placement: .topBarLeading) {

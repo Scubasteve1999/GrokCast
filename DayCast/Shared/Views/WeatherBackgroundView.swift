@@ -253,29 +253,24 @@ struct WeatherBackgroundView: View {
     }
   }
 
+  /// Soft sun / moon wash only. Now owns the hero condition glyph — a hard
+  /// 36pt orb here is a second celestial body on the same sky.
   private func celestialGlow(in size: CGSize) -> some View {
     let orb = isDay
       ? Color(red: 1.0, green: 0.92, blue: 0.55)
       : Color(red: 0.85, green: 0.90, blue: 1.0)
-    return ZStack {
-      Circle()
-        .fill(
-          RadialGradient(
-            colors: [orb.opacity(isDay ? 0.55 : 0.25), Color.clear],
-            center: .center,
-            startRadius: 0,
-            endRadius: size.width * 0.42
-          )
+    return Circle()
+      .fill(
+        RadialGradient(
+          colors: [orb.opacity(isDay ? 0.55 : 0.25), Color.clear],
+          center: .center,
+          startRadius: 0,
+          endRadius: size.width * 0.42
         )
-        .frame(width: size.width * 0.85, height: size.width * 0.85)
-        .offset(x: size.width * 0.18, y: -size.height * 0.28)
-      Circle()
-        .fill(orb.opacity(isDay ? 0.85 : 0.35))
-        .frame(width: isDay ? 56 : 36, height: isDay ? 56 : 36)
-        .blur(radius: isDay ? 1 : 0.5)
-        .offset(x: size.width * 0.22, y: -size.height * 0.26)
-    }
-    .allowsHitTesting(false)
+      )
+      .frame(width: size.width * 0.85, height: size.width * 0.85)
+      .offset(x: size.width * 0.18, y: -size.height * 0.28)
+      .allowsHitTesting(false)
   }
 
   /// Wispy cirrus / streaked cloud field like TWC photo skies (static Canvas).
