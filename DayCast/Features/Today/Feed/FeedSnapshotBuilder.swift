@@ -6,7 +6,8 @@ enum FeedSnapshotBuilder {
     alerts: [NWSAlert],
     showFireCard: Bool = false,
     showAIInsight: Bool = true,
-    hasSevereContext: Bool = false
+    hasSevereContext: Bool = false,
+    hasLocalBriefing: Bool = false
   ) -> FeedSnapshot {
     guard let weather else { return .empty }
 
@@ -31,7 +32,8 @@ enum FeedSnapshotBuilder {
       showFireCard: showFireCard,
       showAIInsight: showAIInsight,
       hasSevereContext: hasSevereContext,
-      isNowWet: RadarFeedCopy.isLocalWet(WeatherCondition(fromWMO: weather.conditionCode))
+      isNowWet: RadarFeedCopy.isLocalWet(WeatherCondition(fromWMO: weather.conditionCode)),
+      hasLocalBriefing: hasLocalBriefing
     )
   }
 }

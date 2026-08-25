@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Owns NWS AFD KEY MESSAGES + filtered PNS cards for the Alerts tab.
+/// Owns NWS AFD KEY MESSAGES + filtered PNS cards for Today + Alerts.
 /// WeatherStore only triggers `refresh(for:)` — it does not parse products.
 @MainActor
 @Observable

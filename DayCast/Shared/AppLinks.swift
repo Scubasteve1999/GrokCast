@@ -42,6 +42,7 @@ enum DayCastAccessibility {
     static let openSettings = "daycast.today.openSettings"
     static let statusPill = "daycast.today.statusPill"
     static let alertsSlot = "daycast.today.alertsSlot"
+    static let yourNews = "daycast.today.yourNews"
   }
 
   enum Radar {

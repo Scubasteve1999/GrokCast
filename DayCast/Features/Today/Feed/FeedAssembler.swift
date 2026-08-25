@@ -49,6 +49,8 @@ enum FeedAssembler {
       return snapshot.hasWeather && snapshot.showAIInsight
     case .hourly:
       return snapshot.hasWeather && snapshot.hasHourly
+    case .yourNews:
+      return snapshot.hasLocalBriefing
     case .radar:
       return snapshot.hasWeather
     case .daily:

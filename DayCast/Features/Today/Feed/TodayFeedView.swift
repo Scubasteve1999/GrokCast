@@ -7,6 +7,7 @@ struct TodayFeedView: View {
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(FireStore.self) private var fireStore
   @Environment(GrokBriefSafety.self) private var briefSafety
+  @Environment(LocalBriefingStore.self) private var briefingStore
 
   let weather: DayCastWeather
   var isGeneratingImage: Bool
@@ -47,7 +48,13 @@ struct TodayFeedView: View {
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)
+    snap.hasLocalBriefing = hasBriefingForCurrentLocation
     return snap
+  }
+
+  private var hasBriefingForCurrentLocation: Bool {
+    guard let locID = store.currentLocation?.id.uuidString else { return false }
+    return briefingStore.locationID == locID && !briefingStore.items.isEmpty
   }
 
   private var todaySunTimes: (sunrise: Date?, sunset: Date?) {
@@ -201,6 +208,8 @@ struct TodayFeedView: View {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         store.selectedTab = .forecast
       }
+    case .yourNews:
+      YourNewsFeedCard(items: briefingStore.items)
     case .radar:
       RadarFeedCard(weather: weather, hoisted: FeedAssembler.isRadarStory(snapshot)) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])

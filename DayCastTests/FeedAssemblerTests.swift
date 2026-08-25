@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import DayCast
 
 final class FeedAssemblerTests: XCTestCase {
@@ -286,6 +287,65 @@ final class FeedAssemblerTests: XCTestCase {
     )
   }
 
+  func testYourNewsSitsAfterHourlyWhenBriefingExists() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 0,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: false,
+      hasAQI: false,
+      hasSunriseOrSunset: false,
+      showFireCard: false,
+      showAIInsight: false,
+      hasLocalBriefing: true
+    )
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(items, [.now, .hourly, .yourNews, .daily, .radar])
+    XCTAssertEqual(
+      items.firstIndex(of: .hourly)! + 1,
+      items.firstIndex(of: .yourNews)
+    )
+    XCTAssertEqual(
+      items.firstIndex(of: .yourNews)! + 1,
+      items.firstIndex(of: .daily)
+    )
+  }
+
+  func testYourNewsHiddenWhenBriefingEmpty() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 0,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: false,
+      hasAQI: false,
+      hasSunriseOrSunset: false,
+      showFireCard: false,
+      showAIInsight: false
+    )
+    XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.yourNews))
+  }
+
+  func testStoryDayHoistKeepsYourNewsAfterHourly() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 2,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: true,
+      hasAQI: false,
+      hasSunriseOrSunset: false,
+      showFireCard: false,
+      showAIInsight: false,
+      hasLocalBriefing: true
+    )
+    XCTAssertEqual(
+      FeedAssembler.items(from: snapshot),
+      [.now, .alerts, .precip, .radar, .hourly, .yourNews, .daily]
+    )
+  }
+
   func testPrecipHiddenWhenNoContent() {
     var snapshot = FeedSnapshot(
       hasWeather: true,
@@ -303,4 +363,3 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(FeedAssembler.items(from: snapshot).contains(.precip))
   }
 }
-

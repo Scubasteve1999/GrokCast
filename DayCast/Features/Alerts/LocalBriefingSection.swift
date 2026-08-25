@@ -1,10 +1,12 @@
 import SwiftUI
 import UIKit
 
-/// Alerts → Your News. Max 3 NWS AFD/PNS cards. Tap opens weather.gov in Safari.
+/// Your News rail. Today is home; Alerts reuses the same cards.
+/// Max 3 NWS AFD/PNS cards. Tap opens weather.gov in Safari.
 /// Photo only when `item.imageURL` is a real source image. Load fail → text-only.
 struct LocalBriefingSection: View {
   let items: [LocalBriefingItem]
+  var accessibilityID: String = DayCastAccessibility.Alerts.localBriefing
 
   var body: some View {
     if !items.isEmpty {
@@ -30,7 +32,7 @@ struct LocalBriefingSection: View {
         .padding(.horizontal, -DesignTokens.Layout.horizontalPadding)
         .padding(.leading, DesignTokens.Layout.horizontalPadding)
       }
-      .accessibilityIdentifier(DayCastAccessibility.Alerts.localBriefing)
+      .accessibilityIdentifier(accessibilityID)
     }
   }
 }
@@ -41,6 +43,7 @@ private struct YourNewsCard: View {
   var body: some View {
     Button {
       Haptic.impact(.light)
+      Analytics.track(.feedCardTap, parameters: ["card": FeedItem.yourNews.analyticsName])
       UIApplication.shared.open(item.url)
     } label: {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
@@ -63,7 +66,7 @@ private struct YourNewsCard: View {
           }
         }
 
-        Text(item.title)
+        Text(item.displayTitle)
           .font(DesignTokens.Typography.headline())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
@@ -84,7 +87,19 @@ private struct YourNewsCard: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(accessibilityLabelText)
     .accessibilityHint("Opens the National Weather Service product in Safari")
+    .accessibilityAddTraits(.isButton)
+  }
+
+  private var accessibilityLabelText: String {
+    let display = item.displayTitle
+    let office = item.title
+    let meta = "\(item.relativeIssuedLabel()) · \(item.sourceName)"
+    if display == office {
+      return "\(display). \(meta)"
+    }
+    return "\(display). \(office). \(meta)"
   }
 }

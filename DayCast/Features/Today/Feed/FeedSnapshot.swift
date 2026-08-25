@@ -18,6 +18,8 @@ struct FeedSnapshot: Equatable, Sendable {
   var hasSevereContext: Bool = false
   /// Open-Meteo Now is a precip condition (rain / storm / snow / sleet).
   var isNowWet: Bool = false
+  /// NWS AFD/PNS cards for this city (`LocalBriefingStore`). Hide the rail when false.
+  var hasLocalBriefing: Bool = false
 
   /// NWS point alerts **or** earned severe context (outlook / MD / watch).
   var showAlertsSlot: Bool { alertCount > 0 || hasSevereContext }
@@ -33,6 +35,7 @@ struct FeedSnapshot: Equatable, Sendable {
     showFireCard: false,
     showAIInsight: false,
     hasSevereContext: false,
-    isNowWet: false
+    isNowWet: false,
+    hasLocalBriefing: false
   )
 }

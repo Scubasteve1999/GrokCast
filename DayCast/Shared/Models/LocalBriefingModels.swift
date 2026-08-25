@@ -13,6 +13,9 @@ struct LocalBriefingItem: Identifiable, Codable, Equatable, Sendable {
   let officeID: String
   let imageURL: URL?
 
+  /// Punchy card headline. Office `title` is unchanged for Sky Check / assemble.
+  var displayTitle: String { YourNewsHeadline.displayTitle(for: self) }
+
   func relativeIssuedLabel(relativeTo now: Date = Date()) -> String {
     let interval = max(0, now.timeIntervalSince(issuedAt))
     if interval < 60 { return "just now" }

@@ -73,6 +73,10 @@ final class LocalBriefingParserTests: XCTestCase {
       first.title,
       "Shower and thunderstorm chances increase late tonight into Monday, with organized severe weather not expected."
     )
+    XCTAssertEqual(
+      first.displayTitle,
+      "Why tonight\u{2019}s storms still have a window after dark."
+    )
     XCTAssertEqual(second.id, "afd-d7681823-d4be-4d15-93b2-e5d65d79dd0a-km1")
     XCTAssertEqual(
       second.title,

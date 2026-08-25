@@ -6,6 +6,7 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
   case alerts
   case aiInsight
   case hourly
+  case yourNews
   case radar
   case daily
   case fire
@@ -15,13 +16,14 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
 
   var id: String { rawValue }
 
-  /// Calm-day spine: Now → Alerts → Next hour → Hourly → Daily, then secondaries.
+  /// Calm-day spine: Now → Alerts → Next hour → Hourly → Your News → Daily, then secondaries.
   /// Story days hoist `.radar` after Next hour via `FeedAssembler` — do not restack this list.
   static let defaultOrder: [FeedItem] = [
     .now,
     .alerts,
     .precip,
     .hourly,
+    .yourNews,
     .daily,
     .aiInsight,
     .radar,
