@@ -114,29 +114,29 @@ struct TodayFeedView: View {
   }
 
   var body: some View {
-    ScrollView {
-      LazyVStack(spacing: TodayGlanceLayout.feedSpacing) {
-        ForEach(feedRows) { row in
-          switch row {
-          case .errorBanner:
-            if let error = store.weatherError, !error.isEmpty {
-              errorBanner(error)
+    ZStack(alignment: .top) {
+      ScrollView {
+        LazyVStack(spacing: TodayGlanceLayout.feedSpacing) {
+          ForEach(feedRows) { row in
+            switch row {
+            case .errorBanner:
+              if let error = store.weatherError, !error.isEmpty {
+                errorBanner(error)
+                  .padding(.horizontal, DesignTokens.Spacing.space20)
+              }
+            case .item(let item):
+              feedCard(for: item)
                 .padding(.horizontal, DesignTokens.Spacing.space20)
             }
-          case .item(let item):
-            feedCard(for: item)
-              .padding(.horizontal, DesignTokens.Spacing.space20)
           }
         }
+        .padding(.top, chipBarHeight)
+        .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
+        .adaptiveContainerWidth(AdaptiveLayout.contentCap)
       }
-      .padding(.top, chipBarHeight)
-      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
-      .adaptiveContainerWidth(AdaptiveLayout.contentCap)
-    }
-    .overlay(alignment: .topLeading) {
+
       LocationChipBar()
-        .padding(.top, DesignTokens.Spacing.space8)
-        .padding(.bottom, DesignTokens.Spacing.space8)
+        .zIndex(1)
         .background {
           GeometryReader { proxy in
             Color.clear
