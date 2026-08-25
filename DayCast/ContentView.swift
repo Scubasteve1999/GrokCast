@@ -3,7 +3,6 @@ import SwiftUI
 struct MainTabView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-  @Namespace private var tabBarNamespace
   @State private var suppressTabBar = false
   @State private var showMoreHub = false
   @State private var moreHubDetent: PresentationDetent = .large
@@ -17,8 +16,7 @@ struct MainTabView: View {
           if horizontalSizeClass == .compact && !suppressTabBar {
             CompactTabBar(
               selection: Bindable(store).selectedTab,
-              showMoreHub: $showMoreHub,
-              namespace: tabBarNamespace
+              showMoreHub: $showMoreHub
             )
           } else {
             EmptyView().frame(height: 0)

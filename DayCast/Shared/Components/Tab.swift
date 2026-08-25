@@ -241,7 +241,6 @@ struct CompactTabBar: View {
   @Binding var showMoreHub: Bool
   private let tabs = CompactTab.allCases
 
-  private(set) var pillCornerRadius: CGFloat
   private(set) var animation: Animation
   private(set) var activeColor: Color
   private(set) var inactiveColor: Color
@@ -250,8 +249,6 @@ struct CompactTabBar: View {
   init(
     selection: Binding<WeatherStore.Tab>,
     showMoreHub: Binding<Bool>,
-    namespace: Namespace.ID,
-    pillCornerRadius: CGFloat = 12,
     animation: Animation = .easeInOut(duration: 0.2),
     activeColor: Color = DesignTokens.Palette.textPrimary,
     inactiveColor: Color = DesignTokens.Palette.textTertiary,
@@ -259,15 +256,11 @@ struct CompactTabBar: View {
   ) {
     _selection = selection
     _showMoreHub = showMoreHub
-    self.namespace = namespace
-    self.pillCornerRadius = pillCornerRadius
     self.animation = animation
     self.activeColor = activeColor
     self.inactiveColor = inactiveColor
     self.backgroundMaterial = backgroundMaterial
   }
-
-  private let namespace: Namespace.ID
 
   var body: some View {
     HStack(spacing: 0) {
@@ -338,21 +331,14 @@ struct CompactTabBar: View {
   private func tabContent(for tab: CompactTab) -> some View {
     let active = tab.isSelected(for: selection)
     return VStack(spacing: 3) {
-      ZStack {
-        if active {
-          RoundedRectangle(cornerRadius: pillCornerRadius)
-            .fill(DesignTokens.Palette.accent)
-            .matchedGeometryEffect(id: "pill", in: namespace)
-            .frame(width: 40, height: 28)
-        }
-        Image(systemName: iconName(for: tab))
-          .font(DesignTokens.Typography.symbol(20))
-          .foregroundStyle(active ? activeColor : inactiveColor)
-          .accessibilityHidden(true)
-      }
-      .frame(height: 28)
+      Image(systemName: iconName(for: tab))
+        .font(DesignTokens.Typography.symbol(20))
+        .foregroundStyle(active ? activeColor : inactiveColor)
+        .accessibilityHidden(true)
+        .frame(height: 28)
       Text(tab.title)
         .font(DesignTokens.Typography.micro())
+        .fontWeight(active ? .semibold : .regular)
         .foregroundStyle(active ? DesignTokens.Palette.textPrimary : inactiveColor)
         .accessibilityHidden(true)
     }

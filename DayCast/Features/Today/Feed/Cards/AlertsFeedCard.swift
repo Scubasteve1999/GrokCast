@@ -50,7 +50,7 @@ struct AlertsFeedCard: View {
           .background(tint(for: alert).opacity(0.12))
           .overlay(
             RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
-              .stroke(tint(for: alert).opacity(0.45), lineWidth: 1)
+              .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
           )
           .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
         }

@@ -30,18 +30,12 @@ struct LocationChipBar: View {
             .padding(.vertical, DesignTokens.Spacing.space8)
             .background(
               Capsule()
-                .fill(
-                  selected
-                    ? DesignTokens.Palette.accent.opacity(0.35)
-                    : DesignTokens.Palette.cardBackground
-                )
+                .fill(selected ? Color.white.opacity(0.08) : Color.clear)
             )
             .overlay(
               Capsule()
                 .stroke(
-                  selected
-                    ? DesignTokens.Palette.accent.opacity(0.7)
-                    : DesignTokens.Palette.cardStroke,
+                  selected ? DesignTokens.Palette.cardHairline : Color.clear,
                   lineWidth: DesignTokens.Card.strokeWidth
                 )
             )
