@@ -10,6 +10,33 @@ import Foundation
 ///
 /// Loop is about 1 hour of history. Open / resume / Live chip lands on the
 /// newest scan. Old frames are playback history, not a lie.
+/// Shared live/stale/unavailable for Today teaser and Radar tab. Never invent a scan.
+enum RadarAvailability: Equatable {
+  case live
+  case stale
+  case unavailable
+
+  static func from(
+    scanDate: Date?,
+    isSiteProduct: Bool,
+    now: Date = Date()
+  ) -> RadarAvailability {
+    let freshness = ChaseRadarHUDLogic.scanFreshness(
+      showsFuture: false,
+      ageMinutes: ChaseRadarHUDLogic.scanAgeMinutes(now: now, scanDate: scanDate),
+      isSiteProduct: isSiteProduct
+    )
+    switch freshness {
+    case .fresh, .aging:
+      return .live
+    case .stale:
+      return .stale
+    case .unknown, .future:
+      return .unavailable
+    }
+  }
+}
+
 enum RadarLivePresentation {
   static let mosaicReload: TimeInterval = 5 * 60
   static let newestFrameReload: TimeInterval = 10 * 60

@@ -2,6 +2,21 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
+/// Settings IA — fewer section headers, paywall card first, developer last.
+enum SettingsChrome {
+  static let pro = "DayCast Pro"
+  static let weather = "Weather"
+  static let notifications = "Notifications"
+  static let features = "Features"
+  static let privacySupport = "Privacy & support"
+  static let app = "App"
+  static let developer = "Developer"
+
+  static let sectionTitles = [
+    pro, weather, notifications, features, privacySupport, app, developer,
+  ]
+}
+
 struct SettingsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
@@ -46,94 +61,15 @@ struct SettingsView: View {
 
   private var settingsScroll: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
         FigmaScreenTitle(title: "Settings")
-
-        FigmaSectionLabel(title: "DayCast Pro")
-        proCard
-
-        FigmaSectionLabel(title: "Notifications")
-        notificationsCard
-
-        FigmaSectionLabel(title: "Display")
-        displayCard
-
-        FigmaSectionLabel(title: "Alerts")
-        SettingsGroupCard {
-          toggleRow(
-            title: "Storm reports",
-            subtitle: "Local storm reports from NWS/SPC. For spotters.",
-            icon: "mappin.and.ellipse",
-            isOn: Binding(
-              get: { severeStore.showsStormReports },
-              set: { severeStore.showsStormReports = $0 }
-            )
-          )
-        }
-
-        FigmaSectionLabel(title: "Developer")
-        SettingsGroupCard { developerKeySection }
-
-        FigmaSectionLabel(title: "Location updates")
-        SettingsGroupCard {
-          toggleRow(
-            title: "Travel Weather Refresh",
-            subtitle: store.significantLocationUpdatesEnabled
-              ? "Significant location changes" : "Off",
-            icon: "location.circle.fill",
-            isOn: Binding(
-              get: { store.significantLocationUpdatesEnabled },
-              set: { store.significantLocationUpdatesEnabled = $0 }
-            )
-          )
-        }
-
-        FigmaSectionLabel(title: "Tools")
-        SettingsGroupCard {
-          NavigationLink {
-            TripPlannerView()
-          } label: {
-            settingsChevronRow(title: "Trip Weather Planner", icon: "airplane.departure")
-          }
-          .buttonStyle(.plain)
-        }
-
-        FigmaSectionLabel(title: "App")
-        appCard
-
-        FigmaSectionLabel(title: "Privacy")
-        SettingsGroupCard {
-          toggleRow(
-            title: "Share analytics",
-            subtitle: PostHogAnalytics.isConfigured
-              ? "Anonymous usage · no session replay"
-              : "Off until POSTHOG_API_KEY is set",
-            icon: "chart.bar.fill",
-            isOn: Binding(
-              get: { !PostHogAnalytics.isOptedOut },
-              set: { PostHogAnalytics.setOptedOut(!$0) }
-            )
-          )
-          .disabled(!PostHogAnalytics.isConfigured)
-        }
-
-        FigmaSectionLabel(title: "Legal & support")
-        SettingsGroupCard {
-          SettingsLinkRow(title: "Privacy Policy", icon: "hand.raised", url: AppLinks.privacyPolicy)
-          SettingsDivider()
-          SettingsLinkRow(title: "Terms of Use", icon: "doc.text", url: AppLinks.termsOfUse)
-          SettingsDivider()
-          SettingsLinkRow(title: "Support", icon: "questionmark.circle", url: AppLinks.support)
-          SettingsDivider()
-          SettingsLinkRow(title: "Contact", icon: "envelope", url: AppLinks.supportEmail)
-        }
-
-        FigmaSectionLabel(title: "Data & credits")
-        SettingsGroupCard {
-          SettingsLinkRow(title: "Get xAI API Key", icon: "link", url: AppLinks.xAIConsole)
-          SettingsDivider()
-          SettingsLinkRow(title: "Weather Data: Open-Meteo", icon: "link", url: AppLinks.openMeteo)
-        }
+        settingsSection(SettingsChrome.pro, card: proCard)
+        settingsSection(SettingsChrome.weather, card: weatherCard)
+        settingsSection(SettingsChrome.notifications, card: notificationsCard)
+        settingsSection(SettingsChrome.features, card: featuresCard)
+        settingsSection(SettingsChrome.privacySupport, card: privacySupportCard)
+        settingsSection(SettingsChrome.app, card: appCard)
+        settingsSection(SettingsChrome.developer, card: developerCard)
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, DesignTokens.Spacing.space16)
@@ -141,6 +77,13 @@ struct SettingsView: View {
     }
     .scrollContentBackground(.hidden)
     .background(DesignTokens.Palette.bgPrimary)
+  }
+
+  private func settingsSection<Card: View>(_ title: String, card: Card) -> some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      FigmaSectionLabel(title: title)
+      card
+    }
   }
 
   private var proCard: some View {
@@ -169,8 +112,7 @@ struct SettingsView: View {
           }
           .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, DesignTokens.Spacing.space12)
+          .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
           .background(
             DesignTokens.Palette.accent, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
           )
@@ -197,10 +139,37 @@ struct SettingsView: View {
     }
   }
 
+  private var weatherCard: some View {
+    SettingsGroupCard {
+      temperatureRow
+      SettingsDivider()
+      toggleRow(
+        title: "Storm reports",
+        subtitle: "Local storm reports from NWS/SPC. For spotters.",
+        icon: "mappin.and.ellipse",
+        isOn: Binding(
+          get: { severeStore.showsStormReports },
+          set: { severeStore.showsStormReports = $0 }
+        )
+      )
+      SettingsDivider()
+      toggleRow(
+        title: "Travel weather",
+        subtitle: store.significantLocationUpdatesEnabled
+          ? "Significant location changes" : "Off",
+        icon: "location.circle.fill",
+        isOn: Binding(
+          get: { store.significantLocationUpdatesEnabled },
+          set: { store.significantLocationUpdatesEnabled = $0 }
+        )
+      )
+    }
+  }
+
   private var notificationsCard: some View {
     SettingsGroupCard {
       toggleRow(
-        title: "Morning Brief",
+        title: "Morning brief",
         subtitle: store.morningBriefEnabled
           ? "Daily at \(store.morningBriefHour):00 AM" : "Off",
         icon: "bell.fill",
@@ -224,7 +193,7 @@ struct SettingsView: View {
       }
       SettingsDivider()
       toggleRow(
-        title: "Severe Weather Alerts",
+        title: "Severe weather",
         subtitle: store.alertNotificationsEnabled ? "Push when active" : "Off",
         icon: "exclamationmark.triangle.fill",
         isOn: Binding(
@@ -240,8 +209,8 @@ struct SettingsView: View {
       }
       SettingsDivider()
       toggleRow(
-        title: "Hyper-Local Rain Alerts",
-        subtitle: store.rainAlertsEnabled ? "Minutecast start/stop" : "Off",
+        title: "Rain alerts",
+        subtitle: store.rainAlertsEnabled ? "Next 2 Hours start/stop" : "Off",
         icon: "cloud.rain.fill",
         isOn: Binding(
           get: { store.rainAlertsEnabled },
@@ -255,7 +224,7 @@ struct SettingsView: View {
       )
       SettingsDivider()
       toggleRow(
-        title: "Nearby Fire Alerts",
+        title: "Fire alerts",
         subtitle: store.fireProximityNotificationsEnabled
           ? "Within \(Int(store.fireProximityRadiusMiles)) mi" : "Off",
         icon: "flame.fill",
@@ -273,16 +242,24 @@ struct SettingsView: View {
         SettingsDivider()
         fireRadiusRow
       }
+      SettingsDivider()
+      toggleRow(
+        title: "Notification sounds",
+        subtitle: store.notificationSoundsEnabled ? "On" : "Off",
+        icon: "speaker.wave.2.fill",
+        isOn: Binding(
+          get: { store.notificationSoundsEnabled },
+          set: { store.notificationSoundsEnabled = $0 }
+        )
+      )
     }
   }
 
-  private var displayCard: some View {
+  private var featuresCard: some View {
     SettingsGroupCard {
-      temperatureRow
-      SettingsDivider()
       toggleRow(
         title: "Live Activity",
-        subtitle: subscription.isPro ? "Lock Screen score + Minutecast" : "Requires DayCast Pro",
+        subtitle: subscription.isPro ? "Lock Screen score + Next 2 Hours" : "Requires DayCast Pro",
         icon: "lock.rectangle.stack.fill",
         isOn: Binding(
           get: { store.liveActivityEnabled },
@@ -293,16 +270,6 @@ struct SettingsView: View {
             }
             store.liveActivityEnabled = newValue
           }
-        )
-      )
-      SettingsDivider()
-      toggleRow(
-        title: "Notification Sounds",
-        subtitle: store.notificationSoundsEnabled ? "On" : "Off",
-        icon: "speaker.wave.2.fill",
-        isOn: Binding(
-          get: { store.notificationSoundsEnabled },
-          set: { store.notificationSoundsEnabled = $0 }
         )
       )
       SettingsDivider()
@@ -318,6 +285,49 @@ struct SettingsView: View {
           }
         )
       )
+      SettingsDivider()
+      NavigationLink {
+        TripPlannerView()
+      } label: {
+        settingsChevronRow(title: "Trip planner", icon: "airplane.departure")
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private var privacySupportCard: some View {
+    SettingsGroupCard {
+      toggleRow(
+        title: "Share analytics",
+        subtitle: PostHogAnalytics.isConfigured
+          ? "Anonymous usage · no session replay"
+          : "Off until POSTHOG_API_KEY is set",
+        icon: "chart.bar.fill",
+        isOn: Binding(
+          get: { !PostHogAnalytics.isOptedOut },
+          set: { PostHogAnalytics.setOptedOut(!$0) }
+        )
+      )
+      .disabled(!PostHogAnalytics.isConfigured)
+      SettingsDivider()
+      SettingsLinkRow(title: "Privacy policy", icon: "hand.raised", url: AppLinks.privacyPolicy)
+      SettingsDivider()
+      SettingsLinkRow(title: "Terms of use", icon: "doc.text", url: AppLinks.termsOfUse)
+      SettingsDivider()
+      SettingsLinkRow(title: "Support", icon: "questionmark.circle", url: AppLinks.support)
+      SettingsDivider()
+      SettingsLinkRow(title: "Contact", icon: "envelope", url: AppLinks.supportEmail)
+      SettingsDivider()
+      SettingsLinkRow(
+        title: "Weather data · Open-Meteo", icon: "link", url: AppLinks.openMeteo)
+    }
+  }
+
+  private var developerCard: some View {
+    SettingsGroupCard {
+      developerKeySection
+      SettingsDivider()
+      SettingsLinkRow(title: "Get xAI API key", icon: "link", url: AppLinks.xAIConsole)
     }
   }
 
@@ -344,12 +354,13 @@ struct SettingsView: View {
         store.clearLocalWeatherCache()
       } label: {
         HStack {
-          Label("Clear Local Weather Cache", systemImage: "trash")
+          Label("Clear weather cache", systemImage: "trash")
             .foregroundStyle(DesignTokens.Palette.danger)
           Spacer()
         }
         .padding(.horizontal, DesignTokens.Spacing.space16)
-        .padding(.vertical, DesignTokens.Spacing.space12)
+        .padding(.vertical, DesignTokens.Spacing.space8)
+        .frame(minHeight: DesignTokens.Layout.minHitTarget)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -372,7 +383,7 @@ struct SettingsView: View {
             .foregroundStyle(DesignTokens.Palette.accent)
             .frame(width: 24)
           VStack(alignment: .leading, spacing: 2) {
-            Text("xAI Developer Key")
+            Text("xAI API key")
               .font(DesignTokens.Typography.subsection())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
             Text(developerKeySubtitle)
@@ -385,7 +396,8 @@ struct SettingsView: View {
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
         .padding(.horizontal, DesignTokens.Spacing.space16)
-        .padding(.vertical, DesignTokens.Spacing.space12)
+        .padding(.vertical, DesignTokens.Spacing.space8)
+        .frame(minHeight: DesignTokens.Layout.minHitTarget)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -428,7 +440,7 @@ struct SettingsView: View {
               ProgressView().scaleEffect(0.8)
               Text("Testing API connection…")
             } else {
-              Label("Test API Connection", systemImage: "network")
+              Label("Test API connection", systemImage: "network")
             }
             Spacer()
           }
@@ -565,7 +577,8 @@ struct SettingsView: View {
       NamedSettingsSwitch(isOn: isOn, label: title)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
-    .padding(.vertical, DesignTokens.Spacing.space12)
+    .padding(.vertical, DesignTokens.Spacing.space8)
+    .frame(minHeight: DesignTokens.Layout.minHitTarget)
     .accessibilityElement(children: .contain)
   }
 
@@ -580,7 +593,8 @@ struct SettingsView: View {
         .foregroundStyle(DesignTokens.Palette.textSecondary)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
-    .padding(.vertical, DesignTokens.Spacing.space12)
+    .padding(.vertical, DesignTokens.Spacing.space8)
+    .frame(minHeight: DesignTokens.Layout.minHitTarget)
   }
 
   private func settingsChevronRow(
@@ -610,7 +624,8 @@ struct SettingsView: View {
         .accessibilityHidden(true)
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
-    .padding(.vertical, DesignTokens.Spacing.space12)
+    .padding(.vertical, DesignTokens.Spacing.space8)
+    .frame(minHeight: DesignTokens.Layout.minHitTarget)
     .contentShape(Rectangle())
   }
 

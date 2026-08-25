@@ -160,6 +160,25 @@ enum RadarChromeCopy {
   /// Xweather cell/motion on Live Rain. Not NWS SCIT.
   static let motionTracks = "Motion tracks"
   static let lightningAttribution = "Lightning · Vaisala Xweather"
+  static let unavailableTitle = "Radar unavailable"
+  static let unavailableHint = "Check connection and try again"
+  static let unavailableRetry = "Retry"
+
+  static func controlsInteractive(
+    hasContent: Bool,
+    isLoading: Bool,
+    hasCompletedLoadAttempt: Bool = true
+  ) -> Bool {
+    hasContent || isLoading || !hasCompletedLoadAttempt
+  }
+
+  static func showsUnavailableOverlay(
+    hasContent: Bool,
+    isLoading: Bool,
+    hasCompletedLoadAttempt: Bool
+  ) -> Bool {
+    hasCompletedLoadAttempt && !isLoading && !hasContent
+  }
 }
 
 /// After the one-sheet chrome, Map-only must never hide Live / 24-hr / Layers.

@@ -156,6 +156,12 @@ final class CitySearchTests: XCTestCase {
   func testSavedRowVoiceOverNamesTheCity() {
     let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
     XCTAssertEqual(LocationRow.accessibilityLabel(for: seattle, isSelected: false), "Seattle, WA")
+    let withWeather = LocationRowWeather.make(
+      temperature: 72, symbolName: "sun.max.fill", hasAlert: true, unit: .fahrenheit)
+    XCTAssertEqual(
+      LocationRow.accessibilityLabel(for: seattle, weather: withWeather),
+      "Seattle, WA, 72°, Active alert"
+    )
   }
 
   func testListedSavedIsEmptyOnlyWhenTheOnlyCityIsCurrent() {

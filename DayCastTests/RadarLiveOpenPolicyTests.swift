@@ -187,6 +187,39 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     )
     XCTAssertEqual(RadarFeedCopy.failLine(siteID: "NQA"), "NQA · scan unavailable")
     XCTAssertEqual(
+      RadarFeedCopy.headline(
+        conditionCode: 61,
+        siteID: "NQA",
+        ageLine: "SCAN <1m",
+        hoisted: true,
+        availability: .unavailable,
+        paint: .siteDoppler
+      ),
+      "NQA · scan unavailable"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.headline(
+        conditionCode: 0,
+        siteID: nil,
+        ageLine: "SCAN —",
+        hoisted: false,
+        availability: .unavailable,
+        paint: .unavailable
+      ),
+      RadarChromeCopy.unavailableTitle
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.headline(
+        conditionCode: 61,
+        siteID: "NQA",
+        ageLine: "SCAN 18m",
+        hoisted: true,
+        availability: .stale,
+        paint: .siteDoppler
+      ),
+      "Stale · SCAN 18m"
+    )
+    XCTAssertEqual(
       RadarFeedCopy.failLine(siteID: nil),
       "Site Doppler · scan unavailable"
     )
@@ -378,6 +411,26 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertEqual(state.siteProductAdvisory, "NQA is clear")
     XCTAssertEqual(state.cameraRequest?.zoom, RadarLiveCameraPolicy.conusZoom)
     XCTAssertEqual(state.currentIndex, state.timeline.live.count - 1)
+  }
+
+  @MainActor
+  func testNationalDownRestoresCachedSiteDoppler() async {
+    let now = Date()
+    let state = RadarState()
+    state.seedCompositeCacheForTesting(frames: [], loadedAt: now)
+    let site = IEMRadarService.Site(id: "NQA", name: "Memphis", lon: -89.9, lat: 35.0)
+    state.seedSiteLiveForTesting(
+      site: site,
+      frames: [frame(ageMinutes: 2, now: now, provider: .iem)]
+    )
+    state.restoreCompositeLiveForTesting()
+    state.sitePrecipProbeForTesting = false
+
+    await state.applyDefaultLiveOpenPolicyForTesting()
+
+    XCTAssertEqual(state.selectedProduct, .superResReflectivity)
+    XCTAssertFalse(state.timeline.live.isEmpty)
+    XCTAssertEqual(state.cameraRequest?.zoom, RadarLiveCameraPolicy.localZoom)
   }
 
   private func frame(

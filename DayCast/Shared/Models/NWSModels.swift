@@ -101,6 +101,11 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     event.lowercased().contains("watch") && !isWarning
   }
 
+  /// ALL CAPS + danger red. Warnings and life-threatening products only.
+  var usesWarningEmphasis: Bool {
+    isWarning || isLifeThreatening
+  }
+
   var isExpired: Bool {
     guard let expires else { return false }
     return expires < Date()

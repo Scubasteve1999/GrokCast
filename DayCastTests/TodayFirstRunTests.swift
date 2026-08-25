@@ -17,7 +17,7 @@ final class TodayFirstRunTests: XCTestCase {
     XCTAssertTrue(body.contains("rain"))
     XCTAssertEqual(TodayCopy.trustNow, "Now")
     XCTAssertEqual(TodayCopy.trustAlerts, "Alerts")
-    XCTAssertEqual(TodayCopy.trustNextHour, "Next hour")
+    XCTAssertEqual(TodayCopy.trustNextHour, "Next 2 Hours")
   }
 
   func testPermissionAndDeniedCopyStayStormTrust() {
@@ -41,11 +41,11 @@ final class TodayFirstRunTests: XCTestCase {
   func testSkeletonSlotsMatchStormFirstGlance() {
     XCTAssertEqual(
       TodaySkeletonSlot.feedOrder.map(\.feedItem),
-      [.now, .alerts, .precip, .hourly])
+      [.now, .hourly])
     let glance = FeedItem.defaultOrder.filter {
       TodaySkeletonSlot.feedOrder.map(\.feedItem).contains($0)
     }
-    XCTAssertEqual(Array(glance.prefix(4)), [.now, .alerts, .precip, .hourly])
+    XCTAssertEqual(Array(glance.prefix(2)), [.now, .hourly])
   }
 
   func testDefaultOliveBranchIsNotANearMeChip() {

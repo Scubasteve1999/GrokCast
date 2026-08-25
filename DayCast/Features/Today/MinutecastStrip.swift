@@ -60,16 +60,16 @@ struct MinutecastStrip: View {
     ))
   }
 
-  /// VoiceOver for the strip. Product name is “Next hour”, not Minutecast.
+  /// VoiceOver for the strip. Product name is “Next 2 Hours”, not Minutecast.
   static func accessibilityLabel(
     message: String,
     disagreementCaption: String? = nil
   ) -> String {
     let caption = disagreementCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     if caption.isEmpty {
-      return "Next hour. \(message)"
+      return "\(PrecipOutlookCopy.title). \(message)"
     }
-    return "Next hour. \(message). \(caption)"
+    return "\(PrecipOutlookCopy.title). \(message). \(caption)"
   }
 
   private func barColor(for slot: MinutelyForecast) -> Color {
@@ -92,7 +92,7 @@ struct MinutecastStrip: View {
   MinutecastStrip(
     summary: MinutecastSummary(
       kind: .startsSoon,
-      message: "Precipitation likely in ~30 min",
+      message: "Rain likely in ~30 min",
       icon: "cloud.rain.fill",
       strip: []
     )

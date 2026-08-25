@@ -348,7 +348,7 @@ private struct GrokBriefCardChrome: ViewModifier {
     case .full:
       content.glassCardStyle(strokeTint: DesignTokens.Palette.accent.opacity(0.35))
     case .figma:
-      content.cardStyle()
+      content.weatherModuleStyle()
     }
   }
 }

@@ -133,7 +133,7 @@ struct SettingsLinkRow: View {
           .foregroundStyle(DesignTokens.Palette.accent)
           .frame(width: 24)
         Text(title)
-          .font(DesignTokens.Typography.body())
+          .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
         Spacer()
         Image(systemName: "arrow.up.right")
@@ -141,7 +141,8 @@ struct SettingsLinkRow: View {
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
-      .padding(.vertical, DesignTokens.Spacing.space12)
+      .padding(.vertical, DesignTokens.Spacing.space8)
+      .frame(minHeight: DesignTokens.Layout.minHitTarget)
       .contentShape(Rectangle())
     }
   }
@@ -177,7 +178,8 @@ struct SettingsNavigationRow: View {
           .foregroundStyle(DesignTokens.Palette.textTertiary)
       }
       .padding(.horizontal, DesignTokens.Spacing.space16)
-      .padding(.vertical, DesignTokens.Spacing.space12)
+      .padding(.vertical, DesignTokens.Spacing.space8)
+      .frame(minHeight: DesignTokens.Layout.minHitTarget)
       // Without this the Spacer between the title and the chevron is dead to
       // taps, so only the text and icons themselves are hittable.
       .contentShape(Rectangle())
@@ -203,8 +205,12 @@ struct MoreHubSheet: View {
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
+        VStack(spacing: 0) {
           hubHeader
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignTokens.Spacing.space20)
+            .padding(.top, DesignTokens.Spacing.space16)
+            .padding(.bottom, DesignTokens.Spacing.space16)
 
           SettingsGroupCard {
             ForEach(Array(WeatherStore.Tab.moreHub.enumerated()), id: \.element.id) { index, tab in
@@ -222,13 +228,23 @@ struct MoreHubSheet: View {
               .accessibilityIdentifier(DayCastAccessibility.MoreHub.row(tab))
             }
           }
+          .weatherStageSheet()
         }
-        .padding(.horizontal, DesignTokens.Spacing.space20)
-        .padding(.vertical, DesignTokens.Spacing.space24)
       }
-      .background(DesignTokens.Palette.bgPrimary.ignoresSafeArea())
+      .background {
+        WeatherBackgroundLayer(
+          conditionCode: store.displayedWeather?.conditionCode,
+          isDay: store.displayedWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          }
+            ?? WeatherBackgroundView.inferredIsDay(
+              timeZone: store.displayedWeather?.locationTimeZone ?? .current
+            )
+        )
+      }
       .navigationTitle("More")
       .navigationBarTitleDisplayMode(.inline)
+      .weatherShowsThroughNavigationBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Done") { dismiss() }
@@ -253,15 +269,16 @@ struct MoreHubSheet: View {
           Text(store.formatTemperatureShort(w.currentTemp))
             .font(DesignTokens.Typography.compactTemp())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
           Text(w.conditionText)
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
         }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(DesignTokens.Layout.cardPadding)
-    .dayCastCard()
   }
 
   private func moreTitle(for tab: WeatherStore.Tab) -> String {

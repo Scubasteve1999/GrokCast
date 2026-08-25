@@ -1,5 +1,39 @@
 import Foundation
 
+/// Structured Open-Meteo pollen. Missing species stay nil; hide the whole
+/// block when the region did not return any values.
+struct PollenConditions: Equatable, Codable, Sendable {
+  var grass: Double?
+  var birch: Double?
+  var alder: Double?
+  var ragweed: Double?
+
+  var availableValues: [Double] {
+    [grass, birch, alder, ragweed].compactMap { $0 }
+  }
+
+  var hasData: Bool { !availableValues.isEmpty }
+
+  var peak: Double? { availableValues.max() }
+
+  var category: String? {
+    guard let peak else { return nil }
+    if peak > 50 { return "High" }
+    if peak > 20 { return "Moderate" }
+    return "Low"
+  }
+
+  static func from(
+    grass: Double?,
+    birch: Double?,
+    alder: Double?,
+    ragweed: Double?
+  ) -> PollenConditions? {
+    let value = PollenConditions(grass: grass, birch: birch, alder: alder, ragweed: ragweed)
+    return value.hasData ? value : nil
+  }
+}
+
 // MARK: - Open-Meteo Response Models (pure Swift, no external deps)
 
 struct OpenMeteoResponse: Decodable {
@@ -24,26 +58,35 @@ struct Current: Decodable {
   let temperature_2m: Double?
   let relative_humidity_2m: Int?
   let apparent_temperature: Double?
+  let dew_point_2m: Double?
   let is_day: Int?
   let precipitation: Double?
   let weather_code: Int?
   let wind_speed_10m: Double?
   let wind_direction_10m: Int?
+  let visibility: Double?
+  let surface_pressure: Double?
+  let cloud_cover: Int?
 }
 
 struct Hourly: Decodable {
   let time: [String]
   let temperature_2m: [Double?]
-  let relative_humidity_2m: [Int]?
+  let relative_humidity_2m: [Int?]?
   let apparent_temperature: [Double?]?
+  let dew_point_2m: [Double?]?
   let precipitation_probability: [Int?]?
   let precipitation: [Double?]?
   let rain: [Double?]?
   let showers: [Double?]?
   let snowfall: [Double?]?
   let weather_code: [Int?]
-  let wind_speed_10m: [Double]?
+  let wind_speed_10m: [Double?]?
+  let wind_direction_10m: [Int?]?
   let uv_index: [Double?]?
+  let visibility: [Double?]?
+  let surface_pressure: [Double?]?
+  let cloud_cover: [Int?]?
   let is_day: [Int?]?
 }
 
@@ -77,6 +120,7 @@ struct AirQualityHourly: Decodable {
   let alder_pollen: [Double?]?
   let birch_pollen: [Double?]?
   let grass_pollen: [Double?]?
+  let ragweed_pollen: [Double?]?
 }
 
 // Our clean app-facing model (decoupled)
@@ -110,6 +154,18 @@ struct DayCastWeather: Equatable, Codable {
 
   /// Next ~2 hours in 15-minute steps (Open-Meteo minutely_15).
   let minutely15: [MinutelyForecast]
+
+  /// Optional current-condition enrichments. Nil on NWS fallback / older snapshots.
+  var windDirection: Int? = nil
+  var dewPoint: Double? = nil
+  var visibilityMeters: Double? = nil
+  var pressureHPa: Double? = nil
+  var cloudCoverPercent: Int? = nil
+  var pm10: Double? = nil
+  var pollen: PollenConditions? = nil
+
+  /// Current-hour UV from Open-Meteo hourly. Nil on NWS fallback / missing arrays.
+  var currentUVIndex: Double? { hourly.first?.uvIndex }
 
   var locationTimeZone: TimeZone {
     timezoneIdentifier.flatMap { TimeZone(identifier: $0) } ?? .current
@@ -246,6 +302,14 @@ struct HourlyForecast: Equatable, Codable, Identifiable {
   var isDay: Bool? = nil
   /// Open-Meteo `apparent_temperature`. Nil on older snapshots / NWS fallback hours.
   var feelsLike: Double? = nil
+  var humidity: Int? = nil
+  var dewPoint: Double? = nil
+  var windSpeed: Double? = nil
+  var windDirection: Int? = nil
+  var uvIndex: Double? = nil
+  var visibilityMeters: Double? = nil
+  var pressureHPa: Double? = nil
+  var cloudCoverPercent: Int? = nil
 
   // Stable identity based on the actual forecast time (prevents ForEach duplication bugs)
   var id: Date { time }
@@ -254,7 +318,8 @@ struct HourlyForecast: Equatable, Codable, Identifiable {
 
   enum CodingKeys: String, CodingKey {
     case time, temp, precipChance, weatherCode, symbolName, rain, showers, snowfall, isDay,
-      feelsLike
+      feelsLike, humidity, dewPoint, windSpeed, windDirection, uvIndex, visibilityMeters,
+      pressureHPa, cloudCoverPercent
   }
 }
 

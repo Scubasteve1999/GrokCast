@@ -83,6 +83,7 @@ final class TonightOutlookTests: XCTestCase {
       now: oliveBranchEvening
     )
     XCTAssertEqual(result.title, "Tonight")
+    XCTAssertEqual(result.period.outlookTitle, "Tonight's Outlook")
     XCTAssertEqual(
       result.sentence,
       "Clear tonight, cooling to 73°. Isolated storms wait until Tuesday morning."
@@ -108,6 +109,7 @@ final class TonightOutlookTests: XCTestCase {
       now: oliveBranchEvening
     )
     XCTAssertEqual(result.title, "Tonight")
+    XCTAssertEqual(result.period.outlookTitle, "Tonight's Outlook")
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("tornado"))
     XCTAssertTrue(result.sentence.hasPrefix("Clear tonight"))
   }
@@ -151,6 +153,7 @@ final class TonightOutlookTests: XCTestCase {
       now: now
     )
     XCTAssertEqual(result.title, "This afternoon")
+    XCTAssertEqual(result.period.outlookTitle, "This Afternoon's Outlook")
     XCTAssertTrue(result.sentence.hasPrefix("Mostly sunny"))
     XCTAssertTrue(result.sentence.contains("88°"))
     XCTAssertTrue(result.sentence.contains("92°"))

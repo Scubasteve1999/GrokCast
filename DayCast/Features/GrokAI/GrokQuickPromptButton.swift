@@ -21,8 +21,7 @@ struct GrokQuickPromptButton: View {
         .lineLimit(1)
         .minimumScaleFactor(0.85)
         .padding(.horizontal, DesignTokens.Spacing.space12)
-        .padding(.vertical, DesignTokens.Spacing.space8)
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget, alignment: .center)
         .background(
           Capsule()
             .fill(DesignTokens.Palette.cardElevated)

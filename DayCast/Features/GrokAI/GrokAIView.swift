@@ -292,14 +292,12 @@ private struct GrokAIViewContent: View {
   }
 
   private var skyCheckWeatherBackground: some View {
-    WeatherBackgroundView(
+    WeatherBackgroundLayer(
       conditionCode: weatherStore.currentWeather?.conditionCode,
       isDay: weatherStore.currentWeather.map {
         WeatherBackgroundView.isDay(from: $0.symbolName)
-      } ?? WeatherBackgroundView.inferredIsDay,
-      intensity: .staticOnly
+      } ?? WeatherBackgroundView.inferredIsDay
     )
-    .ignoresSafeArea()
   }
 
   private var headerSection: some View {
@@ -308,17 +306,16 @@ private struct GrokAIViewContent: View {
         FigmaScreenTitle(title: "Sky Check", style: .studio)
       } else {
         VStack(alignment: .leading, spacing: 6) {
-          Text("SKY CHECK")
+          Text("Sky Check")
             .font(DesignTokens.Typography.caption())
-            .tracking(2)
             .foregroundStyle(.white.opacity(0.5))
 
           if let location = weatherStore.currentLocation?.name {
-            Text(location.uppercased())
+            Text(location)
               .font(DesignTokens.Typography.subsection())
               .foregroundStyle(.white.opacity(0.85))
           } else {
-            Text("SELECT A LOCATION FOR CONTEXT")
+            Text("Select a location for context")
               .font(DesignTokens.Typography.callout())
               .foregroundStyle(.secondary)
           }
@@ -498,6 +495,7 @@ private struct GrokAIViewContent: View {
     }
     .buttonStyle(.plain)
     .disabled(aiActionsDisabled)
+    .accessibilityLabel(skyCheckPhotoCTATitle(viewModel: viewModel))
     .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
   }
 
@@ -508,12 +506,13 @@ private struct GrokAIViewContent: View {
         systemImage: SkyCheckDeskCopy.photoGlyph
       )
       .font(DesignTokens.Typography.subsection())
-      .frame(maxWidth: .infinity)
+      .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
       .padding(.vertical, DesignTokens.Spacing.space4)
     }
     .buttonStyle(.borderedProminent)
     .tint(DesignTokens.Palette.accent)
     .disabled(aiActionsDisabled)
+    .accessibilityLabel(skyCheckPhotoCTATitle(viewModel: viewModel))
     .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
   }
 
@@ -547,9 +546,8 @@ private struct GrokAIViewContent: View {
 
   private func standardQuickPromptsSection(viewModel: GrokAIViewModel) -> some View {
     VStack(alignment: .leading, spacing: 10) {
-      Text("QUICK PROMPTS")
+      Text("Quick prompts")
         .font(DesignTokens.Typography.caption())
-        .tracking(1.5)
         .foregroundStyle(.white.opacity(0.5))
 
       ScrollView(.horizontal, showsIndicators: false) {
@@ -736,15 +734,27 @@ private struct GrokAIViewContent: View {
         Spacer(minLength: bubbleGutter)
       } else {
         VStack(alignment: .leading, spacing: 4) {
-          assistantMessageText(message.content)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, DesignTokens.Spacing.space16)
-            .padding(.vertical, DesignTokens.Spacing.space12)
-            .cardStyle(
-              background: DesignTokens.Palette.cardBackground,
-              stroke: DesignTokens.Palette.cardStroke,
-              cornerRadius: DesignTokens.Card.cornerRadiusMedium
+          if message.isStormSpotterAnalysis {
+            assistantMessageText(message.content)
+              .fixedSize(horizontal: false, vertical: true)
+              .padding(.horizontal, DesignTokens.Spacing.space16)
+              .padding(.vertical, DesignTokens.Spacing.space12)
+              .cardStyle(
+                background: DesignTokens.Palette.cardBackground,
+                stroke: DesignTokens.Palette.cardStroke,
+                cornerRadius: DesignTokens.Card.cornerRadiusMedium
+              )
+          } else {
+            SkyCheckGlanceCard(
+              result: SkyCheckGlance.parse(message.content),
+              onForecast: {
+                weatherStore.selectedTab = .forecast
+              },
+              onRadar: {
+                weatherStore.selectedTab = .radar
+              }
             )
+          }
           Text(timeString(from: message.timestamp))
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)

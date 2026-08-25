@@ -23,22 +23,52 @@ final class TodayFirstViewportTests: XCTestCase {
   }
 
   func testNowGlanceTempIsTighterThanDisplayHero() {
-    XCTAssertEqual(TodayGlanceLayout.nowTempSize, 72)
+    XCTAssertEqual(TodayGlanceLayout.nowTempSize, 88)
     XCTAssertLessThan(TodayGlanceLayout.nowTempSize, 96)
     XCTAssertGreaterThan(TodayGlanceLayout.nowTempSize, 44)
   }
 
+  func testNowHeroBudgetIsCinematicPhotographyNotAGlyphChip() {
+    XCTAssertGreaterThanOrEqual(TodayGlanceLayout.nowBudgetHeight, 112)
+    XCTAssertLessThan(TodayGlanceLayout.nowBudgetHeight, 240)
+    XCTAssertEqual(TodayGlanceLayout.nowBudgetHeight, 200)
+    XCTAssertFalse(NowHeroPhotography.glyphIsSectionFace)
+    XCTAssertEqual(
+      NowHeroPhotography.treatment(conditionCode: 0, isDay: true),
+      .photography(assetName: "NewsHeroSky")
+    )
+  }
+
+  func testFirstViewportOrderIsNowHourlyHealthRadar() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 1,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: true,
+      hasAQI: true,
+      hasSunriseOrSunset: false,
+      showFireCard: false,
+      showAIInsight: false,
+      hasLocalBriefing: true
+    )
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(
+      Array(items.prefix(4)),
+      [.now, .hourly, .yourNews, .health]
+    )
+    XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
+  }
+
   func testAlertChipIsASingleRow() {
-    XCTAssertEqual(TodayGlanceLayout.alertChipMinHeight, 44)
+    XCTAssertEqual(TodayGlanceLayout.alertChipMinHeight, 56)
     XCTAssertLessThan(TodayGlanceLayout.alertChipMinHeight, 80)
   }
 
   func testHourlyGraphFitsInTheOldChipBudget() {
-    let oldChipCardHeight: CGFloat = 8 * 2 + 20 + 8 + 100 + 24
     XCTAssertEqual(TodayGlanceLayout.hourlyGraphHeight, HourlyGraphLayout.height)
-    XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, oldChipCardHeight)
     XCTAssertGreaterThan(TodayGlanceLayout.hourlyTonightLineHeight, 28)
-    XCTAssertLessThanOrEqual(TodayGlanceLayout.hourlyCardHeight, 168)
+    XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, 280)
   }
 
   func testDuplicateAQIAlertsCollapseToOneChip() {
@@ -48,12 +78,12 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertEqual(chips.count, 1)
     XCTAssertEqual(chips.first?.id, "aqi-1")
     XCTAssertEqual(
-      AlertsFeedCard.chipTitle(for: first, in: [first, second]),
-      "Air Quality Alert · 2"
+      AlertsFeedCard.chipTitle(for: first),
+      "Air Quality Alert"
     )
   }
 
-  func testStoryDayKeepsHoistAlertsHourlyAndYourNews() {
+  func testStoryDayKeepsAlertsHourlyAndYourNews() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 1,
@@ -69,14 +99,12 @@ final class TodayFirstViewportTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       Array(items.prefix(5)),
-      [.now, .alerts, .radar, .hourly, .yourNews]
+      [.now, .hourly, .yourNews, .health, .daily]
     )
     XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
-    XCTAssertTrue(items.contains(.alerts))
-    XCTAssertEqual(
-      items.firstIndex(of: .hourly)! + 1,
-      items.firstIndex(of: .yourNews)
-    )
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertFalse(items.contains(.alerts))
+    XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
   }
 
   func testHoistedSiteCopyStillNamesScanAndSite() {

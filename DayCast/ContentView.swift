@@ -5,7 +5,7 @@ struct MainTabView: View {
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @State private var suppressTabBar = false
   @State private var showMoreHub = false
-  @State private var moreHubDetent: PresentationDetent = .large
+  @State private var moreHubDetent: PresentationDetent = MoreHubPresentation.defaultDetent
   @State private var lastMoreDestination: WeatherStore.Tab = .grok
 
   var body: some View {
@@ -25,10 +25,11 @@ struct MainTabView: View {
       }
       .sheet(isPresented: $showMoreHub) {
         MoreHubSheet()
-          .presentationDetents([.medium, .large], selection: $moreHubDetent)
+          .presentationDetents(
+            MoreHubPresentation.availableDetents, selection: $moreHubDetent)
       }
       .onChange(of: showMoreHub) { _, isOpen in
-        if isOpen { moreHubDetent = .large }
+        if isOpen { moreHubDetent = MoreHubPresentation.defaultDetent }
       }
       .onOpenURL { url in
         handleDeepLink(url)
@@ -108,7 +109,7 @@ struct MainTabView: View {
           Label(
             "Alerts",
             systemImage: AlertsHonesty.tabSymbolName(
-              nwsAlertCount: store.displayableActiveAlerts.count)
+              nwsAlertCount: store.displayableGroupedAlerts.count)
           )
         }
         .tag(CompactTab.alerts)
@@ -143,7 +144,7 @@ struct MainTabView: View {
           Label(
             "Alerts",
             systemImage: AlertsHonesty.tabSymbolName(
-              nwsAlertCount: store.displayableActiveAlerts.count)
+              nwsAlertCount: store.displayableGroupedAlerts.count)
           )
         }
         .tag(WeatherStore.Tab.alerts)

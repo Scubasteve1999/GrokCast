@@ -35,6 +35,9 @@ enum SkyCheckDeskCopy {
   }
   /// Take action / morning OPEN_GROK — one public name, not Ask AI / Ask Grok.
   static let landingActionTitle = "Sky Check"
+  static let detailsTitle = SkyCheckGlance.detailsTitle
+  static let forecastAction = SkyCheckGlance.forecastAction
+  static let radarAction = SkyCheckGlance.radarAction
 
   struct QuickPrompt: Equatable {
     let title: String

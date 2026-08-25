@@ -39,6 +39,7 @@ struct LocationsView: View {
       .readableContentWidth(ReadableContentWidth.wide)
       .navigationTitle(prefersFigmaLayout ? "" : "Locations")
       .navigationBarTitleDisplayMode(prefersFigmaLayout ? .inline : .large)
+      .weatherShowsThroughNavigationBar()
       .toolbar {
         if !prefersFigmaLayout {
           EditButton()
@@ -67,7 +68,17 @@ struct LocationsView: View {
       .padding(.bottom, bottomTabClearance)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
+    .background {
+      WeatherBackgroundLayer(
+        conditionCode: store.displayedWeather?.conditionCode,
+        isDay: store.displayedWeather.map {
+          WeatherBackgroundView.isDay(from: $0.symbolName)
+        }
+          ?? WeatherBackgroundView.inferredIsDay(
+            timeZone: store.displayedWeather?.locationTimeZone ?? .current
+          )
+      )
+    }
   }
 
   private var figmaSearchField: some View {
@@ -116,7 +127,7 @@ struct LocationsView: View {
 
   @ViewBuilder
   private var figmaSearchResults: some View {
-    Text("SEARCH RESULTS")
+    Text("Search results")
       .font(DesignTokens.Typography.caption())
       .foregroundStyle(DesignTokens.Palette.textTertiary)
 
@@ -161,7 +172,12 @@ struct LocationsView: View {
 
       SettingsGroupCard {
         if let current = store.currentLocation {
-          LocationRow(location: current, isSelected: true, layout: .figma)
+          LocationRow(
+            location: current,
+            isSelected: true,
+            layout: .figma,
+            weather: weatherSnapshot(for: current)
+          )
             .padding(.horizontal, DesignTokens.Spacing.space16)
         }
 
@@ -205,7 +221,8 @@ struct LocationsView: View {
             LocationRow(
               location: loc,
               isSelected: store.currentLocation?.id == loc.id,
-              layout: .figma
+              layout: .figma,
+              weather: weatherSnapshot(for: loc)
             ) {
               store.selectLocation(loc)
             }
@@ -243,7 +260,11 @@ struct LocationsView: View {
   private var currentLocationSection: some View {
     Section("Current Location") {
       if let current = store.currentLocation {
-        LocationRow(location: current, isSelected: true)
+        LocationRow(
+          location: current,
+          isSelected: true,
+          weather: weatherSnapshot(for: current)
+        )
       }
       Button {
         Task { await store.useCurrentDeviceLocation() }
@@ -256,7 +277,11 @@ struct LocationsView: View {
   private var savedLocationsSection: some View {
     Section("Saved Locations") {
       ForEach(listedSaved) { loc in
-        LocationRow(location: loc, isSelected: store.currentLocation?.id == loc.id) {
+        LocationRow(
+          location: loc,
+          isSelected: store.currentLocation?.id == loc.id,
+          weather: weatherSnapshot(for: loc)
+        ) {
           store.selectLocation(loc)
         }
         .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
@@ -420,6 +445,24 @@ struct LocationsView: View {
       searchError = CitySearch.errorMessage(for: error)
     }
   }
+
+  private func weatherSnapshot(for location: SavedLocation) -> LocationRowWeather.Snapshot {
+    if location.id == store.currentLocation?.id, let weather = store.displayedWeather {
+      let active = store.displayableGroupedAlerts.filter { !$0.isExpired }
+      return LocationRowWeather.make(
+        temperature: weather.currentTemp,
+        symbolName: weather.symbolName,
+        hasAlert: !active.isEmpty,
+        alertIsWarning: active.contains(where: \.usesWarningEmphasis),
+        unit: store.temperatureUnit
+      )
+    }
+    return LocationRowWeather.make(
+      weather: WidgetDataStore.loadSnapshot(for: location.id),
+      alert: WidgetDataStore.loadAlertSummary(for: location.id),
+      unit: store.temperatureUnit
+    )
+  }
 }
 
 private struct SearchResultRow: View {
@@ -450,10 +493,65 @@ private struct SearchResultRow: View {
   }
 }
 
+enum LocationRowWeather {
+  struct Snapshot: Equatable {
+    var temperatureText: String?
+    var symbolName: String?
+    var hasAlert: Bool
+    var alertIsWarning: Bool
+  }
+
+  static func make(
+    weather: WidgetWeatherSnapshot?,
+    alert: WidgetAlertSummary?,
+    unit: TemperatureUnit,
+    now: Date = Date()
+  ) -> Snapshot {
+    let active = alert?.isActive(relativeTo: now) == true
+    return make(
+      temperature: weather?.currentTemp,
+      symbolName: weather?.symbolName,
+      hasAlert: active,
+      alertIsWarning: active && (alert?.topIsWarning == true),
+      unit: unit
+    )
+  }
+
+  static func make(
+    temperature: Double?,
+    symbolName: String?,
+    hasAlert: Bool,
+    alertIsWarning: Bool = false,
+    unit: TemperatureUnit
+  ) -> Snapshot {
+    Snapshot(
+      temperatureText: temperature.map { unit.formatShort($0) },
+      symbolName: symbolName,
+      hasAlert: hasAlert,
+      alertIsWarning: hasAlert && alertIsWarning
+    )
+  }
+
+  static func accessibilityLabel(
+    locationName: String,
+    snapshot: Snapshot?
+  ) -> String {
+    var parts = [locationName]
+    if let temp = snapshot?.temperatureText, !temp.isEmpty {
+      parts.append(temp)
+    }
+    if snapshot?.hasAlert == true {
+      parts.append("Active alert")
+    }
+    return parts.joined(separator: ", ")
+  }
+}
+
 struct LocationRow: View {
   let location: SavedLocation
   let isSelected: Bool
   var layout: LocationRowLayout = .standard
+  var weather: LocationRowWeather.Snapshot? = nil
   var onTap: (() -> Void)? = nil
 
   var body: some View {
@@ -466,13 +564,19 @@ struct LocationRow: View {
       }
     }
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Self.accessibilityLabel(for: location, isSelected: isSelected))
+    .accessibilityLabel(Self.accessibilityLabel(for: location, weather: weather))
     .accessibilityAddTraits(onTap == nil ? [] : .isButton)
     .accessibilityHint(onTap == nil ? "" : "Shows weather for this city")
   }
 
-  static func accessibilityLabel(for location: SavedLocation, isSelected: Bool) -> String {
-    location.name
+  static func accessibilityLabel(
+    for location: SavedLocation,
+    isSelected: Bool = false,
+    weather: LocationRowWeather.Snapshot? = nil
+  ) -> String {
+    _ = isSelected
+    return LocationRowWeather.accessibilityLabel(
+      locationName: location.name, snapshot: weather)
   }
 
   @ViewBuilder
@@ -482,6 +586,33 @@ struct LocationRow: View {
       standardRow
     case .figma:
       figmaRow
+    }
+  }
+
+  @ViewBuilder
+  private var weatherTrailing: some View {
+    if weather?.hasAlert == true {
+      Circle()
+        .fill(
+          weather?.alertIsWarning == true
+            ? DesignTokens.Palette.danger
+            : DesignTokens.Palette.warning
+        )
+        .frame(width: 8, height: 8)
+        .accessibilityHidden(true)
+    }
+    if let symbol = weather?.symbolName, !symbol.isEmpty {
+      Image(systemName: symbol)
+        .font(DesignTokens.Typography.symbol(16))
+        .symbolRenderingMode(.hierarchical)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .frame(width: 22)
+        .accessibilityHidden(true)
+    }
+    if let temp = weather?.temperatureText {
+      Text(temp)
+        .font(DesignTokens.Typography.subsection().monospacedDigit())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
     }
   }
 
@@ -507,6 +638,8 @@ struct LocationRow: View {
 
       Spacer(minLength: 0)
 
+      weatherTrailing
+
       Image(systemName: "chevron.right")
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -525,6 +658,7 @@ struct LocationRow: View {
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
       Spacer()
+      weatherTrailing
       if location.isCurrent {
         Image(systemName: "mappin.circle.fill")
           .foregroundStyle(DesignTokens.Palette.accent)

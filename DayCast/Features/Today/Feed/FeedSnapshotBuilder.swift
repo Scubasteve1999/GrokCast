@@ -11,10 +11,9 @@ enum FeedSnapshotBuilder {
   ) -> FeedSnapshot {
     guard let weather else { return .empty }
 
-    let hasPrecip: Bool = {
-      let summary = MinutecastEngine.summary(from: weather.minutely15, units: .fahrenheit)
-      return PrecipFeedVisibility.hasContent(summary: summary)
-    }()
+    let summary = MinutecastEngine.summary(from: weather.minutely15, units: .fahrenheit)
+    let hasPrecip = PrecipFeedVisibility.hasContent(summary: summary)
+    let hasNextEvent = PrecipFeedVisibility.showsCard(summary: summary)
 
     let hasSun: Bool = {
       guard let today = weather.daily.first else { return false }
@@ -27,6 +26,7 @@ enum FeedSnapshotBuilder {
       hasHourly: !weather.hourly.isEmpty,
       hasDaily: !weather.daily.isEmpty,
       hasPrecipContent: hasPrecip,
+      hasNextEvent: hasNextEvent,
       hasAQI: weather.airQualityIndex != nil,
       hasSunriseOrSunset: hasSun,
       showFireCard: showFireCard,

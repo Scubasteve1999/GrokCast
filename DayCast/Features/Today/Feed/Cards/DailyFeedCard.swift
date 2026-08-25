@@ -1,89 +1,71 @@
 import SwiftUI
 
 struct DailyFeedCard: View {
+  @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
-  @State private var expandedDayID: Date?
+  var plated: Bool = true
+  @State private var selectedID: Date?
 
   private var days: [DailyForecast] {
-    Array(weather.daily.prefix(10))
+    Array(weather.daily.prefix(7))
   }
 
   private var periodLow: Double? { days.map(\.low).min() }
   private var periodHigh: Double? { days.map(\.high).max() }
+  private var selected: DailyForecast? {
+    days.first(where: { $0.id == selectedID }) ?? days.first
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text("Daily")
-        .font(DesignTokens.Typography.subsection())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-
-      VStack(spacing: 0) {
-        ForEach(days) { day in
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-            DailyRow(
-              forecast: day,
-              layout: .figma,
-              periodLow: periodLow,
-              periodHigh: periodHigh,
-              calendar: weather.locationCalendar,
-              timeZone: weather.locationTimeZone,
-              nowTemperature: weather.currentTemp,
-              onSelect: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                  if expandedDayID == day.id {
-                    expandedDayID = nil
-                  } else {
-                    expandedDayID = day.id
-                  }
-                }
-                Analytics.track(.feedCardTap, parameters: ["card": "daily_row"])
-              }
-            )
-
-            if expandedDayID == day.id {
-              dailyExpandedDetail(day)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-          }
+      Button {
+        Haptic.selection()
+        store.selectedTab = .forecast
+      } label: {
+        HStack {
+          Text("This Week")
+            .font(DesignTokens.Typography.studioTitle())
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+          Spacer(minLength: 4)
+          Image(systemName: "chevron.right")
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       }
-    }
-    .padding(DesignTokens.Spacing.space16)
-    .cardStyle()
-    .accessibilityElement(children: .contain)
-  }
+      .buttonStyle(.plain)
+      .accessibilityLabel("This Week")
+      .accessibilityHint("Opens full forecast")
 
-  @ViewBuilder
-  private func dailyExpandedDetail(_ day: DailyForecast) -> some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-      if let uv = day.uvMax {
-        Text("UV max \(Int(round(uv)))")
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-      }
-      let liq = (day.rainSum ?? 0) + (day.showersSum ?? 0)
-      let sn = day.snowfallSum ?? 0
-      if liq > 0 || sn > 0 {
-        Text(precipDetail(liquid: liq, snow: sn))
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-      }
-      Text("\(day.precipChance)% chance of precipitation")
-        .font(DesignTokens.Typography.caption())
+      WeekDayChipStrip(
+        days: days,
+        selectedID: selected?.id,
+        calendar: weather.locationCalendar,
+        timeZone: weather.locationTimeZone,
+        unit: store.temperatureUnit,
+        periodLow: periodLow,
+        periodHigh: periodHigh,
+        onSelect: { selectedID = $0.id }
+      )
+
+      if let selected {
+        Text(
+          DailyOutlook.sentence(
+            day: selected,
+            unit: store.temperatureUnit,
+            calendar: weather.locationCalendar,
+            timeZone: weather.locationTimeZone
+          )
+        )
+        .font(DesignTokens.Typography.body())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
+      }
     }
-    .padding(.horizontal, DesignTokens.Spacing.space16)
-    .padding(.bottom, DesignTokens.Spacing.space8)
-  }
-
-  private func precipDetail(liquid: Double, snow: Double) -> String {
-    if snow > 0.05 {
-      return String(format: "Snow %.1f in", snow)
+    .padding(plated ? DesignTokens.Spacing.space16 : 0)
+    .weatherModuleChrome(plated)
+    .accessibilityElement(children: .contain)
+    .onAppear {
+      if selectedID == nil { selectedID = days.first?.id }
     }
-    if liquid > 0.01 {
-      return String(format: "Rain %.2f in", liquid)
-    }
-    return "Little or no accumulation"
   }
 }

@@ -146,6 +146,27 @@ enum ChaseRadarHUDLogic {
     else { return nil }
     return siteID
   }
+
+  /// One plain-language weather line. Not SPC outlook. Nil in 24-hr or when data is missing.
+  static func takeaway(
+    showsFuture: Bool,
+    minutecastMessage: String?,
+    conditionCode: Int?
+  ) -> String? {
+    if showsFuture { return nil }
+    if let message = minutecastMessage?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !message.isEmpty,
+      !message.localizedCaseInsensitiveContains("unavailable")
+    {
+      return message
+    }
+    guard let conditionCode else { return nil }
+    let condition = WeatherCondition(fromWMO: conditionCode)
+    if RadarFeedCopy.isLocalWet(condition) {
+      return "\(RadarFeedCopy.precipWord(for: condition)) now"
+    }
+    return "Local is clear"
+  }
 }
 
 // MARK: - View
@@ -157,6 +178,7 @@ struct ChaseRadarHUD: View {
   let mapCenter: CLLocationCoordinate2D
   var cityName: String?
   let alerts: [NWSAlert]
+  var takeaway: String? = nil
   @Binding var isDecluttered: Bool
 
   var body: some View {
@@ -204,11 +226,6 @@ struct ChaseRadarHUD: View {
         .font(DesignTokens.Typography.micro().monospaced())
         .foregroundStyle(scanAgeColor(at: now))
 
-      Text(ChaseRadarHUDLogic.hudCityLine(locationName: cityName))
-        .font(DesignTokens.Typography.micro())
-        .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-        .lineLimit(1)
-
       Text(
         ChaseRadarHUDLogic.lookingAtLine(
           product: radarState.selectedProduct,
@@ -229,6 +246,15 @@ struct ChaseRadarHUD: View {
           .font(DesignTokens.Typography.micro().monospaced())
           .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.62))
           .lineLimit(1)
+      }
+
+      if let takeaway, !takeaway.isEmpty, radarState.siteProductAdvisory == nil {
+        Text(takeaway)
+          .font(DesignTokens.Typography.micro())
+          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+          .multilineTextAlignment(.trailing)
+          .lineLimit(2)
+          .accessibilityLabel(takeaway)
       }
 
       if let alert = nearestAlertPresentation {
@@ -253,36 +279,19 @@ struct ChaseRadarHUD: View {
           .lineLimit(2)
       }
     }
-    .padding(.horizontal, 12)
-    .padding(.vertical, 10)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 8)
     .background(cardBackground)
     .overlay(cardStroke(urgency: scanFreshness(at: now)))
   }
 
   private var cardBackground: some View {
     RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
-      .fill(
-        LinearGradient(
-          colors: [
-            DesignTokens.Palette.cardElevated.opacity(0.96),
-            DesignTokens.Palette.cardBackground.opacity(0.93),
-          ],
-          startPoint: .top,
-          endPoint: .bottom
-        )
-      )
+      .fill(Color.black.opacity(0.46))
       .overlay(
         RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
-          .stroke(
-            LinearGradient(
-              colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
-              startPoint: .top,
-              endPoint: .bottom
-            ),
-            lineWidth: DesignTokens.Card.strokeWidth
-          )
+          .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
       )
-      .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
   }
 
   @ViewBuilder

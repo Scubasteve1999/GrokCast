@@ -213,7 +213,7 @@ final class GrokAIViewModel {
     await refreshStormWeatherContext()
 
     let weather = weatherStore.currentWeather
-    let alerts = weatherStore.displayableActiveAlerts
+    let alerts = weatherStore.displayableGroupedAlerts
     let severeContext = SevereWeatherStore.shared.context
     let shortTerm = ShortTermPrecipStore.shared.context
     let locationKey = weatherStore.currentLocation?.id.uuidString
@@ -486,7 +486,7 @@ final class GrokAIViewModel {
       weather: weatherStore.currentWeather,
       locationName: locationName,
       unit: weatherStore.temperatureUnit,
-      alerts: Array(weatherStore.displayableActiveAlerts.prefix(5)),
+      alerts: Array(weatherStore.displayableGroupedAlerts.prefix(5)),
       severeContext: severeContext,
       shortTermContext: shortTermContext,
       nearestStationObservation: weatherStore.currentNWSObservation,
@@ -669,7 +669,8 @@ final class GrokAIViewModel {
 
     let location = weatherStore.currentLocation?.name ?? weather.location.name
     let unit = weatherStore.temperatureUnit
-    let alertEvents = weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+    let alertEvents = Array(
+      NWSAlertGrouping.uniqueEvents(from: weatherStore.displayableActiveAlerts).prefix(3))
     let alertLine = alertEvents.joined(separator: ", ")
 
     let system = GrokPrompts.todaysTakeSystemPrompt(

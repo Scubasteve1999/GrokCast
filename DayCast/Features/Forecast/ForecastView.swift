@@ -27,6 +27,7 @@ struct ForecastView: View {
       }
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
+      .weatherShowsThroughNavigationBar()
     }
     .preferredColorScheme(.dark)
   }
@@ -215,18 +216,31 @@ private struct ForecastAdaptiveBody: View {
     ScrollView {
       let timeZone = weather.locationTimeZone
 
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+      VStack(spacing: 0) {
         ForecastScreenHeader(locationName: weather.location.name)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, DesignTokens.Spacing.space20)
+          .padding(.top, forecastContentTopPadding)
+          .padding(.bottom, DesignTokens.Spacing.space16)
 
-        ForecastHourlySection(weather: weather)
-
-        openWeatherMapCompareSection(timeZone: timeZone)
-
-        ForecastDailySection(weather: weather) { selectedDay = $0 }
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space24) {
+          ForecastHourlySection(weather: weather, plated: false)
+          openWeatherMapCompareSection(timeZone: timeZone)
+          ForecastDailySection(weather: weather, plated: false) { selectedDay = $0 }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.space20)
+        .padding(.top, DesignTokens.Spacing.space20)
+        .padding(.bottom, bottomTabClearance)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DesignTokens.Palette.bgSecondary)
+        .clipShape(
+          UnevenRoundedRectangle(
+            topLeadingRadius: TodayGlanceLayout.sheetTopRadius,
+            topTrailingRadius: TodayGlanceLayout.sheetTopRadius,
+            style: .continuous
+          )
+        )
       }
-      .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, forecastContentTopPadding)
-      .padding(.bottom, bottomTabClearance)
     }
     .safeAreaInset(edge: .top) {
       errorBanner
@@ -342,10 +356,12 @@ private struct ForecastScreenHeader: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
       FigmaScreenTitle(title: "Forecast")
+        .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
       if let locationName, !locationName.isEmpty {
         Text(locationName)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
       } else {
         ShimmerBlock(width: 120, height: 12, cornerRadius: 4)
       }
@@ -354,11 +370,30 @@ private struct ForecastScreenHeader: View {
 }
 
 private struct ForecastHourlySection: View {
+  @Environment(WeatherStore.self) private var store
+  @Environment(LocalBriefingStore.self) private var briefingStore
   let weather: DayCastWeather
+  var plated: Bool = true
   @State private var series: HourlyGraphSeries = .temp
+  @State private var inspectedHour: HourlyForecast?
 
   private var hours: [HourlyForecast] {
     HourlyGraphHours.upcoming(from: weather, limit: HourlyGraphHours.fullLimit)
+  }
+
+  private var briefingItems: [LocalBriefingItem] {
+    guard let locID = store.currentLocation?.id.uuidString,
+      briefingStore.locationID == locID
+    else { return [] }
+    return briefingStore.items
+  }
+
+  private var outlook: TonightOutlook.Result {
+    TonightOutlook.make(
+      weather: weather,
+      briefingItems: briefingItems,
+      unit: store.temperatureUnit
+    )
   }
 
   private var seriesOptions: [HourlyGraphSeries] {
@@ -372,12 +407,20 @@ private struct ForecastHourlySection: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       Text("Hourly")
-        .font(DesignTokens.Typography.subsection())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-        .lineLimit(1)
+        .font(DesignTokens.Typography.studioTitle())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
 
-      HourlySeriesPicker(options: seriesOptions, selection: $series)
+      Text(outlook.period.outlookTitle)
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+
+      Text(outlook.sentence)
+        .font(DesignTokens.Typography.body())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .lineLimit(3)
+        .minimumScaleFactor(0.85)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityLabel(outlook.sentence)
 
       HourlyGraphView(
         hours: hours,
@@ -385,46 +428,146 @@ private struct ForecastHourlySection: View {
         style: .full,
         sunEvents: HourlyGraphSunEvent.inWindow(days: weather.daily, hours: hours),
         timeZone: weather.locationTimeZone,
-        calendar: weather.locationCalendar
+        calendar: weather.locationCalendar,
+        onInspectedHourChange: { inspectedHour = $0 }
       )
       .frame(height: HourlyGraphLayout.height(for: .full))
+
+      HourlySeriesPicker(options: seriesOptions, selection: $series, compact: false)
+
+      if let hour = inspectedHour ?? hours.first {
+        HourlyDetailGrid(hour: hour, unit: store.temperatureUnit)
+      }
+
+      ForecastHourlyList(
+        hours: hours,
+        unit: store.temperatureUnit,
+        calendar: weather.locationCalendar,
+        timeZone: weather.locationTimeZone
+      )
     }
-    .padding(DesignTokens.Spacing.space16)
-    .cardStyle()
+    .padding(plated ? DesignTokens.Spacing.space16 : 0)
+    .weatherModuleChrome(plated)
   }
 }
 
 private struct ForecastDailySection: View {
+  @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
+  var plated: Bool = true
   var onSelect: (DailyForecast) -> Void
+  @State private var selectedID: Date?
 
-  private var periodLow: Double? { weather.daily.map(\.low).min() }
-  private var periodHigh: Double? { weather.daily.map(\.high).max() }
+  private var days: [DailyForecast] { weather.daily }
+  private var periodLow: Double? { days.map(\.low).min() }
+  private var periodHigh: Double? { days.map(\.high).max() }
+  private var selected: DailyForecast? {
+    days.first(where: { $0.id == selectedID }) ?? days.first
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text("10-Day")
-        .font(DesignTokens.Typography.subsection())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
+      Text("Daily")
+        .font(DesignTokens.Typography.studioTitle())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
 
-      VStack(spacing: 0) {
-        ForEach(weather.daily) { day in
-          DailyRow(
-            forecast: day,
-            layout: .figma,
-            periodLow: periodLow,
-            periodHigh: periodHigh,
-            calendar: weather.locationCalendar,
-            timeZone: weather.locationTimeZone,
-            nowTemperature: weather.currentTemp,
-            onSelect: { onSelect(day) }
+      WeekDayChipStrip(
+        days: days,
+        selectedID: selected?.id,
+        calendar: weather.locationCalendar,
+        timeZone: weather.locationTimeZone,
+        unit: store.temperatureUnit,
+        periodLow: periodLow,
+        periodHigh: periodHigh,
+        onSelect: { selectedID = $0.id }
+      )
+
+      if let selected {
+        Button {
+          Haptic.selection()
+          onSelect(selected)
+        } label: {
+          Text(
+            DailyOutlook.sentence(
+              day: selected,
+              unit: store.temperatureUnit,
+              calendar: weather.locationCalendar,
+              timeZone: weather.locationTimeZone
+            )
           )
+          .font(DesignTokens.Typography.body())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .multilineTextAlignment(.leading)
+          .fixedSize(horizontal: false, vertical: true)
+          .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens day details")
+
+        DailySelectedMetrics(
+          day: selected,
+          unit: store.temperatureUnit,
+          timeZone: weather.locationTimeZone
+        )
       }
     }
-    .padding(DesignTokens.Spacing.space16)
-    .cardStyle()
+    .padding(plated ? DesignTokens.Spacing.space16 : 0)
+    .weatherModuleChrome(plated)
+    .onAppear {
+      if selectedID == nil { selectedID = days.first?.id }
+    }
+  }
+}
+
+private struct DailySelectedMetrics: View {
+  let day: DailyForecast
+  var unit: TemperatureUnit
+  var timeZone: TimeZone = .current
+
+  var body: some View {
+    LazyVGrid(
+      columns: [
+        GridItem(.flexible(), spacing: DesignTokens.Spacing.space16),
+        GridItem(.flexible(), spacing: DesignTokens.Spacing.space16),
+      ],
+      alignment: .leading,
+      spacing: DesignTokens.Spacing.space16
+    ) {
+      metric("Temperature", unit.formatShort(day.high))
+      metric("Low", unit.formatShort(day.low))
+      metric("Condition", WeatherCondition(fromWMO: day.weatherCode).displayText)
+      metric(
+        "Precipitation",
+        day.precipChance > 0 ? "\(day.precipChance)%" : HourlyDetailMetrics.unknown
+      )
+      if let uv = day.uvMax {
+        metric("UV Index", "\(Int(round(uv))) · \(UVCategory(index: uv).title)")
+      }
+      if let rise = day.sunrise {
+        metric("Sunrise", time(rise))
+      }
+      if let set = day.sunset {
+        metric("Sunset", time(set))
+      }
+    }
+  }
+
+  private func metric(_ label: String, _ value: String) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text(label)
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+      Text(value)
+        .font(DesignTokens.Typography.headline())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func time(_ date: Date) -> String {
+    LocationTimezone.formatter(dateFormat: "h:mm a", timeZone: timeZone)
+      .string(from: date)
   }
 }
 
@@ -439,7 +582,7 @@ private struct ForecastDailySkeleton: View {
       }
     }
     .padding(DesignTokens.Spacing.space16)
-    .cardStyle()
+    .weatherModuleStyle()
   }
 }
 

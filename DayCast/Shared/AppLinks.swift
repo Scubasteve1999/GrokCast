@@ -42,12 +42,17 @@ enum DayCastAccessibility {
     static let openSettings = "daycast.today.openSettings"
     static let statusPill = "daycast.today.statusPill"
     static let alertsSlot = "daycast.today.alertsSlot"
+    static let decision = "daycast.today.decision"
+    static let health = "daycast.today.health"
+    static let precip = "daycast.today.precip"
     static let yourNews = "daycast.today.yourNews"
   }
 
   enum Radar {
     static let root = "daycast.radar.root"
     static let liveBadge = "daycast.radar.live"
+    static let unavailableCard = "daycast.radar.unavailable"
+    static let unavailableRetry = "daycast.radar.unavailableRetry"
   }
 
   enum Grok {
@@ -57,6 +62,9 @@ enum DayCastAccessibility {
     static let skyCheckCameraFail = "daycast.grok.skyCheck.cameraFail"
     static let chatField = "daycast.grok.chatField"
     static let screenTitle = "daycast.grok.screenTitle"
+    static let glanceDetails = "daycast.grok.glanceDetails"
+    static let glanceForecast = "daycast.grok.glanceForecast"
+    static let glanceRadar = "daycast.grok.glanceRadar"
   }
 
   enum Settings {
@@ -66,6 +74,7 @@ enum DayCastAccessibility {
   enum Alerts {
     static let retry = "daycast.alerts.retry"
     static let screenTitle = "daycast.alerts.screenTitle"
+    static let authority = "daycast.alerts.authority"
     static let noActiveCaption = "daycast.alerts.noActive"
     static let localBriefing = "daycast.alerts.localBriefing"
     static let stormReports = "daycast.alerts.stormReports"

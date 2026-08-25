@@ -290,7 +290,7 @@ struct CompactTabBar: View {
     showMoreHub: Binding<Bool>,
     animation: Animation = .easeInOut(duration: 0.2),
     activeColor: Color = DesignTokens.Palette.textPrimary,
-    inactiveColor: Color = DesignTokens.Palette.textTertiary,
+    inactiveColor: Color = DesignTokens.Palette.textSecondary,
     backgroundMaterial: Material = .bar
   ) {
     _selection = selection
@@ -322,7 +322,7 @@ struct CompactTabBar: View {
         .accessibilityValue(accessibilityValue(for: tab))
         .accessibilityHint(tab == .more ? "Opens Locations, Settings, and Sky Check" : "")
         .accessibilityIdentifier(DayCastAccessibility.Tabs.item(tab))
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
       }
     }
     .padding(.top, 8)
@@ -348,7 +348,7 @@ struct CompactTabBar: View {
       ? severeStore.context.day1Outlook.summaryLine
       : nil
     return AlertsHonesty.chrome(
-      nwsAlertCount: store.displayableActiveAlerts.count,
+      nwsAlertCount: store.displayableGroupedAlerts.count,
       hasSevereProducts: hasSPC,
       outlookSummary: summary
     )
@@ -376,9 +376,12 @@ struct CompactTabBar: View {
         .accessibilityHidden(true)
         .frame(height: 28)
       Text(tab.title)
-        .font(DesignTokens.Typography.micro())
+        .font(.caption2)
         .fontWeight(active ? .semibold : .regular)
         .foregroundStyle(active ? DesignTokens.Palette.textPrimary : inactiveColor)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .accessibilityHidden(true)
     }
     .padding(.vertical, 4)

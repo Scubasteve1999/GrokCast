@@ -52,6 +52,76 @@ final class AlertsActiveCopyTests: XCTestCase {
     )
   }
 
+  func testAuthorityLineAlwaysNamesNWSAndTheSafetyState() {
+    let now = date(year: 2026, month: 8, day: 25, hour: 12)
+    let checked = now.addingTimeInterval(-120)
+    XCTAssertEqual(
+      AlertsActiveCopy.authorityLine(
+        locationName: "Olive Branch, MS",
+        nwsCount: 2,
+        checkedAt: checked,
+        loadState: .loaded,
+        hasCachedAlerts: true,
+        now: now
+      ),
+      "NWS · Olive Branch, MS · 2 active · checked 2m ago"
+    )
+    XCTAssertEqual(
+      AlertsActiveCopy.authorityLine(
+        locationName: "Olive Branch, MS",
+        nwsCount: 0,
+        checkedAt: checked,
+        loadState: .loaded,
+        hasCachedAlerts: false,
+        now: now
+      ),
+      "NWS · Olive Branch, MS · No active alerts · checked 2m ago"
+    )
+    XCTAssertEqual(
+      AlertsActiveCopy.authorityLine(
+        locationName: "Olive Branch, MS",
+        nwsCount: 1,
+        checkedAt: checked,
+        loadState: .failed,
+        hasCachedAlerts: true,
+        now: now
+      ),
+      "NWS · Olive Branch, MS · Showing cached alerts · last check 2m ago"
+    )
+    XCTAssertEqual(
+      AlertsActiveCopy.authorityLine(
+        locationName: nil,
+        nwsCount: 0,
+        checkedAt: nil,
+        loadState: .failed,
+        hasCachedAlerts: false,
+        now: now
+      ),
+      "NWS · Unable to refresh"
+    )
+    XCTAssertEqual(
+      AlertsActiveCopy.authorityLine(
+        locationName: "Olive Branch, MS",
+        nwsCount: 0,
+        checkedAt: checked,
+        loadState: .failed,
+        hasCachedAlerts: false,
+        now: now
+      ),
+      "NWS · Olive Branch, MS · Unable to refresh · last check 2m ago"
+    )
+    XCTAssertTrue(
+      AlertsActiveCopy.authorityLine(
+        locationName: "Olive Branch, MS",
+        nwsCount: 0,
+        checkedAt: nil,
+        loadState: .pending,
+        hasCachedAlerts: false,
+        now: now
+      ).contains("Checking alerts")
+    )
+  }
+
   func testUntilLineAddsWeekdayWhenExpiryIsNotToday() {
     let now = date(year: 2026, month: 8, day: 25, hour: 12)
     let tonight = date(year: 2026, month: 8, day: 25, hour: 17, minute: 30)
@@ -105,6 +175,29 @@ final class AlertsActiveCopyTests: XCTestCase {
         description: nil
       ),
       "Tornado Warning for northern DeSoto County"
+    )
+  }
+
+  func testActiveRowOrderIsActionThenExpiry() {
+    XCTAssertEqual(
+      AlertsActiveCopy.cardBody(
+        event: "Air Quality Alert",
+        headline: "Air Quality Alert issued August 24 at 8:00PM CDT by NWS Memphis TN",
+        instruction: "Limit outdoor activity this afternoon.",
+        description: "Ozone will remain elevated."
+      ),
+      "Limit outdoor activity this afternoon."
+    )
+    let now = date(year: 2026, month: 8, day: 25, hour: 12)
+    XCTAssertEqual(
+      AlertsActiveCopy.untilLine(
+        expires: date(year: 2026, month: 8, day: 25, hour: 17, minute: 30),
+        areaDesc: "DeSoto, MS",
+        now: now,
+        calendar: calendar,
+        timeZone: chicago
+      ),
+      "Until 5:30 PM · DeSoto, MS"
     )
   }
 

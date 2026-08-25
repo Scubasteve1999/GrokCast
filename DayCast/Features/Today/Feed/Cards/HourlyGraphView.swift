@@ -15,6 +15,14 @@ enum HourlyGraphSeries: String, CaseIterable, Identifiable {
     }
   }
 
+  var fullLabel: String {
+    switch self {
+    case .temp: return "Temperature"
+    case .feels: return "Feels Like"
+    case .precip: return "Precipitation"
+    }
+  }
+
   static func available(in hours: [HourlyForecast]) -> [HourlyGraphSeries] {
     var items: [HourlyGraphSeries] = [.temp]
     if hours.contains(where: { $0.feelsLike != nil }) {
@@ -65,7 +73,7 @@ struct HourlyGraphMetrics: Equatable {
   static let compact = HourlyGraphMetrics(
     plotHeight: 58,
     timeRowHeight: 16,
-    plotTopPad: 16,
+    plotTopPad: 18,
     plotBottomPad: 8,
     precipBarHeight: 0,
     readoutHeight: 0,
@@ -74,12 +82,12 @@ struct HourlyGraphMetrics: Equatable {
   )
 
   static let full = HourlyGraphMetrics(
-    plotHeight: 100,
-    timeRowHeight: 24,
-    plotTopPad: 18,
-    plotBottomPad: 8,
+    plotHeight: 108,
+    timeRowHeight: 28,
+    plotTopPad: 26,
+    plotBottomPad: 10,
     precipBarHeight: 36,
-    readoutHeight: 20,
+    readoutHeight: 22,
     readoutSpacing: 6,
     fillTopOpacity: 0.22
   )
@@ -107,28 +115,38 @@ struct HourlyGraphSunEvent: Equatable {
 struct HourlySeriesPicker: View {
   let options: [HourlyGraphSeries]
   @Binding var selection: HourlyGraphSeries
+  var compact: Bool = true
 
   var body: some View {
-    HStack(spacing: 0) {
+    HStack(spacing: DesignTokens.Spacing.space8) {
       ForEach(options) { option in
         Button {
           Haptic.impact(.light)
           selection = option
         } label: {
-          Text(option.label)
-            .font(DesignTokens.Typography.micro())
+          Text(compact ? option.label : option.fullLabel)
+            .font(DesignTokens.Typography.caption())
             .fontWeight(selection == option ? .semibold : .regular)
             .foregroundStyle(
               selection == option
-                ? DesignTokens.Palette.textPrimary
-                : DesignTokens.Palette.textTertiary
+                ? (compact ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.bgPrimary)
+                : DesignTokens.Palette.textSecondary
             )
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
+            .padding(.horizontal, compact ? 8 : 12)
+            .padding(.vertical, 6)
+            .frame(minHeight: compact ? 28 : 32)
+            .background(
+              compact
+                ? Color.clear
+                : (selection == option
+                  ? DesignTokens.Palette.textPrimary
+                  : DesignTokens.Palette.cardBackground.opacity(0.7))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(option.label)
+        .accessibilityLabel(option.fullLabel)
         .accessibilityAddTraits(selection == option ? .isSelected : [])
       }
     }
@@ -390,6 +408,7 @@ struct HourlyGraphView: View {
   var sunEvents: [HourlyGraphSunEvent] = []
   var timeZone: TimeZone = .current
   var calendar: Calendar = .current
+  var onInspectedHourChange: ((HourlyForecast) -> Void)? = nil
 
   @State private var scrubOffset: CGFloat = 0
   @GestureState private var dragTranslation: CGFloat = 0
@@ -406,6 +425,13 @@ struct HourlyGraphView: View {
       }
     }
     .frame(height: metrics.height)
+    .onAppear { reportInspectedHour() }
+    .onChange(of: selectedIndex) { _, _ in reportInspectedHour() }
+  }
+
+  private func reportInspectedHour() {
+    guard hours.indices.contains(selectedIndex) else { return }
+    onInspectedHourChange?(hours[selectedIndex])
   }
 
   private var compactGraph: some View {
@@ -489,7 +515,7 @@ struct HourlyGraphView: View {
 
   private var canvasWidth: CGFloat {
     let columns = HourlyGraphLayout.columnWidth * CGFloat(max(hours.count, 1))
-    return columns + 12
+    return columns + (style == .full ? 28 : 12)
   }
 
   private var resolvedSunEvents: [HourlyGraphSunEvent] {
@@ -691,7 +717,7 @@ struct HourlyGraphView: View {
           .monospacedDigit()
           .lineLimit(1)
           .minimumScaleFactor(0.8)
-          .position(x: x, y: y < 18 ? y + 12 : y - 11)
+          .position(x: x, y: y < metrics.plotTopPad ? y + 14 : y - 12)
       }
     }
     .frame(width: canvasWidth, height: metrics.plotHeight, alignment: .topLeading)
@@ -703,9 +729,9 @@ struct HourlyGraphView: View {
       ForEach(Array(resolvedSunEvents.enumerated()), id: \.offset) { _, event in
         if let x = sunTickX(event.date) {
           Text(event.title)
-            .font(DesignTokens.Typography.micro())
+            .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
-            .position(x: x, y: 7)
+            .position(x: x, y: 10)
         }
       }
     }

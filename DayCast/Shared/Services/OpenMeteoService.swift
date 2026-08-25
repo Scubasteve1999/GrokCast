@@ -51,12 +51,12 @@ final class OpenMeteoService {
       URLQueryItem(
         name: "current",
         value:
-          "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m"
+          "temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m,visibility,surface_pressure,cloud_cover"
       ),
       URLQueryItem(
         name: "hourly",
         value:
-          "temperature_2m,apparent_temperature,weather_code,precipitation_probability,uv_index,rain,showers,snowfall,is_day"
+          "temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,precipitation_probability,uv_index,rain,showers,snowfall,is_day,wind_speed_10m,wind_direction_10m,visibility,surface_pressure,cloud_cover"
       ),
       URLQueryItem(
         name: "daily",
@@ -107,7 +107,7 @@ final class OpenMeteoService {
 
     // Air quality already fetched in parallel above (best effort, may be nil on error/timeout)
 
-    let weather = mapToDayCastWeather(
+    let weather = OpenMeteoWeatherMapper.map(
       location: location,
       response: decoded,
       airQuality: air
@@ -124,7 +124,9 @@ final class OpenMeteoService {
       URLQueryItem(name: "latitude", value: "\(location.latitude)"),
       URLQueryItem(name: "longitude", value: "\(location.longitude)"),
       URLQueryItem(
-        name: "hourly", value: "pm10,pm2_5,us_aqi,uv_index,alder_pollen,birch_pollen,grass_pollen"),
+        name: "hourly",
+        value:
+          "pm10,pm2_5,us_aqi,uv_index,alder_pollen,birch_pollen,grass_pollen,ragweed_pollen"),
       URLQueryItem(name: "timezone", value: "auto"),
     ]
 
@@ -139,10 +141,14 @@ final class OpenMeteoService {
     return try JSONDecoder().decode(AirQualityResponse.self, from: data)
   }
 
-  private func mapToDayCastWeather(
+}
+
+enum OpenMeteoWeatherMapper {
+  static func map(
     location: SavedLocation,
     response: OpenMeteoResponse,
-    airQuality: AirQualityResponse?
+    airQuality: AirQualityResponse?,
+    fetchedAt: Date = Date()
   ) -> DayCastWeather {
 
     let current = response.current
@@ -155,6 +161,11 @@ final class OpenMeteoService {
     let wind = current?.wind_speed_10m ?? 0
     let code = current?.weather_code ?? 0
     let (symbol, text) = mapWeatherCode(code, isDay: (current?.is_day ?? 1) == 1)
+    let currentWindDirection = current?.wind_direction_10m
+    let currentDewPoint = current?.dew_point_2m
+    let currentVisibility = current?.visibility
+    let currentPressure = current?.surface_pressure
+    let currentCloudCover = current?.cloud_cover
 
     // Robust date parsing for Open-Meteo responses.
     // `timezone=auto` returns wall-clock strings in the *location* timezone.
@@ -214,7 +225,15 @@ final class OpenMeteoService {
             showers: openMeteoValue(h.showers, at: i),
             snowfall: openMeteoValue(h.snowfall, at: i),
             isDay: hourIsDay,
-            feelsLike: openMeteoValue(h.apparent_temperature, at: i)
+            feelsLike: openMeteoValue(h.apparent_temperature, at: i),
+            humidity: openMeteoValue(h.relative_humidity_2m, at: i),
+            dewPoint: openMeteoValue(h.dew_point_2m, at: i),
+            windSpeed: openMeteoValue(h.wind_speed_10m, at: i),
+            windDirection: openMeteoValue(h.wind_direction_10m, at: i),
+            uvIndex: openMeteoValue(h.uv_index, at: i),
+            visibilityMeters: openMeteoValue(h.visibility, at: i),
+            pressureHPa: openMeteoValue(h.surface_pressure, at: i),
+            cloudCoverPercent: openMeteoValue(h.cloud_cover, at: i)
           ))
       }
     }
@@ -222,7 +241,7 @@ final class OpenMeteoService {
       locationCalendar.dateInterval(of: .hour, for: Date())?.start
       ?? Date().addingTimeInterval(-60)
     let hourlyForecasts = Array(
-      allHourlyForecasts.lazy.filter { $0.time >= hourStart }.prefix(24)
+      allHourlyForecasts.lazy.filter { $0.time >= hourStart }.prefix(HourlyGraphHours.fullLimit)
     )
 
     // Build daily (10 days) — derive precip % + weather code from hourly when daily aggregates disagree.
@@ -270,7 +289,9 @@ final class OpenMeteoService {
     // Air quality: nearest hour to now, not midnight (hourly[0]).
     var aqi: Int? = nil
     var pm25: Double? = nil
+    var pm10: Double? = nil
     var pollen: String? = nil
+    var pollenConditions: PollenConditions? = nil
 
     if let aq = airQuality?.hourly, !aq.time.isEmpty {
       let aqTimeZone =
@@ -289,27 +310,21 @@ final class OpenMeteoService {
       if let idx = OpenMeteoHourIndex.nearest(in: aqDates, to: aqHourStart) {
         aqi = openMeteoValue(aq.us_aqi, at: idx)
         pm25 = openMeteoValue(aq.pm2_5, at: idx)
-        let pollenValues = [
-          openMeteoValue(aq.grass_pollen, at: idx),
-          openMeteoValue(aq.birch_pollen, at: idx),
-          openMeteoValue(aq.alder_pollen, at: idx),
-        ].compactMap { $0 }
-        if let maxPollen = pollenValues.max() {
-          if maxPollen > 50 {
-            pollen = "High"
-          } else if maxPollen > 20 {
-            pollen = "Moderate"
-          } else {
-            pollen = "Low"
-          }
-        }
+        pm10 = openMeteoValue(aq.pm10, at: idx)
+        pollenConditions = PollenConditions.from(
+          grass: openMeteoValue(aq.grass_pollen, at: idx),
+          birch: openMeteoValue(aq.birch_pollen, at: idx),
+          alder: openMeteoValue(aq.alder_pollen, at: idx),
+          ragweed: openMeteoValue(aq.ragweed_pollen, at: idx)
+        )
+        pollen = pollenConditions?.category
       }
     }
 
     let high = dailyForecasts.first?.high ?? currentTemp + 5
     let low = dailyForecasts.first?.low ?? currentTemp - 8
     let precip = hourlyForecasts.first?.precipChance ?? 0
-    let uv: Double = dailyForecasts.first?.uvMax ?? 0
+    let uv = hourlyForecasts.first?.uvIndex ?? 0
 
     // Minutecast: parse the full minutely_15 series, then keep the next ~2 hours.
     // Taking only the first 8 slots left the strip empty after morning (those slots are past).
@@ -343,14 +358,21 @@ final class OpenMeteoService {
       high: high,
       low: low,
       symbolName: symbol,
-      fetchedAt: Date(),
+      fetchedAt: fetchedAt,
       timezoneIdentifier: response.timezone,
       airQualityIndex: aqi,
       pm25: pm25,
       pollenLevel: pollen,
       hourly: hourlyForecasts,
       daily: dailyForecasts,
-      minutely15: minutelyForecasts
+      minutely15: minutelyForecasts,
+      windDirection: currentWindDirection,
+      dewPoint: currentDewPoint,
+      visibilityMeters: currentVisibility,
+      pressureHPa: currentPressure,
+      cloudCoverPercent: currentCloudCover,
+      pm10: pm10,
+      pollen: pollenConditions
     )
   }
 }

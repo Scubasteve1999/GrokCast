@@ -97,6 +97,7 @@ final class TodayHonestyTests: XCTestCase {
     let rows = FeedAssembler.rows(items: items, weatherError: "No internet connection.")
     XCTAssertEqual(rows.first, .errorBanner)
     XCTAssertEqual(rows.dropFirst().first, .item(.now))
+    XCTAssertTrue(rows.contains(.item(.now)))
     XCTAssertEqual(rows.last, .item(.nearby))
     XCTAssertNotEqual(rows.last, .errorBanner)
   }

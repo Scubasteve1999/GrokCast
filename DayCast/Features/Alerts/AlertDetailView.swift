@@ -8,11 +8,11 @@ struct AlertDetailView: View {
       VStack(alignment: .leading, spacing: 20) {
         header
         metadataSection
-        if let description = alert.description, !description.isEmpty {
-          detailSection(title: "DESCRIPTION", body: description)
-        }
         if let instruction = alert.instruction, !instruction.isEmpty {
-          detailSection(title: "INSTRUCTIONS", body: instruction)
+          detailSection(title: "Instruction", body: instruction)
+        }
+        if let description = alert.description, !description.isEmpty {
+          detailSection(title: "Description", body: description)
         }
       }
       .padding()
@@ -23,6 +23,10 @@ struct AlertDetailView: View {
     .background(Color.black.ignoresSafeArea())
   }
 
+  private var shoutsEvent: Bool {
+    alert.usesWarningEmphasis
+  }
+
   private var header: some View {
     HStack(alignment: .top, spacing: 12) {
       Image(systemName: NWSAlertStyle.iconName(for: alert))
@@ -30,18 +34,29 @@ struct AlertDetailView: View {
         .foregroundStyle(NWSAlertStyle.tint(for: alert))
 
       VStack(alignment: .leading, spacing: 6) {
-        Text(alert.event.uppercased())
+        Text(shoutsEvent ? alert.event.uppercased() : alert.event)
           .font(DesignTokens.Typography.headline())
           .foregroundStyle(.white)
 
-        if let headline = alert.headline, !headline.isEmpty {
+        if let action = AlertsActiveCopy.cardBody(
+          event: alert.event,
+          headline: alert.headline,
+          instruction: alert.instruction,
+          description: nil
+        ) {
+          Text(action)
+            .font(DesignTokens.Typography.callout())
+            .foregroundStyle(.white.opacity(0.85))
+        } else if let headline = alert.headline, !headline.isEmpty,
+          !AlertsActiveCopy.isIssuedByHeadline(headline, event: alert.event)
+        {
           Text(headline)
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(.white.opacity(0.85))
         }
 
-        if let area = alert.areaDesc, !area.isEmpty {
-          Label(area, systemImage: "mappin.and.ellipse")
+        if let until = untilLine {
+          Text(until)
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(.secondary)
         }
@@ -57,19 +72,27 @@ struct AlertDetailView: View {
     .clipShape(RoundedRectangle(cornerRadius: 14))
   }
 
+  private var untilLine: String? {
+    let line = AlertsActiveCopy.untilLine(expires: alert.expires, areaDesc: alert.areaDesc)
+    return line.isEmpty ? nil : line
+  }
+
   private var metadataSection: some View {
     VStack(alignment: .leading, spacing: 8) {
       if let sent = alert.sent {
-        metadataRow(label: "ISSUED", value: sent.formatted(date: .abbreviated, time: .shortened))
+        metadataRow(
+          label: "Issued",
+          value: sent.formatted(date: .abbreviated, time: .shortened)
+        )
       }
       if let expires = alert.expires {
         metadataRow(
-          label: alert.isExpired ? "EXPIRED" : "EXPIRES",
+          label: alert.isExpired ? "Expired" : "Expires",
           value: expires.formatted(date: .abbreviated, time: .shortened)
         )
       }
       if let severity = alert.severity, !severity.isEmpty {
-        metadataRow(label: "SEVERITY", value: severity.uppercased())
+        metadataRow(label: "Severity", value: severity.capitalized)
       }
     }
     .padding(16)
@@ -82,7 +105,6 @@ struct AlertDetailView: View {
     HStack {
       Text(label)
         .font(DesignTokens.Typography.micro())
-        .tracking(1)
         .foregroundStyle(.secondary)
       Spacer()
       Text(value)
@@ -95,7 +117,6 @@ struct AlertDetailView: View {
     VStack(alignment: .leading, spacing: 8) {
       Text(title)
         .font(DesignTokens.Typography.micro())
-        .tracking(1.5)
         .foregroundStyle(.secondary)
       Text(body)
         .font(DesignTokens.Typography.body())

@@ -1,6 +1,5 @@
 import SwiftUI
 
-private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 private let alertsContentTopPadding = DesignTokens.Spacing.space16
 
 enum AlertRowLayout {
@@ -16,7 +15,7 @@ struct AlertsView: View {
   @State private var selectedAlert: NWSAlert?
 
   private var activeAlerts: [NWSAlert] {
-    store.displayableActiveAlerts
+    store.displayableGroupedAlerts
       .sorted { $0.severityLevel > $1.severityLevel }
   }
 
@@ -107,6 +106,18 @@ struct AlertsView: View {
       .readableContentWidth(ReadableContentWidth.wide)
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
+      .weatherShowsThroughNavigationBar()
+      .background {
+        WeatherBackgroundLayer(
+          conditionCode: store.displayedWeather?.conditionCode,
+          isDay: store.displayedWeather.map {
+            WeatherBackgroundView.isDay(from: $0.symbolName)
+          }
+            ?? WeatherBackgroundView.inferredIsDay(
+              timeZone: store.displayedWeather?.locationTimeZone ?? .current
+            )
+        )
+      }
       .navigationDestination(item: $selectedAlert) { alert in
         AlertDetailView(alert: alert)
       }
@@ -119,121 +130,110 @@ struct AlertsView: View {
 
   private var alertsSkeleton: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: AlertsHonesty.tabTitle)
-
-        ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.medium)
-        ShimmerBlock(width: nil, height: 88, cornerRadius: DesignTokens.Radius.medium)
+      VStack(spacing: 0) {
+        alertsHero(title: AlertsHonesty.tabTitle)
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          ShimmerBlock(width: nil, height: 52, cornerRadius: DesignTokens.Radius.medium)
+          ShimmerBlock(width: nil, height: 88, cornerRadius: DesignTokens.Radius.medium)
+        }
+        .weatherStageSheet()
       }
-      .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, alertsContentTopPadding)
-      .padding(.bottom, bottomTabClearance)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
+    .background(Color.clear)
   }
 
   private var alertsList: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: honesty.screenTitle)
-          .accessibilityIdentifier(DayCastAccessibility.Alerts.screenTitle)
-          .accessibilityLabel(honesty.screenAccessibilityLabel)
+      VStack(spacing: 0) {
+        alertsHero(
+          title: honesty.screenTitle,
+          titleID: DayCastAccessibility.Alerts.screenTitle,
+          titleA11y: honesty.screenAccessibilityLabel
+        )
 
-        if let stateLine = AlertsActiveCopy.stateLine(
-          locationName: store.currentLocation?.name,
-          nwsCount: activeAlerts.count,
-          checkedAt: store.lastAlertsFetchAt
-        ) {
-          Text(stateLine)
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityLabel(stateLine)
-        }
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+          if alertsFetchFailed {
+            alertsErrorBanner
+          }
 
-        if alertsFetchFailed {
-          alertsErrorBanner
-        }
+          if honesty.riskCaption != nil || honesty.noActiveAlertsCaption != nil {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+              if let risk = honesty.riskCaption {
+                Text(risk)
+                  .font(DesignTokens.Typography.callout())
+                  .foregroundStyle(DesignTokens.Palette.textPrimary)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+              }
+              if let caption = honesty.noActiveAlertsCaption {
+                Text(caption)
+                  .font(DesignTokens.Typography.caption())
+                  .foregroundStyle(DesignTokens.Palette.textTertiary)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+              }
+            }
+            .accessibilityHidden(true)
+            .accessibilityIdentifier(DayCastAccessibility.Alerts.noActiveCaption)
+          }
 
-        if honesty.riskCaption != nil || honesty.noActiveAlertsCaption != nil {
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-            if let risk = honesty.riskCaption {
-              Text(risk)
-                .font(DesignTokens.Typography.callout())
+          if honesty.showsActiveNow {
+            VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
+              Text("Active Now")
+                .font(DesignTokens.Typography.studioTitle())
                 .foregroundStyle(DesignTokens.Palette.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.isHeader)
+
+              VStack(spacing: DesignTokens.Spacing.space12) {
+                ForEach(activeAlerts) { alert in
+                  alertRow(alert, isActive: true, layout: .figma)
+                }
+              }
+
+              AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
             }
-            if let caption = honesty.noActiveAlertsCaption {
-              Text(caption)
-                .font(DesignTokens.Typography.caption())
-                .foregroundStyle(DesignTokens.Palette.textTertiary)
+          }
+
+          if let severe = severeContextForLocation, hasVisibleOutlookOrMD {
+            SevereProductsSections(context: severe)
+          }
+
+          if hasBriefing {
+            LocalBriefingSection(items: briefingStore.items, sitsInSheet: true)
+          }
+
+          if hasVisibleStormReports, let severe = severeContextForLocation {
+            StormReportsSection(reports: severe.localStormReports)
+          }
+
+          if !historicalAlerts.isEmpty {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+              Text("Recent")
+                .font(DesignTokens.Typography.studioTitle())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            }
-          }
-          .accessibilityHidden(true)
-          .accessibilityIdentifier(DayCastAccessibility.Alerts.noActiveCaption)
-        }
+                .accessibilityAddTraits(.isHeader)
 
-        if honesty.showsActiveNow {
-          VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
-            Text("Active Now")
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .accessibilityAddTraits(.isHeader)
-
-            VStack(spacing: DesignTokens.Spacing.space12) {
-              ForEach(activeAlerts) { alert in
-                alertRow(alert, isActive: true, layout: .figma)
+              VStack(spacing: DesignTokens.Spacing.space12) {
+                ForEach(historicalAlerts) { alert in
+                  alertRow(alert, isActive: false, layout: .figma)
+                }
               }
-            }
 
-            AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
+              Text("Showing alerts from the last \(AlertHistoryStore.retentionDays) days.")
+                .font(DesignTokens.Typography.micro())
+                .foregroundStyle(DesignTokens.Palette.textTertiary)
+            }
           }
         }
-
-        if let severe = severeContextForLocation, hasVisibleOutlookOrMD {
-          SevereProductsSections(context: severe)
-        }
-
-        if hasBriefing {
-          LocalBriefingSection(items: briefingStore.items)
-        }
-
-        if hasVisibleStormReports, let severe = severeContextForLocation {
-          StormReportsSection(reports: severe.localStormReports)
-        }
-
-        if !historicalAlerts.isEmpty {
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-            Text("Recent")
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .accessibilityAddTraits(.isHeader)
-
-            VStack(spacing: DesignTokens.Spacing.space12) {
-              ForEach(historicalAlerts) { alert in
-                alertRow(alert, isActive: false, layout: .figma)
-              }
-            }
-
-            Text("Showing alerts from the last \(AlertHistoryStore.retentionDays) days.")
-              .font(DesignTokens.Typography.micro())
-              .foregroundStyle(DesignTokens.Palette.textTertiary)
-          }
-        }
+        .weatherStageSheet()
       }
-      .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, alertsContentTopPadding)
-      .padding(.bottom, bottomTabClearance)
     }
     .refreshable {
       await store.refreshAlerts(force: true)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
+    .background(Color.clear)
   }
 
   private func alertRow(_ alert: NWSAlert, isActive: Bool, layout: AlertRowLayout) -> some View {
@@ -262,21 +262,16 @@ struct AlertsView: View {
         .accessibilityHidden(true)
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        Text(alert.event)
+        Text(alert.usesWarningEmphasis ? alert.event.uppercased() : alert.event)
           .font(
-            isActive ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection()
+            alert.usesWarningEmphasis
+              ? DesignTokens.Typography.studioTitle()
+              : (isActive
+                ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection())
           )
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
           .frame(maxWidth: .infinity, alignment: .leading)
-
-        Text(figmaMetaLine(for: alert, isActive: isActive))
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(
-            isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary
-          )
-          .lineLimit(2)
-          .multilineTextAlignment(.leading)
 
         if isActive,
           let body = AlertsActiveCopy.cardBody(
@@ -292,23 +287,35 @@ struct AlertsView: View {
             .lineLimit(3)
             .multilineTextAlignment(.leading)
         }
+
+        Text(figmaMetaLine(for: alert, isActive: isActive))
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(
+            isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary
+          )
+          .lineLimit(2)
+          .multilineTextAlignment(.leading)
       }
     }
     .padding(DesignTokens.Spacing.space16)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background {
-      if isActive {
-        RoundedRectangle(
-          cornerRadius: DesignTokens.Card.cornerRadiusMedium,
-          style: .continuous
-        )
-        .fill(tint.opacity(0.12))
-      }
+      RoundedRectangle(
+        cornerRadius: DesignTokens.Card.cornerRadiusMedium,
+        style: .continuous
+      )
+      .fill(
+        isActive
+          ? tint.opacity(alert.usesWarningEmphasis ? 0.28 : 0.12)
+          : DesignTokens.Palette.cardBackground.opacity(0.45)
+      )
     }
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardHairline,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
+    .overlay(
+      RoundedRectangle(
+        cornerRadius: DesignTokens.Card.cornerRadiusMedium,
+        style: .continuous
+      )
+      .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
     )
   }
 
@@ -387,6 +394,38 @@ struct AlertsView: View {
     return alert.sortDate.formatted(date: .abbreviated, time: .shortened)
   }
 
+  private func alertsHero(
+    title: String,
+    titleID: String? = nil,
+    titleA11y: String? = nil
+  ) -> some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      FigmaScreenTitle(title: title)
+        .accessibilityIdentifier(titleID ?? DayCastAccessibility.Alerts.screenTitle)
+        .accessibilityLabel(titleA11y ?? title)
+      alertsAuthorityLine
+    }
+    .padding(.horizontal, DesignTokens.Spacing.space20)
+    .padding(.top, alertsContentTopPadding)
+    .padding(.bottom, DesignTokens.Spacing.space16)
+  }
+
+  private var alertsAuthorityLine: some View {
+    let line = AlertsActiveCopy.authorityLine(
+      locationName: store.currentLocation?.name,
+      nwsCount: activeAlerts.count,
+      checkedAt: store.lastAlertsFetchAt,
+      loadState: store.alertsLoadState,
+      hasCachedAlerts: !store.displayableGroupedAlerts.isEmpty
+    )
+    return Text(line)
+      .font(DesignTokens.Typography.caption())
+      .foregroundStyle(DesignTokens.Palette.textSecondary)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityLabel(line)
+      .accessibilityIdentifier(DayCastAccessibility.Alerts.authority)
+  }
+
   private var alertsErrorBanner: some View {
     HStack(spacing: 8) {
       Image(systemName: store.isOffline ? "wifi.slash" : "exclamationmark.triangle.fill")
@@ -413,9 +452,8 @@ struct AlertsView: View {
 
   private var errorState: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: AlertsHonesty.tabTitle)
-
+      VStack(spacing: 0) {
+        alertsHero(title: AlertsHonesty.tabTitle)
         ContentUnavailableView {
           Label(
             "Unable to Load Alerts",
@@ -433,23 +471,20 @@ struct AlertsView: View {
           .buttonStyle(.borderedProminent)
           .accessibilityIdentifier(DayCastAccessibility.Alerts.retry)
         }
+        .weatherStageSheet()
       }
-      .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, alertsContentTopPadding)
-      .padding(.bottom, bottomTabClearance)
     }
     .refreshable {
       await store.refreshAlerts(force: true)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
+    .background(Color.clear)
   }
 
   private var emptyState: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: AlertsHonesty.tabTitle)
-
+      VStack(spacing: 0) {
+        alertsHero(title: AlertsHonesty.tabTitle)
         ContentUnavailableView {
           Label("No Alerts", systemImage: "checkmark.shield")
         } description: {
@@ -463,16 +498,14 @@ struct AlertsView: View {
           }
           .buttonStyle(.borderedProminent)
         }
+        .weatherStageSheet()
       }
-      .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.top, alertsContentTopPadding)
-      .padding(.bottom, bottomTabClearance)
     }
     .refreshable {
       await store.refreshAlerts(force: true)
     }
     .scrollContentBackground(.hidden)
-    .background(DesignTokens.Palette.bgPrimary)
+    .background(Color.clear)
   }
 }
 

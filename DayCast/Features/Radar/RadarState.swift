@@ -120,6 +120,9 @@ final class RadarState {
 
   /// Composite live timeline saved so product switches can restore it without a reload.
   private var compositeLive: (frames: [RadarFrame], availability: RadarTileAvailability)?
+  /// Site Doppler loop cached so a failed National mosaic can fall back without a reload.
+  private var siteLive:
+    (frames: [RadarFrame], availability: RadarTileAvailability, site: IEMRadarService.Site)?
 
   /// Drops stale async site resolutions when the location changes again mid-flight.
   private var siteResolutionToken = UUID()
@@ -196,6 +199,9 @@ final class RadarState {
     }
     return timeline.hasLive
   }
+
+  /// False until the first load (success or empty) finishes. Cold Radar must not look unavailable.
+  var hasCompletedLoadAttempt: Bool { lastLoadedAt != nil }
 
   var activeShowsTiles: Bool {
     showsFuture ? forecastTileAvailability.showsTiles : liveTileAvailability.showsTiles
@@ -611,9 +617,29 @@ extension RadarState {
     }
     timeline.live = live
     liveTileAvailability = availability
+    if isSiteProduct, let site = activeSiteProductSite ?? nearestSite {
+      siteLive = (live, availability, site)
+    }
     if !showsFuture {
       playback.currentIndex = max(0, live.count - 1)
     }
+    return true
+  }
+
+  @discardableResult
+  private func restoreSiteLive() -> Bool {
+    guard let cached = siteLive else { return false }
+    let previous = selectedProduct
+    selectedProduct = .superResReflectivity
+    activeSiteProductSite = cached.site
+    if nearestSite == nil { nearestSite = cached.site }
+    let restored = commitLiveFrames(
+      cached.frames, availability: cached.availability, isSiteProduct: true)
+    if !restored {
+      selectedProduct = previous
+      return false
+    }
+    siteProductUnavailableMessage = nil
     return true
   }
 
@@ -678,6 +704,11 @@ extension RadarState {
       "[RadarState] Live open present=\(present) siteLoaded=\(siteLoaded) precip=\(siteHasPrecip) failed=\(siteFailedOrStale) national=\(nationalAvailable)"
     )
     guard present == .nationalRadar else {
+      if !selectedProduct.isSiteProduct {
+        if !restoreSiteLive() {
+          await setProduct(.superResReflectivity, userInitiated: false)
+        }
+      }
       if selectedProduct.isSiteProduct {
         requestLocalCamera(respectUserPan: true)
       }

@@ -57,7 +57,7 @@ enum GrokBriefCache {
 enum LocalWeatherBrief {
   /// Deterministic alert copy when Grok's summary is blocked by the 4.7 filter.
   static func alertsSummary(locationName: String, alerts: [NWSAlert]) -> String {
-    let events = alerts.prefix(5).map(\.event)
+    let events = Array(NWSAlertGrouping.uniqueEvents(from: alerts).prefix(5))
     guard !events.isEmpty else {
       return "No active alerts to summarize for \(locationName)."
     }
@@ -186,8 +186,9 @@ enum MorningBriefGenerator {
 
     let location = weatherStore.currentLocation?.name ?? weather.location.name
     let unit = weatherStore.temperatureUnit
-    let alerts = weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
-      .joined(separator: ", ")
+    let alertEvents = Array(
+      NWSAlertGrouping.uniqueEvents(from: weatherStore.displayableActiveAlerts).prefix(3))
+    let alerts = alertEvents.joined(separator: ", ")
     let locationKey = weatherStore.currentLocation?.id.uuidString
     let severe = SevereWeatherStore.shared.context
     let severeBlock: String = {
@@ -238,7 +239,7 @@ enum MorningBriefGenerator {
           weather: weather,
           unit: unit,
           locationName: location,
-          activeAlerts: weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+          activeAlerts: alertEvents
         )
         : trimmed
       guard
@@ -247,7 +248,7 @@ enum MorningBriefGenerator {
           weather: weather,
           unit: unit,
           locationName: location,
-          activeAlerts: weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
+          activeAlerts: alertEvents
         ),
         !GrokBriefSafety.shared.isBriefHidden(brief)
       else { return }

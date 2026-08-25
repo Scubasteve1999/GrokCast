@@ -8,6 +8,8 @@ struct FeedSnapshot: Equatable, Sendable {
   var hasDaily: Bool
   /// Meaningful next-hour / minutecast content (not "clear all day" empty shell).
   var hasPrecipContent: Bool
+  /// Dry or wet next-event card. Feed order keeps radar after health; `hasPrecipContent` is teaser copy.
+  var hasNextEvent: Bool = false
   var hasAQI: Bool
   var hasSunriseOrSunset: Bool
   /// Stage 3/4: nearest fire within threshold or fire-weather alert active.

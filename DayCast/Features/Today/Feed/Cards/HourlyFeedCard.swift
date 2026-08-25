@@ -4,6 +4,7 @@ struct HourlyFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
   var briefingItems: [LocalBriefingItem] = []
+  var plated: Bool = true
   var onTap: () -> Void
 
   @State private var series: HourlyGraphSeries = .temp
@@ -28,14 +29,14 @@ struct HourlyFeedCard: View {
     VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
       header
       Text(outlook.sentence)
-        .font(DesignTokens.Typography.callout())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .lineLimit(2)
+        .font(DesignTokens.Typography.body())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .lineLimit(3)
         .minimumScaleFactor(0.85)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(
           maxWidth: .infinity,
           minHeight: TodayGlanceLayout.hourlyTonightLineHeight,
-          maxHeight: TodayGlanceLayout.hourlyTonightLineHeight,
           alignment: .topLeading
         )
 
@@ -47,9 +48,12 @@ struct HourlyFeedCard: View {
         timeZone: weather.locationTimeZone
       )
       .frame(height: TodayGlanceLayout.hourlyGraphHeight)
+
+      HourlySeriesPicker(options: seriesOptions, selection: $series, compact: false)
+        .frame(height: TodayGlanceLayout.hourlyPickerHeight, alignment: .leading)
     }
-    .padding(TodayGlanceLayout.hourlyCardPadding)
-    .cardStyle()
+    .padding(plated ? TodayGlanceLayout.hourlyCardPadding : 0)
+    .weatherModuleChrome(plated)
     .contentShape(Rectangle())
     .onTapGesture {
       onTap()
@@ -61,22 +65,20 @@ struct HourlyFeedCard: View {
 
   private var header: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      Text(outlook.title)
-        .font(DesignTokens.Typography.subsection())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
+      Text(outlook.period.outlookTitle)
+        .font(DesignTokens.Typography.studioTitle())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
         .lineLimit(1)
+        .minimumScaleFactor(0.8)
 
       Spacer(minLength: 4)
-
-      HourlySeriesPicker(options: seriesOptions, selection: $series)
 
       Image(systemName: "chevron.right")
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .accessibilityHidden(true)
     }
-    .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
+    .frame(minHeight: TodayGlanceLayout.hourlyHeaderHeight)
   }
 
   private var resolvedSeries: HourlyGraphSeries {
@@ -85,7 +87,7 @@ struct HourlyFeedCard: View {
 
   private var accessibilitySummary: String {
     Self.accessibilityLabel(
-      title: outlook.title,
+      title: outlook.period.outlookTitle,
       sentence: outlook.sentence,
       hourLabel: hours.isEmpty ? nil : "Now",
       temp: hours.first.map { Int(round($0.temp)) },

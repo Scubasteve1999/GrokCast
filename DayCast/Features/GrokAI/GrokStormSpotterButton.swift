@@ -23,7 +23,7 @@ struct GrokStormSpotterButton: View {
       }
       .foregroundStyle(DesignTokens.Palette.textPrimary)
       .padding(.horizontal, 16)
-      .padding(.vertical, 10)
+      .frame(minHeight: DesignTokens.Layout.minHitTarget)
       .background(
         Capsule()
           .fill(DesignTokens.Palette.cardElevated)
@@ -37,6 +37,7 @@ struct GrokStormSpotterButton: View {
       )
     }
     .buttonStyle(.plain)
+    .accessibilityLabel(SkyCheckDeskCopy.photoCTA)
   }
 }
 

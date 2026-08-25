@@ -15,7 +15,7 @@ struct HourlyPrecipCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       HStack {
-        Text("PRECIPITATION")
+        Text("Precipitation")
           .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.textTertiary)

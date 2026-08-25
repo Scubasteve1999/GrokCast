@@ -16,6 +16,8 @@ struct RadarPlaybackControls: View {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
           .font(DesignTokens.Typography.studioTitle())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
+          .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
@@ -52,7 +54,8 @@ struct RadarPlaybackControls: View {
         Image(systemName: "house.fill")
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
-          .frame(width: 32, height: 32)
+          .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+          .contentShape(Rectangle())
           .background(DesignTokens.Palette.radarTrack)
           .clipShape(Capsule())
       }
@@ -85,7 +88,8 @@ struct RadarPlaybackControls: View {
         Image(systemName: "location.fill")
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.radarAccent)
-          .frame(width: 32, height: 32)
+          .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+          .contentShape(Rectangle())
           .background(DesignTokens.Palette.radarTrack)
           .clipShape(Capsule())
       }
@@ -104,7 +108,7 @@ struct RadarPlaybackSpeedPicker: View {
   @Bindable var radarState: RadarState
 
   var body: some View {
-    HStack(spacing: 0) {
+    HStack(spacing: DesignTokens.Spacing.space4) {
       ForEach([1.0, 2.0, 3.0], id: \.self) { speed in
         let label = speed == 3.0 ? "3x" : (speed == 2.0 ? "2x" : "1x")
         let isSelected = abs(radarState.playbackSpeed - speed) < 0.05
@@ -113,15 +117,23 @@ struct RadarPlaybackSpeedPicker: View {
           radarState.setPlaybackSpeed(speed)
         } label: {
           Text(label)
-            .font(DesignTokens.Typography.micro())
+            .font(DesignTokens.Typography.caption())
             .fontWeight(isSelected ? .semibold : .regular)
             .foregroundStyle(
               isSelected
-                ? DesignTokens.Palette.radarTextPrimary
-                : DesignTokens.Palette.radarTextSecondary
+                ? DesignTokens.Palette.bgPrimary
+                : DesignTokens.Palette.textSecondary
             )
-            .padding(.horizontal, DesignTokens.Spacing.space8)
-            .padding(.vertical, DesignTokens.Spacing.space4)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+              RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(
+                  isSelected
+                    ? DesignTokens.Palette.textPrimary
+                    : Color.clear
+                )
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -129,8 +141,6 @@ struct RadarPlaybackSpeedPicker: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
       }
     }
-    .background(DesignTokens.Palette.radarTrack)
-    .clipShape(Capsule())
     .accessibilityElement(children: .contain)
   }
 }

@@ -1,32 +1,15 @@
 import Foundation
 
 enum FeedAssembler {
-  /// Next hour is showing, alerts/outlook slot is showing, or Now is wet.
+  /// Story-day teaser copy (not feed order): Next 2 Hours, alerts/outlook, or Now is wet.
   static func isRadarStory(_ snapshot: FeedSnapshot) -> Bool {
     snapshot.hasPrecipContent || snapshot.showAlertsSlot || snapshot.isNowWet
   }
 
   /// Returns visible feed items in product order. Cards with no meaningful data are omitted.
-  /// Calm days keep `defaultOrder` (radar buried below Daily). Story days hoist radar
-  /// after Now / Alerts / Next hour — they do not rewrite the calm spine.
+  /// Alerts, the decision line, and Next 2 Hours live on the Now hero — not extra plates.
   static func items(from snapshot: FeedSnapshot) -> [FeedItem] {
-    var visible = FeedItem.defaultOrder.filter { shouldShow($0, in: snapshot) }
-    guard isRadarStory(snapshot), let radarAt = visible.firstIndex(of: .radar) else {
-      return visible
-    }
-    visible.remove(at: radarAt)
-    let anchor: FeedItem? = {
-      if visible.contains(.precip) { return .precip }
-      if visible.contains(.alerts) { return .alerts }
-      if visible.contains(.now) { return .now }
-      return nil
-    }()
-    if let anchor, let idx = visible.firstIndex(of: anchor) {
-      visible.insert(.radar, at: idx + 1)
-    } else {
-      visible.insert(.radar, at: 0)
-    }
-    return visible
+    FeedItem.defaultOrder.filter { shouldShow($0, in: snapshot) }
   }
 
   /// Error/retry chrome plus cards. Banner sits above Now so a storm user sees it without scrolling.
@@ -43,23 +26,22 @@ enum FeedAssembler {
     switch item {
     case .now:
       return snapshot.hasWeather
-    case .alerts:
-      return snapshot.showAlertsSlot
+    case .alerts, .decision, .precip:
+      return false
     case .aiInsight:
       return snapshot.hasWeather && snapshot.showAIInsight
     case .hourly:
       return snapshot.hasWeather && snapshot.hasHourly
+    case .health:
+      return snapshot.hasWeather
     case .yourNews:
       return snapshot.hasLocalBriefing
     case .radar:
       return snapshot.hasWeather
     case .daily:
       return snapshot.hasWeather && snapshot.hasDaily
-    case .precip:
-      return snapshot.hasWeather && snapshot.hasPrecipContent
     case .nearby:
       return snapshot.showFireCard
-        || (snapshot.hasWeather && snapshot.hasAQI)
         || (snapshot.hasWeather && snapshot.hasSunriseOrSunset)
     }
   }

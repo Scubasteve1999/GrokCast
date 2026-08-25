@@ -731,15 +731,16 @@ final class WeatherStore {
     if active.isEmpty {
       summary = nil
     } else {
-      let top = active.max(by: { $0.severityLevel < $1.severityLevel }) ?? active[0]
-      let latestExpiry = active.compactMap(\.expires).max()
+      let grouped = NWSAlertGrouping.representatives(from: active)
+      let top = grouped.max(by: { $0.severityLevel < $1.severityLevel }) ?? grouped[0]
+      let latestExpiry = grouped.compactMap(\.expires).max()
       summary = WidgetAlertSummary(
         locationID: location.id,
         topEvent: top.event,
         topSeverityLevel: top.severityLevel,
         topIsWarning: top.isWarning,
         topIsWatch: top.isWatch,
-        activeCount: active.count,
+        activeCount: grouped.count,
         topExpires: top.expires,
         anyActiveUntil: latestExpiry
       )
@@ -1286,6 +1287,11 @@ final class WeatherStore {
     if !fromActive.isEmpty { return fromActive }
     guard !lastAlertsFetchSucceeded else { return [] }
     return alertHistory.filter { !$0.isExpired }
+  }
+
+  /// One card per overlapping NWS event. Radar polygons still use `displayableActiveAlerts`.
+  var displayableGroupedAlerts: [NWSAlert] {
+    NWSAlertGrouping.representatives(from: displayableActiveAlerts)
   }
 
   /// Soft budget for BGAppRefresh / silent-push alert work (leave headroom under iOS ~30s limit).

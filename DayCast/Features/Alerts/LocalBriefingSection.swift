@@ -7,6 +7,7 @@ import UIKit
 struct LocalBriefingSection: View {
   let items: [LocalBriefingItem]
   var accessibilityID: String = DayCastAccessibility.Alerts.localBriefing
+  var sitsInSheet: Bool = false
 
   var body: some View {
     if !items.isEmpty {
@@ -14,16 +15,15 @@ struct LocalBriefingSection: View {
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         Text("Your News")
-          .font(DesignTokens.Typography.metric())
-          .fontWeight(.bold)
+          .font(DesignTokens.Typography.studioTitle())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .accessibilityAddTraits(.isHeader)
 
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
             ForEach(visible) { item in
-              YourNewsCard(item: item)
-                .containerRelativeFrame(.horizontal) { len, _ in min(280, len * 0.72) }
+              YourNewsCard(item: item, sitsInSheet: sitsInSheet)
+                .containerRelativeFrame(.horizontal) { len, _ in min(280, len * 0.78) }
             }
           }
           .scrollTargetLayout()
@@ -39,6 +39,7 @@ struct LocalBriefingSection: View {
 
 private struct YourNewsCard: View {
   let item: LocalBriefingItem
+  var sitsInSheet: Bool = false
 
   var body: some View {
     Button {
@@ -47,12 +48,12 @@ private struct YourNewsCard: View {
       UIApplication.shared.open(item.url)
     } label: {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        if let imageURL = item.imageURL {
+        if let imageURL = YourNewsPhotography.cardImageURL(for: item) {
           AsyncImage(url: imageURL) { phase in
             switch phase {
             case .success(let image):
               Color.clear
-                .aspectRatio(16 / 9, contentMode: .fit)
+                .aspectRatio(sitsInSheet ? 4 / 3 : 16 / 9, contentMode: .fit)
                 .overlay {
                   image
                     .resizable()
@@ -68,9 +69,10 @@ private struct YourNewsCard: View {
 
         Text(item.displayTitle)
           .font(DesignTokens.Typography.headline())
+          .fontWeight(.bold)
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
-          .lineLimit(2)
+          .lineLimit(3)
           .frame(maxWidth: .infinity, alignment: .leading)
 
         Text("\(item.relativeIssuedLabel()) · \(item.sourceName)")
@@ -78,7 +80,9 @@ private struct YourNewsCard: View {
           .foregroundStyle(DesignTokens.Palette.textTertiary)
           .lineLimit(1)
       }
+      .padding(sitsInSheet ? 0 : DesignTokens.Spacing.space12)
       .frame(maxWidth: .infinity, alignment: .leading)
+      .weatherModuleChrome(!sitsInSheet)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)

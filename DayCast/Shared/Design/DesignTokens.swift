@@ -20,8 +20,8 @@ enum DesignTokens {
     /// Default `.cardStyle()` / `.glassCardStyle()` hairline. Do not retint `cardStroke`.
     static let cardHairline = SwiftUI.Color.white.opacity(0.10)
     static let textPrimary = SwiftUI.Color.white
-    static let textSecondary = SwiftUI.Color.white.opacity(0.78)
-    static let textTertiary = SwiftUI.Color.white.opacity(0.52)
+    static let textSecondary = SwiftUI.Color.white.opacity(0.82)
+    static let textTertiary = SwiftUI.Color.white.opacity(0.68)
     static let accent = SwiftUI.Color(hex: "#8BB8F0")
     static let accentWarm = SwiftUI.Color(hex: "#F0B07A")
     static let accentCool = SwiftUI.Color(hex: "#9AC4E8")
@@ -136,10 +136,12 @@ enum DesignTokens {
     static let chipRadius: CGFloat = Radius.small
     static let searchRadius: CGFloat = Radius.small
     static let heroIconSize: CGFloat = 44
+    /// Apple HIG minimum for icon-only and chip controls.
+    static let minHitTarget: CGFloat = 44
     static let hourlyRowHeight: CGFloat = 100
     static let hourlyChipWidth: CGFloat = 72
-    /// Today Now temp. Keep below `displayTemp` so Your News peeks on iPhone 16.
-    static let todayTempSize: CGFloat = 72
+    /// Today Now temp. Below `displayTemp` so the outlook sheet still peeks.
+    static let todayTempSize: CGFloat = 88
   }
 
   /// Temporary aliases. Prefer `Typography` / `Layout`.
@@ -265,26 +267,48 @@ extension View {
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
     strokeTint _: Color = DesignTokens.Palette.cardStroke
   ) -> some View {
-    background(
+    weatherModuleStyle(cornerRadius: cornerRadius)
+  }
+
+  /// Floating module on `WeatherStage`. Material over a dark backing so type stays readable.
+  func weatherModuleStyle(
+    cornerRadius: CGFloat = DesignTokens.Card.cornerRadius
+  ) -> some View {
+    background {
       RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        .fill(
-          LinearGradient(
-            colors: [
-              DesignTokens.Palette.cardElevated.opacity(0.95),
-              DesignTokens.Palette.cardBackground,
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-          )
-        )
-    )
+        .fill(DesignTokens.Palette.cardBackground.opacity(WeatherModuleChrome.backingOpacity))
+        .overlay {
+          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(.ultraThinMaterial)
+            .environment(\.colorScheme, .dark)
+        }
+    }
     .overlay(
       RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
+        .stroke(
+          Color.white.opacity(WeatherModuleChrome.strokeOpacity),
+          lineWidth: DesignTokens.Card.strokeWidth
+        )
     )
     .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-    .shadow(color: Color.black.opacity(0.32), radius: 12, x: 0, y: 6)
   }
+
+  @ViewBuilder
+  func weatherModuleChrome(_ enabled: Bool) -> some View {
+    if enabled {
+      weatherModuleStyle()
+    } else {
+      self
+    }
+  }
+}
+
+/// Today / Forecast / Alerts modules that sit on the photographic stage.
+enum WeatherModuleChrome {
+  static let usesMaterialFill = true
+  static let strokeOpacity: CGFloat = 0.18
+  static let backingOpacity: CGFloat = 0.55
+  static let cornerRadius: CGFloat = DesignTokens.Card.cornerRadius
 }
 
 // MARK: - Color hex

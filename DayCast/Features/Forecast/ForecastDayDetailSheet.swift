@@ -144,10 +144,9 @@ struct ForecastDayDetailSheet: View {
     -> some View
   {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text(title.uppercased())
+      Text(title)
         .font(DesignTokens.Typography.caption())
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
       content()
     }
     .padding(DesignTokens.Spacing.space16)

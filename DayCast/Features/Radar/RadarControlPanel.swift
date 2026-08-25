@@ -7,12 +7,10 @@ struct RadarControlPanel: View {
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Bindable var radarState: RadarState
   @Binding var opacity: Double
-  @Binding var recenterDefaultTrigger: UUID?
-  @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
   @Binding var isDecluttered: Bool
+  @Binding var showDisplayOptions: Bool
 
   @State private var showExplainRadar = false
-  @State private var showDisplayOptions = false
   /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
   @State private var isCollapsed = true
   /// User-driven Advanced disclosure; SRV also forces it open.
@@ -28,13 +26,23 @@ struct RadarControlPanel: View {
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
-      slimModeRow
-      RadarTimelineScrubber(radarState: radarState, layout: prefersFigmaHUD ? .figma : .standard)
+      liveForecastPicker
       compactPlaybackRow
+      RadarTimelineScrubber(radarState: radarState, layout: prefersFigmaHUD ? .figma : .standard)
       compactStatusFooter
     }
-    .padding(DesignTokens.Spacing.space12)
-    .glassCardStyle(cornerRadius: DesignTokens.Card.cornerRadiusMedium)
+    .padding(.horizontal, DesignTokens.Spacing.space20)
+    .padding(.top, DesignTokens.Spacing.space12)
+    .padding(.bottom, DesignTokens.Spacing.space8)
+    .frame(maxWidth: .infinity)
+    .background {
+      UnevenRoundedRectangle(
+        topLeadingRadius: WeatherStageSheet.topRadius,
+        topTrailingRadius: WeatherStageSheet.topRadius,
+        style: .continuous
+      )
+      .fill(WeatherStageSheet.fill)
+    }
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
     .sheet(isPresented: $showDisplayOptions) {
@@ -66,36 +74,6 @@ struct RadarControlPanel: View {
     }
   }
 
-  /// One mode row: Live / 24-hr plus Layers. Advanced products live in the sheet.
-  private var slimModeRow: some View {
-    HStack(spacing: DesignTokens.Spacing.space8) {
-      liveForecastPicker
-      Spacer(minLength: 0)
-      Button {
-        Haptic.impact(.light)
-        showDisplayOptions = true
-      } label: {
-        HStack(spacing: 4) {
-          Image(systemName: "slider.horizontal.3")
-            .font(DesignTokens.Typography.micro())
-          Text(RadarChromeCopy.layers)
-            .font(DesignTokens.Typography.micro())
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
-        .background(DesignTokens.Palette.radarTrack)
-        .clipShape(Capsule())
-        .overlay(
-          Capsule()
-            .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
-        )
-        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(RadarChromeCopy.layers)
-    }
-  }
-
   private var compactPlaybackRow: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Button {
@@ -103,36 +81,25 @@ struct RadarControlPanel: View {
       } label: {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
           .font(DesignTokens.Typography.headline())
-          .foregroundStyle(DesignTokens.Palette.radarAccent)
-          .frame(minWidth: 28, minHeight: 28)
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .frame(
+            minWidth: DesignTokens.Layout.minHitTarget,
+            minHeight: DesignTokens.Layout.minHitTarget
+          )
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
 
       Text(radarState.currentFrameDisplayTime)
-        .font(DesignTokens.Typography.caption().monospacedDigit())
-        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        .font(DesignTokens.Typography.callout().monospacedDigit())
+        .fontWeight(.medium)
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
         .lineLimit(1)
 
       Spacer(minLength: 4)
 
       RadarPlaybackSpeedPicker(radarState: radarState)
-
-      Button {
-        Haptic.impact(.light)
-        // Selected weather location — same as iPad house button (not device GPS).
-        recenterUserCoordinate = nil
-        recenterDefaultTrigger = UUID()
-      } label: {
-        Image(systemName: "house.fill")
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.radarAccent)
-          .frame(width: 28, height: 28)
-          .background(DesignTokens.Palette.radarTrack)
-          .clipShape(Capsule())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Recenter to selected location")
     }
   }
 
@@ -198,49 +165,56 @@ struct RadarControlPanel: View {
   }
 
   private var liveForecastPicker: some View {
-    HStack(spacing: 0) {
-      Button {
-        guard radarState.hasFutureFrames else { return }
+    HStack(spacing: DesignTokens.Spacing.space8) {
+      modePill(
+        title: RadarChromeCopy.liveChip,
+        selected: !radarState.showsFuture,
+        accessibility: RadarChromeCopy.liveAccessibility
+      ) {
         radarState.setFutureMode(false)
-      } label: {
-        Text(RadarChromeCopy.liveChip)
-          .font(DesignTokens.Typography.micro())
-          .fontWeight(!radarState.showsFuture ? .semibold : .regular)
-          .padding(.horizontal, 10)
-          .padding(.vertical, 3)
-          .foregroundStyle(
-            !radarState.showsFuture
-              ? DesignTokens.Palette.radarTextPrimary
-              : DesignTokens.Palette.radarTextSecondary
-          )
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(RadarChromeCopy.liveAccessibility)
-      .accessibilityAddTraits(!radarState.showsFuture ? .isSelected : [])
-
-      Button {
-        guard radarState.hasFutureFrames else { return }
+      modePill(
+        title: RadarChromeCopy.futureChip,
+        selected: radarState.showsFuture,
+        accessibility: RadarChromeCopy.futureAccessibility,
+        disabled: !radarState.hasFutureFrames
+      ) {
         radarState.setFutureMode(true)
-      } label: {
-        Text(RadarChromeCopy.futureChip)
-          .font(DesignTokens.Typography.micro())
-          .fontWeight(radarState.showsFuture ? .semibold : .regular)
-          .padding(.horizontal, 10)
-          .padding(.vertical, 3)
-          .foregroundStyle(
-            radarState.showsFuture
-              ? DesignTokens.Palette.radarTextPrimary
-              : DesignTokens.Palette.radarTextSecondary
-          )
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(RadarChromeCopy.futureAccessibility)
-      .accessibilityAddTraits(radarState.showsFuture ? .isSelected : [])
-      .disabled(!radarState.hasFutureFrames)
     }
-    .background(DesignTokens.Palette.radarTrack)
-    .clipShape(Capsule())
-    .disabled(!radarState.hasFutureFrames)
+  }
+
+  private func modePill(
+    title: String,
+    selected: Bool,
+    accessibility: String,
+    disabled: Bool = false,
+    action: @escaping () -> Void
+  ) -> some View {
+    Button(action: action) {
+      Text(title)
+        .font(DesignTokens.Typography.caption())
+        .fontWeight(selected ? .semibold : .regular)
+        .foregroundStyle(
+          selected ? DesignTokens.Palette.bgPrimary : DesignTokens.Palette.textSecondary
+        )
+        .frame(maxWidth: .infinity, minHeight: 36)
+        .padding(.vertical, 8)
+        .background(
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(
+              selected
+                ? DesignTokens.Palette.textPrimary
+                : DesignTokens.Palette.cardBackground.opacity(0.7)
+            )
+        )
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(disabled)
+    .opacity(disabled ? 0.45 : 1)
+    .accessibilityLabel(accessibility)
+    .accessibilityAddTraits(selected ? .isSelected : [])
   }
 
   @ViewBuilder

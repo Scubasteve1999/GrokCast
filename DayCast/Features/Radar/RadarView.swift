@@ -5,6 +5,7 @@ struct RadarView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(FireStore.self) private var fireStore
   @Environment(LightningStore.self) private var lightningStore
+  @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(\.scenePhase) private var scenePhase
 
   @State private var radarOpacity: Double = RadarPreferences.radarOpacity
@@ -12,6 +13,7 @@ struct RadarView: View {
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
   @State private var chaseDecluttered = RadarPreferences.chaseDecluttered
+  @State private var showDisplayOptions = false
 
   /// Camera / tile center follows the selected weather location (not device GPS).
   private var selectedMapCenter: CLLocationCoordinate2D {
@@ -30,6 +32,49 @@ struct RadarView: View {
   /// Lightning is Live-only observed CG. Hidden in 24-hr.
   private var showsLightningOverlay: Bool {
     radarState.showLightningLayer && !radarState.showsFuture
+  }
+
+  private var radarDataUnavailable: Bool {
+    store.selectedTab == .radar
+      && RadarChromeCopy.showsUnavailableOverlay(
+        hasContent: radarState.showContent,
+        isLoading: radarState.isLoading,
+        hasCompletedLoadAttempt: radarState.hasCompletedLoadAttempt
+      )
+  }
+
+  private var radarControlsInteractive: Bool {
+    RadarChromeCopy.controlsInteractive(
+      hasContent: radarState.showContent,
+      isLoading: radarState.isLoading,
+      hasCompletedLoadAttempt: radarState.hasCompletedLoadAttempt
+    )
+  }
+
+  private var radarTakeaway: String? {
+    ChaseRadarHUDLogic.takeaway(
+      showsFuture: radarState.showsFuture,
+      minutecastMessage: radarMinutecastMessage,
+      conditionCode: store.displayedWeather?.conditionCode
+    )
+  }
+
+  private var radarMinutecastMessage: String? {
+    guard let weather = store.displayedWeather else { return nil }
+    let locID = store.currentLocation?.id.uuidString
+    let summary: MinutecastSummary
+    if let locID, shortTermStore.context.locationID == locID,
+      shortTermStore.context.isUsableHRRR()
+    {
+      summary =
+        shortTermStore.context.summary
+        ?? MinutecastEngine.summary(
+          from: shortTermStore.context.slots, units: store.temperatureUnit)
+    } else {
+      summary = MinutecastEngine.summary(
+        from: weather.minutely15, units: store.temperatureUnit)
+    }
+    return summary.message
   }
 
   var body: some View {
@@ -183,6 +228,8 @@ struct RadarView: View {
         }
       }
       .ignoresSafeArea(edges: .bottom)
+      .allowsHitTesting(radarControlsInteractive)
+      .opacity(radarDataUnavailable ? 0.45 : 1)
     }
     .overlay(alignment: .topLeading) {
       if store.selectedTab == .radar {
@@ -196,9 +243,11 @@ struct RadarView: View {
               .padding(.vertical, 6)
               .background(DesignTokens.Palette.cardBackground.opacity(0.92), in: Capsule())
           }
+          radarLocationChip
         }
-        .padding(.top, 8)
-        .padding(.leading, DesignTokens.Spacing.space20)
+        .safeAreaPadding(.top)
+        .padding(.top, 4)
+        .padding(.leading, DesignTokens.Spacing.space16)
       }
     }
     .overlay(alignment: .topLeading) {
@@ -213,16 +262,33 @@ struct RadarView: View {
           mapCenter: selectedMapCenter,
           cityName: store.currentLocation?.name,
           alerts: store.displayableActiveAlerts,
+          takeaway: radarTakeaway,
           isDecluttered: $chaseDecluttered
         )
-        .padding(.top, 8)
+        .safeAreaPadding(.top)
+        .padding(.top, 4)
         .padding(.trailing, DesignTokens.Spacing.space16)
+        .opacity(radarDataUnavailable ? 0.4 : 1)
+        .allowsHitTesting(radarControlsInteractive)
+        .accessibilityHidden(radarDataUnavailable)
+      }
+    }
+    .overlay(alignment: .trailing) {
+      if store.selectedTab == .radar {
+        RadarLayerRail(radarState: radarState) {
+          showDisplayOptions = true
+        }
+        .padding(.trailing, DesignTokens.Spacing.space12)
+        .padding(.bottom, 72)
+        .opacity(radarDataUnavailable ? 0.4 : 1)
+        .allowsHitTesting(radarControlsInteractive)
+        .accessibilityHidden(radarDataUnavailable)
       }
     }
     .overlay(alignment: .bottomLeading) {
       if store.selectedTab == .radar {
         VStack(alignment: .leading, spacing: 6) {
-          if showsLightningOverlay {
+          if showsLightningOverlay, lightningStore.showsQuietAttribution {
             Text(lightningStore.attributionLabel)
               .font(DesignTokens.Typography.micro())
               .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
@@ -239,24 +305,48 @@ struct RadarView: View {
           }
         }
         .padding(.leading, DesignTokens.Spacing.space12)
-        .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance + 136)
+        .padding(.bottom, WeatherStageSheet.tabBarClearance + 156)
         .allowsHitTesting(false)
       }
+    }
+    .overlay(alignment: .bottom) {
+      WeatherStageSheet.fill
+        .frame(height: WeatherStageSheet.tabBarClearance)
+        .ignoresSafeArea(edges: .bottom)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
     .overlay(alignment: .bottom) {
       // Keep the panel mounted so collapse/sheet @State survives declutter.
       RadarControlPanel(
         radarState: radarState,
         opacity: $radarOpacity,
-        recenterDefaultTrigger: $recenterDefaultTrigger,
-        recenterUserCoordinate: $recenterUserCoordinate,
-        isDecluttered: $chaseDecluttered
+        isDecluttered: $chaseDecluttered,
+        showDisplayOptions: $showDisplayOptions
       )
-      .padding(.horizontal)
-      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
-      .opacity(RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered) ? 1 : 0)
-      .allowsHitTesting(RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered))
-      .accessibilityHidden(!RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered))
+      .padding(.bottom, WeatherStageSheet.tabBarClearance)
+      .opacity(
+        RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered) && radarControlsInteractive
+          ? 1 : (radarDataUnavailable ? 0.35 : 0)
+      )
+      .allowsHitTesting(
+        RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered)
+          && radarControlsInteractive
+      )
+      .accessibilityHidden(
+        !RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered)
+          || radarDataUnavailable
+      )
+    }
+    .overlay {
+      if radarDataUnavailable {
+        ZStack {
+          Color.black.opacity(0.42)
+            .ignoresSafeArea()
+            .allowsHitTesting(true)
+          radarUnavailableCard
+        }
+      }
     }
     .overlay {
       if radarState.showModeSwitchOverlay {
@@ -268,6 +358,70 @@ struct RadarView: View {
         .allowsHitTesting(false)
       }
     }
+  }
+
+  private var radarLocationChip: some View {
+    Button {
+      Haptic.impact(.light)
+      recenterUserCoordinate = nil
+      recenterDefaultTrigger = UUID()
+    } label: {
+      HStack(spacing: DesignTokens.Spacing.space8) {
+        if let weather = store.displayedWeather {
+          Image(systemName: weather.symbolName)
+            .font(DesignTokens.Typography.callout())
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(Color.white)
+        }
+        Text(store.currentLocation?.name ?? weatherNameFallback)
+          .font(DesignTokens.Typography.subsection())
+          .foregroundStyle(Color.white)
+          .lineLimit(1)
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 7)
+      .frame(maxWidth: 220)
+      .background(Color.black.opacity(0.46), in: Capsule())
+      .overlay(Capsule().stroke(DesignTokens.Palette.cardHairline, lineWidth: 1))
+      .contentShape(Capsule())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Recenter to \(store.currentLocation?.name ?? weatherNameFallback)")
+  }
+
+  private var weatherNameFallback: String {
+    store.displayedWeather?.location.name ?? "Radar"
+  }
+
+  private var radarUnavailableCard: some View {
+    VStack(spacing: DesignTokens.Spacing.space12) {
+      Text(RadarChromeCopy.unavailableTitle)
+        .font(DesignTokens.Typography.headline())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .multilineTextAlignment(.center)
+      Text(RadarChromeCopy.unavailableHint)
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .multilineTextAlignment(.center)
+      Button {
+        Haptic.impact(.medium)
+        Task { await radarState.handleLiveOpen(for: selectedMapCenter) }
+      } label: {
+        Text(RadarChromeCopy.unavailableRetry)
+          .font(DesignTokens.Typography.body().weight(.semibold))
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, DesignTokens.Spacing.space12)
+      }
+      .buttonStyle(.borderedProminent)
+      .tint(DesignTokens.Palette.accent)
+      .accessibilityIdentifier(DayCastAccessibility.Radar.unavailableRetry)
+      .accessibilityLabel("Retry loading radar")
+    }
+    .padding(DesignTokens.Spacing.space24)
+    .frame(maxWidth: 320)
+    .cardStyle()
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier(DayCastAccessibility.Radar.unavailableCard)
   }
 
   /// VoiceOver names for painted boxes. GeoJSON layers don't eat pan; this overlay doesn't either.
@@ -319,4 +473,5 @@ struct RadarView: View {
     .environment(WeatherStore())
     .environment(FireStore.shared)
     .environment(LightningStore.shared)
+    .environment(ShortTermPrecipStore.shared)
 }

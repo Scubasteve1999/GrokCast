@@ -72,6 +72,40 @@ final class ChaseRadarHUDTests: XCTestCase {
     )
   }
 
+  func testTakeawayPrefersMinutecastAndSkipsFuture() {
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.takeaway(
+        showsFuture: false,
+        minutecastMessage: "Dry for the next 2 hours",
+        conditionCode: 61
+      ),
+      "Dry for the next 2 hours"
+    )
+    XCTAssertNil(
+      ChaseRadarHUDLogic.takeaway(
+        showsFuture: true,
+        minutecastMessage: "Dry for the next 2 hours",
+        conditionCode: 61
+      )
+    )
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.takeaway(
+        showsFuture: false,
+        minutecastMessage: "Precipitation data unavailable",
+        conditionCode: 61
+      ),
+      "Rain now"
+    )
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.takeaway(
+        showsFuture: false,
+        minutecastMessage: nil,
+        conditionCode: 0
+      ),
+      "Local is clear"
+    )
+  }
+
   func testHudCityAndProductArePlainLanguage() {
     XCTAssertEqual(
       ChaseRadarHUDLogic.hudCityLine(locationName: "San Francisco, CA"),

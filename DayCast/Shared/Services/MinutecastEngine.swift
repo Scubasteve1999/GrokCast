@@ -51,7 +51,7 @@ enum MinutecastEngine {
     if wetIndices.isEmpty {
       return MinutecastSummary(
         kind: .clear,
-        message: "No precipitation for at least 2 hours",
+        message: "Dry for the next 2 hours",
         icon: "sun.max.fill",
         strip: strip
       )
@@ -64,7 +64,7 @@ enum MinutecastEngine {
       if wetIndices.count == strip.count {
         return MinutecastSummary(
           kind: .ongoing,
-          message: "Precipitation likely for the next 2 hours",
+          message: "Rain likely for the next 2 hours",
           icon: "cloud.rain.fill",
           strip: strip
         )
@@ -73,14 +73,14 @@ enum MinutecastEngine {
         let stopMin = minutesUntil(strip[lastWet + 1])
         return MinutecastSummary(
           kind: .stoppingSoon,
-          message: "Precipitation ending in ~\(stopMin) min",
+          message: "Rain ending in ~\(stopMin) min",
           icon: "cloud.drizzle.fill",
           strip: strip
         )
       }
       return MinutecastSummary(
         kind: .ongoing,
-        message: "Precipitation now",
+        message: "Rain now",
         icon: "cloud.rain.fill",
         strip: strip
       )
@@ -90,7 +90,7 @@ enum MinutecastEngine {
     let display = max(5, rounded)
     return MinutecastSummary(
       kind: .startsSoon,
-      message: "Precipitation likely in ~\(display) min",
+      message: "Rain likely in ~\(display) min",
       icon: "cloud.rain.fill",
       strip: strip
     )

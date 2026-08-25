@@ -19,7 +19,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
       [
-        .now, .alerts, .precip, .radar, .hourly, .daily, .aiInsight, .nearby,
+        .now, .hourly, .health, .daily, .radar, .aiInsight, .nearby,
       ]
     )
   }
@@ -41,10 +41,10 @@ final class FeedAssemblerTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       items,
-      [.now, .hourly, .daily, .aiInsight, .radar, .nearby]
+      [.now, .hourly, .health, .daily, .radar, .aiInsight, .nearby]
     )
-    XCTAssertLessThan(items.firstIndex(of: .daily)!, items.firstIndex(of: .radar)!)
-    XCTAssertGreaterThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .hourly)!)
+    XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .radar)!)
+    XCTAssertFalse(items.contains(.decision))
   }
 
   func testHidesCardsWithoutMeaningfulData() {
@@ -61,7 +61,7 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .hourly, .aiInsight, .radar]
+      [.now, .hourly, .health, .radar, .aiInsight]
     )
   }
 
@@ -80,14 +80,15 @@ final class FeedAssemblerTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       Array(items.prefix(5)),
-      [.now, .alerts, .precip, .radar, .hourly]
+      [.now, .hourly, .health, .daily, .radar]
     )
-    XCTAssertLessThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .hourly)!)
-    XCTAssertLessThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .daily)!)
+    XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .radar)!)
+    XCTAssertLessThan(items.firstIndex(of: .health)!, items.firstIndex(of: .radar)!)
+    XCTAssertLessThan(items.firstIndex(of: .daily)!, items.firstIndex(of: .radar)!)
     XCTAssertLessThan(items.firstIndex(of: .daily)!, items.firstIndex(of: .aiInsight)!)
   }
 
-  func testWetNowHoistsRadarBeforeHourlyWithoutAlerts() {
+  func testWetNowKeepsRadarAfterHealth() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 0,
@@ -103,11 +104,11 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .radar, .hourly, .daily]
+      [.now, .hourly, .health, .daily, .radar]
     )
   }
 
-  func testWarnedDryPointHoistsRadarAfterAlerts() {
+  func testWarnedDryPointKeepsRadarAfterHealth() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 1,
@@ -123,11 +124,11 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .alerts, .radar, .hourly, .daily]
+      [.now, .hourly, .health, .daily, .radar]
     )
   }
 
-  func testNextHourOnlyHoistsRadarBeforeHourly() {
+  func testPrecipStoryKeepsRadarAfterHealth() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 0,
@@ -143,7 +144,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .precip, .radar, .hourly, .daily]
+      [.now, .hourly, .health, .daily, .radar]
     )
   }
 
@@ -165,7 +166,12 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.alerts))
     snapshot.alertCount = 1
-    XCTAssertEqual(FeedAssembler.items(from: snapshot), [.now, .alerts, .radar])
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertEqual(
+      FeedAssembler.items(from: snapshot),
+      [.now, .health, .radar]
+    )
+    XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.alerts))
   }
 
   func testAlertsSlotShowsForSevereContextWithoutNWSAlerts() {
@@ -184,8 +190,8 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(snapshot.showAlertsSlot)
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(items.first, .now)
-    XCTAssertEqual(items.dropFirst().first, .alerts)
-    XCTAssertEqual(Array(items.prefix(4)), [.now, .alerts, .precip, .radar])
+    XCTAssertFalse(items.contains(.alerts))
+    XCTAssertEqual(Array(items.prefix(5)), [.now, .hourly, .health, .daily, .radar])
   }
 
   func testBuilderSevereContextEarnsAlertsSlotWithZeroNWS() {
@@ -221,7 +227,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(snapshot.showAlertsSlot)
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(items.first, .now)
-    XCTAssertEqual(items.dropFirst().first, .alerts)
+    XCTAssertFalse(items.contains(.alerts))
     XCTAssertTrue(snapshot.isNowWet)
   }
 
@@ -265,7 +271,10 @@ final class FeedAssemblerTests: XCTestCase {
       showFireCard: true,
       showAIInsight: false
     )
-    XCTAssertEqual(FeedAssembler.items(from: snapshot), [.now, .radar, .nearby])
+    XCTAssertEqual(
+      FeedAssembler.items(from: snapshot),
+      [.now, .health, .radar, .nearby]
+    )
   }
 
   func testAQIAndSunMoonAppearWhenFlagged() {
@@ -282,7 +291,7 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .radar, .nearby]
+      [.now, .health, .radar, .nearby]
     )
   }
 
@@ -300,15 +309,9 @@ final class FeedAssemblerTests: XCTestCase {
       hasLocalBriefing: true
     )
     let items = FeedAssembler.items(from: snapshot)
-    XCTAssertEqual(items, [.now, .hourly, .yourNews, .daily, .radar])
-    XCTAssertEqual(
-      items.firstIndex(of: .hourly)! + 1,
-      items.firstIndex(of: .yourNews)
-    )
-    XCTAssertEqual(
-      items.firstIndex(of: .yourNews)! + 1,
-      items.firstIndex(of: .daily)
-    )
+    XCTAssertEqual(items, [.now, .hourly, .yourNews, .health, .daily, .radar])
+    XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
+    XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .yourNews)!)
   }
 
   func testYourNewsHiddenWhenBriefingEmpty() {
@@ -326,7 +329,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.yourNews))
   }
 
-  func testStoryDayHoistKeepsYourNewsAfterHourly() {
+  func testStoryDayKeepsYourNewsAfterHourly() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 2,
@@ -341,7 +344,7 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .alerts, .precip, .radar, .hourly, .yourNews, .daily]
+      [.now, .hourly, .yourNews, .health, .daily, .radar]
     )
   }
 
@@ -359,6 +362,26 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.precip))
     snapshot.hasPrecipContent = true
-    XCTAssertTrue(FeedAssembler.items(from: snapshot).contains(.precip))
+    XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.precip))
+  }
+
+  func testDryNextEventShowsRadarAfterHealth() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 0,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: false,
+      hasNextEvent: true,
+      hasAQI: false,
+      hasSunriseOrSunset: false,
+      showFireCard: false,
+      showAIInsight: false
+    )
+    XCTAssertFalse(FeedAssembler.isRadarStory(snapshot))
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(items, [.now, .hourly, .health, .daily, .radar])
+    XCTAssertFalse(items.contains(.precip))
+    XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .radar)!)
   }
 }

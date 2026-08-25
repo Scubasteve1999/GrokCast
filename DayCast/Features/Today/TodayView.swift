@@ -6,7 +6,7 @@ private let todayContentTopPadding = DesignTokens.Spacing.space16
 enum TodayCopy {
   static let welcomeTitle = "Welcome to DayCast"
   static let welcomeBody =
-    "Local Now for your city, official alerts, and next-hour rain you can believe."
+    "Local Now for your city, official alerts, and the next 2 hours of rain you can believe."
   static let gettingLocation = "Getting your location…"
   static let emptyTitle = "Getting your city"
   static let emptyBody =
@@ -20,7 +20,7 @@ enum TodayCopy {
 
   static let permissionTitle = "Use your location"
   static let permissionBody =
-    "DayCast uses your location to show local Now, official alerts, and next-hour rain."
+    "DayCast uses your location to show local Now, official alerts, and the next 2 hours of rain."
   static let permissionPrivacy =
     "Your location is only used for weather — we don’t track or store it."
 
@@ -33,26 +33,22 @@ enum TodayCopy {
 
   static let trustNow = "Now"
   static let trustAlerts = "Alerts"
-  static let trustNextHour = "Next hour"
+  static let trustNextHour = PrecipOutlookCopy.title
 }
 
 /// Storm-first skeleton slots — must match the glance cards, not the old tactical grid.
 enum TodaySkeletonSlot: String, CaseIterable {
   case now
-  case alerts
-  case precip
   case hourly
 
   var feedItem: FeedItem {
     switch self {
     case .now: .now
-    case .alerts: .alerts
-    case .precip: .precip
     case .hourly: .hourly
     }
   }
 
-  static var feedOrder: [TodaySkeletonSlot] { [.now, .alerts, .precip, .hourly] }
+  static var feedOrder: [TodaySkeletonSlot] { [.now, .hourly] }
 }
 
 struct TodayView: View {
@@ -118,7 +114,7 @@ struct TodayView: View {
       .navigationTitle("Today")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarTitleDisplayMode(.inline)
-      .headerFillsNavigationBar()
+      .weatherShowsThroughNavigationBar()
       .toolbar {
         if #available(iOS 26.0, *) {
           ToolbarItem(placement: .topBarLeading) {
@@ -312,10 +308,12 @@ struct TodayView: View {
         Image(systemName: "square.and.arrow.up")
           .font(DesignTokens.Typography.symbol(17))
           .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .tint(DesignTokens.Palette.textPrimary)
-      .accessibilityLabel("Share")
+      .accessibilityLabel("Share weather")
     }
   }
 
@@ -327,6 +325,8 @@ struct TodayView: View {
       Image(systemName: "location.circle.fill")
         .font(DesignTokens.Typography.symbol(17))
         .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+        .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .tint(DesignTokens.Palette.textSecondary)
@@ -429,9 +429,7 @@ private struct TodaySkeletonPanel: View {
     VStack(spacing: TodayGlanceLayout.feedSpacing) {
       chipBarSkeleton
       HeroSkeleton()
-      alertsSlotSkeleton
-      precipSlotSkeleton
-      hourlySlotSkeleton
+      outlookSlotSkeleton
     }
   }
 
@@ -444,118 +442,37 @@ private struct TodaySkeletonPanel: View {
     }
   }
 
-  /// Thin alert chip — matches `AlertsFeedCard` event row, not a padded card.
-  private var alertsSlotSkeleton: some View {
-    HStack(spacing: DesignTokens.Spacing.space8) {
-      ShimmerBlock(width: 18, height: 18, cornerRadius: 4)
-      ShimmerBlock(width: 148, height: 14, cornerRadius: 4)
-      Spacer(minLength: 0)
+  private var outlookSlotSkeleton: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      ShimmerBlock(width: 168, height: 22, cornerRadius: 4)
+      ShimmerBlock(width: nil, height: 14, cornerRadius: 4)
+      ShimmerBlock(width: 220, height: 14, cornerRadius: 4)
+      ShimmerBlock(width: nil, height: TodayGlanceLayout.hourlyGraphHeight, cornerRadius: 8)
     }
-    .padding(.horizontal, DesignTokens.Spacing.space12)
-    .frame(
-      maxWidth: .infinity,
-      minHeight: TodayGlanceLayout.alertChipMinHeight,
-      alignment: .leading
-    )
-    .background(DesignTokens.Palette.cardBackground.opacity(0.72))
-    .overlay(
-      RoundedRectangle(cornerRadius: DesignTokens.Radius.medium, style: .continuous)
-        .stroke(DesignTokens.Palette.cardStroke, lineWidth: DesignTokens.Card.strokeWidth)
-    )
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium, style: .continuous))
-  }
-
-  /// Next hour precip strip: caption + message + intensity bars.
-  private var precipSlotSkeleton: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      ShimmerBlock(width: 88, height: 12, cornerRadius: 4)
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        ShimmerBlock(width: 168, height: 12, cornerRadius: 4)
-        HStack(alignment: .bottom, spacing: 4) {
-          ForEach(0..<16, id: \.self) { index in
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-              .fill(DesignTokens.Palette.cardElevated)
-              .frame(maxWidth: .infinity)
-              .frame(height: precipBarHeight(at: index))
-              .shimmer()
-          }
-        }
-        .frame(height: 32, alignment: .bottom)
-      }
-      .padding(.vertical, DesignTokens.Spacing.space12)
-      .padding(.horizontal, DesignTokens.Spacing.space16)
-      .cardStyle(cornerRadius: DesignTokens.Radius.small)
-    }
-  }
-
-  private func precipBarHeight(at index: Int) -> CGFloat {
-    // Quiet variation so the strip reads as intensity, not identical ticks.
-    let pattern: [CGFloat] = [8, 8, 10, 16, 24, 18, 10, 8]
-    return pattern[index % pattern.count]
-  }
-
-  private var hourlySlotSkeleton: some View {
-    VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
-      HStack {
-        ShimmerBlock(width: 64, height: 12, cornerRadius: 4)
-        Spacer(minLength: 0)
-        ShimmerBlock(width: 108, height: 16, cornerRadius: 8)
-      }
-      .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
-      ShimmerBlock(width: 240, height: 14, cornerRadius: 4)
-      ShimmerBlock(width: 200, height: 14, cornerRadius: 4)
-        .frame(
-          maxWidth: .infinity,
-          minHeight: TodayGlanceLayout.hourlyTonightLineHeight,
-          alignment: .topLeading
-        )
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        ShimmerBlock(
-          width: HourlyGraphLayout.columnWidth * 8,
-          height: 10,
-          cornerRadius: 5
-        )
-        .padding(.top, DesignTokens.Spacing.space16)
-        HStack(spacing: 0) {
-          ForEach(0..<4, id: \.self) { _ in
-            ShimmerBlock(width: 28, height: 10, cornerRadius: 3)
-              .frame(width: HourlyGraphLayout.columnWidth * 2)
-          }
-          Spacer(minLength: 0)
-        }
-      }
-      .frame(height: TodayGlanceLayout.hourlyGraphHeight, alignment: .top)
-    }
-    .padding(TodayGlanceLayout.hourlyCardPadding)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle()
+    .padding(.top, DesignTokens.Spacing.space8)
   }
 }
 
-/// Floating Now hero — temp, condition, feels + Updated on one row.
-/// Matches `NowFeedCard` (city is the chip bar; score is Now detail).
+/// Type-on-stage Now — matches `NowFeedCard`. Photo is the tab background.
 struct HeroSkeleton: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
-        ShimmerBlock(width: 132, height: 64, cornerRadius: DesignTokens.Radius.small)
+      HStack(alignment: .top) {
+        ShimmerBlock(width: 148, height: 64, cornerRadius: DesignTokens.Radius.small)
         Spacer(minLength: 8)
-        VStack(spacing: DesignTokens.Spacing.space4) {
-          ShimmerBlock(width: 36, height: 36, cornerRadius: DesignTokens.Radius.small)
-          ShimmerBlock(width: 72, height: 14, cornerRadius: DesignTokens.Radius.small)
+        VStack(spacing: 6) {
+          ShimmerBlock(width: 56, height: 56, cornerRadius: 12)
+          ShimmerBlock(width: 88, height: 14, cornerRadius: 4)
         }
       }
-
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        ShimmerBlock(width: 196, height: 14, cornerRadius: DesignTokens.Radius.small)
-        Spacer(minLength: 4)
-        ShimmerBlock(width: 96, height: 12, cornerRadius: DesignTokens.Radius.small)
-      }
+      ShimmerBlock(width: 240, height: 14, cornerRadius: 4)
+      ShimmerBlock(width: 200, height: 14, cornerRadius: 4)
     }
-    .padding(.horizontal, DesignTokens.Spacing.space4)
-    .padding(.top, DesignTokens.Spacing.space4)
-    .padding(.bottom, DesignTokens.Spacing.space8)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(
+      maxWidth: .infinity,
+      minHeight: TodayGlanceLayout.nowBudgetHeight,
+      alignment: .leading
+    )
   }
 }
 

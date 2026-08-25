@@ -32,7 +32,7 @@ struct TripPlannerView: View {
   private var inputSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        Text("DESTINATION")
+        Text("Destination")
           .font(DesignTokens.Typography.caption())
           .tracking(DesignTokens.Typography.cardLabelTracking)
           .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -44,7 +44,7 @@ struct TripPlannerView: View {
 
       HStack(spacing: DesignTokens.Spacing.space16) {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-          Text("FROM")
+          Text("From")
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
           DatePicker("", selection: $startDate, in: Date()..., displayedComponents: .date)
@@ -52,7 +52,7 @@ struct TripPlannerView: View {
         }
 
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-          Text("TO")
+          Text("To")
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
           DatePicker("", selection: $endDate, in: startDate..., displayedComponents: .date)

@@ -126,6 +126,43 @@ final class NWSAlertTests: XCTestCase {
     XCTAssertFalse(makeAlert(event: "Severe Thunderstorm Warning", severity: "Severe").isLifeThreatening)
   }
 
+  // MARK: - Warning emphasis (ALL CAPS + danger red)
+
+  func testWarningEmphasisIsReservedForWarningsAndEmergencies() {
+    XCTAssertTrue(makeAlert(event: "Tornado Warning").usesWarningEmphasis)
+    XCTAssertTrue(makeAlert(event: "Flash Flood Emergency").usesWarningEmphasis)
+    XCTAssertFalse(makeAlert(event: "Tornado Watch").usesWarningEmphasis)
+    XCTAssertFalse(makeAlert(event: "Air Quality Alert", severity: "Severe").usesWarningEmphasis)
+    XCTAssertFalse(makeAlert(event: "Dense Fog Advisory").usesWarningEmphasis)
+  }
+
+  func testDangerTintIsReservedForWarningEmphasis() {
+    XCTAssertEqual(
+      NWSAlertStyle.emphasis(for: makeAlert(event: "Tornado Warning")),
+      .warning
+    )
+    XCTAssertEqual(
+      NWSAlertStyle.emphasis(for: makeAlert(event: "Tornado Watch")),
+      .watch
+    )
+    XCTAssertEqual(
+      NWSAlertStyle.emphasis(for: makeAlert(event: "Air Quality Alert", severity: "Severe")),
+      .watch
+    )
+    XCTAssertEqual(
+      NWSAlertStyle.emphasis(for: makeAlert(event: "Dense Fog Advisory", severity: "Minor")),
+      .advisory
+    )
+    XCTAssertEqual(
+      NWSAlertStyle.iconName(for: makeAlert(event: "Air Quality Alert", severity: "Severe")),
+      "exclamationmark.circle.fill"
+    )
+    XCTAssertEqual(
+      NWSAlertStyle.iconName(for: makeAlert(event: "Tornado Watch")),
+      "exclamationmark.triangle.fill"
+    )
+  }
+
   // MARK: - isExpired
 
   func testIsExpiredFalseWhenNoExpiresDate() {

@@ -22,16 +22,16 @@ final class HourlyGraphTests: XCTestCase {
     XCTAssertEqual(HourlyGraphLayout.height, HourlyGraphMetrics.compact.plotStackHeight)
     XCTAssertEqual(HourlyGraphLayout.height(for: .compact), HourlyGraphLayout.height)
     XCTAssertEqual(TodayGlanceLayout.hourlyGraphHeight, HourlyGraphLayout.height)
-    XCTAssertLessThanOrEqual(TodayGlanceLayout.hourlyCardHeight, 168)
+    XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, 280)
     XCTAssertEqual(HourlyGraphHours.compactLimit, 24)
   }
 
   func testFullLayoutIsTallerAndFortyEightHours() {
     XCTAssertEqual(HourlyGraphHours.fullLimit, 48)
     XCTAssertEqual(HourlyGraphLayout.height(for: .full), HourlyGraphMetrics.full.height)
-    XCTAssertEqual(HourlyGraphMetrics.full.height, 186)
+    XCTAssertEqual(HourlyGraphMetrics.full.height, 200)
     XCTAssertGreaterThan(HourlyGraphLayout.height(for: .full), 170)
-    XCTAssertLessThan(HourlyGraphLayout.height(for: .full), 200)
+    XCTAssertLessThan(HourlyGraphLayout.height(for: .full), 220)
     XCTAssertGreaterThan(
       HourlyGraphLayout.height(for: .full), HourlyGraphLayout.height(for: .compact))
     XCTAssertEqual(HourlyGraphMetrics.full.precipBarHeight, 36)

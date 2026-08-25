@@ -52,16 +52,16 @@ enum AskGrokPendingPrompt {
 }
 
 struct AskGrokIntent: AppIntent {
-  static var title: LocalizedStringResource = "Ask Grok"
+  static var title: LocalizedStringResource = "Sky Check"
   static var description = IntentDescription(
-    "Open DayCast chat with Grok. Current weather is attached automatically.")
+    "Open DayCast Sky Check. Current weather is attached automatically.")
   static var openAppWhenRun = true
 
   @Parameter(title: "Question")
   var question: String?
 
   static var parameterSummary: some ParameterSummary {
-    Summary("Ask Grok \(\.$question)")
+    Summary("Sky Check \(\.$question)")
   }
 
   func perform() async throws -> some IntentResult {
@@ -99,17 +99,19 @@ struct DayCastScoreIntent: AppIntent {
 }
 
 struct DayCastMinutecastIntent: AppIntent {
-  static var title: LocalizedStringResource = "Minutecast"
-  static var description = IntentDescription("Get the next-hour precipitation outlook from DayCast.")
+  static var title: LocalizedStringResource = "Next 2 Hours"
+  static var description = IntentDescription(
+    "Get the next 2 hours of precipitation from DayCast.")
 
   func perform() async throws -> some IntentResult & ReturnsValue<String> {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: nil) else {
-      return .result(value: "Open DayCast to load Minutecast.")
+      return .result(value: "Open DayCast to load the next 2 hours.")
     }
     if let message = snapshot.minutecastMessage {
       return .result(value: "\(snapshot.location.name): \(message)")
     }
-    return .result(value: "\(snapshot.location.name): No Minutecast data yet. Refresh in DayCast.")
+    return .result(
+      value: "\(snapshot.location.name): No next-2-hours data yet. Refresh in DayCast.")
   }
 }
 
@@ -118,11 +120,11 @@ struct DayCastShortcuts: AppShortcutsProvider {
     AppShortcut(
       intent: AskGrokIntent(),
       phrases: [
-        "Ask Grok in \(.applicationName)",
+        "Ask Sky Check in \(.applicationName)",
         "Ask \(.applicationName) about the weather",
-        "Talk to Grok in \(.applicationName)",
+        "Talk to Sky Check in \(.applicationName)",
       ],
-      shortTitle: "Ask Grok",
+      shortTitle: "Sky Check",
       systemImageName: "sparkles"
     )
     AppShortcut(
@@ -139,10 +141,10 @@ struct DayCastShortcuts: AppShortcutsProvider {
       intent: DayCastMinutecastIntent(),
       phrases: [
         "When is rain in \(.applicationName)?",
-        "Minutecast in \(.applicationName)",
+        "Next 2 hours in \(.applicationName)",
         "Will it rain soon in \(.applicationName)?",
       ],
-      shortTitle: "Minutecast",
+      shortTitle: "Next 2 Hours",
       systemImageName: "cloud.rain.fill"
     )
   }

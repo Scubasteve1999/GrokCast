@@ -20,6 +20,11 @@ final class LightningStore {
 
   private init() {}
 
+  /// Map chrome only when there is lightning to attribute. Empty/error stays off the map.
+  var showsQuietAttribution: Bool {
+    !snapshot.strikes.isEmpty
+  }
+
   var attributionLabel: String {
     guard let reason = snapshot.quietReason, snapshot.strikes.isEmpty else {
       return "Lightning · \(LightningSnapshot.attribution)"

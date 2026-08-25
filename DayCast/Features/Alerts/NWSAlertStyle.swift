@@ -1,18 +1,31 @@
 import SwiftUI
 import UIKit
 
-/// Shared severity styling for NWS alerts (Warning = red, Watch = orange).
+/// Shared severity styling for NWS alerts.
+/// Danger red is reserved for official warnings / life-threatening products.
 enum NWSAlertStyle {
+  enum Emphasis: Equatable {
+    case warning
+    case watch
+    case advisory
+  }
+
+  static func emphasis(for alert: NWSAlert) -> Emphasis {
+    if alert.usesWarningEmphasis { return .warning }
+    if alert.isWatch || alert.severityLevel >= 2 { return .watch }
+    return .advisory
+  }
+
   static func tint(for alert: NWSAlert) -> Color {
-    if alert.isWarning { return .red }
-    if alert.isWatch { return .orange }
-    if alert.severityLevel >= 3 { return .red }
-    if alert.severityLevel >= 2 { return .orange }
-    return .yellow
+    switch emphasis(for: alert) {
+    case .warning: DesignTokens.Palette.danger
+    case .watch: DesignTokens.Palette.warning
+    case .advisory: DesignTokens.Palette.accentWarm
+    }
   }
 
   static func iconName(for alert: NWSAlert) -> String {
-    if alert.isWarning || alert.severityLevel >= 3 {
+    if alert.usesWarningEmphasis || alert.isWatch {
       return "exclamationmark.triangle.fill"
     }
     return "exclamationmark.circle.fill"
@@ -20,10 +33,10 @@ enum NWSAlertStyle {
 
   /// MapKit / UIKit tint for Radar annotation pins.
   static func uiTint(for alert: NWSAlert) -> UIColor {
-    if alert.isWarning { return .systemRed }
-    if alert.isWatch { return .systemOrange }
-    if alert.severityLevel >= 3 { return .systemRed }
-    if alert.severityLevel >= 2 { return .systemOrange }
-    return .systemYellow
+    switch emphasis(for: alert) {
+    case .warning: .systemRed
+    case .watch: .systemOrange
+    case .advisory: .systemYellow
+    }
   }
 }

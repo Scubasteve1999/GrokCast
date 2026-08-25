@@ -462,7 +462,7 @@ final class NWSService {
       conditionText: text,
       humidity: 50,
       windSpeed: windSpeed,
-      uvIndex: 3.0,
+      uvIndex: hourlyForecasts.first?.uvIndex ?? 0,
       precipitationChance: precip,
       high: high,
       low: low,

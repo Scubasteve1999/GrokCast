@@ -19,7 +19,7 @@ struct AppStoreScreenshotToday: View {
           Text("DayCast")
             .font(.largeTitle.bold())
           Spacer()
-          Text("OLIVE BRANCH")
+          Text("Olive Branch")
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
@@ -93,7 +93,7 @@ struct AppStoreScreenshotRadar: View {
       }
 
       VStack {
-        Text("FUTURE")
+        Text("Future")
           .font(DesignTokens.Typography.caption())
           .padding(.horizontal, 12)
           .padding(.vertical, 6)
@@ -115,7 +115,7 @@ struct AppStoreScreenshotGrok: View {
         Text("Sky Check")
           .font(DesignTokens.Typography.title())
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-          Label("SKY CHECK", systemImage: "cloud.bolt.fill")
+          Label("Sky Check", systemImage: "cloud.bolt.fill")
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accent)
           ZStack {
@@ -239,9 +239,9 @@ struct AppStoreScreenshotAlerts: View {
         .cardStyle(stroke: DesignTokens.Palette.danger.opacity(0.4))
 
         VStack(alignment: .leading, spacing: 8) {
-          Label("TIME-SENSITIVE ALERTS", systemImage: "bell.badge.fill")
+          Label("Time-sensitive alerts", systemImage: "bell.badge.fill")
             .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.danger)
+            .foregroundStyle(DesignTokens.Palette.accent)
           Text("Warnings and watches use iOS time-sensitive notifications so severe weather reaches you promptly when alerts are enabled.")
             .font(DesignTokens.Typography.body())
         }

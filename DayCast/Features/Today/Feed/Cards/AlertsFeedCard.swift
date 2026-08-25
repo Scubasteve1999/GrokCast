@@ -3,6 +3,7 @@ import SwiftUI
 struct AlertsFeedCard: View {
   let alerts: [NWSAlert]
   var severeContext: SevereWeatherContext? = nil
+  var sitsOnPhoto: Bool = false
   var onSelect: (NWSAlert) -> Void
 
   var body: some View {
@@ -29,12 +30,19 @@ struct AlertsFeedCard: View {
               .font(DesignTokens.Typography.subsection())
               .foregroundStyle(tint(for: alert))
 
-            Text(Self.chipTitle(for: alert, in: alerts))
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-              .lineLimit(1)
-              .minimumScaleFactor(0.85)
-              .multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(Self.chipTitle(for: alert))
+                .font(DesignTokens.Typography.subsection())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+              Text(Self.chipUntil(for: alert))
+                .font(DesignTokens.Typography.caption())
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            }
+            .multilineTextAlignment(.leading)
 
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
@@ -42,12 +50,17 @@ struct AlertsFeedCard: View {
               .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
           .padding(.horizontal, DesignTokens.Spacing.space12)
+          .padding(.vertical, DesignTokens.Spacing.space8)
           .frame(
             maxWidth: .infinity,
             minHeight: TodayGlanceLayout.alertChipMinHeight,
             alignment: .leading
           )
-          .background(tint(for: alert).opacity(0.12))
+          .background(
+            sitsOnPhoto
+              ? Color.black.opacity(0.46)
+              : tint(for: alert).opacity(0.12)
+          )
           .overlay(
             RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
               .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
@@ -62,24 +75,19 @@ struct AlertsFeedCard: View {
     .accessibilityIdentifier(DayCastAccessibility.Today.alertsSlot)
   }
 
-  /// Today is a chip rail, not the Alerts list. Collapse duplicate events; cap at 2.
+  /// Today is a chip rail, not the Alerts list. One chip per grouped event; cap at 2.
   static let maxGlanceChips = 2
 
   static func glanceChips(from alerts: [NWSAlert]) -> [NWSAlert] {
-    var seen = Set<String>()
-    var chips: [NWSAlert] = []
-    for alert in alerts {
-      if seen.insert(alert.event).inserted {
-        chips.append(alert)
-      }
-      if chips.count == maxGlanceChips { break }
-    }
-    return chips
+    Array(NWSAlertGrouping.representatives(from: alerts).prefix(maxGlanceChips))
   }
 
-  static func chipTitle(for alert: NWSAlert, in alerts: [NWSAlert]) -> String {
-    let count = alerts.filter { $0.event == alert.event }.count
-    return count > 1 ? "\(alert.event) · \(count)" : alert.event
+  static func chipTitle(for alert: NWSAlert) -> String {
+    alert.event
+  }
+
+  static func chipUntil(for alert: NWSAlert) -> String {
+    AlertsActiveCopy.untilLine(expires: alert.expires, areaDesc: nil)
   }
 
   private func tint(for alert: NWSAlert) -> Color {

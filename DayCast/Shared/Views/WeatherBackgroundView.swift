@@ -540,6 +540,47 @@ private struct LightningOverlay: View {
   }
 }
 
+/// Full-bleed cinematic still for Today / Forecast / Alerts / More / Sky Check.
+/// Radar's stage is the map — do not put this behind Site Doppler.
+struct WeatherStage: View {
+  let conditionCode: Int?
+  var isDay: Bool = WeatherBackgroundView.inferredIsDay
+  var extraOpacity: Double = 1.0
+
+  private var stillName: String {
+    NowHeroPhotography.stillName(conditionCode: conditionCode, isDay: isDay)
+  }
+
+  var body: some View {
+    GeometryReader { geo in
+      let size = NowHeroPhotography.stageSize(containerSize: geo.size)
+      Image(stillName)
+        .resizable()
+        .scaledToFill()
+        .frame(width: size.width, height: size.height)
+        .clipped()
+        .overlay {
+          LinearGradient(
+            colors: [
+              Color.black.opacity(0.48),
+              Color.black.opacity(0.22),
+              Color.black.opacity(0.18),
+              DesignTokens.Palette.bgPrimary.opacity(0.92),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+          )
+        }
+        .accessibilityHidden(true)
+    }
+    .ignoresSafeArea()
+    .opacity(extraOpacity)
+    .allowsHitTesting(false)
+    .animation(.easeInOut(duration: 0.35), value: conditionCode)
+    .animation(.easeInOut(duration: 0.35), value: isDay)
+  }
+}
+
 struct WeatherBackgroundLayer: View {
   let conditionCode: Int?
   var isDay: Bool = WeatherBackgroundView.inferredIsDay
@@ -547,18 +588,15 @@ struct WeatherBackgroundLayer: View {
   var extraOpacity: Double = 1.0
 
   var body: some View {
-    ZStack {
+    let _ = intensity
+    return ZStack {
       DesignTokens.Palette.bgPrimary
         .ignoresSafeArea()
-
-      WeatherBackgroundView(
+      WeatherStage(
         conditionCode: conditionCode,
         isDay: isDay,
-        intensity: intensity
+        extraOpacity: extraOpacity
       )
-      .ignoresSafeArea()
-      .opacity(extraOpacity)
-      .animation(.easeInOut(duration: 0.35), value: conditionCode)
     }
     .allowsHitTesting(false)
   }

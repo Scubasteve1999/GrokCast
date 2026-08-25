@@ -31,7 +31,7 @@ struct DayCastScoreCard: View {
 
   private var figmaLayout: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("DAYCAST SCORE")
+      Text("DayCast score")
         .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -77,10 +77,9 @@ struct DayCastScoreCard: View {
           Text("\(score.value)")
             .font(DesignTokens.Typography.studioTitle())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
-          Text("SCORE")
+          Text("Score")
             .font(DesignTokens.Typography.micro())
-            .tracking(1)
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
         }
       }
 
@@ -88,18 +87,17 @@ struct DayCastScoreCard: View {
         HStack(spacing: 6) {
           Image(systemName: score.icon)
             .foregroundStyle(ringColor)
-          Text(score.label.uppercased())
+          Text(score.label)
             .font(DesignTokens.Typography.caption())
-            .tracking(DesignTokens.Typography.headerTracking)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
         }
         Text(score.subtitle)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
-        Text(locationName.uppercased())
+        Text(locationName)
           .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
       }
 
       Spacer(minLength: 0)

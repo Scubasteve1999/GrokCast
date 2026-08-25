@@ -199,7 +199,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
       fetchedAt: now,
       grokCastScore: 82,
       grokCastScoreLabel: "Go Outside",
-      minutecastMessage: "No precipitation for at least 2 hours",
+      minutecastMessage: "Dry for the next 2 hours",
       grokBriefOneLiner: "Light jacket this morning; great afternoon for a walk."
     )
   }

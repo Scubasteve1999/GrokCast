@@ -64,14 +64,15 @@ struct NearbyFeedCard: View {
   var onAirQuality: (() -> Void)?
   var onFire: (() -> Void)?
   var onSunMoon: (() -> Void)?
+  var plated: Bool = true
 
   private var showsSun: Bool { sunrise != nil || sunset != nil }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Text("Nearby")
-        .font(DesignTokens.Typography.subsection())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .font(DesignTokens.Typography.studioTitle())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
         .accessibilityAddTraits(.isHeader)
 
       HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
@@ -116,9 +117,9 @@ struct NearbyFeedCard: View {
         }
       }
     }
-    .padding(DesignTokens.Spacing.space16)
+    .padding(plated ? DesignTokens.Spacing.space16 : 0)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .cardStyle()
+    .weatherModuleChrome(plated)
   }
 
   private func formatTime(_ date: Date?) -> String {

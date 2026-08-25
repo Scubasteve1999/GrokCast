@@ -23,6 +23,56 @@ enum AlertsActiveCopy {
     return parts.joined(separator: " · ")
   }
 
+  /// Always-on NWS status for the Alerts screen. Never invents a warning count.
+  static func authorityLine(
+    locationName: String?,
+    nwsCount: Int,
+    checkedAt: Date?,
+    loadState: AlertsLoadState,
+    hasCachedAlerts: Bool,
+    now: Date = Date()
+  ) -> String {
+    var parts = ["NWS"]
+    let place = locationName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if !place.isEmpty { parts.append(place) }
+
+    switch loadState {
+    case .pending:
+      parts.append("Checking alerts…")
+    case .failed:
+      if hasCachedAlerts {
+        parts.append("Showing cached alerts")
+        if let checkedAt {
+          parts.append(lastCheckPhrase(checkedAt, now: now))
+        }
+      } else {
+        parts.append("Unable to refresh")
+        if let checkedAt {
+          parts.append(lastCheckPhrase(checkedAt, now: now))
+        }
+      }
+    case .loaded:
+      if nwsCount > 0 {
+        parts.append(nwsCount == 1 ? "1 active" : "\(nwsCount) active")
+      } else {
+        parts.append("No active alerts")
+      }
+      if let checkedAt {
+        parts.append(checkedPhrase(checkedAt, now: now))
+      }
+    }
+    return parts.joined(separator: " · ")
+  }
+
+  static func lastCheckPhrase(_ checkedAt: Date, now: Date = Date()) -> String {
+    let interval = max(0, now.timeIntervalSince(checkedAt))
+    if interval < 60 { return "last check just now" }
+    let minutes = Int(interval / 60)
+    if minutes < 180 { return "last check \(minutes)m ago" }
+    let hours = Int(interval / 3600)
+    return "last check \(hours)h ago"
+  }
+
   static func checkedPhrase(_ checkedAt: Date, now: Date = Date()) -> String {
     let interval = max(0, now.timeIntervalSince(checkedAt))
     if interval < 60 { return "checked just now" }

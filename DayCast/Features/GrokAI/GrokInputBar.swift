@@ -5,6 +5,7 @@
 //  Reusable input bar component for the GrokAI feature.
 //  Visuals/behavior: body per verbatim provided extraction spec (HStack sp:8, TextField plain+body font+r20 ultraThinMaterial fill, lineLimit, arrow button); deliberate simplification vs prior inline (no outer .ultraThinMaterial container + stroke, no palette indigo, placeholder "Ask Grok anything...", immediate text clear in caller wiring).
 //  isStreaming respected at minimum via caller clear + isSendDisabled (component does not take streaming param per spec).
+//  Placeholder is "Ask about the weather…" — public name is Sky Check, not Ask Grok.
 //
 
 import SwiftUI
@@ -66,9 +67,11 @@ struct GrokInputBar: View {
             isSendDisabled ? DesignTokens.Palette.textTertiary : DesignTokens.Palette.bgPrimary,
             isSendDisabled ? DesignTokens.Palette.cardStroke : DesignTokens.Palette.accent
           )
+          .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+          .contentShape(Rectangle())
       }
       .disabled(isSendDisabled)
-      .accessibilityLabel("Send")
+      .accessibilityLabel("Send message")
     }
     .padding(.horizontal, DesignTokens.Spacing.space16)
     .padding(.vertical, DesignTokens.Spacing.space12)
@@ -107,9 +110,11 @@ struct GrokInputBar: View {
           .font(DesignTokens.Typography.title())
           .foregroundStyle(
             isSendDisabled ? DesignTokens.Palette.textTertiary : DesignTokens.Palette.textPrimary)
+          .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+          .contentShape(Rectangle())
       }
       .disabled(isSendDisabled)
-      .accessibilityLabel("Send")
+      .accessibilityLabel("Send message")
     }
     .padding(.horizontal)
     .padding(.vertical, 8)

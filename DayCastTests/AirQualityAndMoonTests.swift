@@ -203,7 +203,8 @@ final class AirQualityAndMoonTests: XCTestCase {
 
   func testForecastHourlyVoiceOverDoesNotOpenForecast() {
     let label = HourlyFeedCard.accessibilityLabel(
-      title: "Hourly",
+      title: "Tonight",
+      sentence: "Clear tonight, cooling to 73°.",
       hourLabel: "Now",
       temp: 82,
       precipChance: 1,
@@ -211,7 +212,7 @@ final class AirQualityAndMoonTests: XCTestCase {
     )
     XCTAssertEqual(
       label,
-      "Hourly Now 82 degrees, 1 percent chance of precipitation."
+      "Tonight Clear tonight, cooling to 73°. Now 82 degrees, 1 percent chance of precipitation."
     )
     XCTAssertFalse(label.contains("Opens full forecast"))
     XCTAssertEqual(

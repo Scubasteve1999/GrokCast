@@ -5,13 +5,11 @@ enum WidgetAlertStyle {
   static func tint(for summary: WidgetAlertSummary) -> Color {
     if summary.topIsWarning { return DesignTokens.Palette.danger }
     if summary.topIsWatch { return DesignTokens.Palette.warning }
-    if summary.topSeverityLevel >= 3 { return DesignTokens.Palette.danger }
-    if summary.topSeverityLevel >= 2 { return DesignTokens.Palette.warning }
-    return DesignTokens.Palette.warning
+    return DesignTokens.Palette.accentWarm
   }
 
   static func iconName(for summary: WidgetAlertSummary) -> String {
-    if summary.topIsWarning || summary.topSeverityLevel >= 3 {
+    if summary.topIsWarning || summary.topIsWatch {
       return "exclamationmark.triangle.fill"
     }
     return "exclamationmark.circle.fill"

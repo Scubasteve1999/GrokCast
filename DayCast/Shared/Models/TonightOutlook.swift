@@ -21,6 +21,14 @@ enum TonightOutlook {
       case .tonight: return "Tonight"
       }
     }
+
+    var outlookTitle: String {
+      switch self {
+      case .thisMorning: return "This Morning's Outlook"
+      case .thisAfternoon: return "This Afternoon's Outlook"
+      case .tonight: return "Tonight's Outlook"
+      }
+    }
   }
 
   static let maxCharacterCount = 160

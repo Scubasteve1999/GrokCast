@@ -156,6 +156,9 @@ final class StormSpotterHonestyTests: XCTestCase {
       XCTAssertTrue(
         prompt.localizedCaseInsensitiveContains(
           "Lead with the answer a person would tell a friend"), prompt)
+      XCTAssertTrue(prompt.contains("Short answer"), prompt)
+      XCTAssertTrue(prompt.localizedCaseInsensitiveContains("What changes"), prompt)
+      XCTAssertTrue(prompt.localizedCaseInsensitiveContains("Details"), prompt)
       XCTAssertTrue(prompt.localizedCaseInsensitiveContains("No jargon unless they ask"), prompt)
       XCTAssertFalse(prompt.localizedCaseInsensitiveContains("field-first"))
       XCTAssertFalse(prompt.localizedCaseInsensitiveContains("watching severe weather"))

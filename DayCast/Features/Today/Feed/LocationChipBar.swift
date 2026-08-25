@@ -8,7 +8,7 @@ struct LocationChipBar: View {
     // Explicit fill (not `.background`) so the plate composites above the
     // scrolling feed. Overlay Color backgrounds lose that fight on iOS 26.
     ZStack(alignment: .bottom) {
-      DesignTokens.Palette.bgSecondary
+      Color.black.opacity(0.22)
 
       // No horizontal ScrollView: inset ScrollViews only publish the selected
       // chip to VoiceOver. A wrapping HStack keeps every visible city a button.
@@ -32,7 +32,7 @@ struct LocationChipBar: View {
                   : DesignTokens.Palette.textSecondary
               )
               .padding(.horizontal, DesignTokens.Spacing.space12)
-              .padding(.vertical, DesignTokens.Spacing.space8)
+              .frame(minHeight: DesignTokens.Layout.minHitTarget)
               .background(
                 Capsule()
                   .fill(selected ? Color.white.opacity(0.08) : Color.clear)
@@ -56,7 +56,7 @@ struct LocationChipBar: View {
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
-      .padding(.vertical, DesignTokens.Spacing.space8)
+      .padding(.vertical, DesignTokens.Spacing.space4)
       .frame(maxWidth: .infinity, alignment: .leading)
 
       Rectangle()
@@ -67,7 +67,7 @@ struct LocationChipBar: View {
     .frame(maxWidth: .infinity)
     .fixedSize(horizontal: false, vertical: true)
     .background(alignment: .top) {
-      DesignTokens.Palette.bgSecondary
+      Color.black.opacity(0.22)
         .frame(height: Self.navOverlap)
         .offset(y: -Self.navOverlap)
         .allowsHitTesting(false)

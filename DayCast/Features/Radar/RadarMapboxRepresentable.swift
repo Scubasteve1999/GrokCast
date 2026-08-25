@@ -193,6 +193,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       )
       mapView.mapboxMap.setCamera(to: camera)
       mapView.gestures.delegate = self
+      mapView.ornaments.options.compass.visibility = .hidden
+      mapView.ornaments.options.scaleBar.visibility = .hidden
+      mapView.ornaments.options.logo.margins = CGPoint(x: 12, y: 12)
+      mapView.ornaments.options.attributionButton.margins = CGPoint(x: 12, y: 12)
 
       mapView.mapboxMap.onStyleLoaded.observe { [weak self, weak mapView] _ in
         guard let self, let mapView else { return }

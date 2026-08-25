@@ -2,7 +2,7 @@
 
 Contract for UI. Matches `DayCast/Shared/Design/DesignTokens.swift`. Do not add a color, size, or radius without updating both.
 
-**Look:** dark weather product — photography / sky wash, quiet type, **flat plates** with a 1pt hairline, one shadow. Numbers, curves, maps. Not a glossy indie sticker pack. Not a new brand.
+**Look:** dark weather product. One cinematic still (`WeatherStage` / `NowHeroPhotography`) is the **stage** of Today, Forecast, Alerts, More, Locations, and Sky Check. Numbers and sentences sit on that photo. Below-the-fold modules use `weatherModuleStyle()` — `ultraThinMaterial` floating on the sky, not opaque navy stickers. Radar’s stage is the map. Settings/Paywall keep solid `cardStyle`.
 
 Reference still: `scratch/today-hourly-graph-2026-08-24/today-first-viewport.png`.
 
@@ -19,8 +19,8 @@ Reference still: `scratch/today-hourly-graph-2026-08-24/today-first-viewport.png
 | `cardStroke` | white 20% | **Fill / track only** — range bars, score ring, dry minutecast, Settings divider. Not the default plate rim. |
 | `cardHairline` | white 10% | Default `.cardStyle()` / `.glassCardStyle()` rim |
 | `textPrimary` | white | Body, values, titles |
-| `textSecondary` | white 78% | Labels |
-| `textTertiary` | white 52% | Captions, chevrons |
+| `textSecondary` | white 82% | Labels |
+| `textTertiary` | white 68% | Captions, chevrons |
 | `accent` | `#8BB8F0` | Interactive, radar playhead |
 | `accentWarm` | `#F0B07A` | Warm temps |
 | `accentCool` | `#9AC4E8` | Cool temps / precip |

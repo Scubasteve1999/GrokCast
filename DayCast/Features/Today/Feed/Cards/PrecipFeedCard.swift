@@ -12,34 +12,28 @@ struct PrecipFeedCard: View {
     Button(action: onTap) {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         HStack {
-          Text("Next hour")
+          Text(PrecipOutlookCopy.title)
             .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .tracking(DesignTokens.Typography.cardLabelTracking)
+            .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
           Image(systemName: "chevron.right")
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
 
-        if !summary.strip.isEmpty {
+        if summary.kind != .clear, !summary.strip.isEmpty {
           MinutecastStrip(
             summary: summary,
             sourceLabel: sourceLabel,
             disagreementCaption: disagreementCaption
           )
         } else if let timingSentence, !timingSentence.isEmpty {
-          HStack(alignment: .top, spacing: DesignTokens.Spacing.space8) {
-            Image(systemName: summary.icon)
-              .foregroundStyle(DesignTokens.Palette.accentCool)
-            Text(timingSentence)
-              .font(DesignTokens.Typography.callout())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          .padding(DesignTokens.Spacing.space12)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .cardStyle(cornerRadius: DesignTokens.Radius.small)
+          Text(timingSentence)
+            .font(DesignTokens.Typography.body())
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
         } else {
           MinutecastStrip(
             summary: summary,
@@ -48,8 +42,9 @@ struct PrecipFeedCard: View {
           )
         }
       }
-      // This card has no background of its own, so without an explicit shape
-      // only the text and icons are hittable.
+      .padding(DesignTokens.Spacing.space16)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .weatherModuleStyle()
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -70,14 +65,14 @@ struct PrecipFeedCard: View {
   ) -> String {
     let caption = disagreementCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     if caption.isEmpty {
-      return "Next hour. \(message). Opens forecast."
+      return "\(PrecipOutlookCopy.title). \(message). Opens forecast."
     }
-    return "Next hour. \(message). \(caption). Opens forecast."
+    return "\(PrecipOutlookCopy.title). \(message). \(caption). Opens forecast."
   }
 }
 
 enum PrecipFeedVisibility {
-  /// Meaningful precip content for the feed (not clear-sky empty shells).
+  /// Wet Next 2 Hours content. Drives story-day radar teaser copy, not feed order.
   static func hasContent(summary: MinutecastSummary) -> Bool {
     switch summary.kind {
     case .clear:
@@ -87,9 +82,15 @@ enum PrecipFeedVisibility {
     }
   }
 
+  /// Next-event card, including "Dry for the next 2 hours". Hide only when data is missing.
+  static func showsCard(summary: MinutecastSummary) -> Bool {
+    if summary.kind == .clear && summary.strip.isEmpty { return false }
+    return !summary.message.isEmpty
+  }
+
   /// Prefer the engine message as a timing sentence when bars are unavailable.
   static func timingSentence(for summary: MinutecastSummary) -> String? {
-    guard hasContent(summary: summary) else { return nil }
+    if summary.kind == .clear && summary.strip.isEmpty { return nil }
     let trimmed = summary.message.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.isEmpty ? nil : trimmed
   }
