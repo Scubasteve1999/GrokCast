@@ -3,8 +3,6 @@ import SwiftUI
 private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 /// Figma Forecast screen: content starts below status bar with modest top inset.
 private let forecastContentTopPadding = DesignTokens.Spacing.space16
-/// Room for Now accent + precip indicator under temp.
-private let hourlyStripHeight = DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24
 
 struct ForecastView: View {
   @Environment(WeatherStore.self) private var store
@@ -16,9 +14,10 @@ struct ForecastView: View {
           conditionCode: store.displayedWeather?.conditionCode,
           isDay: store.displayedWeather.map {
             WeatherBackgroundView.isDay(from: $0.symbolName)
-          } ?? WeatherBackgroundView.inferredIsDay(
-            timeZone: store.displayedWeather?.locationTimeZone ?? .current
-          ),
+          }
+            ?? WeatherBackgroundView.inferredIsDay(
+              timeZone: store.displayedWeather?.locationTimeZone ?? .current
+            ),
           intensity: .staticOnly,
           extraOpacity: 1.0
         )
@@ -131,15 +130,7 @@ private struct ForecastAdaptiveBody: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Forecast")
-        FigmaSubsectionLabel(title: "Hourly")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space12) {
-            ForEach(0..<8, id: \.self) { index in
-              HourlyRowSkeleton(isNow: index == 0, layout: .figma)
-            }
-          }
-        }
-        .frame(height: hourlyStripHeight)
+        HourlyGraphSkeleton()
 
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -163,15 +154,7 @@ private struct ForecastAdaptiveBody: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Forecast")
 
-        FigmaSubsectionLabel(title: "Hourly")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space12) {
-            ForEach(0..<8, id: \.self) { index in
-              HourlyRowSkeleton(isNow: index == 0, layout: .figma)
-            }
-          }
-        }
-        .frame(height: hourlyStripHeight)
+        HourlyGraphSkeleton()
 
         FigmaSubsectionLabel(title: "10-Day")
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -196,16 +179,7 @@ private struct ForecastAdaptiveBody: View {
         FigmaScreenTitle(title: "Forecast")
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            FigmaSubsectionLabel(title: "Hourly")
-            LazyVGrid(
-              columns: Array(
-                repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
-              spacing: DesignTokens.Spacing.space16
-            ) {
-              ForEach(0..<24, id: \.self) { index in
-                HourlyRowSkeleton(isNow: index == 0, layout: .figma)
-              }
-            }
+            HourlyGraphSkeleton()
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -229,29 +203,13 @@ private struct ForecastAdaptiveBody: View {
 
   private func neutralForecastContent(for weather: DayCastWeather) -> some View {
     ScrollView {
-      let hourly24 = Self.nextHourlyForecasts(from: weather)
       let calendar = weather.locationCalendar
       let timeZone = weather.locationTimeZone
-      let now = Date()
-      let nowHourIndex = hourly24.firstIndex(where: { h in
-        calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
-      }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Forecast")
 
-        FigmaSubsectionLabel(title: "Hourly")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space12) {
-            ForEach(Array(hourly24.enumerated()), id: \.element.time) {
-              index, hour in
-              hourlyRow(
-                forecast: hour, isNow: index == nowHourIndex, layout: .figma,
-                timeZone: timeZone)
-            }
-          }
-        }
-        .frame(height: hourlyStripHeight)
+        ForecastHourlySection(weather: weather)
 
         openWeatherMapCompareSection(timeZone: timeZone)
 
@@ -286,29 +244,13 @@ private struct ForecastAdaptiveBody: View {
 
   private func compactForecastList(for weather: DayCastWeather) -> some View {
     ScrollView {
-      let hourly24 = Self.nextHourlyForecasts(from: weather)
       let calendar = weather.locationCalendar
       let timeZone = weather.locationTimeZone
-      let now = Date()
-      let nowHourIndex = hourly24.firstIndex(where: { h in
-        calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
-      }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Forecast")
 
-        FigmaSubsectionLabel(title: "Hourly")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DesignTokens.Spacing.space12) {
-            ForEach(Array(hourly24.enumerated()), id: \.element.time) {
-              index, hour in
-              hourlyRow(
-                forecast: hour, isNow: index == nowHourIndex, layout: .figma,
-                timeZone: timeZone)
-            }
-          }
-        }
-        .frame(height: hourlyStripHeight)
+        ForecastHourlySection(weather: weather)
 
         openWeatherMapCompareSection(timeZone: timeZone)
 
@@ -344,32 +286,15 @@ private struct ForecastAdaptiveBody: View {
 
   private func wideForecastContent(for weather: DayCastWeather) -> some View {
     ScrollView {
-      let hourly24 = Self.nextHourlyForecasts(from: weather)
       let calendar = weather.locationCalendar
       let timeZone = weather.locationTimeZone
-      let now = Date()
-      let nowHourIndex = hourly24.firstIndex(where: { h in
-        calendar.isDate(h.time, equalTo: now, toGranularity: .hour)
-      }) ?? 0
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Forecast")
 
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            FigmaSubsectionLabel(title: "Hourly")
-            LazyVGrid(
-              columns: Array(
-                repeating: GridItem(.flexible(), spacing: DesignTokens.Spacing.space12), count: 4),
-              spacing: DesignTokens.Spacing.space16
-            ) {
-              ForEach(Array(hourly24.enumerated()), id: \.element.time) {
-                index, hour in
-                hourlyRow(
-                  forecast: hour, isNow: index == nowHourIndex, layout: .figma,
-                  timeZone: timeZone)
-              }
-            }
+            ForecastHourlySection(weather: weather)
             openWeatherMapCompareSection(timeZone: timeZone)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -403,23 +328,6 @@ private struct ForecastAdaptiveBody: View {
     .refreshable {
       await store.refreshWeather()
     }
-  }
-
-  private func hourlyRow(
-    forecast: HourlyForecast,
-    isNow: Bool,
-    layout: HourlyRowLayout = .standard,
-    timeZone: TimeZone = .current
-  ) -> some View {
-    let hybrid = store.openWeatherMapEntry(closestTo: forecast.time)
-    return HourlyRow(
-      forecast: forecast,
-      isNow: isNow,
-      layout: layout,
-      openWeatherMapTempF: hybrid.map { Int(round($0.temperatureF)) },
-      openWeatherMapPrecipChance: hybrid?.precipitationChance,
-      timeZone: timeZone
-    )
   }
 
   @ViewBuilder
@@ -489,17 +397,60 @@ private struct ForecastAdaptiveBody: View {
     }
   }
 
-  /// Prefer upcoming hours even if a cached payload still includes earlier-today slots.
-  /// Uses absolute `Date` cutoffs (not `Calendar.current`) so a remote city's hours —
-  /// already sliced in the location timezone by OpenMeteoService — are not dropped
-  /// when the device timezone differs.
-  private static func nextHourlyForecasts(from weather: DayCastWeather) -> [HourlyForecast] {
-    let cutoff = Date().addingTimeInterval(-45 * 60)
-    let upcoming = weather.hourly.filter { $0.time >= cutoff }
-    if !upcoming.isEmpty {
-      return Array(upcoming.prefix(24))
+}
+
+private struct ForecastHourlySection: View {
+  let weather: DayCastWeather
+  @State private var series: HourlyGraphSeries = .temp
+
+  private var hours: [HourlyForecast] {
+    HourlyGraphHours.upcoming(from: weather)
+  }
+
+  private var seriesOptions: [HourlyGraphSeries] {
+    HourlyGraphSeries.available(in: hours)
+  }
+
+  private var resolvedSeries: HourlyGraphSeries {
+    seriesOptions.contains(series) ? series : .temp
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
+      HStack(spacing: DesignTokens.Spacing.space8) {
+        Text("Hourly")
+          .font(DesignTokens.Typography.subsection())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .tracking(DesignTokens.Typography.cardLabelTracking)
+          .lineLimit(1)
+        Spacer(minLength: 4)
+        HourlySeriesPicker(options: seriesOptions, selection: $series)
+      }
+      .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
+
+      HourlyGraphView(
+        hours: hours,
+        series: resolvedSeries,
+        sunrise: weather.daily.first?.sunrise,
+        sunset: weather.daily.first?.sunset,
+        timeZone: weather.locationTimeZone
+      )
+      .frame(height: TodayGlanceLayout.hourlyGraphHeight)
     }
-    return Array(weather.hourly.prefix(24))
+    .padding(TodayGlanceLayout.hourlyCardPadding)
+    .cardStyle()
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(accessibilitySummary)
+  }
+
+  private var accessibilitySummary: String {
+    HourlyFeedCard.accessibilityLabel(
+      title: "Hourly",
+      hourLabel: hours.isEmpty ? nil : "Now",
+      temp: hours.first.map { Int(round($0.temp)) },
+      precipChance: hours.first?.precipChance,
+      opensForecast: false
+    )
   }
 }
 

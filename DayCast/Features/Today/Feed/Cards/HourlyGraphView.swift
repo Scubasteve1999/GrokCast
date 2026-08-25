@@ -25,6 +25,91 @@ enum HourlyGraphSeries: String, CaseIterable, Identifiable {
   }
 }
 
+enum HourlyGraphHours {
+  /// Upcoming hours even if a cached payload still includes earlier-today slots.
+  /// Absolute `Date` cutoff so a remote city's hours are not dropped when the
+  /// device timezone differs.
+  static func upcoming(from weather: DayCastWeather, limit: Int = 24) -> [HourlyForecast] {
+    let cutoff = Date().addingTimeInterval(-45 * 60)
+    let upcoming = weather.hourly.filter { $0.time >= cutoff }
+    let slice = upcoming.isEmpty ? weather.hourly : upcoming
+    return Array(slice.prefix(limit))
+  }
+}
+
+struct HourlySeriesPicker: View {
+  let options: [HourlyGraphSeries]
+  @Binding var selection: HourlyGraphSeries
+
+  var body: some View {
+    HStack(spacing: 0) {
+      ForEach(options) { option in
+        Button {
+          Haptic.impact(.light)
+          selection = option
+        } label: {
+          Text(option.label)
+            .font(DesignTokens.Typography.micro())
+            .fontWeight(selection == option ? .semibold : .regular)
+            .foregroundStyle(
+              selection == option
+                ? DesignTokens.Palette.textPrimary
+                : DesignTokens.Palette.textTertiary
+            )
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+              Capsule()
+                .fill(
+                  selection == option
+                    ? DesignTokens.Palette.cardElevated
+                    : Color.clear
+                )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(option.label)
+        .accessibilityAddTraits(selection == option ? .isSelected : [])
+      }
+    }
+    .padding(2)
+    .background(DesignTokens.Palette.bgSecondary.opacity(0.65))
+    .clipShape(Capsule())
+  }
+}
+
+struct HourlyGraphSkeleton: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
+      HStack {
+        ShimmerBlock(width: 64, height: 12, cornerRadius: 4)
+        Spacer(minLength: 0)
+        ShimmerBlock(width: 108, height: 16, cornerRadius: 8)
+      }
+      .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+        ShimmerBlock(
+          width: HourlyGraphLayout.columnWidth * 8,
+          height: 10,
+          cornerRadius: 5
+        )
+        .padding(.top, DesignTokens.Spacing.space16)
+        HStack(spacing: 0) {
+          ForEach(0..<4, id: \.self) { _ in
+            ShimmerBlock(width: 28, height: 10, cornerRadius: 3)
+              .frame(width: HourlyGraphLayout.columnWidth * 2)
+          }
+          Spacer(minLength: 0)
+        }
+      }
+      .frame(height: TodayGlanceLayout.hourlyGraphHeight, alignment: .top)
+    }
+    .padding(TodayGlanceLayout.hourlyCardPadding)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .cardStyle()
+  }
+}
+
 enum HourlyGraphLayout {
   static let columnWidth: CGFloat = 32
   static let plotHeight: CGFloat = 58

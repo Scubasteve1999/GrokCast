@@ -9,10 +9,7 @@ struct HourlyFeedCard: View {
   @State private var series: HourlyGraphSeries = .temp
 
   private var hours: [HourlyForecast] {
-    let cutoff = Date().addingTimeInterval(-45 * 60)
-    let upcoming = weather.hourly.filter { $0.time >= cutoff }
-    let slice = upcoming.isEmpty ? weather.hourly : upcoming
-    return Array(slice.prefix(24))
+    HourlyGraphHours.upcoming(from: weather)
   }
 
   private var outlook: TonightOutlook.Result {
@@ -72,7 +69,7 @@ struct HourlyFeedCard: View {
 
       Spacer(minLength: 4)
 
-      seriesPicker
+      HourlySeriesPicker(options: seriesOptions, selection: $series)
 
       Image(systemName: "chevron.right")
         .font(DesignTokens.Typography.caption())
@@ -80,42 +77,6 @@ struct HourlyFeedCard: View {
         .accessibilityHidden(true)
     }
     .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
-  }
-
-  private var seriesPicker: some View {
-    HStack(spacing: 0) {
-      ForEach(seriesOptions) { option in
-        Button {
-          Haptic.impact(.light)
-          series = option
-        } label: {
-          Text(option.label)
-            .font(DesignTokens.Typography.micro())
-            .fontWeight(resolvedSeries == option ? .semibold : .regular)
-            .foregroundStyle(
-              resolvedSeries == option
-                ? DesignTokens.Palette.textPrimary
-                : DesignTokens.Palette.textTertiary
-            )
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(
-              Capsule()
-                .fill(
-                  resolvedSeries == option
-                    ? DesignTokens.Palette.cardElevated
-                    : Color.clear
-                )
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(option.label)
-        .accessibilityAddTraits(resolvedSeries == option ? .isSelected : [])
-      }
-    }
-    .padding(2)
-    .background(DesignTokens.Palette.bgSecondary.opacity(0.65))
-    .clipShape(Capsule())
   }
 
   private var resolvedSeries: HourlyGraphSeries {
@@ -138,7 +99,8 @@ struct HourlyFeedCard: View {
     sentence: String? = nil,
     hourLabel: String?,
     temp: Int?,
-    precipChance: Int?
+    precipChance: Int?,
+    opensForecast: Bool = true
   ) -> String {
     var parts: [String] = []
     if let title, !title.isEmpty { parts.append(title) }
@@ -146,10 +108,13 @@ struct HourlyFeedCard: View {
     if let hourLabel, let temp, let precipChance {
       parts.append(
         "\(hourLabel) \(temp) degrees, \(precipChance) percent chance of precipitation.")
-    } else if parts.isEmpty {
-      return "Hourly forecast. Opens full forecast."
     }
-    parts.append("Opens full forecast.")
+    if parts.isEmpty {
+      return opensForecast ? "Hourly forecast. Opens full forecast." : "Hourly forecast."
+    }
+    if opensForecast {
+      parts.append("Opens full forecast.")
+    }
     return parts.joined(separator: " ")
   }
 }
