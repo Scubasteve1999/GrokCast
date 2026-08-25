@@ -40,7 +40,6 @@ struct DailyTempRangeBar: View {
             )
             .frame(width: max(barHeight, segmentWidth(in: width)), height: barHeight)
             .offset(x: segmentOrigin(in: width))
-            .shadow(color: DesignTokens.Palette.accentWarm.opacity(0.25), radius: 3, y: 0)
         }
         .frame(width: width, height: barHeight, alignment: .leading)
         .frame(maxHeight: .infinity, alignment: .center)

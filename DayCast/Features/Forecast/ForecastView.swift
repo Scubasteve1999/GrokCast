@@ -132,12 +132,7 @@ private struct ForecastAdaptiveBody: View {
         FigmaScreenTitle(title: "Forecast")
         HourlyGraphSkeleton()
 
-        FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          ForEach(0..<6, id: \.self) { index in
-            DailyRowSkeleton(layout: .figma, isToday: index == 0)
-          }
-        }
+        ForecastDailySkeleton()
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, DesignTokens.Spacing.space24)
@@ -156,12 +151,7 @@ private struct ForecastAdaptiveBody: View {
 
         HourlyGraphSkeleton()
 
-        FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          ForEach(0..<6, id: \.self) { index in
-            DailyRowSkeleton(layout: .figma, isToday: index == 0)
-          }
-        }
+        ForecastDailySkeleton()
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, forecastContentTopPadding)
@@ -183,13 +173,8 @@ private struct ForecastAdaptiveBody: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-            FigmaSubsectionLabel(title: "10-Day")
-            ForEach(0..<6, id: \.self) { _ in
-              DailyRowSkeleton(layout: .figma)
-            }
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
+          ForecastDailySkeleton()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
@@ -203,7 +188,6 @@ private struct ForecastAdaptiveBody: View {
 
   private func neutralForecastContent(for weather: DayCastWeather) -> some View {
     ScrollView {
-      let calendar = weather.locationCalendar
       let timeZone = weather.locationTimeZone
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -213,22 +197,7 @@ private struct ForecastAdaptiveBody: View {
 
         openWeatherMapCompareSection(timeZone: timeZone)
 
-        FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          let periodLow = weather.daily.map(\.low).min()
-          let periodHigh = weather.daily.map(\.high).max()
-          ForEach(weather.daily) { day in
-            DailyRow(
-              forecast: day,
-              layout: .figma,
-              periodLow: periodLow,
-              periodHigh: periodHigh,
-              calendar: calendar,
-              timeZone: timeZone,
-              onSelect: { selectedDay = day }
-            )
-          }
-        }
+        ForecastDailySection(weather: weather) { selectedDay = $0 }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, forecastContentTopPadding)
@@ -244,7 +213,6 @@ private struct ForecastAdaptiveBody: View {
 
   private func compactForecastList(for weather: DayCastWeather) -> some View {
     ScrollView {
-      let calendar = weather.locationCalendar
       let timeZone = weather.locationTimeZone
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -254,22 +222,7 @@ private struct ForecastAdaptiveBody: View {
 
         openWeatherMapCompareSection(timeZone: timeZone)
 
-        FigmaSubsectionLabel(title: "10-Day")
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-          let periodLow = weather.daily.map(\.low).min()
-          let periodHigh = weather.daily.map(\.high).max()
-          ForEach(weather.daily) { day in
-            DailyRow(
-              forecast: day,
-              layout: .figma,
-              periodLow: periodLow,
-              periodHigh: periodHigh,
-              calendar: calendar,
-              timeZone: timeZone,
-              onSelect: { selectedDay = day }
-            )
-          }
-        }
+        ForecastDailySection(weather: weather) { selectedDay = $0 }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, forecastContentTopPadding)
@@ -286,7 +239,6 @@ private struct ForecastAdaptiveBody: View {
 
   private func wideForecastContent(for weather: DayCastWeather) -> some View {
     ScrollView {
-      let calendar = weather.locationCalendar
       let timeZone = weather.locationTimeZone
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -299,23 +251,8 @@ private struct ForecastAdaptiveBody: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            FigmaSubsectionLabel(title: "10-Day")
-            let periodLow = weather.daily.map(\.low).min()
-            let periodHigh = weather.daily.map(\.high).max()
-            ForEach(weather.daily) { day in
-              DailyRow(
-                forecast: day,
-                layout: .figma,
-                periodLow: periodLow,
-                periodHigh: periodHigh,
-                calendar: calendar,
-                timeZone: timeZone,
-                onSelect: { selectedDay = day }
-              )
-            }
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
+          ForecastDailySection(weather: weather) { selectedDay = $0 }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
@@ -451,6 +388,54 @@ private struct ForecastHourlySection: View {
       precipChance: hours.first?.precipChance,
       opensForecast: false
     )
+  }
+}
+
+private struct ForecastDailySection: View {
+  let weather: DayCastWeather
+  var onSelect: (DailyForecast) -> Void
+
+  private var periodLow: Double? { weather.daily.map(\.low).min() }
+  private var periodHigh: Double? { weather.daily.map(\.high).max() }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      Text("10-Day")
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+
+      VStack(spacing: 0) {
+        ForEach(weather.daily) { day in
+          DailyRow(
+            forecast: day,
+            layout: .figma,
+            periodLow: periodLow,
+            periodHigh: periodHigh,
+            calendar: weather.locationCalendar,
+            timeZone: weather.locationTimeZone,
+            onSelect: { onSelect(day) }
+          )
+        }
+      }
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .cardStyle()
+  }
+}
+
+private struct ForecastDailySkeleton: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      ShimmerBlock(width: 72, height: 12, cornerRadius: 4)
+      VStack(spacing: 0) {
+        ForEach(0..<6, id: \.self) { index in
+          DailyRowSkeleton(layout: .figma, isToday: index == 0)
+        }
+      }
+    }
+    .padding(DesignTokens.Spacing.space16)
+    .cardStyle()
   }
 }
 

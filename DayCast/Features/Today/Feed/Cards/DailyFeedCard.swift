@@ -18,7 +18,7 @@ struct DailyFeedCard: View {
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .tracking(DesignTokens.Typography.cardLabelTracking)
 
-      VStack(spacing: DesignTokens.Spacing.space8) {
+      VStack(spacing: 0) {
         ForEach(days) { day in
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
             DailyRow(

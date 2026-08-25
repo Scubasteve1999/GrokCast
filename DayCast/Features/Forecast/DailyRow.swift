@@ -40,10 +40,8 @@ struct DailyRow: View {
   var body: some View {
     Group {
       switch layout {
-      case .standard:
-        standardLayout
-      case .figma:
-        figmaLayout
+      case .standard, .figma:
+        quietLayout
       }
     }
     .contentShape(Rectangle())
@@ -83,11 +81,12 @@ struct DailyRow: View {
     return label
   }
 
-  private var figmaLayout: some View {
+  /// One table row. The parent plate owns chrome. `layout` is unused for drawing.
+  private var quietLayout: some View {
     HStack(spacing: DesignTokens.Spacing.space12) {
       Text(dayLabel)
         .font(DesignTokens.Typography.body())
-        .fontWeight(isToday ? .bold : .semibold)
+        .fontWeight(isToday ? .semibold : .regular)
         .foregroundStyle(
           isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
         )
@@ -95,10 +94,11 @@ struct DailyRow: View {
         .frame(width: 52, alignment: .leading)
 
       Image(systemName: rowSymbol)
-        .font(DesignTokens.Typography.metric())
-        .symbolRenderingMode(.multicolor)
-        .frame(width: 28, alignment: .center)
-        .accessibilityLabel(condition.displayText)
+        .font(DesignTokens.Typography.symbol(16))
+        .symbolRenderingMode(.hierarchical)
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .frame(width: 22, alignment: .center)
+        .accessibilityHidden(true)
 
       DailyTempRangeBar(
         low: forecast.low,
@@ -122,91 +122,6 @@ struct DailyRow: View {
       }
       .frame(width: 40, alignment: .trailing)
     }
-    .padding(.leading, DesignTokens.Spacing.space16)
-    .padding(.trailing, DesignTokens.Spacing.space16)
-    .padding(.vertical, DesignTokens.Spacing.space16)
-    .cardStyle(
-      background: isToday
-        ? DesignTokens.Palette.cardElevated
-        : DesignTokens.Palette.cardBackground,
-      cornerRadius: DesignTokens.Layout.chipRadius,
-      elevated: isToday
-    )
-    .overlay(alignment: .leading) {
-      if isToday {
-        UnevenRoundedRectangle(
-          topLeadingRadius: DesignTokens.Layout.chipRadius,
-          bottomLeadingRadius: DesignTokens.Layout.chipRadius,
-          bottomTrailingRadius: 0,
-          topTrailingRadius: 0
-        )
-        .fill(DesignTokens.Palette.accent)
-        .frame(width: 3)
-        .padding(.vertical, DesignTokens.Spacing.space8)
-      }
-    }
-  }
-
-  private var standardLayout: some View {
-    HStack(alignment: .center, spacing: DesignTokens.Spacing.space16) {
-      Text(dayLabel)
-        .font(DesignTokens.Typography.headline())
-        .foregroundStyle(
-          isToday ? DesignTokens.Palette.textPrimary : DesignTokens.Palette.textSecondary
-        )
-        .lineLimit(1)
-        .frame(width: 56, alignment: .leading)
-
-      Image(systemName: rowSymbol)
-        .font(DesignTokens.Typography.title())
-        .symbolRenderingMode(.multicolor)
-        .frame(width: 32, alignment: .center)
-        .accessibilityLabel(condition.displayText)
-
-      DailyTempRangeBar(
-        low: forecast.low,
-        high: forecast.high,
-        periodLow: periodLow,
-        periodHigh: periodHigh
-      )
-      .frame(maxWidth: .infinity)
-
-      Group {
-        if forecast.precipChance > 0 {
-          Text("\(forecast.precipChance)%")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.accentCool)
-            .monospacedDigit()
-        } else {
-          Text("—")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-        }
-      }
-      .frame(minWidth: 40, alignment: .trailing)
-    }
-    .padding(.vertical, DesignTokens.Spacing.space20)
-    .padding(.horizontal, DesignTokens.Spacing.space20)
-    .cardStyle(
-      background: isToday
-        ? DesignTokens.Palette.cardElevated : DesignTokens.Palette.cardBackground,
-      stroke: isToday
-        ? DesignTokens.Palette.accent.opacity(0.45) : DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadius
-    )
-    .overlay(alignment: .leading) {
-      if isToday {
-        UnevenRoundedRectangle(
-          topLeadingRadius: DesignTokens.Card.cornerRadius,
-          bottomLeadingRadius: DesignTokens.Card.cornerRadius,
-          bottomTrailingRadius: 0,
-          topTrailingRadius: 0
-        )
-        .fill(DesignTokens.Palette.accent)
-        .frame(width: 4)
-        .padding(.vertical, DesignTokens.Spacing.space12)
-      }
-    }
-    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
+    .padding(.vertical, DesignTokens.Spacing.space12)
   }
 }
