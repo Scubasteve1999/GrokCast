@@ -14,7 +14,7 @@ struct HourlyFeedCard: View {
 
   var body: some View {
     Button(action: onTap) {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
         HStack {
           Text("Hourly")
             .font(DesignTokens.Typography.subsection())
@@ -40,7 +40,7 @@ struct HourlyFeedCard: View {
         }
         .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24)
       }
-      .padding(DesignTokens.Spacing.space16)
+      .padding(TodayGlanceLayout.hourlyCardPadding)
       .cardStyle()
       .accessibilityHidden(true)
     }

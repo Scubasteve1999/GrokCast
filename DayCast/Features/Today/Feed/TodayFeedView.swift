@@ -115,7 +115,7 @@ struct TodayFeedView: View {
 
   var body: some View {
     ScrollView {
-      LazyVStack(spacing: DesignTokens.Spacing.space16) {
+      LazyVStack(spacing: TodayGlanceLayout.feedSpacing) {
         ForEach(feedRows) { row in
           switch row {
           case .errorBanner:

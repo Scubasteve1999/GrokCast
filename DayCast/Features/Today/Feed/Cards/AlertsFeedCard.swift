@@ -5,11 +5,6 @@ struct AlertsFeedCard: View {
   var severeContext: SevereWeatherContext? = nil
   var onSelect: (NWSAlert) -> Void
 
-  /// NWS rows keep “Active Alerts”. Outlook-only must not pretend there is a warning.
-  private var sectionTitle: String {
-    AlertsHonesty.todaySlotTitle(nwsAlertCount: alerts.count)
-  }
-
   var body: some View {
     if alerts.isEmpty && severeContext == nil {
       EmptyView()
@@ -19,53 +14,39 @@ struct AlertsFeedCard: View {
   }
 
   private var cardBody: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Text(sectionTitle)
-        .font(DesignTokens.Typography.subsection())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-        .accessibilityLabel(
-          AlertsHonesty.todaySlotAccessibility(
-            nwsAlertCount: alerts.count,
-            outlookSummary: severeContext?.day1Outlook.isMeaningful == true
-              ? severeContext?.day1Outlook.summaryLine
-              : nil
-          )
-        )
-
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       if let severeContext {
         SevereContextCard(context: severeContext)
       }
 
-      ForEach(alerts.prefix(5)) { alert in
+      ForEach(Self.glanceChips(from: alerts)) { alert in
         Button {
           Haptic.impact(.light)
           onSelect(alert)
         } label: {
           HStack(spacing: DesignTokens.Spacing.space8) {
             Image(systemName: NWSAlertStyle.iconName(for: alert))
-              .font(DesignTokens.Typography.metric())
+              .font(DesignTokens.Typography.subsection())
               .foregroundStyle(tint(for: alert))
 
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-              Text(alert.event)
-                .font(DesignTokens.Typography.subsection())
-                .foregroundStyle(DesignTokens.Palette.textPrimary)
-                .multilineTextAlignment(.leading)
-              if let headline = alert.headline, !headline.isEmpty {
-                Text(headline)
-                  .font(DesignTokens.Typography.caption())
-                  .foregroundStyle(DesignTokens.Palette.textSecondary)
-                  .lineLimit(2)
-                  .multilineTextAlignment(.leading)
-              }
-            }
+            Text(Self.chipTitle(for: alert, in: alerts))
+              .font(DesignTokens.Typography.subsection())
+              .foregroundStyle(DesignTokens.Palette.textPrimary)
+              .lineLimit(1)
+              .minimumScaleFactor(0.85)
+              .multilineTextAlignment(.leading)
+
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
               .font(DesignTokens.Typography.caption())
               .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
-          .padding(DesignTokens.Spacing.space12)
+          .padding(.horizontal, DesignTokens.Spacing.space12)
+          .frame(
+            maxWidth: .infinity,
+            minHeight: TodayGlanceLayout.alertChipMinHeight,
+            alignment: .leading
+          )
           .background(tint(for: alert).opacity(0.12))
           .overlay(
             RoundedRectangle(cornerRadius: DesignTokens.Radius.medium)
@@ -77,10 +58,28 @@ struct AlertsFeedCard: View {
         .accessibilityLabel(alertAccessibility(alert))
       }
     }
-    .padding(DesignTokens.Spacing.space16)
-    .cardStyle()
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier(DayCastAccessibility.Today.alertsSlot)
+  }
+
+  /// Today is a chip rail, not the Alerts list. Collapse duplicate events; cap at 2.
+  static let maxGlanceChips = 2
+
+  static func glanceChips(from alerts: [NWSAlert]) -> [NWSAlert] {
+    var seen = Set<String>()
+    var chips: [NWSAlert] = []
+    for alert in alerts {
+      if seen.insert(alert.event).inserted {
+        chips.append(alert)
+      }
+      if chips.count == maxGlanceChips { break }
+    }
+    return chips
+  }
+
+  static func chipTitle(for alert: NWSAlert, in alerts: [NWSAlert]) -> String {
+    let count = alerts.filter { $0.event == alert.event }.count
+    return count > 1 ? "\(alert.event) · \(count)" : alert.event
   }
 
   private func tint(for alert: NWSAlert) -> Color {

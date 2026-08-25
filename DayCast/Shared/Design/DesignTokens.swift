@@ -79,6 +79,11 @@ enum DesignTokens {
       .system(size: 96, weight: .semibold)
     }
 
+    /// Today first-glance temp. Large enough to read; short enough that Your News peeks.
+    static func todayTemp() -> Font {
+      .system(size: Layout.todayTempSize, weight: .semibold)
+    }
+
     /// Back-compat for call sites still using the old name.
     static func heroTemperature() -> Font { displayTemp() }
 
@@ -130,6 +135,8 @@ enum DesignTokens {
     static let heroIconSize: CGFloat = 44
     static let hourlyRowHeight: CGFloat = 100
     static let hourlyChipWidth: CGFloat = 72
+    /// Today Now temp. Keep below `displayTemp` so Your News peeks on iPhone 16.
+    static let todayTempSize: CGFloat = 72
   }
 
   /// Temporary aliases. Prefer `Typography` / `Layout`.

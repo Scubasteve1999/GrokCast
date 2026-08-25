@@ -68,7 +68,7 @@ struct RadarPreviewCard: View {
   private func framedMap<Content: View>(@ViewBuilder content: () -> Content) -> some View {
     content()
       .allowsHitTesting(false)
-      .frame(height: 160)
+      .frame(height: RadarPreviewSource.teaserHeight)
       .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
       .overlay(
         RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
@@ -81,7 +81,9 @@ struct RadarPreviewCard: View {
 /// PNG mosaic is a different scale — do not use it when MapsGL is the Live paint.
 enum RadarPreviewSource {
   static let previewBaseMap = RadarBaseMapStyle.light
-  /// Buried National teaser — CONUS-ish so nearby cells fit the 160pt card.
+  /// Today teaser map height. Short enough that Your News peeks on iPhone 16.
+  static let teaserHeight: CGFloat = 72
+  /// Buried National teaser — CONUS-ish so nearby cells fit the strip.
   static let previewZoom: Double = 4.5
   /// Hoisted Site Doppler — same ~120 mi frame Live uses for wet local.
   static var siteZoom: Double { RadarLiveCameraPolicy.localZoom }
@@ -112,7 +114,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       styleURI: RadarPreviewSource.previewBaseMap.styleURI
     )
     let mapView = MapView(
-      frame: CGRect(x: 0, y: 0, width: 400, height: 160),
+      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.teaserHeight),
       mapInitOptions: options
     )
     if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
@@ -186,7 +188,7 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
       styleURI: RadarPreviewSource.previewBaseMap.styleURI
     )
     let mapView = MapView(
-      frame: CGRect(x: 0, y: 0, width: 400, height: 160),
+      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.teaserHeight),
       mapInitOptions: options
     )
     if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {

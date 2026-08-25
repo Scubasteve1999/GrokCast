@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// First-glance Now: huge temp + condition, feels/H/L, Updated.
+/// First-glance Now: temp + condition, feels/H/L + Updated on one row.
 /// City lives on `LocationChipBar`. DayCast score lives in `NowDetailView`.
 struct NowFeedCard: View {
   @Environment(WeatherStore.self) private var store
@@ -15,10 +15,10 @@ struct NowFeedCard: View {
       let heroOpacity: Double = stale ? 0.7 : 1
 
       Button(action: onTap) {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
           HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
             Text(store.formatTemperatureShort(weather.currentTemp))
-              .font(DesignTokens.Typography.displayTemp())
+              .font(DesignTokens.Typography.todayTemp())
               .foregroundStyle(Color.white)
               .monospacedDigit()
               .lineLimit(1)
@@ -28,44 +28,50 @@ struct NowFeedCard: View {
 
             Spacer(minLength: 8)
 
-            VStack(spacing: 8) {
+            VStack(spacing: DesignTokens.Spacing.space4) {
               Image(systemName: weather.symbolName)
-                .font(DesignTokens.Typography.widgetTemp(52))
+                .font(DesignTokens.Typography.widgetTemp(36))
                 .symbolRenderingMode(.monochrome)
                 .foregroundStyle(Color.white)
                 .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
 
               Text(weather.conditionText)
-                .font(DesignTokens.Typography.headline())
+                .font(DesignTokens.Typography.callout())
                 .foregroundStyle(Color.white)
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
                 .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
             }
-            .frame(minWidth: 100)
+            .frame(minWidth: 88)
           }
           .opacity(heroOpacity)
 
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
+          HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
             Text(
               "Feels like \(store.formatTemperatureShort(weather.feelsLike))  |  H \(store.formatTemperatureShort(weather.high))  |  L \(store.formatTemperatureShort(weather.low))"
             )
-            .font(DesignTokens.Typography.headline())
+            .font(DesignTokens.Typography.callout())
             .foregroundStyle(Color.white.opacity(0.95))
             .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
             .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
             .opacity(heroOpacity)
+
+            Spacer(minLength: 4)
 
             Text(asOf)
               .font(DesignTokens.Typography.caption())
               .foregroundStyle(stale ? DesignTokens.Palette.warning : Color.white.opacity(0.85))
+              .lineLimit(1)
               .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
               .accessibilityIdentifier(DayCastAccessibility.Today.updatedAt)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DesignTokens.Spacing.space4)
-        .padding(.top, DesignTokens.Spacing.space8)
-        .padding(.bottom, DesignTokens.Spacing.space12)
+        .padding(.top, DesignTokens.Spacing.space4)
+        .padding(.bottom, DesignTokens.Spacing.space8)
       }
       .buttonStyle(.plain)
       .accessibilityElement(children: .ignore)

@@ -141,7 +141,7 @@ struct RadarFeedCard: View {
 
   @ViewBuilder
   private func card(ageLine: String) -> some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+    VStack(alignment: .leading, spacing: TodayGlanceLayout.radarInnerSpacing) {
       header(ageLine: ageLine)
 
       switch paint {
@@ -163,7 +163,7 @@ struct RadarFeedCard: View {
         }
       }
     }
-    .padding(DesignTokens.Spacing.space16)
+    .padding(TodayGlanceLayout.cardPadding)
     .cardStyle()
     .contentShape(Rectangle())
     .onTapGesture {
@@ -177,19 +177,12 @@ struct RadarFeedCard: View {
   }
 
   private func header(ageLine: String) -> some View {
-    HStack(alignment: .top, spacing: DesignTokens.Spacing.space8) {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-        Text(headline(ageLine: ageLine))
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .lineLimit(1)
-          .minimumScaleFactor(0.85)
-        if hoisted {
-          Text(RadarFeedCopy.siteProductName)
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-        }
-      }
+    HStack(alignment: .center, spacing: DesignTokens.Spacing.space8) {
+      Text(headline(ageLine: ageLine))
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
       Spacer(minLength: DesignTokens.Spacing.space8)
       if hoisted, isNowWet {
         Text(ageLine)
@@ -200,7 +193,6 @@ struct RadarFeedCard: View {
       Image(systemName: "chevron.right")
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .padding(.top, 2)
     }
   }
 

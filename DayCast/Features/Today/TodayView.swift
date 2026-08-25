@@ -398,7 +398,7 @@ struct TodaySkeleton: View {
 
 private struct TodaySkeletonPanel: View {
   var body: some View {
-    VStack(spacing: DesignTokens.Spacing.space16) {
+    VStack(spacing: TodayGlanceLayout.feedSpacing) {
       chipBarSkeleton
       HeroSkeleton()
       alertsSlotSkeleton
@@ -416,18 +416,19 @@ private struct TodaySkeletonPanel: View {
     }
   }
 
-  /// Thin alert row — matches `AlertsFeedCard` event bar, not a padded card.
+  /// Thin alert chip — matches `AlertsFeedCard` event row, not a padded card.
   private var alertsSlotSkeleton: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      ShimmerBlock(width: 28, height: 28, cornerRadius: DesignTokens.Radius.small)
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-        ShimmerBlock(width: 132, height: 14, cornerRadius: 4)
-        ShimmerBlock(width: 196, height: 12, cornerRadius: 4)
-      }
+      ShimmerBlock(width: 18, height: 18, cornerRadius: 4)
+      ShimmerBlock(width: 148, height: 14, cornerRadius: 4)
       Spacer(minLength: 0)
     }
-    .padding(DesignTokens.Spacing.space12)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.horizontal, DesignTokens.Spacing.space12)
+    .frame(
+      maxWidth: .infinity,
+      minHeight: TodayGlanceLayout.alertChipMinHeight,
+      alignment: .leading
+    )
     .background(DesignTokens.Palette.cardBackground.opacity(0.72))
     .overlay(
       RoundedRectangle(cornerRadius: DesignTokens.Radius.medium, style: .continuous)
@@ -466,7 +467,7 @@ private struct TodaySkeletonPanel: View {
   }
 
   private var hourlySlotSkeleton: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+    VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
       ShimmerBlock(width: 72, height: 12, cornerRadius: 4)
       HStack(spacing: DesignTokens.Spacing.space12) {
         ForEach(0..<5, id: \.self) { index in
@@ -476,32 +477,35 @@ private struct TodaySkeletonPanel: View {
       }
       .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24)
     }
-    .padding(DesignTokens.Spacing.space16)
+    .padding(TodayGlanceLayout.hourlyCardPadding)
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle()
   }
 }
 
-/// Floating Now hero — giant temp, condition, feels, Updated.
+/// Floating Now hero — temp, condition, feels + Updated on one row.
 /// Matches `NowFeedCard` (city is the chip bar; score is Now detail).
 struct HeroSkeleton: View {
   var body: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
       HStack(alignment: .center, spacing: DesignTokens.Spacing.space12) {
-        ShimmerBlock(width: 168, height: 88, cornerRadius: DesignTokens.Radius.small)
+        ShimmerBlock(width: 132, height: 64, cornerRadius: DesignTokens.Radius.small)
         Spacer(minLength: 8)
-        VStack(spacing: DesignTokens.Spacing.space8) {
-          ShimmerBlock(width: 52, height: 52, cornerRadius: DesignTokens.Radius.small)
-          ShimmerBlock(width: 72, height: 16, cornerRadius: DesignTokens.Radius.small)
+        VStack(spacing: DesignTokens.Spacing.space4) {
+          ShimmerBlock(width: 36, height: 36, cornerRadius: DesignTokens.Radius.small)
+          ShimmerBlock(width: 72, height: 14, cornerRadius: DesignTokens.Radius.small)
         }
       }
 
-      ShimmerBlock(width: 248, height: 18, cornerRadius: DesignTokens.Radius.small)
-      ShimmerBlock(width: 108, height: 12, cornerRadius: DesignTokens.Radius.small)
+      HStack(spacing: DesignTokens.Spacing.space8) {
+        ShimmerBlock(width: 196, height: 14, cornerRadius: DesignTokens.Radius.small)
+        Spacer(minLength: 4)
+        ShimmerBlock(width: 96, height: 12, cornerRadius: DesignTokens.Radius.small)
+      }
     }
     .padding(.horizontal, DesignTokens.Spacing.space4)
-    .padding(.top, DesignTokens.Spacing.space8)
-    .padding(.bottom, DesignTokens.Spacing.space12)
+    .padding(.top, DesignTokens.Spacing.space4)
+    .padding(.bottom, DesignTokens.Spacing.space8)
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 }

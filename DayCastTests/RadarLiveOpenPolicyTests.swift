@@ -224,6 +224,8 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
       .unavailable
     )
     XCTAssertEqual(RadarPreviewSource.siteZoom, RadarLiveCameraPolicy.localZoom)
+    XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
+    XCTAssertLessThan(RadarPreviewSource.teaserHeight, 160)
   }
 
   func testUserVisibleLabelsNeverSayMosaic() {
