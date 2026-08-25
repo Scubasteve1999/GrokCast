@@ -229,6 +229,7 @@
 		AC2125AA2CD18AD4C917FD6C /* BriefingThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8CD09B18AEB31753F1D0FC /* BriefingThreadTests.swift */; };
 		ACB48AF4F97684F59F50664A /* MapsGLRadarPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D998EF4D97E14FCA557887 /* MapsGLRadarPalette.swift */; };
 		AFC7DFF0F12239A86525F883 /* FireFeedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC0538ACB315A9F0D6F5D96 /* FireFeedCard.swift */; };
+		B095626A5A2B2AE76BCFE511 /* HourlyGraphTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3049625A2F18937DEF5D733 /* HourlyGraphTests.swift */; };
 		B0F2ECF86356CC7DD59F3AA2 /* AirNowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6131D15BC17ADFF672723A4 /* AirNowService.swift */; };
 		B1124D3F95CBF88367A602DF /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DCAC0710F528EB769BB289CD /* UserNotifications.framework */; };
 		B1A77647DF66278A4BFAD25F /* SevereWeatherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A913E595B300D490EDB2F3 /* SevereWeatherStore.swift */; };
@@ -643,6 +644,7 @@
 		E06C4CF3AE9F67AC93E96FFE /* AlertsHonestyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsHonestyTests.swift; sourceTree = "<group>"; };
 		E159F0CF84BB07AFC93BE8C2 /* RadarDataset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarDataset.swift; sourceTree = "<group>"; };
 		E1891FEFDB161B6C30D06811 /* RadarTimelineConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarTimelineConfig.swift; sourceTree = "<group>"; };
+		E3049625A2F18937DEF5D733 /* HourlyGraphTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyGraphTests.swift; sourceTree = "<group>"; };
 		E334557A34D21749D249EDC3 /* MapsGLRadarHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapsGLRadarHost.swift; sourceTree = "<group>"; };
 		E3C0BAA60DB18B91FD2B5BCB /* GrokAccessRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAccessRules.swift; sourceTree = "<group>"; };
 		E4688D97BC507F438B63A435 /* YourNewsFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNewsFeedCard.swift; sourceTree = "<group>"; };
@@ -949,6 +951,7 @@
 				ACE02B6B5C8371EDB6C2893F /* GrokAccessRulesTests.swift */,
 				CA836E076434C4855D633891 /* GrokBriefSafetyTests.swift */,
 				9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */,
+				E3049625A2F18937DEF5D733 /* HourlyGraphTests.swift */,
 				A4FC128857671156732102AA /* IEMRadarSiteFallbackTests.swift */,
 				3D9E4E6C85D6E24C69A289BC /* IEMSiteReflectivityPaintTests.swift */,
 				00A4FD7E7EFE33E99223B57B /* Level3N0BTests.swift */,
@@ -1619,6 +1622,7 @@
 				62B2BA71DF593418B4C33F62 /* GrokAccessRulesTests.swift in Sources */,
 				32FF7B01937F553DB7019D71 /* GrokBriefSafetyTests.swift in Sources */,
 				72BBDBFD282D519CC1A0198A /* GrokUsageLimiterTests.swift in Sources */,
+				B095626A5A2B2AE76BCFE511 /* HourlyGraphTests.swift in Sources */,
 				D743D5A04E63E05487767D3E /* IEMRadarSiteFallbackTests.swift in Sources */,
 				E2A533F84EAADE06222A35C9 /* IEMSiteReflectivityPaintTests.swift in Sources */,
 				D18C21892E3D650063C5B28C /* Level3N0BTests.swift in Sources */,

@@ -129,8 +129,8 @@ private struct ForecastAdaptiveBody: View {
   private var neutralForecastSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Forecast")
-        HourlyGraphSkeleton()
+        ForecastScreenHeader(locationName: nil)
+        HourlyGraphSkeleton(style: .full)
 
         ForecastDailySkeleton()
       }
@@ -147,9 +147,9 @@ private struct ForecastAdaptiveBody: View {
   private var compactForecastSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Forecast")
+        ForecastScreenHeader(locationName: nil)
 
-        HourlyGraphSkeleton()
+        HourlyGraphSkeleton(style: .full)
 
         ForecastDailySkeleton()
       }
@@ -166,10 +166,10 @@ private struct ForecastAdaptiveBody: View {
   private var wideForecastSkeleton: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Forecast")
+        ForecastScreenHeader(locationName: nil)
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-            HourlyGraphSkeleton()
+            HourlyGraphSkeleton(style: .full)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -191,7 +191,7 @@ private struct ForecastAdaptiveBody: View {
       let timeZone = weather.locationTimeZone
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Forecast")
+        ForecastScreenHeader(locationName: weather.location.name)
 
         ForecastHourlySection(weather: weather)
 
@@ -216,7 +216,7 @@ private struct ForecastAdaptiveBody: View {
       let timeZone = weather.locationTimeZone
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Forecast")
+        ForecastScreenHeader(locationName: weather.location.name)
 
         ForecastHourlySection(weather: weather)
 
@@ -242,7 +242,7 @@ private struct ForecastAdaptiveBody: View {
       let timeZone = weather.locationTimeZone
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
-        FigmaScreenTitle(title: "Forecast")
+        ForecastScreenHeader(locationName: weather.location.name)
 
         HStack(alignment: .top, spacing: DesignTokens.Spacing.space24) {
           VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -336,12 +336,29 @@ private struct ForecastAdaptiveBody: View {
 
 }
 
+private struct ForecastScreenHeader: View {
+  let locationName: String?
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      FigmaScreenTitle(title: "Forecast")
+      if let locationName, !locationName.isEmpty {
+        Text(locationName)
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+      } else {
+        ShimmerBlock(width: 120, height: 12, cornerRadius: 4)
+      }
+    }
+  }
+}
+
 private struct ForecastHourlySection: View {
   let weather: DayCastWeather
   @State private var series: HourlyGraphSeries = .temp
 
   private var hours: [HourlyForecast] {
-    HourlyGraphHours.upcoming(from: weather)
+    HourlyGraphHours.upcoming(from: weather, limit: HourlyGraphHours.fullLimit)
   }
 
   private var seriesOptions: [HourlyGraphSeries] {
@@ -353,41 +370,27 @@ private struct ForecastHourlySection: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        Text("Hourly")
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-          .tracking(DesignTokens.Typography.cardLabelTracking)
-          .lineLimit(1)
-        Spacer(minLength: 4)
-        HourlySeriesPicker(options: seriesOptions, selection: $series)
-      }
-      .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text("Hourly")
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .tracking(DesignTokens.Typography.cardLabelTracking)
+        .lineLimit(1)
+
+      HourlySeriesPicker(options: seriesOptions, selection: $series)
 
       HourlyGraphView(
         hours: hours,
         series: resolvedSeries,
-        sunrise: weather.daily.first?.sunrise,
-        sunset: weather.daily.first?.sunset,
-        timeZone: weather.locationTimeZone
+        style: .full,
+        sunEvents: HourlyGraphSunEvent.inWindow(days: weather.daily, hours: hours),
+        timeZone: weather.locationTimeZone,
+        calendar: weather.locationCalendar
       )
-      .frame(height: TodayGlanceLayout.hourlyGraphHeight)
+      .frame(height: HourlyGraphLayout.height(for: .full))
     }
-    .padding(TodayGlanceLayout.hourlyCardPadding)
+    .padding(DesignTokens.Spacing.space16)
     .cardStyle()
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(accessibilitySummary)
-  }
-
-  private var accessibilitySummary: String {
-    HourlyFeedCard.accessibilityLabel(
-      title: "Hourly",
-      hourLabel: hours.isEmpty ? nil : "Now",
-      temp: hours.first.map { Int(round($0.temp)) },
-      precipChance: hours.first?.precipChance,
-      opensForecast: false
-    )
   }
 }
 

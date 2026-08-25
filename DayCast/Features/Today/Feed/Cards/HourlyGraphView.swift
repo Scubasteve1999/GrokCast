@@ -26,14 +26,81 @@ enum HourlyGraphSeries: String, CaseIterable, Identifiable {
 }
 
 enum HourlyGraphHours {
+  static let compactLimit = 24
+  static let fullLimit = 48
+
   /// Upcoming hours even if a cached payload still includes earlier-today slots.
   /// Absolute `Date` cutoff so a remote city's hours are not dropped when the
   /// device timezone differs.
-  static func upcoming(from weather: DayCastWeather, limit: Int = 24) -> [HourlyForecast] {
+  static func upcoming(
+    from weather: DayCastWeather, limit: Int = compactLimit
+  ) -> [HourlyForecast] {
     let cutoff = Date().addingTimeInterval(-45 * 60)
     let upcoming = weather.hourly.filter { $0.time >= cutoff }
     let slice = upcoming.isEmpty ? weather.hourly : upcoming
     return Array(slice.prefix(limit))
+  }
+}
+
+enum HourlyGraphStyle: Equatable {
+  /// Today card. `HourlyGraphLayout.height` / glance budget. No precip row, no scrub.
+  case compact
+  /// Forecast tab. 48h, taller plot, precip bars, day dividers, pan-to-scrub.
+  case full
+}
+
+struct HourlyGraphMetrics: Equatable {
+  var plotHeight: CGFloat
+  var timeRowHeight: CGFloat
+  var plotTopPad: CGFloat
+  var plotBottomPad: CGFloat
+  var precipBarHeight: CGFloat
+  var readoutHeight: CGFloat
+  var readoutSpacing: CGFloat
+  var fillTopOpacity: Double
+
+  var plotStackHeight: CGFloat { plotHeight + precipBarHeight + timeRowHeight }
+  var height: CGFloat { readoutHeight + readoutSpacing + plotStackHeight }
+
+  static let compact = HourlyGraphMetrics(
+    plotHeight: 58,
+    timeRowHeight: 16,
+    plotTopPad: 16,
+    plotBottomPad: 8,
+    precipBarHeight: 0,
+    readoutHeight: 0,
+    readoutSpacing: 0,
+    fillTopOpacity: 0.32
+  )
+
+  static let full = HourlyGraphMetrics(
+    plotHeight: 100,
+    timeRowHeight: 24,
+    plotTopPad: 18,
+    plotBottomPad: 8,
+    precipBarHeight: 36,
+    readoutHeight: 20,
+    readoutSpacing: 6,
+    fillTopOpacity: 0.22
+  )
+}
+
+struct HourlyGraphSunEvent: Equatable {
+  let date: Date
+  let title: String
+
+  static func inWindow(days: [DailyForecast], hours: [HourlyForecast]) -> [HourlyGraphSunEvent] {
+    guard let first = hours.first?.time, let last = hours.last?.time else { return [] }
+    var events: [HourlyGraphSunEvent] = []
+    for day in days {
+      if let rise = day.sunrise, rise >= first, rise <= last {
+        events.append(HourlyGraphSunEvent(date: rise, title: "Sunrise"))
+      }
+      if let set = day.sunset, set >= first, set <= last {
+        events.append(HourlyGraphSunEvent(date: set, title: "Sunset"))
+      }
+    }
+    return events
   }
 }
 
@@ -69,6 +136,10 @@ struct HourlySeriesPicker: View {
 }
 
 struct HourlyGraphSkeleton: View {
+  var style: HourlyGraphStyle = .compact
+
+  private var metrics: HourlyGraphMetrics { HourlyGraphLayout.metrics(for: style) }
+
   var body: some View {
     VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
       HStack {
@@ -77,6 +148,9 @@ struct HourlyGraphSkeleton: View {
         ShimmerBlock(width: 108, height: 16, cornerRadius: 8)
       }
       .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
+      if style == .full {
+        ShimmerBlock(width: 180, height: 12, cornerRadius: 4)
+      }
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         ShimmerBlock(
           width: HourlyGraphLayout.columnWidth * 8,
@@ -92,9 +166,11 @@ struct HourlyGraphSkeleton: View {
           Spacer(minLength: 0)
         }
       }
-      .frame(height: TodayGlanceLayout.hourlyGraphHeight, alignment: .top)
+      .frame(height: metrics.plotStackHeight, alignment: .top)
     }
-    .padding(TodayGlanceLayout.hourlyCardPadding)
+    .padding(
+      style == .full ? DesignTokens.Spacing.space16 : TodayGlanceLayout.hourlyCardPadding
+    )
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle()
   }
@@ -106,7 +182,89 @@ enum HourlyGraphLayout {
   static let timeRowHeight: CGFloat = 16
   static let plotTopPad: CGFloat = 16
   static let plotBottomPad: CGFloat = 8
-  static var height: CGFloat { plotHeight + timeRowHeight }
+  /// Compact Today graph. Do not point glance tests at `.full`.
+  static var height: CGFloat { HourlyGraphMetrics.compact.plotStackHeight }
+
+  static func metrics(for style: HourlyGraphStyle) -> HourlyGraphMetrics {
+    style == .full ? .full : .compact
+  }
+
+  static func height(for style: HourlyGraphStyle) -> CGFloat {
+    metrics(for: style).height
+  }
+
+  /// Pad actual min/max by 15% so a 6° night has shape instead of a ruler.
+  static func valueBounds(values: [Double], series: HourlyGraphSeries) -> (
+    min: Double, max: Double
+  ) {
+    if series == .precip { return (0, 100) }
+    let lo = values.min() ?? 0
+    let hi = values.max() ?? 0
+    let span = max(hi - lo, 0.5)
+    let pad = span * 0.15
+    return (lo - pad, hi + pad)
+  }
+
+  static func midnightIndexes(hours: [HourlyForecast], calendar: Calendar) -> [Int] {
+    hours.enumerated().compactMap { index, hour in
+      calendar.component(.hour, from: hour.time) == 0 ? index : nil
+    }
+  }
+
+  static func selectedIndex(offset: CGFloat, hourCount: Int) -> Int {
+    guard hourCount > 0 else { return 0 }
+    let index = Int((offset / columnWidth).rounded())
+    return min(max(index, 0), hourCount - 1)
+  }
+
+  static func clampedOffset(
+    raw: CGFloat, canvasWidth: CGFloat, viewportWidth: CGFloat
+  ) -> CGFloat {
+    let maxOffset = max(0, canvasWidth - max(viewportWidth, columnWidth))
+    return min(max(raw, 0), maxOffset)
+  }
+
+  static func readoutText(
+    hour: HourlyForecast,
+    index: Int,
+    series: HourlyGraphSeries,
+    timeZone: TimeZone
+  ) -> String {
+    let timePart: String
+    if index == 0 {
+      timePart = "Now"
+    } else {
+      let day = LocationTimezone.formatter(dateFormat: "EEE", timeZone: timeZone)
+        .string(from: hour.time)
+      let time = LocationTimezone.formatter(dateFormat: "h a", timeZone: timeZone)
+        .string(from: hour.time)
+      timePart = "\(day) \(time)"
+    }
+    let degrees: Int
+    switch series {
+    case .feels:
+      degrees = Int(round(hour.feelsLike ?? hour.temp))
+    case .temp, .precip:
+      degrees = Int(round(hour.temp))
+    }
+    if let amount = precipAmountText(liquid: hour.liquidPrecip, snow: hour.snowfall ?? 0) {
+      return "\(timePart)  ·  \(degrees)°  ·  \(amount)"
+    }
+    return "\(timePart)  ·  \(degrees)°  ·  \(hour.precipChance)%"
+  }
+
+  static func accessibilityLabel(
+    hour: HourlyForecast,
+    index: Int,
+    hourCount: Int,
+    series: HourlyGraphSeries,
+    timeZone: TimeZone
+  ) -> String {
+    let spoken = readoutText(hour: hour, index: index, series: series, timeZone: timeZone)
+      .replacingOccurrences(of: "  ·  ", with: ", ")
+      .replacingOccurrences(of: "°", with: " degrees")
+    return "\(spoken). \(hourCount)-hour forecast."
+  }
 
   /// Center-x of the hour column. Sunset interpolates between hour centers.
   static func xOffset(for date: Date, hours: [HourlyForecast]) -> CGFloat? {
@@ -128,14 +286,19 @@ enum HourlyGraphLayout {
     return nil
   }
 
-  static func y(value: Double, min: Double, max: Double, plotHeight: CGFloat = plotHeight)
-    -> CGFloat
-  {
-    let usable = plotHeight - plotTopPad - plotBottomPad
+  static func y(
+    value: Double,
+    min: Double,
+    max: Double,
+    plotHeight: CGFloat = plotHeight,
+    topPad: CGFloat = plotTopPad,
+    bottomPad: CGFloat = plotBottomPad
+  ) -> CGFloat {
+    let usable = plotHeight - topPad - bottomPad
     let span = max - min
-    if span < 0.5 { return plotTopPad + usable / 2 }
+    if span < 0.5 { return topPad + usable / 2 }
     let t = (value - min) / span
-    return plotTopPad + usable * (1 - CGFloat(t))
+    return topPad + usable * (1 - CGFloat(t))
   }
 
   /// Now, then every 3 hours. Never a glyph per hour.
@@ -174,12 +337,16 @@ enum HourlyGraphLayout {
     values: [Double],
     min: Double,
     max: Double,
-    plotHeight: CGFloat
+    plotHeight: CGFloat,
+    topPad: CGFloat = plotTopPad,
+    bottomPad: CGFloat = plotBottomPad
   ) -> [CGPoint] {
     values.enumerated().map { index, value in
       CGPoint(
         x: columnWidth * (CGFloat(index) + 0.5),
-        y: y(value: value, min: min, max: max, plotHeight: plotHeight)
+        y: y(
+          value: value, min: min, max: max, plotHeight: plotHeight, topPad: topPad,
+          bottomPad: bottomPad)
       )
     }
   }
@@ -217,25 +384,107 @@ enum HourlyGraphLayout {
 struct HourlyGraphView: View {
   let hours: [HourlyForecast]
   let series: HourlyGraphSeries
+  var style: HourlyGraphStyle = .compact
   var sunrise: Date? = nil
   var sunset: Date? = nil
+  var sunEvents: [HourlyGraphSunEvent] = []
   var timeZone: TimeZone = .current
+  var calendar: Calendar = .current
+
+  @State private var scrubOffset: CGFloat = 0
+  @GestureState private var dragTranslation: CGFloat = 0
+  @State private var viewportWidth: CGFloat = 0
+
+  private var metrics: HourlyGraphMetrics { HourlyGraphLayout.metrics(for: style) }
 
   var body: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      VStack(alignment: .leading, spacing: 0) {
-        ZStack(alignment: .topLeading) {
-          plot
-          valueLabels
-          sunCaptions
-        }
-        .frame(width: canvasWidth, height: HourlyGraphLayout.plotHeight)
-        timeRow
+    Group {
+      if style == .full {
+        fullGraph
+      } else {
+        compactGraph
       }
-      .frame(width: canvasWidth, height: HourlyGraphLayout.height, alignment: .topLeading)
     }
-    .frame(height: HourlyGraphLayout.height)
+    .frame(height: metrics.height)
+  }
+
+  private var compactGraph: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      plotStack
+        .frame(width: canvasWidth, height: metrics.plotStackHeight, alignment: .topLeading)
+    }
+    .frame(height: metrics.plotStackHeight)
     .accessibilityHidden(true)
+  }
+
+  private var fullGraph: some View {
+    VStack(alignment: .leading, spacing: metrics.readoutSpacing) {
+      readoutRow
+        .frame(height: metrics.readoutHeight, alignment: .leading)
+
+      GeometryReader { geo in
+        let width = geo.size.width
+        ZStack(alignment: .topLeading) {
+          plotStack
+            .frame(width: canvasWidth, alignment: .topLeading)
+            .offset(x: -displayedOffset(viewWidth: width))
+
+          playhead
+            .frame(width: HourlyGraphLayout.columnWidth, height: metrics.plotHeight)
+            .offset(x: 0)
+            .allowsHitTesting(false)
+        }
+        .frame(width: width, height: metrics.plotStackHeight, alignment: .topLeading)
+        .clipped()
+        .contentShape(Rectangle())
+        .gesture(scrubGesture(viewWidth: width))
+        .onAppear { viewportWidth = width }
+        .onChange(of: width) { _, newWidth in
+          viewportWidth = newWidth
+          scrubOffset = HourlyGraphLayout.clampedOffset(
+            raw: scrubOffset, canvasWidth: canvasWidth, viewportWidth: newWidth)
+        }
+      }
+      .frame(height: metrics.plotStackHeight)
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(graphAccessibilityLabel)
+    .accessibilityHint("Swipe up or down to move hour")
+    .accessibilityAdjustableAction(adjustScrub)
+  }
+
+  private var plotStack: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      ZStack(alignment: .topLeading) {
+        plot
+        valueLabels
+        sunCaptions
+      }
+      .frame(width: canvasWidth, height: metrics.plotHeight)
+      if style == .full {
+        precipBars
+          .frame(width: canvasWidth, height: metrics.precipBarHeight)
+      }
+      timeRow
+    }
+  }
+
+  private var readoutRow: some View {
+    Text(readoutText)
+      .font(DesignTokens.Typography.callout())
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+      .monospacedDigit()
+      .lineLimit(1)
+      .minimumScaleFactor(0.8)
+      .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private var playhead: some View {
+    Rectangle()
+      .fill(DesignTokens.Palette.textPrimary.opacity(0.85))
+      .frame(width: 1)
+      .frame(maxHeight: .infinity)
+      .padding(.leading, HourlyGraphLayout.columnWidth / 2 - 0.5)
   }
 
   private var canvasWidth: CGFloat {
@@ -243,36 +492,150 @@ struct HourlyGraphView: View {
     return columns + 12
   }
 
+  private var resolvedSunEvents: [HourlyGraphSunEvent] {
+    if !sunEvents.isEmpty { return sunEvents }
+    var events: [HourlyGraphSunEvent] = []
+    if let sunrise {
+      events.append(HourlyGraphSunEvent(date: sunrise, title: "Sunrise"))
+    }
+    if let sunset {
+      events.append(HourlyGraphSunEvent(date: sunset, title: "Sunset"))
+    }
+    return events
+  }
+
+  private var selectedIndex: Int {
+    HourlyGraphLayout.selectedIndex(
+      offset: displayedOffset(viewWidth: viewportWidth), hourCount: hours.count)
+  }
+
+  private var selectedHour: HourlyForecast? {
+    guard hours.indices.contains(selectedIndex) else { return hours.first }
+    return hours[selectedIndex]
+  }
+
+  private var readoutText: String {
+    guard let hour = selectedHour else { return "Hourly forecast" }
+    return HourlyGraphLayout.readoutText(
+      hour: hour, index: selectedIndex, series: series, timeZone: timeZone)
+  }
+
+  private var graphAccessibilityLabel: String {
+    guard let hour = selectedHour else { return "Hourly forecast." }
+    return HourlyGraphLayout.accessibilityLabel(
+      hour: hour, index: selectedIndex, hourCount: hours.count, series: series,
+      timeZone: timeZone)
+  }
+
+  private func displayedOffset(viewWidth: CGFloat) -> CGFloat {
+    HourlyGraphLayout.clampedOffset(
+      raw: scrubOffset - dragTranslation,
+      canvasWidth: canvasWidth,
+      viewportWidth: viewWidth)
+  }
+
+  private func scrubGesture(viewWidth: CGFloat) -> some Gesture {
+    DragGesture(minimumDistance: 8)
+      .updating($dragTranslation) { value, state, _ in
+        state = value.translation.width
+      }
+      .onEnded { value in
+        let raw = scrubOffset - value.translation.width
+        let clamped = HourlyGraphLayout.clampedOffset(
+          raw: raw, canvasWidth: canvasWidth, viewportWidth: viewWidth)
+        let snapped =
+          (clamped / HourlyGraphLayout.columnWidth).rounded() * HourlyGraphLayout.columnWidth
+        scrubOffset = HourlyGraphLayout.clampedOffset(
+          raw: snapped, canvasWidth: canvasWidth, viewportWidth: viewWidth)
+      }
+  }
+
+  private func adjustScrub(_ direction: AccessibilityAdjustmentDirection) {
+    let delta = HourlyGraphLayout.columnWidth
+    let next: CGFloat
+    switch direction {
+    case .increment:
+      next = scrubOffset + delta
+    case .decrement:
+      next = scrubOffset - delta
+    @unknown default:
+      return
+    }
+    scrubOffset = HourlyGraphLayout.clampedOffset(
+      raw: next, canvasWidth: canvasWidth, viewportWidth: max(viewportWidth, delta))
+  }
+
   private var timeRow: some View {
-    HStack(spacing: 0) {
+    let midnights = Set(HourlyGraphLayout.midnightIndexes(hours: hours, calendar: calendar))
+    return HStack(spacing: 0) {
       ForEach(Array(hours.enumerated()), id: \.element.time) { index, hour in
-        Text(timeLabel(for: hour, index: index))
+        Text(timeLabel(for: hour, index: index, isMidnight: midnights.contains(index)))
           .font(DesignTokens.Typography.caption())
-          .foregroundStyle(
-            index == 0
-              ? DesignTokens.Palette.accent
-              : DesignTokens.Palette.textTertiary
-          )
+          .fontWeight(midnights.contains(index) && style == .full ? .semibold : .regular)
+          .foregroundStyle(timeColor(index: index, isMidnight: midnights.contains(index)))
           .lineLimit(1)
-          .minimumScaleFactor(0.75)
-          .frame(width: HourlyGraphLayout.columnWidth, height: HourlyGraphLayout.timeRowHeight)
+          .minimumScaleFactor(0.7)
+          .frame(
+            width: HourlyGraphLayout.columnWidth, height: metrics.timeRowHeight)
+      }
+    }
+  }
+
+  private var precipBars: some View {
+    let amountIndexes = Set(
+      HourlyGraphLayout.precipLabelIndexes(
+        chances: hours.map(\.precipChance),
+        hasAmount: hours.map {
+          precipAmountText(liquid: $0.liquidPrecip, snow: $0.snowfall ?? 0) != nil
+        }
+      ))
+    return HStack(spacing: 0) {
+      ForEach(Array(hours.enumerated()), id: \.element.time) { index, hour in
+        VStack(spacing: 1) {
+          if amountIndexes.contains(index),
+            let amount = precipAmountText(
+              liquid: hour.liquidPrecip, snow: hour.snowfall ?? 0)
+          {
+            Text(amount)
+              .font(DesignTokens.Typography.micro())
+              .foregroundStyle(DesignTokens.Palette.accentCool)
+              .lineLimit(1)
+              .minimumScaleFactor(0.6)
+          }
+          Capsule()
+            .fill(precipBarColor(hour.precipChance))
+            .frame(width: 8, height: precipBarHeight(hour.precipChance))
+        }
+        .frame(
+          width: HourlyGraphLayout.columnWidth, height: metrics.precipBarHeight,
+          alignment: .bottom)
       }
     }
   }
 
   private var plot: some View {
     let values = seriesValues
-    let bounds = valueBounds(values)
+    let bounds = HourlyGraphLayout.valueBounds(values: values, series: series)
     let lineColor = seriesColor
-    let sunX = sunTickX(sunset)
-    let riseX = sunTickX(sunrise)
     let points = HourlyGraphLayout.points(
       values: values, min: bounds.min, max: bounds.max,
-      plotHeight: HourlyGraphLayout.plotHeight)
+      plotHeight: metrics.plotHeight, topPad: metrics.plotTopPad,
+      bottomPad: metrics.plotBottomPad)
+    let midnights = HourlyGraphLayout.midnightIndexes(hours: hours, calendar: calendar)
+    let sunXs = resolvedSunEvents.compactMap { sunTickX($0.date) }
 
     return Canvas { context, size in
-      if let sunX { strokeSunTick(context: &context, x: sunX, height: size.height) }
-      if let riseX { strokeSunTick(context: &context, x: riseX, height: size.height) }
+      if style == .full {
+        strokeHourTicks(context: &context, height: size.height)
+        for midnight in midnights {
+          let x =
+            HourlyGraphLayout.columnWidth * (CGFloat(midnight) + 0.5)
+          strokeMidnightTick(context: &context, x: x, height: size.height)
+        }
+      }
+      for x in sunXs {
+        strokeSunTick(context: &context, x: x, height: size.height)
+      }
 
       guard hours.count >= 1, values.count == hours.count, !points.isEmpty else { return }
 
@@ -285,7 +648,7 @@ struct HourlyGraphView: View {
       }
 
       let gradient = Gradient(colors: [
-        lineColor.opacity(0.32),
+        lineColor.opacity(metrics.fillTopOpacity),
         lineColor.opacity(0.04),
       ])
       context.fill(
@@ -301,7 +664,7 @@ struct HourlyGraphView: View {
         style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
       )
 
-      if let first = points.first {
+      if style == .compact, let first = points.first {
         let ring = Path(ellipseIn: CGRect(x: first.x - 5, y: first.y - 5, width: 10, height: 10))
         context.fill(ring, with: .color(lineColor.opacity(0.35)))
         let dot = Path(ellipseIn: CGRect(x: first.x - 3.5, y: first.y - 3.5, width: 7, height: 7))
@@ -312,14 +675,15 @@ struct HourlyGraphView: View {
 
   private var valueLabels: some View {
     let values = seriesValues
-    let bounds = valueBounds(values)
+    let bounds = HourlyGraphLayout.valueBounds(values: values, series: series)
     return ZStack(alignment: .topLeading) {
       ForEach(labelIndexes, id: \.self) { index in
         let value = values[index]
         let x = HourlyGraphLayout.columnWidth * (CGFloat(index) + 0.5)
         let y = HourlyGraphLayout.y(
           value: value, min: bounds.min, max: bounds.max,
-          plotHeight: HourlyGraphLayout.plotHeight)
+          plotHeight: metrics.plotHeight, topPad: metrics.plotTopPad,
+          bottomPad: metrics.plotBottomPad)
         Text(valueLabel(at: index, value: value))
           .font(DesignTokens.Typography.caption())
           .fontWeight(index == 0 ? .semibold : .medium)
@@ -330,26 +694,22 @@ struct HourlyGraphView: View {
           .position(x: x, y: y < 18 ? y + 12 : y - 11)
       }
     }
-    .frame(width: canvasWidth, height: HourlyGraphLayout.plotHeight, alignment: .topLeading)
+    .frame(width: canvasWidth, height: metrics.plotHeight, alignment: .topLeading)
     .allowsHitTesting(false)
   }
 
   private var sunCaptions: some View {
     ZStack(alignment: .topLeading) {
-      if let x = sunTickX(sunset) {
-        Text("Sunset")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.accentWarm)
-          .position(x: x, y: 7)
-      }
-      if let x = sunTickX(sunrise) {
-        Text("Sunrise")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.accentWarm)
-          .position(x: x, y: 7)
+      ForEach(Array(resolvedSunEvents.enumerated()), id: \.offset) { _, event in
+        if let x = sunTickX(event.date) {
+          Text(event.title)
+            .font(DesignTokens.Typography.micro())
+            .foregroundStyle(DesignTokens.Palette.accentWarm)
+            .position(x: x, y: 7)
+        }
       }
     }
-    .frame(width: canvasWidth, height: HourlyGraphLayout.plotHeight, alignment: .topLeading)
+    .frame(width: canvasWidth, height: metrics.plotHeight, alignment: .topLeading)
     .allowsHitTesting(false)
   }
 
@@ -366,6 +726,35 @@ struct HourlyGraphView: View {
       with: .color(DesignTokens.Palette.accentWarm.opacity(0.45)),
       style: StrokeStyle(lineWidth: 0.75)
     )
+  }
+
+  private func strokeMidnightTick(
+    context: inout GraphicsContext,
+    x: CGFloat,
+    height: CGFloat
+  ) {
+    var tick = Path()
+    tick.move(to: CGPoint(x: x, y: 0))
+    tick.addLine(to: CGPoint(x: x, y: height))
+    context.stroke(
+      tick,
+      with: .color(DesignTokens.Palette.textTertiary.opacity(0.55)),
+      style: StrokeStyle(lineWidth: 1)
+    )
+  }
+
+  private func strokeHourTicks(context: inout GraphicsContext, height: CGFloat) {
+    for index in 0..<hours.count {
+      let x = HourlyGraphLayout.columnWidth * (CGFloat(index) + 0.5)
+      var tick = Path()
+      tick.move(to: CGPoint(x: x, y: height - 5))
+      tick.addLine(to: CGPoint(x: x, y: height))
+      context.stroke(
+        tick,
+        with: .color(DesignTokens.Palette.textTertiary.opacity(0.35)),
+        style: StrokeStyle(lineWidth: 0.5)
+      )
+    }
   }
 
   /// Tick only when the sun event sits inside the plotted hours — not clamped to an edge.
@@ -398,13 +787,6 @@ struct HourlyGraphView: View {
     }
   }
 
-  private func valueBounds(_ values: [Double]) -> (min: Double, max: Double) {
-    if series == .precip { return (0, 100) }
-    let lo = (values.min() ?? 0) - 2
-    let hi = (values.max() ?? 100) + 2
-    return (lo, hi)
-  }
-
   private var labelIndexes: [Int] {
     if series != .precip {
       return HourlyGraphLayout.labeledIndexes(count: hours.count)
@@ -428,10 +810,32 @@ struct HourlyGraphView: View {
     return "\(Int(round(value)))°"
   }
 
-  private func timeLabel(for hour: HourlyForecast, index: Int) -> String {
+  private func timeLabel(for hour: HourlyForecast, index: Int, isMidnight: Bool) -> String {
     if index == 0 { return "Now" }
+    if style == .full, isMidnight {
+      return LocationTimezone.formatter(dateFormat: "EEE", timeZone: timeZone)
+        .string(from: hour.time)
+    }
     if !HourlyGraphLayout.labeledIndexes(count: hours.count).contains(index) { return "" }
     return LocationTimezone.formatter(dateFormat: "ha", timeZone: timeZone)
       .string(from: hour.time)
+  }
+
+  private func timeColor(index: Int, isMidnight: Bool) -> Color {
+    if index == 0 { return DesignTokens.Palette.accent }
+    if style == .full, isMidnight { return DesignTokens.Palette.textPrimary }
+    return DesignTokens.Palette.textTertiary
+  }
+
+  private func precipBarHeight(_ chance: Int) -> CGFloat {
+    let maxHeight: CGFloat = 22
+    if chance <= 0 { return 2 }
+    return max(2, maxHeight * CGFloat(chance) / 100)
+  }
+
+  private func precipBarColor(_ chance: Int) -> Color {
+    if chance >= 50 { return DesignTokens.Palette.accentCool }
+    if chance >= 20 { return DesignTokens.Palette.accentCool.opacity(0.7) }
+    return DesignTokens.Palette.cardStroke
   }
 }
