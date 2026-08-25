@@ -135,15 +135,15 @@ struct GrokBriefCard: View {
 
   private var header: some View {
     HStack {
-      Label("TODAY'S TAKE", systemImage: "sparkles")
-        .font(DesignTokens.Typography.caption())
-        .tracking(DesignTokens.Typography.cardLabelTracking)
-        .foregroundStyle(DesignTokens.Palette.accent)
+      Text("Today's Take")
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .accessibilityAddTraits(.isHeader)
       Spacer()
       if isLoading {
         ProgressView()
           .scaleEffect(0.75)
-          .tint(DesignTokens.Palette.accent)
+          .tint(DesignTokens.Palette.textTertiary)
       }
       if !safety.isFeatureHidden {
         safetyMenu

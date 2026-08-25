@@ -120,25 +120,22 @@ struct TodayView: View {
       .toolbarTitleDisplayMode(.inline)
       .weatherShowsThroughNavigationBar()
       .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
-          if weather != nil {
-            Button {
-              Haptic.impact(.light)
-              showShareSheet = true
-            } label: {
-              Image(systemName: "square.and.arrow.up")
-            }
-            .accessibilityLabel("Share")
+        if #available(iOS 26.0, *) {
+          ToolbarItem(placement: .topBarLeading) {
+            shareToolbarButton
           }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            Haptic.impact(.light)
-            Task { await store.useCurrentDeviceLocation() }
-          } label: {
-            Image(systemName: "location.circle.fill")
+          .sharedBackgroundVisibility(.hidden)
+          ToolbarItem(placement: .topBarTrailing) {
+            locationToolbarButton
           }
-          .accessibilityLabel("Use current location")
+          .sharedBackgroundVisibility(.hidden)
+        } else {
+          ToolbarItem(placement: .topBarLeading) {
+            shareToolbarButton
+          }
+          ToolbarItem(placement: .topBarTrailing) {
+            locationToolbarButton
+          }
         }
       }
       .sheet(isPresented: $showShareSheet) {
@@ -303,6 +300,37 @@ struct TodayView: View {
         }
       }
     }
+  }
+
+  @ViewBuilder
+  private var shareToolbarButton: some View {
+    if weather != nil {
+      Button {
+        Haptic.impact(.light)
+        showShareSheet = true
+      } label: {
+        Image(systemName: "square.and.arrow.up")
+          .font(DesignTokens.Typography.symbol(17))
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+      }
+      .buttonStyle(.plain)
+      .tint(DesignTokens.Palette.textPrimary)
+      .accessibilityLabel("Share")
+    }
+  }
+
+  private var locationToolbarButton: some View {
+    Button {
+      Haptic.impact(.light)
+      Task { await store.useCurrentDeviceLocation() }
+    } label: {
+      Image(systemName: "location.circle.fill")
+        .font(DesignTokens.Typography.symbol(17))
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+    }
+    .buttonStyle(.plain)
+    .tint(DesignTokens.Palette.textSecondary)
+    .accessibilityLabel("Use current location")
   }
 
 }
