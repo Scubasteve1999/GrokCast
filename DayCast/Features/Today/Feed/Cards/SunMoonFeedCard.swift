@@ -17,7 +17,7 @@ struct SunMoonFeedCard: View {
           Text("Sun & Moon")
             .font(DesignTokens.Typography.subsection())
             .foregroundStyle(DesignTokens.Palette.textTertiary)
-                .tracking(DesignTokens.Typography.cardLabelTracking)
+            .tracking(DesignTokens.Typography.cardLabelTracking)
           Spacer()
           Image(systemName: "chevron.right")
             .font(DesignTokens.Typography.caption())
@@ -53,7 +53,7 @@ struct SunMoonFeedCard: View {
   private var moonColumn: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Image(systemName: moon.phase.symbolName)
-        .font(DesignTokens.Typography.studioTitle())
+        .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .symbolRenderingMode(.hierarchical)
       VStack(alignment: .leading, spacing: 2) {
@@ -117,9 +117,11 @@ struct SunMoonDetailView: View {
             Text(moon.phase.displayName)
               .font(DesignTokens.Typography.headline())
               .foregroundStyle(DesignTokens.Palette.textPrimary)
-            Text("About \(Int(round(moon.illumination * 100)))% of the moon is illuminated tonight.")
-              .font(DesignTokens.Typography.callout())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
+            Text(
+              "About \(Int(round(moon.illumination * 100)))% of the moon is illuminated tonight."
+            )
+            .font(DesignTokens.Typography.callout())
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
           }
         }
         .padding(DesignTokens.Spacing.space16)

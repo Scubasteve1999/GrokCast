@@ -58,23 +58,13 @@ struct HourlySeriesPicker: View {
             )
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
-            .background(
-              Capsule()
-                .fill(
-                  selection == option
-                    ? DesignTokens.Palette.cardElevated
-                    : Color.clear
-                )
-            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(option.label)
         .accessibilityAddTraits(selection == option ? .isSelected : [])
       }
     }
-    .padding(2)
-    .background(DesignTokens.Palette.bgSecondary.opacity(0.65))
-    .clipShape(Capsule())
   }
 }
 

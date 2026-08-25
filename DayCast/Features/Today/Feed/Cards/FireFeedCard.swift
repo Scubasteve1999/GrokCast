@@ -9,11 +9,10 @@ struct FireFeedCard: View {
     Button(action: onTap) {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         HStack {
-          Label("Fire", systemImage: "flame.fill")
+          Text("Fire")
             .font(DesignTokens.Typography.subsection())
-            .foregroundStyle(DesignTokens.Palette.accentWarm)
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
             .tracking(DesignTokens.Typography.cardLabelTracking)
-            .labelStyle(.titleAndIcon)
           Spacer()
           Image(systemName: "chevron.right")
             .font(DesignTokens.Typography.caption())
