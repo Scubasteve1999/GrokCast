@@ -328,6 +328,8 @@ final class WeatherStore {
   var activeAlerts: [NWSAlert] = []
   var alertHistory: [NWSAlert] = []
   private var lastAlertsFetch: Date?
+  /// Last successful NWS alerts fetch. Nil until one has succeeded for this process.
+  var lastAlertsFetchAt: Date? { lastAlertsFetch }
   private var alertsForLocation: UUID?
   /// True when the most recent alerts fetch for the current location succeeded authoritatively.
   private var lastAlertsFetchSucceeded = false

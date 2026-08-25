@@ -140,6 +140,18 @@ struct AlertsView: View {
           .accessibilityIdentifier(DayCastAccessibility.Alerts.screenTitle)
           .accessibilityLabel(honesty.screenAccessibilityLabel)
 
+        if let stateLine = AlertsActiveCopy.stateLine(
+          locationName: store.currentLocation?.name,
+          nwsCount: activeAlerts.count,
+          checkedAt: store.lastAlertsFetchAt
+        ) {
+          Text(stateLine)
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(stateLine)
+        }
+
         if alertsFetchFailed {
           alertsErrorBanner
         }
@@ -171,13 +183,13 @@ struct AlertsView: View {
               .frame(maxWidth: .infinity, alignment: .leading)
               .accessibilityAddTraits(.isHeader)
 
-            AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
-
             VStack(spacing: DesignTokens.Spacing.space12) {
               ForEach(activeAlerts) { alert in
                 alertRow(alert, isActive: true, layout: .figma)
               }
             }
+
+            AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
           }
         }
 
@@ -266,8 +278,15 @@ struct AlertsView: View {
           .lineLimit(2)
           .multilineTextAlignment(.leading)
 
-        if isActive, let headline = alert.headline, !headline.isEmpty {
-          Text(headline)
+        if isActive,
+          let body = AlertsActiveCopy.cardBody(
+            event: alert.event,
+            headline: alert.headline,
+            instruction: alert.instruction,
+            description: alert.description
+          )
+        {
+          Text(body)
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .lineLimit(3)
@@ -295,15 +314,12 @@ struct AlertsView: View {
 
   private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {
     if isActive {
-      let until =
-        alert.expires.map {
-          $0.formatted(date: .omitted, time: .shortened)
-        } ?? "Active"
-      let area =
-        alert.areaDesc?.components(separatedBy: ";").first?.trimmingCharacters(in: .whitespaces)
-        ?? ""
-      if area.isEmpty { return "Until \(until)" }
-      return "Until \(until) · \(area)"
+      return AlertsActiveCopy.untilLine(
+        expires: alert.expires,
+        areaDesc: alert.areaDesc,
+        calendar: store.displayedWeather?.locationCalendar ?? .current,
+        timeZone: store.displayedWeather?.locationTimeZone ?? .current
+      )
     }
     let detail = alert.headline ?? alert.event
     return "Expired \(relativeExpiry(for: alert)) · \(detail)"
