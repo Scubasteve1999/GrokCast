@@ -158,6 +158,25 @@ final class TonightOutlookTests: XCTestCase {
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("jacket"))
   }
 
+  func testHourlyGraphLabelsAreSparseNotPerHourStickers() {
+    XCTAssertEqual(HourlyGraphLayout.labeledIndexes(count: 12), [0, 3, 6, 9])
+    XCTAssertEqual(HourlyGraphLayout.labeledIndexes(count: 24).count, 8)
+    XCTAssertEqual(
+      HourlyGraphLayout.precipLabelIndexes(
+        chances: [1, 1, 1, 40, 35, 20, 5],
+        hasAmount: [false, false, false, true, false, false, false]
+      ),
+      [3]
+    )
+    XCTAssertEqual(
+      HourlyGraphLayout.precipLabelIndexes(
+        chances: [1, 1, 1, 1],
+        hasAmount: [false, false, false, false]
+      ),
+      []
+    )
+  }
+
   func testSunsetTickSitsBetweenHourCenters() {
     let eight = calendar.date(
       from: DateComponents(year: 2026, month: 8, day: 24, hour: 20))!

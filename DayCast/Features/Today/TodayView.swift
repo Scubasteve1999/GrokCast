@@ -481,23 +481,17 @@ private struct TodaySkeletonPanel: View {
           minHeight: TodayGlanceLayout.hourlyTonightLineHeight,
           alignment: .topLeading
         )
-      VStack(spacing: DesignTokens.Spacing.space4) {
-        HStack(spacing: 0) {
-          ForEach(0..<8, id: \.self) { _ in
-            ShimmerBlock(width: 12, height: 12, cornerRadius: 3)
-              .frame(width: HourlyGraphLayout.columnWidth)
-          }
-          Spacer(minLength: 0)
-        }
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         ShimmerBlock(
           width: HourlyGraphLayout.columnWidth * 8,
-          height: 8,
-          cornerRadius: 4
+          height: 10,
+          cornerRadius: 5
         )
+        .padding(.top, DesignTokens.Spacing.space16)
         HStack(spacing: 0) {
-          ForEach(0..<8, id: \.self) { _ in
-            ShimmerBlock(width: 20, height: 8, cornerRadius: 3)
-              .frame(width: HourlyGraphLayout.columnWidth)
+          ForEach(0..<4, id: \.self) { _ in
+            ShimmerBlock(width: 28, height: 10, cornerRadius: 3)
+              .frame(width: HourlyGraphLayout.columnWidth * 2)
           }
           Spacer(minLength: 0)
         }
