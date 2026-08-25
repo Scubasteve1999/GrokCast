@@ -74,9 +74,6 @@ enum LocalWeatherBrief {
     activeAlerts: [String],
     now: Date = Date()
   ) -> String {
-    let current =
-      "\(locationName) is \(unit.format(weather.currentTemp)) and \(weather.conditionText.lowercased()), with a high of \(unit.formatShort(weather.high)) and low of \(unit.formatShort(weather.low))."
-
     let outfit = outfitGuidance(
       feelsLike: weather.feelsLike,
       unit: unit,
@@ -87,11 +84,11 @@ enum LocalWeatherBrief {
     if !activeAlerts.isEmpty {
       let alertList = activeAlerts.prefix(2).joined(separator: " and ")
       return
-        "\(current) \(outfit) Active alerts include \(alertList); check the Alerts tab and follow local guidance."
+        "Active alerts include \(alertList); check the Alerts tab and follow local guidance. \(outfit)"
     }
 
     guard let window = driestWindow(in: weather.hourly, now: now) else {
-      return "\(current) \(outfit) Rain chance is currently \(weather.precipitationChance)%."
+      return "Rain chance is currently \(weather.precipitationChance)%. \(outfit)"
     }
 
     let formatter = DateFormatter()
@@ -108,7 +105,7 @@ enum LocalWeatherBrief {
       timing =
         "The least-wet outdoor window is \(start)–\(end), though rain odds still reach \(window.maxPrecipChance)%."
     }
-    return "\(current) \(outfit) \(timing)"
+    return "\(timing) \(outfit)"
   }
 
   private struct OutdoorWindow {
@@ -210,14 +207,13 @@ enum MorningBriefGenerator {
       return "\n\(block)"
     }()
 
-    let system = """
-      You are a helpful weather assistant inside DayCast. Write a practical 2–4 sentence weather brief for \(location).
-      Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
-      Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
-      Precip chance now: \(weather.precipitationChance)%.
-      Active alerts: \(alerts.isEmpty ? "none" : alerts).\(severeBlock)\(shortTermBlock)
-      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags. Do not use internal labels such as "Forecast-only take", "SEVERE CONTEXT", or MD numbers.
-      """
+    let system = GrokPrompts.todaysTakeSystemPrompt(
+      location: location,
+      weather: weather,
+      unit: unit,
+      alertLine: alerts,
+      extraBlocks: severeBlock + shortTermBlock
+    )
 
     do {
       let auth = try GrokAuthResolver.resolve(

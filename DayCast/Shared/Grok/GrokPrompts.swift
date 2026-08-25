@@ -267,6 +267,34 @@ enum GrokPrompts {
     return lines.joined(separator: "\n")
   }
 
+  /// Today's Take. Now already owns temp / feels / condition / H / L — do not recap them.
+  static func todaysTakeSystemPrompt(
+    location: String,
+    weather: DayCastWeather,
+    unit: TemperatureUnit,
+    alertLine: String,
+    extraBlocks: String = ""
+  ) -> String {
+    let extras = extraBlocks.trimmingCharacters(in: .whitespacesAndNewlines)
+    let extraSection = extras.isEmpty ? "" : "\n\(extras)"
+    let alerts = alertLine.trimmingCharacters(in: .whitespacesAndNewlines)
+    return """
+      You write Today's Take in DayCast for \(location). \
+      The Now card already shows temperature, feels-like, condition, high, and low. \
+      Do not restate those five. Start where the numbers end: what changes, when, and what to do.
+
+      Grounding data (do not recap as an opener):
+      Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
+      Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
+      Precip chance now: \(weather.precipitationChance)%.
+      Active alerts: \(alerts.isEmpty ? "none" : alerts).\(extraSection)
+
+      Write 2–4 sentences. Lead with the outdoor window, storm or rain timing, or an alert. \
+      Quote a number only as a change or threshold (cooling to 72° tonight), never as a recap of Now. \
+      No markdown, no hashtags. Do not use internal labels such as "Forecast-only take", "SEVERE CONTEXT", or MD numbers.
+      """
+  }
+
   /// AFD KEY MESSAGES / PNS titles as issued. Chat must not rewrite this text.
   static func localBriefingBlock(items: [LocalBriefingItem]) -> String? {
     let usable = items.filter {

@@ -29,7 +29,8 @@ final class GrokContentFilterTests: XCTestCase {
     XCTAssertEqual(GrokContentFilter.screen("Check this porn forecast."), .blocked(.sexual))
     XCTAssertEqual(GrokContentFilter.screen("You are a faggot."), .blocked(.hate))
     XCTAssertEqual(GrokContentFilter.screen("I want to kill myself today."), .blocked(.selfHarm))
-    XCTAssertEqual(GrokContentFilter.screen("They will behead the town."), .blocked(.graphicViolence))
+    XCTAssertEqual(
+      GrokContentFilter.screen("They will behead the town."), .blocked(.graphicViolence))
   }
 
   func testBlocksPromptLeakAndHarmfulAdvice() {
@@ -76,7 +77,43 @@ final class GrokContentFilterTests: XCTestCase {
     XCTAssertNotNil(finalized)
     XCTAssertEqual(GrokContentFilter.screen(finalized!), .allowed)
     XCTAssertFalse(finalized!.localizedCaseInsensitiveContains("Forecast-only take"))
-    XCTAssertTrue(finalized!.contains("Test City"))
+    XCTAssertFalse(finalized!.hasPrefix("Test City is"))
+    XCTAssertFalse(finalized!.contains("72"))
+    XCTAssertTrue(finalized!.localizedCaseInsensitiveContains("rain chance"))
+  }
+
+  func testTakePromptForbidsRestatingNow() {
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch, MS", latitude: 34.96, longitude: -89.83),
+      currentTemp: 78,
+      feelsLike: 82,
+      conditionCode: 0,
+      conditionText: "Mainly Clear",
+      humidity: 50,
+      windSpeed: 5,
+      uvIndex: 3,
+      precipitationChance: 0,
+      high: 92,
+      low: 73,
+      symbolName: "sun.max.fill",
+      fetchedAt: Date(),
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: [],
+      daily: [],
+      minutely15: []
+    )
+    let prompt = GrokPrompts.todaysTakeSystemPrompt(
+      location: "Olive Branch, MS",
+      weather: weather,
+      unit: .fahrenheit,
+      alertLine: ""
+    )
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("do not restate"))
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("what changes"))
+    XCTAssertTrue(prompt.localizedCaseInsensitiveContains("today's take"))
   }
 
   func testVisibleTakeDropsPipelineTagsAndKeepsWeatherMeaning() {
@@ -168,6 +205,16 @@ final class GrokBriefSafetyTests: XCTestCase {
     XCTAssertFalse(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     XCTAssertTrue(label.localizedCaseInsensitiveContains("Today's Take"))
     XCTAssertEqual(DayCastAccessibility.Today.takeOptions, "daycast.today.takeOptions")
+  }
+
+  func testTakeCollapsesToThreeLinesWithAMoreControl() {
+    XCTAssertEqual(GrokBriefCard.collapsedLineLimit, 3)
+    XCTAssertEqual(GrokBriefCard.expandControlTitle(isExpanded: false), "More")
+    XCTAssertEqual(GrokBriefCard.expandControlTitle(isExpanded: true), "Less")
+    XCTAssertFalse(GrokBriefCard.showsExpandControl(for: "Short take."))
+    XCTAssertTrue(
+      GrokBriefCard.showsExpandControl(
+        for: String(repeating: "a", count: GrokBriefCard.expandCharacterThreshold + 1)))
   }
 }
 

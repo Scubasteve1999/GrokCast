@@ -65,7 +65,9 @@ final class AirQualityAndMoonTests: XCTestCase {
     )
 
     XCTAssertFalse(brief.localizedCaseInsensitiveContains("Forecast-only take"))
-    XCTAssertTrue(brief.hasPrefix("Testville is"))
+    XCTAssertFalse(brief.hasPrefix("Testville is"))
+    XCTAssertFalse(brief.contains("86"))
+    XCTAssertFalse(brief.localizedCaseInsensitiveContains("mainly clear"))
     XCTAssertTrue(brief.contains("rain odds staying at 20% or lower"))
     XCTAssertTrue(brief.contains("Dress light and bring water."))
     XCTAssertTrue(brief.contains("Add sun protection."))

@@ -9,6 +9,16 @@ enum GrokBriefPresentation {
 
 struct GrokBriefCard: View {
   static let optionsAccessibilityLabel = "Today's Take options"
+  static let collapsedLineLimit = 3
+  static let expandCharacterThreshold = 120
+
+  static func expandControlTitle(isExpanded: Bool) -> String {
+    isExpanded ? "Less" : "More"
+  }
+
+  static func showsExpandControl(for text: String) -> Bool {
+    text.count > expandCharacterThreshold
+  }
 
   @Environment(WeatherStore.self) private var store
   @Environment(GrokBriefSafety.self) private var safety
@@ -42,11 +52,22 @@ struct GrokBriefCard: View {
         hiddenBriefBody
       } else if let briefText {
         Text(GrokBriefText.visible(briefText))
-          .font(DesignTokens.Typography.headline())
+          .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .lineLimit(isExpanded ? nil : (presentation == .figma ? 6 : 3))
+          .lineLimit(isExpanded ? nil : Self.collapsedLineLimit)
           .fixedSize(horizontal: false, vertical: true)
           .animation(.easeInOut(duration: 0.2), value: isExpanded)
+
+        if Self.showsExpandControl(for: briefText) {
+          Button(Self.expandControlTitle(isExpanded: isExpanded)) {
+            withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+          }
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+          .buttonStyle(.plain)
+          .accessibilityHint(
+            isExpanded ? "Shows less of Today's Take" : "Shows the rest of Today's Take")
+        }
 
         if presentation == .full {
           actionRow(for: briefText)
@@ -80,10 +101,12 @@ struct GrokBriefCard: View {
           .controlSize(.small)
         }
       } else {
-        Text("A quick, practical read on today's weather — outfit tips, outdoor windows, and anything worth watching.")
-          .font(DesignTokens.Typography.callout())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-          .fixedSize(horizontal: false, vertical: true)
+        Text(
+          "A quick, practical read on today's weather — outfit tips, outdoor windows, and anything worth watching."
+        )
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
 
         if presentation == .full {
           Button {
@@ -213,14 +236,6 @@ struct GrokBriefCard: View {
   @ViewBuilder
   private func actionRow(for briefText: String) -> some View {
     HStack(spacing: DesignTokens.Spacing.space16) {
-      if briefText.count > 120 {
-        Button(isExpanded ? "Show less" : "Show more") {
-          withAnimation { isExpanded.toggle() }
-        }
-        .font(DesignTokens.Typography.caption())
-        .foregroundStyle(DesignTokens.Palette.accent)
-      }
-
       Button("Refresh") {
         Task { await fetchBrief(force: true) }
       }

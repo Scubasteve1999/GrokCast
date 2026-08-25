@@ -672,14 +672,12 @@ final class GrokAIViewModel {
     let alertEvents = weatherStore.displayableActiveAlerts.prefix(3).map(\.event)
     let alertLine = alertEvents.joined(separator: ", ")
 
-    let system = """
-      You are a helpful weather assistant inside DayCast. Write a practical 2–4 sentence weather brief for \(location).
-      Current: \(unit.format(weather.currentTemp)), feels \(unit.format(weather.feelsLike)), \(weather.conditionText).
-      Today high/low: \(unit.formatShort(weather.high)) / \(unit.formatShort(weather.low)).
-      Precip chance now: \(weather.precipitationChance)%.
-      Active alerts: \(alertLine.isEmpty ? "none" : alertLine).
-      Include outfit hint, best outdoor window, and anything worth watching. No markdown, no hashtags. Do not use internal labels such as "Forecast-only take", "SEVERE CONTEXT", or MD numbers.
-      """
+    let system = GrokPrompts.todaysTakeSystemPrompt(
+      location: location,
+      weather: weather,
+      unit: unit,
+      alertLine: alertLine
+    )
 
     let raw: String
     do {
