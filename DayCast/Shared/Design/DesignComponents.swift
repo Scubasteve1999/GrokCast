@@ -244,7 +244,7 @@ struct MoreHubSheet: View {
   private var hubHeader: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
       if let name = store.currentLocation?.name {
-        Text(name.uppercased())
+        Text(name)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
       }

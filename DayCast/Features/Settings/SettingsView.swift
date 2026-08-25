@@ -49,16 +49,16 @@ struct SettingsView: View {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
         FigmaScreenTitle(title: "Settings")
 
-        FigmaSectionLabel(title: "DAYCAST PRO")
+        FigmaSectionLabel(title: "DayCast Pro")
         proCard
 
-        FigmaSectionLabel(title: "NOTIFICATIONS")
+        FigmaSectionLabel(title: "Notifications")
         notificationsCard
 
-        FigmaSectionLabel(title: "DISPLAY")
+        FigmaSectionLabel(title: "Display")
         displayCard
 
-        FigmaSectionLabel(title: "ALERTS")
+        FigmaSectionLabel(title: "Alerts")
         SettingsGroupCard {
           toggleRow(
             title: "Storm reports",
@@ -71,10 +71,10 @@ struct SettingsView: View {
           )
         }
 
-        FigmaSectionLabel(title: "DEVELOPER")
+        FigmaSectionLabel(title: "Developer")
         SettingsGroupCard { developerKeySection }
 
-        FigmaSectionLabel(title: "LOCATION UPDATES")
+        FigmaSectionLabel(title: "Location updates")
         SettingsGroupCard {
           toggleRow(
             title: "Travel Weather Refresh",
@@ -88,7 +88,7 @@ struct SettingsView: View {
           )
         }
 
-        FigmaSectionLabel(title: "TOOLS")
+        FigmaSectionLabel(title: "Tools")
         SettingsGroupCard {
           NavigationLink {
             TripPlannerView()
@@ -98,10 +98,10 @@ struct SettingsView: View {
           .buttonStyle(.plain)
         }
 
-        FigmaSectionLabel(title: "APP")
+        FigmaSectionLabel(title: "App")
         appCard
 
-        FigmaSectionLabel(title: "PRIVACY")
+        FigmaSectionLabel(title: "Privacy")
         SettingsGroupCard {
           toggleRow(
             title: "Share analytics",
@@ -117,7 +117,7 @@ struct SettingsView: View {
           .disabled(!PostHogAnalytics.isConfigured)
         }
 
-        FigmaSectionLabel(title: "LEGAL & SUPPORT")
+        FigmaSectionLabel(title: "Legal & support")
         SettingsGroupCard {
           SettingsLinkRow(title: "Privacy Policy", icon: "hand.raised", url: AppLinks.privacyPolicy)
           SettingsDivider()
@@ -128,7 +128,7 @@ struct SettingsView: View {
           SettingsLinkRow(title: "Contact", icon: "envelope", url: AppLinks.supportEmail)
         }
 
-        FigmaSectionLabel(title: "DATA & CREDITS")
+        FigmaSectionLabel(title: "Data & credits")
         SettingsGroupCard {
           SettingsLinkRow(title: "Get xAI API Key", icon: "link", url: AppLinks.xAIConsole)
           SettingsDivider()

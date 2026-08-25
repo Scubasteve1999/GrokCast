@@ -157,7 +157,7 @@ struct LocationsView: View {
 
   private var figmaCurrentSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      FigmaSectionLabel(title: "CURRENT LOCATION")
+      FigmaSectionLabel(title: "Current location")
 
       SettingsGroupCard {
         if let current = store.currentLocation {
@@ -191,7 +191,7 @@ struct LocationsView: View {
 
   private var figmaSavedSection: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      FigmaSectionLabel(title: "SAVED LOCATIONS")
+      FigmaSectionLabel(title: "Saved locations")
 
       SettingsGroupCard {
         if listedSaved.isEmpty {
