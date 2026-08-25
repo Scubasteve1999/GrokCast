@@ -35,7 +35,7 @@ struct Hourly: Decodable {
   let time: [String]
   let temperature_2m: [Double?]
   let relative_humidity_2m: [Int]?
-  let apparent_temperature: [Double]?
+  let apparent_temperature: [Double?]?
   let precipitation_probability: [Int?]?
   let precipitation: [Double?]?
   let rain: [Double?]?
@@ -244,12 +244,17 @@ struct HourlyForecast: Equatable, Codable, Identifiable {
   let snowfall: Double?
   // Optional so cached App Group snapshots written before this field decode as nil (treated as day).
   var isDay: Bool? = nil
+  /// Open-Meteo `apparent_temperature`. Nil on older snapshots / NWS fallback hours.
+  var feelsLike: Double? = nil
 
   // Stable identity based on the actual forecast time (prevents ForEach duplication bugs)
   var id: Date { time }
 
+  var liquidPrecip: Double { (rain ?? 0) + (showers ?? 0) }
+
   enum CodingKeys: String, CodingKey {
-    case time, temp, precipChance, weatherCode, symbolName, rain, showers, snowfall, isDay
+    case time, temp, precipChance, weatherCode, symbolName, rain, showers, snowfall, isDay,
+      feelsLike
   }
 }
 

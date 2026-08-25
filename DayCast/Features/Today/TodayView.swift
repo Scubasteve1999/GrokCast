@@ -468,14 +468,41 @@ private struct TodaySkeletonPanel: View {
 
   private var hourlySlotSkeleton: some View {
     VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
-      ShimmerBlock(width: 72, height: 12, cornerRadius: 4)
-      HStack(spacing: DesignTokens.Spacing.space12) {
-        ForEach(0..<5, id: \.self) { index in
-          HourlyRowSkeleton(isNow: index == 0, layout: .figma)
-        }
+      HStack {
+        ShimmerBlock(width: 64, height: 12, cornerRadius: 4)
         Spacer(minLength: 0)
+        ShimmerBlock(width: 108, height: 16, cornerRadius: 8)
       }
-      .frame(height: DesignTokens.Layout.hourlyRowHeight + DesignTokens.Spacing.space24)
+      .frame(height: TodayGlanceLayout.hourlyHeaderHeight)
+      ShimmerBlock(width: 240, height: 14, cornerRadius: 4)
+      ShimmerBlock(width: 200, height: 14, cornerRadius: 4)
+        .frame(
+          maxWidth: .infinity,
+          minHeight: TodayGlanceLayout.hourlyTonightLineHeight,
+          alignment: .topLeading
+        )
+      VStack(spacing: DesignTokens.Spacing.space4) {
+        HStack(spacing: 0) {
+          ForEach(0..<8, id: \.self) { _ in
+            ShimmerBlock(width: 12, height: 12, cornerRadius: 3)
+              .frame(width: HourlyGraphLayout.columnWidth)
+          }
+          Spacer(minLength: 0)
+        }
+        ShimmerBlock(
+          width: HourlyGraphLayout.columnWidth * 8,
+          height: 8,
+          cornerRadius: 4
+        )
+        HStack(spacing: 0) {
+          ForEach(0..<8, id: \.self) { _ in
+            ShimmerBlock(width: 20, height: 8, cornerRadius: 3)
+              .frame(width: HourlyGraphLayout.columnWidth)
+          }
+          Spacer(minLength: 0)
+        }
+      }
+      .frame(height: TodayGlanceLayout.hourlyGraphHeight, alignment: .top)
     }
     .padding(TodayGlanceLayout.hourlyCardPadding)
     .frame(maxWidth: .infinity, alignment: .leading)

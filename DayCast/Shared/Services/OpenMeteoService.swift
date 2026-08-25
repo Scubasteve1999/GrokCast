@@ -56,7 +56,8 @@ final class OpenMeteoService {
       URLQueryItem(
         name: "hourly",
         value:
-          "temperature_2m,weather_code,precipitation_probability,uv_index,rain,showers,snowfall,is_day"),
+          "temperature_2m,apparent_temperature,weather_code,precipitation_probability,uv_index,rain,showers,snowfall,is_day"
+      ),
       URLQueryItem(
         name: "daily",
         value:
@@ -88,7 +89,7 @@ final class OpenMeteoService {
     // Do not attempt JSON decode on error responses (e.g. 502 returns HTML error page).
     // This prevents "data corrupted / not valid JSON" parsing errors on server issues.
     if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-        _ = String(data: data, encoding: .utf8) ?? "<non-text body>"
+      _ = String(data: data, encoding: .utf8) ?? "<non-text body>"
       // OPEN-METEO BAD HTTP STATUS (logs removed for release)
       throw URLError(
         .badServerResponse,
@@ -212,7 +213,8 @@ final class OpenMeteoService {
             rain: openMeteoValue(h.rain, at: i),
             showers: openMeteoValue(h.showers, at: i),
             snowfall: openMeteoValue(h.snowfall, at: i),
-            isDay: hourIsDay
+            isDay: hourIsDay,
+            feelsLike: openMeteoValue(h.apparent_temperature, at: i)
           ))
       }
     }

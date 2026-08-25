@@ -187,14 +187,16 @@ final class AirQualityAndMoonTests: XCTestCase {
 
   func testHourlyFeedCardVoiceOverIsOneLabeledControl() {
     let label = HourlyFeedCard.accessibilityLabel(
+      title: "Tonight",
+      sentence: "Clear tonight, cooling to 73°.",
       hourLabel: "Now",
       temp: 66,
       precipChance: 0
     )
-    XCTAssertEqual(
-      label,
-      "Hourly forecast. Now 66 degrees, 0 percent chance of precipitation. Opens full forecast."
-    )
+    XCTAssertTrue(label.hasPrefix("Tonight"))
+    XCTAssertTrue(label.contains("Clear tonight, cooling to 73°."))
+    XCTAssertTrue(label.contains("Now 66 degrees, 0 percent chance of precipitation."))
+    XCTAssertTrue(label.hasSuffix("Opens full forecast."))
   }
 
   func testRadarFeedCardVoiceOverIsOneLabeledControl() {

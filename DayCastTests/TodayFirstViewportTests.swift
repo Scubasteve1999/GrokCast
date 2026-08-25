@@ -33,6 +33,14 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertLessThan(TodayGlanceLayout.alertChipMinHeight, 80)
   }
 
+  func testHourlyGraphFitsInTheOldChipBudget() {
+    let oldChipCardHeight: CGFloat = 8 * 2 + 20 + 8 + 100 + 24
+    XCTAssertEqual(TodayGlanceLayout.hourlyGraphHeight, HourlyGraphLayout.height)
+    XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, oldChipCardHeight)
+    XCTAssertGreaterThan(TodayGlanceLayout.hourlyTonightLineHeight, 28)
+    XCTAssertLessThanOrEqual(TodayGlanceLayout.hourlyCardHeight, 168)
+  }
+
   func testDuplicateAQIAlertsCollapseToOneChip() {
     let first = aqiAlert(id: "aqi-1")
     let second = aqiAlert(id: "aqi-2")

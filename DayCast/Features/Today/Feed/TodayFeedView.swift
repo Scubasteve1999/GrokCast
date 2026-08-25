@@ -204,7 +204,7 @@ struct TodayFeedView: View {
           Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         }
     case .hourly:
-      HourlyFeedCard(weather: weather) {
+      HourlyFeedCard(weather: weather, briefingItems: briefingStore.items) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         store.selectedTab = .forecast
       }
