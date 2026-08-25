@@ -85,6 +85,10 @@ struct RadarControlPanel: View {
         .padding(.vertical, 4)
         .background(DesignTokens.Palette.radarTrack)
         .clipShape(Capsule())
+        .overlay(
+          Capsule()
+            .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
+        )
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
       }
       .buttonStyle(.plain)
@@ -201,15 +205,13 @@ struct RadarControlPanel: View {
       } label: {
         Text(RadarChromeCopy.liveChip)
           .font(DesignTokens.Typography.micro())
+          .fontWeight(!radarState.showsFuture ? .semibold : .regular)
           .padding(.horizontal, 10)
           .padding(.vertical, 3)
-          .background(
-            !radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear
-          )
-          .clipShape(Capsule())
           .foregroundStyle(
             !radarState.showsFuture
-              ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+              ? DesignTokens.Palette.radarTextPrimary
+              : DesignTokens.Palette.radarTextSecondary
           )
       }
       .buttonStyle(.plain)
@@ -222,15 +224,13 @@ struct RadarControlPanel: View {
       } label: {
         Text(RadarChromeCopy.futureChip)
           .font(DesignTokens.Typography.micro())
+          .fontWeight(radarState.showsFuture ? .semibold : .regular)
           .padding(.horizontal, 10)
           .padding(.vertical, 3)
-          .background(
-            radarState.showsFuture ? DesignTokens.Palette.radarAccent.opacity(0.2) : Color.clear
-          )
-          .clipShape(Capsule())
           .foregroundStyle(
             radarState.showsFuture
-              ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+              ? DesignTokens.Palette.radarTextPrimary
+              : DesignTokens.Palette.radarTextSecondary
           )
       }
       .buttonStyle(.plain)
@@ -471,7 +471,8 @@ private struct RadarDisplayOptionsSheet: View {
           namedSwitch(RadarChromeCopy.autoResumeSwitch, isOn: $radarState.autoResumeAfterScrub)
           namedSwitch(RadarChromeCopy.mapOnlySwitch, isOn: $isDecluttered)
         } footer: {
-          Text("Map only keeps SCAN and hides the extra chase lines. Live, 24-hr, and Layers stay on.")
+          Text(
+            "Map only keeps SCAN and hides the extra chase lines. Live, 24-hr, and Layers stay on.")
         }
 
         Section {
@@ -612,7 +613,8 @@ private struct RadarDisplayOptionsSheet: View {
   }
 
   private func productRow(_ product: RadarProduct) -> some View {
-    let siteLocked = product.isSiteProduct && (radarState.showsFuture || !radarState.siteProductsAvailable)
+    let siteLocked =
+      product.isSiteProduct && (radarState.showsFuture || !radarState.siteProductsAvailable)
     return Button {
       Task { await radarState.setProduct(product) }
     } label: {

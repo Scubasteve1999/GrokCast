@@ -103,7 +103,7 @@ Today first viewport is `TodayGlanceLayout` (iPhone 16 852pt). Your News must pe
 
 Do not invent a fourth card. `.tacticalCard()` is an alias of `.dayCastCard()`.
 
-Explicit `stroke: Palette.cardStroke` stays a **flat 0.20** hairline (fill/track token, not a retint). Tab bar selected state is type weight (`textPrimary` + semibold), not an accent pill. Location chips and Today alert chips use `cardHairline` — not accent 0.35/0.7 or tint 0.45 rims. Radar HUD plate is not these modifiers.
+Explicit `stroke: Palette.cardStroke` stays a **flat 0.20** hairline (fill/track token, not a retint). Tab bar selected state is type weight (`textPrimary` + semibold), not an accent pill. Location chips and Today alert chips use `cardHairline` — not accent 0.35/0.7 or tint 0.45 rims. Radar HUD paints its own glass; `.fresh` has no extra rim, stale/aging keep a 1.5pt operational stroke. Live/24-hr and 1x/2x/3x are type weight on `radarTrack`.
 
 ---
 

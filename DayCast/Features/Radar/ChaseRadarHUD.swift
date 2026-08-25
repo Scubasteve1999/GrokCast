@@ -285,16 +285,18 @@ struct ChaseRadarHUD: View {
       .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
   }
 
+  @ViewBuilder
   private func cardStroke(urgency: ChaseRadarHUDLogic.ScanFreshness) -> some View {
-    let color: Color = {
-      switch urgency {
-      case .stale: return DesignTokens.Palette.danger.opacity(0.85)
-      case .aging: return DesignTokens.Palette.warning.opacity(0.70)
-      default: return Color.white.opacity(0.22)
-      }
-    }()
-    return RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
-      .stroke(color, lineWidth: urgency == .stale || urgency == .aging ? 1.5 : 1)
+    switch urgency {
+    case .stale:
+      RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+        .stroke(DesignTokens.Palette.danger.opacity(0.85), lineWidth: 1.5)
+    case .aging:
+      RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
+        .stroke(DesignTokens.Palette.warning.opacity(0.70), lineWidth: 1.5)
+    default:
+      EmptyView()
+    }
   }
 
   // MARK: Derived text / color
@@ -333,9 +335,7 @@ struct ChaseRadarHUD: View {
     )
   }
 
-  private var nearestAlertPresentation:
-    (text: String, isLifeThreatening: Bool, isCovering: Bool)?
-  {
+  private var nearestAlertPresentation: (text: String, isLifeThreatening: Bool, isCovering: Bool)? {
     ChaseRadarHUDLogic.nearestAlertLine(alerts: alerts, mapCenter: mapCenter)
   }
 

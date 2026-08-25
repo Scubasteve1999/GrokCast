@@ -54,12 +54,6 @@ struct RadarTimelineScrubber: View {
           Circle()
             .fill(DesignTokens.Palette.radarProgress)
             .frame(width: 12, height: 12)
-            .shadow(
-              color: DesignTokens.Palette.radarProgress.opacity(0.55),
-              radius: 8,
-              x: 0,
-              y: 0
-            )
             .offset(x: thumbX - 6)
             .accessibilityHidden(true)
 

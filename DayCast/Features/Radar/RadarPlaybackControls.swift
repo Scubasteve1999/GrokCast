@@ -114,23 +114,15 @@ struct RadarPlaybackSpeedPicker: View {
         } label: {
           Text(label)
             .font(DesignTokens.Typography.micro())
+            .fontWeight(isSelected ? .semibold : .regular)
             .foregroundStyle(
               isSelected
-                ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+                ? DesignTokens.Palette.radarTextPrimary
+                : DesignTokens.Palette.radarTextSecondary
             )
             .padding(.horizontal, DesignTokens.Spacing.space8)
             .padding(.vertical, DesignTokens.Spacing.space4)
-            .background(
-              isSelected
-                ? DesignTokens.Palette.radarAccent.opacity(0.25)
-                : DesignTokens.Palette.radarTrack
-            )
-            .overlay(
-              Capsule()
-                .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
-                .opacity(isSelected ? 1 : 0)
-            )
-            .clipShape(Capsule())
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Playback speed \(label)")
