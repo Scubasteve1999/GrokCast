@@ -2,7 +2,9 @@
 
 Contract for UI. Matches `DayCast/Shared/Design/DesignTokens.swift`. Do not add a color, size, or radius without updating both.
 
-**Look:** dark weather, quiet type, solid cards, restrained glass on HUD/overlays. Not a new brand.
+**Look:** dark weather product — photography / sky wash, quiet type, **flat plates** with a 1pt hairline, one shadow. Numbers, curves, maps. Not a glossy indie sticker pack. Not a new brand.
+
+Reference still: `scratch/today-hourly-graph-2026-08-24/today-first-viewport.png`.
 
 ---
 
@@ -14,7 +16,8 @@ Contract for UI. Matches `DayCast/Shared/Design/DesignTokens.swift`. Do not add 
 | `bgSecondary` | `#0E121A` | Secondary layers, tab bar fill |
 | `cardBackground` | `#1E2430` | Default card |
 | `cardElevated` | `#2C3444` | Raised / hero-adjacent card |
-| `cardStroke` | white 20% | Card edge (via `cardStyle`, not raw) |
+| `cardStroke` | white 20% | **Fill / track only** — range bars, score ring, dry minutecast, Settings divider. Not the default plate rim. |
+| `cardHairline` | white 10% | Default `.cardStyle()` / `.glassCardStyle()` rim |
 | `textPrimary` | white | Body, values, titles |
 | `textSecondary` | white 78% | Labels |
 | `textTertiary` | white 52% | Captions, chevrons |
@@ -26,7 +29,7 @@ Contract for UI. Matches `DayCast/Shared/Design/DesignTokens.swift`. Do not add 
 | `danger` | `#FF453A` | Severe alerts |
 | `radarTrack` | white 16% | Radar timeline track only |
 
-Radar text/accent/card aliases resolve to the rows above. Do not introduce a second radar palette.
+Radar text/accent/card aliases resolve to the rows above. Do not introduce a second radar palette. Do not retint `cardStroke` to quiet cards.
 
 Atmosphere in `WeatherBackgroundView` may use raw white at low opacity (particles, not chrome).
 
@@ -38,9 +41,10 @@ SF Pro. Prefer these helpers over `.font(.caption)` or `.system(size:)`.
 
 | Helper | Size | Weight | Use |
 |---|---|---|---|
-| `displayTemp()` | 96 | Semibold | Today hero temp only |
+| `todayTemp()` | 72 | Semibold | **Today first-glance** temp (`Layout.todayTempSize`) |
+| `displayTemp()` | 96 | Semibold | Not the Today peek hero — sheets / marketing only |
 | `compactTemp()` | 44 | Semibold | Sheets, More hub |
-| `widgetTemp(_:)` | 36 default | Semibold rounded | Widget and compact weather numbers |
+| `widgetTemp(_:)` | 36 default | Semibold rounded | Widget numbers; Now **hero** condition glyph |
 | `title()` | 28 | Semibold | Screen titles |
 | `studioTitle()` | 24 | Semibold | Briefing Studio |
 | `headline()` | 17 | Semibold | Card titles |
@@ -51,9 +55,11 @@ SF Pro. Prefer these helpers over `.font(.caption)` or `.system(size:)`.
 | `caption()` | 13 | Regular | Meta, timestamps |
 | `metric()` | 20 | Medium | Compact numbers |
 | `micro()` | 12 | Regular | Dense HUD / ticks |
-| `symbol(_:)` | 13 default | Semibold | SF Symbols |
+| `symbol(_:)` | 13 default | Semibold | SF Symbols **chrome** |
 
 Exception: monospaced HUD digits and weather symbols may set `design: .monospaced` or a symbol point size via `symbol(_:)`.
+
+Editorial labels are title-case, not shouting caps.
 
 ---
 
@@ -72,6 +78,8 @@ Exception: monospaced HUD digits and weather symbols may set `design: .monospace
 
 Prefer 16 / 24 / 32 for layout. No one-off 10 / 14 / 18 paddings in feature views.
 
+Today first viewport is `TodayGlanceLayout` (iPhone 16 852pt). Your News must peek. Do not buy height by deleting hoist, AQI, or the rail.
+
 ---
 
 ## 4. Radius
@@ -89,17 +97,23 @@ Prefer 16 / 24 / 32 for layout. No one-off 10 / 14 / 18 paddings in feature view
 
 | Modifier | When |
 |---|---|
-| `.dayCastCard()` / `.cardStyle()` | Default cards, feed, settings groups, forecast rows |
-| `.dayCastCard(elevated: true)` | Hero-adjacent / Now card |
-| `.glassCardStyle()` | HUD or overlay sitting on a map/photo/sky |
+| `.dayCastCard()` / `.cardStyle()` | Default plates: solid fill, **1pt flat `cardHairline`**, one shadow. No glossy rim gradient. |
+| `.dayCastCard(elevated: true)` | Hero-adjacent / Now-adjacent plate. Same drawing, slightly deeper shadow. |
+| `.glassCardStyle()` | HUD or overlay on a map/photo/sky. Glass fill kept; rim is always `cardHairline`. `strokeTint` is unused. |
 
 Do not invent a fourth card. `.tacticalCard()` is an alias of `.dayCastCard()`.
+
+Explicit `stroke: Palette.cardStroke` stays a **flat 0.20** hairline (fill/track token, not a retint). Custom rims (`AlertsFeedCard`, tab pill, location chips, Radar HUD plate) are not these modifiers.
 
 ---
 
 ## 6. Icons
 
-SF Symbols. `Typography.symbol()` for chrome; larger sizes only for empty-state heroes.
+SF Symbols for **chrome** (tabs, chevrons, play/pause), empty-state heroes, and severity dots.
+
+**Hero condition glyph:** at most one, and only on Now (`widgetTemp(36)`). Hourly (Today + Forecast) has **zero** condition glyphs — curve + numbers. Daily icons are secondary, ≤16pt hierarchical. Do not put a dense SF weather strip on a section; that reads as Minecraft.
+
+Prefer numbers, curves, photography, and maps as the face of a weather section.
 
 ---
 
@@ -107,8 +121,8 @@ SF Symbols. `Typography.symbol()` for chrome; larger sizes only for empty-state 
 
 1. Tokens over literals.
 2. Consistency over a new accent.
-3. Hero temperature stays the loudest thing on Today.
-4. Widgets (`WidgetStyle`) are a later pass — they support light mode.
+3. Hero temperature stays the loudest thing on Today (`todayTemp()` 72).
+4. Widgets (`WidgetStyle`) are a later pass — they support light mode. Skipped in the visual-system program (Stephen 2026-08-24).
 
-**Version:** matches code as of 2026-08-14  
+**Version:** matches code as of 2026-08-24  
 **Owner:** Stephen Moore

@@ -15,7 +15,10 @@ enum DesignTokens {
     static let cardBackground = SwiftUI.Color(hex: "#1E2430")
     /// Raised surface for hero-adjacent / primary blocks.
     static let cardElevated = SwiftUI.Color(hex: "#2C3444")
+    /// Fill / track (range bars, score ring, dry minutecast). Not the default plate rim.
     static let cardStroke = SwiftUI.Color.white.opacity(0.20)
+    /// Default `.cardStyle()` / `.glassCardStyle()` hairline. Do not retint `cardStroke`.
+    static let cardHairline = SwiftUI.Color.white.opacity(0.10)
     static let textPrimary = SwiftUI.Color.white
     static let textSecondary = SwiftUI.Color.white.opacity(0.78)
     static let textTertiary = SwiftUI.Color.white.opacity(0.52)
@@ -176,7 +179,7 @@ enum DesignTokens {
 
 struct CardStyle: ViewModifier {
   var background: SwiftUI.Color = DesignTokens.Palette.cardBackground
-  var stroke: SwiftUI.Color = DesignTokens.Palette.cardStroke
+  var stroke: SwiftUI.Color = DesignTokens.Palette.cardHairline
   var cornerRadius: CGFloat = DesignTokens.Card.cornerRadius
   var strokeWidth: CGFloat = DesignTokens.Card.strokeWidth
   var elevated: Bool = false
@@ -184,49 +187,27 @@ struct CardStyle: ViewModifier {
   func body(content: Content) -> some View {
     content
       .background(
-        ZStack {
-          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(background)
-          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(
-              LinearGradient(
-                colors: [
-                  Color.white.opacity(elevated ? 0.14 : 0.08),
-                  Color.white.opacity(0.02),
-                  Color.clear,
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-              )
-            )
-        }
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+          .fill(background)
       )
       .overlay(
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-          .stroke(
-            LinearGradient(
-              colors: [
-                Color.white.opacity(elevated ? 0.42 : 0.28),
-                Color.white.opacity(0.08),
-                stroke.opacity(0.5),
-              ],
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            ),
-            lineWidth: elevated ? 1.25 : 1
-          )
+          .stroke(stroke, lineWidth: strokeWidth)
       )
       .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-      // Stacked shadows = clearer separation from the stage.
-      .shadow(color: Color.black.opacity(0.55), radius: elevated ? 28 : 18, x: 0, y: elevated ? 16 : 10)
-      .shadow(color: Color.black.opacity(0.35), radius: elevated ? 6 : 4, x: 0, y: elevated ? 3 : 2)
+      .shadow(
+        color: Color.black.opacity(elevated ? 0.40 : 0.32),
+        radius: elevated ? 16 : 12,
+        x: 0,
+        y: elevated ? 8 : 6
+      )
   }
 }
 
 extension View {
   func cardStyle(
     background: SwiftUI.Color = DesignTokens.Palette.cardBackground,
-    stroke: SwiftUI.Color = DesignTokens.Palette.cardStroke,
+    stroke: SwiftUI.Color = DesignTokens.Palette.cardHairline,
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
     strokeWidth: CGFloat = DesignTokens.Card.strokeWidth,
     elevated: Bool = false
@@ -253,35 +234,36 @@ extension View {
   func elevatedCard() -> some View {
     cardStyle(
       background: DesignTokens.Palette.cardElevated,
-      stroke: DesignTokens.Palette.cardStroke,
+      stroke: DesignTokens.Palette.cardHairline,
       cornerRadius: DesignTokens.Card.cornerRadius,
       elevated: true
     )
   }
 
-  /// Soft depth without “gamey” neon glow.
+  /// One quiet shadow. Call sites that stacked this on `cardStyle` no longer get a second layer.
   func elevatedShadow() -> some View {
-    self
-      .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
-      .shadow(color: Color.black.opacity(0.18), radius: 2, x: 0, y: 1)
+    self.shadow(color: Color.black.opacity(0.32), radius: 12, x: 0, y: 6)
   }
 
   func elevatedCardStyle(
     background: SwiftUI.Color = DesignTokens.Palette.cardElevated,
-    stroke: SwiftUI.Color = DesignTokens.Palette.cardStroke,
+    stroke: SwiftUI.Color = DesignTokens.Palette.cardHairline,
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
     strokeWidth: CGFloat = DesignTokens.Card.strokeWidth
   ) -> some View {
     cardStyle(
-      background: background, stroke: stroke, cornerRadius: cornerRadius, strokeWidth: strokeWidth
+      background: background,
+      stroke: stroke,
+      cornerRadius: cornerRadius,
+      strokeWidth: strokeWidth,
+      elevated: true
     )
-    .elevatedShadow()
   }
 
-  /// Soft fill + light top highlight (depth without ultraThinMaterial stack).
+  /// Soft fill on map/photo/sky. Rim is always `cardHairline`. `strokeTint` is unused.
   func glassCardStyle(
     cornerRadius: CGFloat = DesignTokens.Card.cornerRadius,
-    strokeTint: Color = DesignTokens.Palette.cardStroke
+    strokeTint _: Color = DesignTokens.Palette.cardStroke
   ) -> some View {
     background(
       RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -298,20 +280,10 @@ extension View {
     )
     .overlay(
       RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        .stroke(
-          LinearGradient(
-            colors: [
-              Color.white.opacity(0.18),
-              Color.white.opacity(0.06),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-          ),
-          lineWidth: DesignTokens.Card.strokeWidth
-        )
+        .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
     )
     .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-    .elevatedShadow()
+    .shadow(color: Color.black.opacity(0.32), radius: 12, x: 0, y: 6)
   }
 }
 
