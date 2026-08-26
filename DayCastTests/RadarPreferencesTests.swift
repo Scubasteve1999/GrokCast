@@ -64,8 +64,8 @@ final class RadarPreferencesTests: XCTestCase {
     }
   }
 
-  func testTodayRadarPreviewUsesMapsGLOnLight() {
-    XCTAssertEqual(RadarPreviewSource.previewBaseMap, .light)
+  func testTodayRadarPreviewUsesMapsGLOnDark() {
+    XCTAssertEqual(RadarPreviewSource.previewBaseMap, .dark)
     XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
@@ -422,10 +422,17 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.layers, "Layers")
   }
 
-  func testDefaultBaseMapIsQuietMapboxLight() {
+  func testDefaultBaseMapIsQuietMapboxDark() {
+    XCTAssertEqual(RadarBaseMapStyle.dark.displayName, "Dark")
     XCTAssertEqual(RadarBaseMapStyle.light.displayName, "Light")
     XCTAssertEqual(RadarBaseMapStyle.satelliteStreets.displayName, "Hybrid")
+    XCTAssertTrue(RadarBaseMapStyle.dark.appliesQuietWorkstation)
+    XCTAssertTrue(RadarBaseMapStyle.light.appliesQuietWorkstation)
+    XCTAssertFalse(RadarBaseMapStyle.satelliteStreets.appliesQuietWorkstation)
+    XCTAssertFalse(RadarBaseMapStyle.satellite.appliesQuietWorkstation)
+    XCTAssertFalse(RadarBaseMapStyle.streets.appliesQuietWorkstation)
     XCTAssertEqual(RadarBaseMapStyle.light.cycled(), .satelliteStreets)
+    XCTAssertEqual(RadarBaseMapStyle.dark.cycled(), .light)
     XCTAssertEqual(
       RadarBaseMapStyle.quietWorkstationHiddenLayerIDs,
       ["poi-label", "transit-label", "airport-label", "natural-point-label"]
@@ -445,8 +452,17 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(RadarBaseMapStyle.quietWorkstationLabelHaloWidth, 1.8)
     XCTAssertLessThan(RadarBaseMapStyle.quietWorkstationLabelHaloBlur, 1.0)
     XCTAssertTrue(
-      RadarBaseMapStyle.quietWorkstationLabelHaloColor.lowercased().contains("f5"),
-      "light canvas halo, not dark RadarScope invert")
+      RadarBaseMapStyle.light.quietWorkstationHaloColor.lowercased().contains("f5"),
+      "light canvas keeps the near-white halo")
+    XCTAssertEqual(
+      RadarBaseMapStyle.dark.quietWorkstationHaloColor,
+      RadarBaseMapStyle.quietWorkstationDarkLabelHaloColor)
+    XCTAssertFalse(
+      RadarBaseMapStyle.dark.quietWorkstationHaloColor.lowercased().contains("f5"),
+      "dark canvas must not keep the near-white #f5f5f5 halo")
+    XCTAssertTrue(
+      RadarBaseMapStyle.quietWorkstationDarkLabelHaloColor.lowercased().contains("1a"),
+      "dark halo reads under white city names on precip")
     for id in RadarBaseMapStyle.quietWorkstationPunchedLabelIDs {
       XCTAssertFalse(
         RadarBaseMapStyle.quietWorkstationHiddenLayerIDs.contains(id),
@@ -477,17 +493,30 @@ final class RadarPreferencesTests: XCTestCase {
       "road-label-simple")
   }
 
-  func testSatellitePostcardMigratesToLightOnce() {
+  func testSatellitePostcardMigratesToDarkOnce() {
     suite.set(RadarBaseMapStyle.satelliteStreets.rawValue, forKey: "radar.pref.baseMapStyle")
-    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
 
     RadarPreferences.baseMapStyle = .satelliteStreets
     XCTAssertEqual(RadarPreferences.baseMapStyle, .satelliteStreets)
   }
 
+  func testLightWorkstationMigratesToDarkOnce() {
+    suite.set(RadarBaseMapStyle.light.rawValue, forKey: "radar.pref.baseMapStyle")
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
+
+    RadarPreferences.baseMapStyle = .light
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
+  }
+
+  func testStreetsIsNotMigratedOff() {
+    suite.set(RadarBaseMapStyle.streets.rawValue, forKey: "radar.pref.baseMapStyle")
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .streets)
+  }
+
   func testDefaultsApplyWhenNothingIsStored() {
     XCTAssertEqual(RadarPreferences.colorScheme, .vibrant)
-    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
     XCTAssertTrue(RadarPreferences.showRadarOverlay)
     XCTAssertFalse(RadarPreferences.showFireLayer)
     XCTAssertTrue(RadarPreferences.showLightningLayer)
@@ -533,7 +562,7 @@ final class RadarPreferencesTests: XCTestCase {
     suite.set("blueprint", forKey: "radar.pref.baseMapStyle")
 
     XCTAssertEqual(RadarPreferences.colorScheme, .vibrant)
-    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
   }
 
   func testPlaybackSpeedIsClampedInBothDirections() {

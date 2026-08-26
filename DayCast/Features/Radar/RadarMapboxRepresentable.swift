@@ -202,7 +202,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
         guard let self, let mapView else { return }
         MapViewHostingSanitizer.sanitize(mapView)
         try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
-        (self.appliedBaseMapStyle ?? .light).applyQuietWorkstation(to: mapView)
+        (self.appliedBaseMapStyle ?? .dark).applyQuietWorkstation(to: mapView)
         self.layersInstalled = false
         self.polarLayerInstalled = false
         self.polarLayerFailed = false

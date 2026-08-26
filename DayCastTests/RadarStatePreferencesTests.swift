@@ -104,7 +104,7 @@ final class RadarStatePreferencesTests: XCTestCase {
     let state = RadarState()
 
     XCTAssertEqual(state.colorScheme, .vibrant)
-    XCTAssertEqual(state.baseMapStyle, .light)
+    XCTAssertEqual(state.baseMapStyle, .dark)
     XCTAssertTrue(state.showRadarOverlay)
     XCTAssertFalse(state.showFireLayer)
     XCTAssertTrue(state.showLightningLayer)

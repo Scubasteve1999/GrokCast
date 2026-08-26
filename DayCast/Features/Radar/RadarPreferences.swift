@@ -45,8 +45,9 @@ enum RadarPreferences {
   static var baseMapStyle: RadarBaseMapStyle {
     get {
       migrateSatellitePostcardIfNeeded()
+      migrateLightWorkstationIfNeeded()
       return store.string(forKey: baseMapStyleKey).flatMap(RadarBaseMapStyle.init(rawValue:))
-        ?? .light
+        ?? .dark
     }
     set { store.set(newValue.rawValue, forKey: baseMapStyleKey) }
   }
@@ -62,6 +63,18 @@ enum RadarPreferences {
       || raw == RadarBaseMapStyle.satellite.rawValue
     {
       store.set(RadarBaseMapStyle.light.rawValue, forKey: baseMapStyleKey)
+    }
+  }
+
+  /// One-time: Light was the leftover “quiet gray” default. Mapbox Light is a
+  /// white page, not a workstation. Users can still pick Light after.
+  private static let darkWorkstationMigratedKey = "radar.pref.darkWorkstationMigrated"
+  private static func migrateLightWorkstationIfNeeded() {
+    guard store.object(forKey: darkWorkstationMigratedKey) == nil else { return }
+    store.set(true, forKey: darkWorkstationMigratedKey)
+    let raw = store.string(forKey: baseMapStyleKey)
+    if raw == RadarBaseMapStyle.light.rawValue {
+      store.set(RadarBaseMapStyle.dark.rawValue, forKey: baseMapStyleKey)
     }
   }
 

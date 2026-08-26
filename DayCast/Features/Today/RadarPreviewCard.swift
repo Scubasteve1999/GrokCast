@@ -77,10 +77,10 @@ struct RadarPreviewCard: View {
   }
 }
 
-/// Today’s snapshot must paint the same MapsGL rain as Live, on Light.
+/// Today’s snapshot must paint the same MapsGL rain as Live, on Dark.
 /// PNG mosaic is a different scale — do not use it when MapsGL is the Live paint.
 enum RadarPreviewSource {
-  static let previewBaseMap = RadarBaseMapStyle.light
+  static let previewBaseMap = RadarBaseMapStyle.dark
   /// Today teaser map height. Short enough that Your News peeks on iPhone 16.
   static let teaserHeight: CGFloat = 72
   /// Buried National teaser — same CONUS floor Live uses when local is dry.
@@ -114,7 +114,7 @@ enum RadarPreviewSource {
   }
 }
 
-/// Non-interactive Mapbox Light + the same MapsGL NWS reflectivity Live uses.
+/// Non-interactive Mapbox Dark + the same MapsGL NWS reflectivity Live uses.
 private struct RadarPreviewMapboxMap: UIViewRepresentable {
   let center: CLLocationCoordinate2D
 
@@ -191,7 +191,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
   }
 }
 
-/// Non-interactive Mapbox Light + Level III polar gates (same host as Live Site Doppler).
+/// Non-interactive Mapbox Dark + Level III polar gates (same host as Live Site Doppler).
 private struct RadarPreviewSiteMap: UIViewRepresentable {
   let center: CLLocationCoordinate2D
   let sweep: Level3N0BSweep

@@ -1,7 +1,8 @@
 import MapboxMaps
 
 /// Base map styles available on the Radar tab (licensed Mapbox style URIs).
-/// Default is Light: a quiet gray workstation canvas so NWS reflectivity reads.
+/// Default is Dark: a quiet workstation canvas so NWS reflectivity reads.
+/// Light remains selectable in the layers cycle — it is not a mid-gray.
 enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
   case light
   case satelliteStreets
@@ -44,7 +45,7 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
   /// Next style when cycling with the layers button.
   func cycled() -> RadarBaseMapStyle {
     let all = Self.allCases
-    guard let idx = all.firstIndex(of: self) else { return .light }
+    guard let idx = all.firstIndex(of: self) else { return .dark }
     return all[(idx + 1) % all.count]
   }
 
@@ -76,11 +77,23 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
 
   /// Mapbox style-spec paint keys (kebab-case). Probed on Maps SDK examples
   /// (`"text-halo-width": 2`, `"text-halo-color": "#ffffff"`); missing layers
-  /// are skipped. Width 2.5 + near-white halo punches through 15–35 dBZ.
+  /// are skipped. Width 2.5 punches through 15–35 dBZ. Light uses a near-white
+  /// halo; Dark uses a near-black halo so white city names read on precip.
   static let quietWorkstationLabelTextOpacity = 1.0
   static let quietWorkstationLabelHaloWidth = 2.5
   static let quietWorkstationLabelHaloBlur = 0.2
   static let quietWorkstationLabelHaloColor = "#f5f5f5"
+  static let quietWorkstationDarkLabelHaloColor = "#1a1a1a"
+
+  /// Light and Dark are the quiet workstation canvases. Hybrid / Satellite /
+  /// Streets keep their own labels.
+  var appliesQuietWorkstation: Bool {
+    self == .light || self == .dark
+  }
+
+  var quietWorkstationHaloColor: String {
+    self == .dark ? Self.quietWorkstationDarkLabelHaloColor : Self.quietWorkstationLabelHaloColor
+  }
 
   /// First matching candidate in `styleLayerIDs` (style order). Nil if none.
   static func polarUnderlayBelowLayerID(in styleLayerIDs: [String]) -> String? {
@@ -94,10 +107,10 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
     return .below(below)
   }
 
-  /// Light-v11 only. Hybrid/Satellite keep their own labels. Missing IDs are skipped.
-  /// Re-applied from `onStyleLoaded` (initial load + base-map cycle).
+  /// Light and Dark. Hybrid/Satellite/Streets keep their own labels. Missing
+  /// IDs are skipped. Re-applied from `onStyleLoaded` (initial load + cycle).
   func applyQuietWorkstation(to mapView: MapView) {
-    guard self == .light else { return }
+    guard appliesQuietWorkstation else { return }
     for id in Self.quietWorkstationHiddenLayerIDs {
       guard mapView.mapboxMap.layerExists(withId: id) else { continue }
       try? mapView.mapboxMap.setLayerProperty(for: id, property: "visibility", value: "none")
@@ -108,7 +121,7 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
       try? mapView.mapboxMap.setLayerProperty(
         for: id, property: "text-opacity", value: Self.quietWorkstationLabelTextOpacity)
       try? mapView.mapboxMap.setLayerProperty(
-        for: id, property: "text-halo-color", value: Self.quietWorkstationLabelHaloColor)
+        for: id, property: "text-halo-color", value: quietWorkstationHaloColor)
       try? mapView.mapboxMap.setLayerProperty(
         for: id, property: "text-halo-width", value: Self.quietWorkstationLabelHaloWidth)
       try? mapView.mapboxMap.setLayerProperty(
