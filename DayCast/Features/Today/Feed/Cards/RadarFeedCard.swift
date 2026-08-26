@@ -221,7 +221,7 @@ struct RadarFeedCard: View {
       Text(OutlookRadarCopy.title)
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
-      Text(outlook.sentence)
+      Text(outlook.plateSentence)
         .font(DesignTokens.Typography.callout())
         .foregroundStyle(DesignTokens.Palette.textSecondary)
         .lineLimit(1)
@@ -229,7 +229,7 @@ struct RadarFeedCard: View {
     }
     .frame(maxWidth: .infinity, minHeight: TodayGlanceLayout.radarHeaderHeight, alignment: .leading)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("\(OutlookRadarCopy.title). \(outlook.sentence)")
+    .accessibilityLabel("\(OutlookRadarCopy.title). \(outlook.plateSentence)")
   }
 
   private var plate: some View {

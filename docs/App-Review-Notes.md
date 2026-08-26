@@ -39,8 +39,8 @@ tap **Restore Purchases** in Settings and retry.
 ## Suggested path
 
 1. Allow location when prompted (or use the default location).
-2. **Today** — conditions, DayCast Score, Minutecast.
-3. **Radar** — interactive map with animation.
+2. **Today** — now, one official NWS chip when you’re warned, the temperature curve, Outlook on live radar (Site Doppler / National), Your News.
+3. **Radar** — Live Site Doppler on Dark, National when local is clear.
 4. **Alerts** — live NWS watches and warnings.
 5. **AI** — after the sandbox purchase above, try a quick prompt; should stream a reply.
    Optional: Shortcuts → “Ask Grok” with a question (opens the AI tab and submits).

@@ -88,6 +88,9 @@ final class TonightOutlookTests: XCTestCase {
       result.sentence,
       "Clear tonight, cooling to 73°. Isolated storms wait until Tuesday morning."
     )
+    XCTAssertEqual(result.plateSentence, "Clear tonight, cooling to 73°.")
+    XCTAssertLessThanOrEqual(result.plateSentence.count, TonightOutlook.plateCharacterCount)
+    XCTAssertFalse(result.plateSentence.contains("Tuesday"))
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("jacket"))
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("dress"))
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("tornado"))
@@ -139,6 +142,9 @@ final class TonightOutlookTests: XCTestCase {
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("quiet"))
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("clear tonight"))
     XCTAssertTrue(result.sentence.contains("Flash Flood Warning"))
+    XCTAssertTrue(result.plateSentence.contains("Flash Flood Warning"))
+    XCTAssertFalse(result.plateSentence.localizedCaseInsensitiveContains("clear tonight"))
+    XCTAssertLessThanOrEqual(result.plateSentence.count, TonightOutlook.plateCharacterCount)
   }
 
   func testNextHourWetDoesNotSayQuietTonight() {
@@ -166,6 +172,27 @@ final class TonightOutlookTests: XCTestCase {
     XCTAssertTrue(result.sentence.lowercased().contains("rain"))
     XCTAssertTrue(result.sentence.contains("60%"))
     XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("tornado"))
+    XCTAssertEqual(result.plateSentence, "Rain overnight, cooling to 73°.")
+    XCTAssertFalse(result.plateSentence.contains("%"))
+    XCTAssertLessThanOrEqual(result.plateSentence.count, TonightOutlook.plateCharacterCount)
+  }
+
+  func testPlateLineDropsTempWhenTheWarningNameIsLong() {
+    XCTAssertEqual(
+      TonightOutlook.plateLine(from: "Rain overnight, cooling to 73°."),
+      "Rain overnight, cooling to 73°."
+    )
+    XCTAssertEqual(
+      TonightOutlook.plateLine(
+        from: "Severe Thunderstorm Warning in effect tonight, cooling to 73°."),
+      "Severe Thunderstorm Warning tonight."
+    )
+    XCTAssertLessThanOrEqual(
+      TonightOutlook.plateLine(
+        from: "Severe Thunderstorm Warning in effect tonight, cooling to 73°."
+      ).count,
+      TonightOutlook.plateCharacterCount
+    )
   }
 
   func testThisAfternoonStaysSunnyWithoutRepeatingTonight() {

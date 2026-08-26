@@ -1,12 +1,15 @@
 import Foundation
 
-/// First-viewport “Tonight / This afternoon / This morning” line above the hourly graph.
-/// Template from Open-Meteo hourly + the current AFD/PNS item. No Grok. No outfit tips.
+/// Tonight / afternoon / morning line from Open-Meteo hourly + the current AFD/PNS item.
+/// Forecast keeps the full sentence. The Outlook plate uses `plateSentence` (first clause).
+/// No Grok. No outfit tips.
 enum TonightOutlook {
   struct Result: Equatable {
     let period: Period
     let title: String
     let sentence: String
+    /// One-line Outlook plate. Same sky / wet / warning story as `sentence`, no odds trailer.
+    let plateSentence: String
   }
 
   enum Period: Equatable {
@@ -32,6 +35,8 @@ enum TonightOutlook {
   }
 
   static let maxCharacterCount = 160
+  /// iPhone 16 Outlook header: “Outlook” + one callout line. First clause, not the 160-char trailer.
+  static let plateCharacterCount = 44
 
   static func make(
     weather: DayCastWeather,
@@ -49,7 +54,7 @@ enum TonightOutlook {
     let window = Self.window(
       period: period, now: now, calendar: calendar, sunrise: sunrise, sunset: sunset)
     let hours = Self.hours(in: window, from: weather.hourly, now: now)
-    let raw = sentence(
+    let parts = clauses(
       period: period,
       hours: hours,
       weather: weather,
@@ -61,10 +66,21 @@ enum TonightOutlook {
       isNextHourWet: isNextHourWet,
       officialWarningEvent: officialWarningEvent
     )
+    let rawFull = joinClauses(first: parts.first, second: parts.second)
+    let rawPlate = plateLine(from: parts.first)
+    let fallback = fallbackSentence(period: period, weather: weather, unit: unit)
     let screened =
-      GrokContentFilter.acceptedText(raw, maxCharacterCount: maxCharacterCount)
-      ?? fallbackSentence(period: period, weather: weather, unit: unit)
-    return Result(period: period, title: period.title, sentence: screened)
+      GrokContentFilter.acceptedText(rawFull, maxCharacterCount: maxCharacterCount)
+      ?? fallback
+    let screenedPlate =
+      GrokContentFilter.acceptedText(rawPlate, maxCharacterCount: plateCharacterCount)
+      ?? rawPlate
+    return Result(
+      period: period,
+      title: period.title,
+      sentence: screened,
+      plateSentence: screenedPlate
+    )
   }
 
   // MARK: - Period
@@ -137,6 +153,38 @@ enum TonightOutlook {
     isNextHourWet: Bool = false,
     officialWarningEvent: String? = nil
   ) -> String {
+    let parts = clauses(
+      period: period,
+      hours: hours,
+      weather: weather,
+      briefingItems: briefingItems,
+      unit: unit,
+      now: now,
+      calendar: calendar,
+      isNowWet: isNowWet,
+      isNextHourWet: isNextHourWet,
+      officialWarningEvent: officialWarningEvent
+    )
+    return joinClauses(first: parts.first, second: parts.second)
+  }
+
+  private struct Clauses {
+    let first: String
+    let second: String?
+  }
+
+  private static func clauses(
+    period: Period,
+    hours: [HourlyForecast],
+    weather: DayCastWeather,
+    briefingItems: [LocalBriefingItem],
+    unit: TemperatureUnit,
+    now: Date,
+    calendar: Calendar,
+    isNowWet: Bool,
+    isNextHourWet: Bool,
+    officialWarningEvent: String?
+  ) -> Clauses {
     let sky = skyPhrase(
       period: period,
       hours: hours,
@@ -167,12 +215,28 @@ enum TonightOutlook {
     } else if let later {
       second = later
     }
+    return Clauses(first: first, second: second)
+  }
 
+  private static func joinClauses(first: String, second: String?) -> String {
     if let second, !second.isEmpty {
       let clause = second.hasSuffix(".") ? second : second + "."
       return cap("\(first) \(clause)")
     }
     return cap(first)
+  }
+
+  /// First clause only. Drop the temp tail or “in effect” if the warning name is long.
+  static func plateLine(from firstClause: String) -> String {
+    let ended = firstClause.hasSuffix(".") ? firstClause : firstClause + "."
+    if ended.count <= plateCharacterCount { return cap(ended) }
+    var candidate = ended
+    if let comma = ended.firstIndex(of: ",") {
+      let sky = String(ended[..<comma])
+      candidate = sky.hasSuffix(".") ? sky : sky + "."
+      if candidate.count <= plateCharacterCount { return cap(candidate) }
+    }
+    return cap(candidate.replacingOccurrences(of: " in effect ", with: " "))
   }
 
   // MARK: - Sky / temp / precip
