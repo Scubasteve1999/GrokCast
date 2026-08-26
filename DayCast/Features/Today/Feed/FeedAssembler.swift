@@ -1,7 +1,7 @@
 import Foundation
 
 enum FeedAssembler {
-  /// Story-day teaser copy (not feed order): Next 2 Hours, alerts/outlook, or Now is wet.
+  /// Story-day teaser copy (not feed order): Next 2 Hours, official alerts, or Now is wet.
   static func isRadarStory(_ snapshot: FeedSnapshot) -> Bool {
     snapshot.hasPrecipContent || snapshot.showAlertsSlot || snapshot.isNowWet
   }

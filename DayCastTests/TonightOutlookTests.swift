@@ -114,6 +114,46 @@ final class TonightOutlookTests: XCTestCase {
     XCTAssertTrue(result.sentence.hasPrefix("Clear tonight"))
   }
 
+  func testWetNowDoesNotSayQuietTonightWhenHourlyLooksDry() {
+    let weather = oliveBranchWeather()
+    let result = TonightOutlook.make(
+      weather: weather,
+      briefingItems: [],
+      unit: .fahrenheit,
+      now: oliveBranchEvening,
+      isNowWet: true
+    )
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("quiet"))
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("clear tonight"))
+    XCTAssertTrue(result.sentence.lowercased().contains("rain"))
+  }
+
+  func testOfficialWarningDoesNotSayQuietTonight() {
+    let result = TonightOutlook.make(
+      weather: oliveBranchWeather(),
+      briefingItems: [],
+      unit: .fahrenheit,
+      now: oliveBranchEvening,
+      officialWarningEvent: "Flash Flood Warning"
+    )
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("quiet"))
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("clear tonight"))
+    XCTAssertTrue(result.sentence.contains("Flash Flood Warning"))
+  }
+
+  func testNextHourWetDoesNotSayQuietTonight() {
+    let result = TonightOutlook.make(
+      weather: oliveBranchWeather(),
+      briefingItems: [],
+      unit: .fahrenheit,
+      now: oliveBranchEvening,
+      isNextHourWet: true
+    )
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("quiet"))
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("clear tonight"))
+    XCTAssertTrue(result.sentence.lowercased().contains("rain"))
+  }
+
   func testWetTonightLeadsWithRainNotTheLaterAFD() {
     let hours = oliveBranchHours(precipChance: 60, weatherCode: 61)
     let weather = oliveBranchWeather(hourly: hours)

@@ -5,6 +5,9 @@ struct HourlyFeedCard: View {
   let weather: DayCastWeather
   var briefingItems: [LocalBriefingItem] = []
   var plated: Bool = true
+  var isNowWet: Bool = false
+  var isNextHourWet: Bool = false
+  var officialWarningEvent: String? = nil
   var onTap: () -> Void
 
   private var hours: [HourlyForecast] {
@@ -15,7 +18,10 @@ struct HourlyFeedCard: View {
     TonightOutlook.make(
       weather: weather,
       briefingItems: briefingItems,
-      unit: store.temperatureUnit
+      unit: store.temperatureUnit,
+      isNowWet: isNowWet,
+      isNextHourWet: isNextHourWet,
+      officialWarningEvent: officialWarningEvent
     )
   }
 

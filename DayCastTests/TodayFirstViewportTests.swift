@@ -85,6 +85,38 @@ final class TodayFirstViewportTests: XCTestCase {
     )
   }
 
+  func testGlanceKeepsOneOfficialChipAndPrefersWarning() {
+    XCTAssertEqual(AlertsFeedCard.maxGlanceChips, 1)
+    let advisory = NWSAlert(
+      id: "adv",
+      event: "Flood Advisory",
+      severity: "Minor",
+      headline: "Flood Advisory issued August 25 at 11:27PM EDT",
+      description: nil,
+      instruction: nil,
+      expires: Date().addingTimeInterval(3_600),
+      areaDesc: "Decatur, GA",
+      latitude: nil,
+      longitude: nil
+    )
+    let warning = NWSAlert(
+      id: "ffw",
+      event: "Flash Flood Warning",
+      severity: "Severe",
+      headline: "Flash Flood Warning issued August 25 at 11:47PM EDT",
+      description: nil,
+      instruction: nil,
+      expires: Date().addingTimeInterval(7_200),
+      areaDesc: "Decatur, GA",
+      latitude: nil,
+      longitude: nil
+    )
+    let chips = AlertsFeedCard.glanceChips(from: [advisory, warning])
+    XCTAssertEqual(chips.count, 1)
+    XCTAssertEqual(chips.first?.id, "ffw")
+    XCTAssertEqual(AlertsFeedCard.chipTitle(for: warning), "Flash Flood Warning")
+  }
+
   func testStoryDayKeepsAlertsHourlyAndYourNews() {
     let snapshot = FeedSnapshot(
       hasWeather: true,

@@ -389,10 +389,18 @@ private struct ForecastHourlySection: View {
   }
 
   private var outlook: TonightOutlook.Result {
-    TonightOutlook.make(
+    let summary = MinutecastEngine.summary(
+      from: weather.minutely15, units: store.temperatureUnit)
+    return TonightOutlook.make(
       weather: weather,
       briefingItems: briefingItems,
-      unit: store.temperatureUnit
+      unit: store.temperatureUnit,
+      isNowWet: NowHeroReconcile.isNowWet(
+        conditionCode: weather.conditionCode, summary: summary),
+      isNextHourWet: PrecipFeedVisibility.hasContent(summary: summary),
+      officialWarningEvent: store.displayableGroupedAlerts.first(where: {
+        $0.isWarning && !$0.isExpired
+      })?.event
     )
   }
 

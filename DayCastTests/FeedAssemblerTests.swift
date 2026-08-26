@@ -190,7 +190,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(FeedAssembler.items(from: snapshot).contains(.alerts))
   }
 
-  func testAlertsSlotShowsForSevereContextWithoutNWSAlerts() {
+  func testAlertsSlotHidesForSevereContextWithoutNWSAlerts() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 0,
@@ -203,14 +203,14 @@ final class FeedAssemblerTests: XCTestCase {
       showAIInsight: false,
       hasSevereContext: true
     )
-    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertFalse(snapshot.showAlertsSlot)
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(items.first, .now)
-    XCTAssertTrue(items.contains(.alerts))
-    XCTAssertEqual(Array(items.prefix(5)), [.now, .alerts, .hourly, .radar, .health])
+    XCTAssertFalse(items.contains(.alerts))
+    XCTAssertEqual(Array(items.prefix(4)), [.now, .hourly, .radar, .health])
   }
 
-  func testBuilderSevereContextEarnsAlertsSlotWithZeroNWS() {
+  func testBuilderSevereContextDoesNotEarnAlertsSlotWithZeroNWS() {
     let weather = DayCastWeather(
       location: SavedLocation(name: "Tampa", latitude: 27.95, longitude: -82.46),
       currentTemp: 75,
@@ -240,10 +240,10 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(snapshot.alertCount, 0)
     XCTAssertTrue(snapshot.hasSevereContext)
-    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertFalse(snapshot.showAlertsSlot)
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(items.first, .now)
-    XCTAssertTrue(items.contains(.alerts))
+    XCTAssertFalse(items.contains(.alerts))
     XCTAssertTrue(snapshot.isNowWet)
   }
 

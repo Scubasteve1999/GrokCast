@@ -37,7 +37,10 @@ enum TonightOutlook {
     weather: DayCastWeather,
     briefingItems: [LocalBriefingItem],
     unit: TemperatureUnit,
-    now: Date = Date()
+    now: Date = Date(),
+    isNowWet: Bool = false,
+    isNextHourWet: Bool = false,
+    officialWarningEvent: String? = nil
   ) -> Result {
     let calendar = weather.locationCalendar
     let sunrise = weather.daily.first?.sunrise
@@ -53,7 +56,10 @@ enum TonightOutlook {
       briefingItems: briefingItems,
       unit: unit,
       now: now,
-      calendar: calendar
+      calendar: calendar,
+      isNowWet: isNowWet,
+      isNextHourWet: isNextHourWet,
+      officialWarningEvent: officialWarningEvent
     )
     let screened =
       GrokContentFilter.acceptedText(raw, maxCharacterCount: maxCharacterCount)
@@ -126,9 +132,19 @@ enum TonightOutlook {
     briefingItems: [LocalBriefingItem],
     unit: TemperatureUnit,
     now: Date,
-    calendar: Calendar
+    calendar: Calendar,
+    isNowWet: Bool = false,
+    isNextHourWet: Bool = false,
+    officialWarningEvent: String? = nil
   ) -> String {
-    let sky = skyPhrase(period: period, hours: hours, weather: weather)
+    let sky = skyPhrase(
+      period: period,
+      hours: hours,
+      weather: weather,
+      isNowWet: isNowWet,
+      isNextHourWet: isNextHourWet,
+      officialWarningEvent: officialWarningEvent
+    )
     let temp = tempPhrase(period: period, hours: hours, weather: weather, unit: unit)
     let precip = precipPhrase(period: period, hours: hours, calendar: calendar, now: now)
     let later = laterBriefingPhrase(
@@ -164,11 +180,19 @@ enum TonightOutlook {
   private static func skyPhrase(
     period: Period,
     hours: [HourlyForecast],
-    weather: DayCastWeather
+    weather: DayCastWeather,
+    isNowWet: Bool = false,
+    isNextHourWet: Bool = false,
+    officialWarningEvent: String? = nil
   ) -> String? {
     let codes = hours.map(\.weatherCode)
-    let wet = hours.contains { $0.precipChance >= 40 && isWetCode($0.weatherCode) }
-    let storms = hours.contains { isStormCode($0.weatherCode) && $0.precipChance >= 30 }
+    let honestyWet = isNowWet || isNextHourWet
+    let wet =
+      hours.contains { $0.precipChance >= 40 && isWetCode($0.weatherCode) }
+      || honestyWet
+    let storms =
+      hours.contains { isStormCode($0.weatherCode) && $0.precipChance >= 30 }
+      || (honestyWet && isStormCode(weather.conditionCode))
     if storms {
       switch period {
       case .tonight: return "Storms tonight"
@@ -177,11 +201,21 @@ enum TonightOutlook {
       }
     }
     if wet {
-      let type = dominantPrecipType(hours)
+      let type = honestyWet ? nowPrecipType(weather) : dominantPrecipType(hours)
       switch period {
       case .tonight: return "\(type) overnight"
       case .thisAfternoon: return "\(type) this afternoon"
       case .thisMorning: return "\(type) this morning"
+      }
+    }
+
+    if let event = officialWarningEvent?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !event.isEmpty
+    {
+      switch period {
+      case .tonight: return "\(event) in effect tonight"
+      case .thisAfternoon: return "\(event) in effect this afternoon"
+      case .thisMorning: return "\(event) in effect this morning"
       }
     }
 
@@ -215,6 +249,16 @@ enum TonightOutlook {
       }
     }
     return period == .tonight ? "Quiet tonight" : nil
+  }
+
+  /// Now / next-hour precip type when hourly window looks dry.
+  private static func nowPrecipType(_ weather: DayCastWeather) -> String {
+    if isStormCode(weather.conditionCode) { return "Storm" }
+    if isSnowCode(weather.conditionCode) { return "Snow" }
+    let text = weather.conditionText.lowercased()
+    if text.contains("snow") { return "Snow" }
+    if text.contains("storm") || text.contains("thunder") { return "Storm" }
+    return "Rain"
   }
 
   private static func tempPhrase(

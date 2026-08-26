@@ -2,12 +2,11 @@ import SwiftUI
 
 struct AlertsFeedCard: View {
   let alerts: [NWSAlert]
-  var severeContext: SevereWeatherContext? = nil
   var sitsOnPhoto: Bool = false
   var onSelect: (NWSAlert) -> Void
 
   var body: some View {
-    if alerts.isEmpty && severeContext == nil {
+    if Self.glanceChips(from: alerts).isEmpty {
       EmptyView()
     } else {
       cardBody
@@ -16,10 +15,6 @@ struct AlertsFeedCard: View {
 
   private var cardBody: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      if let severeContext {
-        SevereContextCard(context: severeContext)
-      }
-
       ForEach(Self.glanceChips(from: alerts)) { alert in
         Button {
           Haptic.impact(.light)
@@ -75,11 +70,26 @@ struct AlertsFeedCard: View {
     .accessibilityIdentifier(DayCastAccessibility.Today.alertsSlot)
   }
 
-  /// Today is a chip rail, not the Alerts list. One chip per grouped event; cap at 2.
-  static let maxGlanceChips = 2
+  /// Today is one official chip. Outlook / MD / extra products stay on Alerts.
+  static let maxGlanceChips = 1
 
   static func glanceChips(from alerts: [NWSAlert]) -> [NWSAlert] {
-    Array(NWSAlertGrouping.representatives(from: alerts).prefix(maxGlanceChips))
+    let live = NWSAlertGrouping.representatives(from: alerts).filter { !$0.isExpired }
+    return Array(live.sorted(by: Self.isMoreSevere).prefix(maxGlanceChips))
+  }
+
+  /// Warning > watch > advisory, then NWS `severityLevel`.
+  static func isMoreSevere(_ lhs: NWSAlert, _ rhs: NWSAlert) -> Bool {
+    if glanceRank(lhs) != glanceRank(rhs) {
+      return glanceRank(lhs) > glanceRank(rhs)
+    }
+    return lhs.severityLevel > rhs.severityLevel
+  }
+
+  static func glanceRank(_ alert: NWSAlert) -> Int {
+    if alert.isWarning || alert.isLifeThreatening { return 3 }
+    if alert.isWatch { return 2 }
+    return 1
   }
 
   static func chipTitle(for alert: NWSAlert) -> String {

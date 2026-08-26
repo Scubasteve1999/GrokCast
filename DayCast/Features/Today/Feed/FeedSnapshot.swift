@@ -16,15 +16,15 @@ struct FeedSnapshot: Equatable, Sendable {
   var showFireCard: Bool
   /// Unused on Today. Take is off this tab; flag kept so snapshots stay Codable-shaped.
   var showAIInsight: Bool
-  /// SPC Day 1 ≥ Slight, MD, or severe watch/warning — earns the Today alerts slot without NWS rows.
+  /// SPC Day 1 / MD — Alerts tab only. Does not earn the Today chip.
   var hasSevereContext: Bool = false
   /// Open-Meteo Now is a precip condition (rain / storm / snow / sleet).
   var isNowWet: Bool = false
   /// NWS AFD/PNS cards for this city (`LocalBriefingStore`). Hide the rail when false.
   var hasLocalBriefing: Bool = false
 
-  /// NWS point alerts **or** earned severe context (outlook / MD / watch).
-  var showAlertsSlot: Bool { alertCount > 0 || hasSevereContext }
+  /// Live official NWS point alerts only. Outlook / MD never keep this slot.
+  var showAlertsSlot: Bool { alertCount > 0 }
 
   static let empty = FeedSnapshot(
     hasWeather: false,

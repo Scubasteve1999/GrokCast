@@ -111,6 +111,10 @@ struct TodayFeedView: View {
     return severeStore.context
   }
 
+  private var officialWarningEvent: String? {
+    store.displayableGroupedAlerts.first(where: { $0.isWarning && !$0.isExpired })?.event
+  }
+
   private var heroRows: [TodayFeedRow] {
     feedRows.filter { row in
       switch row {
@@ -242,7 +246,6 @@ struct TodayFeedView: View {
     case .alerts:
       AlertsFeedCard(
         alerts: store.displayableGroupedAlerts,
-        severeContext: todaySevereContext,
         sitsOnPhoto: true
       ) { alert in
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
@@ -256,7 +259,10 @@ struct TodayFeedView: View {
       HourlyFeedCard(
         weather: weather,
         briefingItems: briefingStore.items,
-        plated: plated
+        plated: plated,
+        isNowWet: snapshot.isNowWet,
+        isNextHourWet: snapshot.hasPrecipContent,
+        officialWarningEvent: officialWarningEvent
       ) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         store.selectedTab = .forecast
