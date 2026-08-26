@@ -88,6 +88,13 @@ final class RadarLoader {
     )
   }
 
+  /// Today Outlook plate: do not offer Future without a real forecast timeline.
+  func probeForecastFramesAvailable() async -> Bool {
+    let nowcast = await RainViewerRadarService.loadNowcastFrames()
+    let outcome = await resolveForecast(rainViewerNowcast: nowcast)
+    return !outcome.frames.isEmpty && outcome.availability.hasFrames
+  }
+
   func refreshForecastAvailability(provider: RadarTileProvider) async -> RadarTileAvailability {
     switch provider {
     case .rainViewer:

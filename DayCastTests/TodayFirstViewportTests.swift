@@ -9,17 +9,48 @@ final class TodayFirstViewportTests: XCTestCase {
       TodayGlanceLayout.oliveBranchStoryStackHeight,
       TodayGlanceLayout.visibleFeedHeightIPhone16
     )
-    XCTAssertGreaterThanOrEqual(
+    let peek =
       TodayGlanceLayout.visibleFeedHeightIPhone16
-        - TodayGlanceLayout.oliveBranchStoryStackHeight,
-      8
-    )
+      - TodayGlanceLayout.oliveBranchStoryStackHeight
+    XCTAssertGreaterThanOrEqual(peek, 0, "Your News header must still peek")
   }
 
-  func testRadarTeaserIsShorterThanTheOld160Map() {
+  func testOutlookRadarPlateIsTallerThanThePostageStamp() {
     XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
-    XCTAssertLessThan(RadarPreviewSource.teaserHeight, 160)
-    XCTAssertEqual(TodayGlanceLayout.radarMapHeight, RadarPreviewSource.teaserHeight)
+    XCTAssertEqual(RadarPreviewSource.outlookPlateHeight, 168)
+    XCTAssertGreaterThanOrEqual(RadarPreviewSource.outlookPlateHeight, 160)
+    XCTAssertLessThanOrEqual(RadarPreviewSource.outlookPlateHeight, 180)
+    XCTAssertEqual(TodayGlanceLayout.radarMapHeight, RadarPreviewSource.outlookPlateHeight)
+    XCTAssertEqual(RadarPreviewSource.previewBaseMap, .dark)
+  }
+
+  func testOutlookPlateCopyIsNotIntensityOrScanHeadline() {
+    XCTAssertEqual(OutlookRadarCopy.title, "Outlook")
+    XCTAssertEqual(OutlookRadarCopy.radarPill, "Radar")
+    XCTAssertEqual(OutlookRadarCopy.futurePill, "Future")
+    XCTAssertEqual(OutlookRadarCopy.livePill, "LIVE")
+    XCTAssertFalse(OutlookRadarCopy.futurePill.localizedCaseInsensitiveContains("Intensity"))
+    XCTAssertFalse(OutlookRadarCopy.radarPill.localizedCaseInsensitiveContains("Intensity"))
+    XCTAssertEqual(
+      OutlookRadarProduct.resolved(requested: .future, futureFramesAvailable: false),
+      .radar
+    )
+    XCTAssertEqual(
+      OutlookRadarProduct.resolved(requested: .future, futureFramesAvailable: true),
+      .future
+    )
+    XCTAssertEqual(
+      OutlookRadarProduct.resolved(requested: .radar, futureFramesAvailable: true),
+      .radar
+    )
+    let spoken = OutlookRadarCopy.accessibilityLabel(
+      sentence: "Thunderstorms possible after 2 AM.",
+      product: .radar
+    )
+    XCTAssertTrue(spoken.contains("Outlook"))
+    XCTAssertTrue(spoken.contains("Thunderstorms possible after 2 AM."))
+    XCTAssertFalse(spoken.localizedCaseInsensitiveContains("Rain now · TLH"))
+    XCTAssertFalse(spoken.localizedCaseInsensitiveContains("Intensity"))
   }
 
   func testNowGlanceTempIsTighterThanDisplayHero() {

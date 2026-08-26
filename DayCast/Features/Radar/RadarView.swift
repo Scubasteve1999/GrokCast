@@ -116,8 +116,11 @@ struct RadarView: View {
           // Re-entering Radar after a long idle rebuilds stale frames so FUTURE
           // reflects the provider's newest run; a quick switch is a no-op.
           let center = selectedMapCenter
+          let openFuture = store.consumePendingRadarFuture()
           await radarState.handleLiveOpen(for: center)
-          if radarState.showContent {
+          if openFuture {
+            radarState.setFutureMode(true)
+          } else if radarState.showContent {
             radarState.presentLiveNow()
           }
         }

@@ -1,7 +1,7 @@
 import CoreGraphics
 
 /// First viewport: type-on-photo Now, live alert chip, tonight line + curve,
-/// Site Doppler teaser, and a Your News peek on iPhone 16 (852pt).
+/// Outlook radar plate, and a Your News peek (or header) on iPhone 16 (852pt).
 enum TodayGlanceLayout {
   /// iPhone 16 logical height. Do not use iPhone 17 / iOS 27 as the peek target.
   static let iPhone16ScreenHeight: CGFloat = 852
@@ -17,7 +17,7 @@ enum TodayGlanceLayout {
   static let alertChipMinHeight: CGFloat = 56
   static let radarHeaderHeight: CGFloat = 22
   static let radarInnerSpacing: CGFloat = DesignTokens.Spacing.space8
-  static var radarMapHeight: CGFloat { RadarPreviewSource.teaserHeight }
+  static var radarMapHeight: CGFloat { RadarPreviewSource.outlookPlateHeight }
   static var radarCardHeight: CGFloat {
     cardPadding * 2 + radarHeaderHeight + radarInnerSpacing + radarMapHeight
   }
@@ -44,7 +44,8 @@ enum TodayGlanceLayout {
       - LocationChipBar.reservedHeight
   }
 
-  /// Now + alert chip + tonight curve + Site Doppler. Your News peeks below.
+  /// Now + alert chip + tonight curve + Outlook plate. Your News peeks below
+  /// (header peek is enough if the taller map eats the card peek).
   static var oliveBranchStoryStackHeight: CGFloat {
     nowBudgetHeight + alertChipMinHeight + hourlyCardHeight
       + radarCardHeight + feedSpacing * 3

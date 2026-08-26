@@ -272,8 +272,12 @@ struct TodayFeedView: View {
     case .radar:
       RadarFeedCard(
         weather: weather,
+        briefingItems: briefingStore.items,
         hoisted: FeedAssembler.isRadarStory(snapshot),
-        plated: plated
+        plated: plated,
+        isNowWet: snapshot.isNowWet,
+        isNextHourWet: snapshot.hasPrecipContent,
+        officialWarningEvent: officialWarningEvent
       ) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
       }

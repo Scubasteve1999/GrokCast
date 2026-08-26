@@ -58,6 +58,14 @@ final class WeatherStore {
   }
 
   var selectedTab: Tab = .today
+  /// Today Outlook plate: open Radar already on Future when frames exist.
+  var pendingRadarShowsFuture = false
+
+  func consumePendingRadarFuture() -> Bool {
+    let value = pendingRadarShowsFuture
+    pendingRadarShowsFuture = false
+    return value
+  }
 
   // Connectivity for offline-aware error UI (banner uses wifi.slash icon + specific copy).
   private let networkMonitor = NetworkMonitor()

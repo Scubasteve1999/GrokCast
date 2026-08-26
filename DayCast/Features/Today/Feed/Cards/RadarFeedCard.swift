@@ -116,20 +116,49 @@ enum RadarFeedCopy {
   }
 }
 
+/// Outlook plate product. Not Intensity. Future stays off if frames are missing.
+enum OutlookRadarProduct: String, CaseIterable, Equatable {
+  case radar
+  case future
+
+  static func resolved(
+    requested: OutlookRadarProduct,
+    futureFramesAvailable: Bool
+  ) -> OutlookRadarProduct {
+    if requested == .future, futureFramesAvailable { return .future }
+    return .radar
+  }
+}
+
+enum OutlookRadarCopy {
+  static let title = "Outlook"
+  static let radarPill = "Radar"
+  static let futurePill = "Future"
+  static let livePill = "LIVE"
+  static let opensRadarTab = RadarFeedCopy.opensRadarTab
+
+  static func accessibilityLabel(sentence: String, product: OutlookRadarProduct) -> String {
+    let productName = product == .future ? futurePill : radarPill
+    return "\(title). \(sentence). \(productName). \(opensRadarTab)"
+  }
+}
+
 struct RadarFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
+  var briefingItems: [LocalBriefingItem] = []
   var hoisted: Bool = false
   var plated: Bool = true
+  var isNowWet: Bool = false
+  var isNextHourWet: Bool = false
+  var officialWarningEvent: String? = nil
   var onTap: (() -> Void)? = nil
 
   @State private var nearestSite: IEMRadarService.Site?
   @State private var sweep: Level3N0BSweep?
   @State private var polarFailed = false
-
-  private var isNowWet: Bool {
-    RadarFeedCopy.isLocalWet(WeatherCondition(fromWMO: weather.conditionCode))
-  }
+  @State private var requestedProduct: OutlookRadarProduct = .radar
+  @State private var futureFramesAvailable = false
 
   private var paint: RadarPreviewPaint {
     RadarPreviewPaint.resolve(
@@ -140,13 +169,36 @@ struct RadarFeedCard: View {
     )
   }
 
+  private var product: OutlookRadarProduct {
+    OutlookRadarProduct.resolved(
+      requested: requestedProduct,
+      futureFramesAvailable: futureFramesAvailable
+    )
+  }
+
+  private var outlook: TonightOutlook.Result {
+    TonightOutlook.make(
+      weather: weather,
+      briefingItems: briefingItems,
+      unit: store.temperatureUnit,
+      isNowWet: isNowWet
+        || RadarFeedCopy.isLocalWet(WeatherCondition(fromWMO: weather.conditionCode)),
+      isNextHourWet: isNextHourWet,
+      officialWarningEvent: officialWarningEvent
+    )
+  }
+
   var body: some View {
-    TimelineView(.everyMinute) { context in
-      card(now: context.date)
-    }
-    .task(id: loadKey) {
-      await loadSiteSweepIfNeeded()
-    }
+    card
+      .task(id: loadKey) {
+        await loadSiteSweepIfNeeded()
+      }
+      .task {
+        futureFramesAvailable = await RadarLoader().probeForecastFramesAvailable()
+        if requestedProduct == .future, !futureFramesAvailable {
+          requestedProduct = .radar
+        }
+      }
   }
 
   private var loadKey: String {
@@ -154,82 +206,151 @@ struct RadarFeedCard: View {
     return "\(hoisted)-\(loc?.latitude ?? 0)-\(loc?.longitude ?? 0)"
   }
 
-  @ViewBuilder
-  private func card(now: Date) -> some View {
-    let ageLine = RadarFeedCopy.scanAgeLine(scanDate: sweep?.timestamp, now: now)
-    let availability = availability(now: now)
+  private var card: some View {
     VStack(alignment: .leading, spacing: TodayGlanceLayout.radarInnerSpacing) {
-      header(ageLine: ageLine, availability: availability)
-
-      switch paint {
-      case .siteDoppler:
-        RadarPreviewCard(
-          paint: .siteDoppler,
-          sweep: sweep,
-          onPolarFailed: { polarFailed = true }
-        )
-        .allowsHitTesting(false)
-      case .nationalMapsGL:
-        RadarPreviewCard(paint: .nationalMapsGL)
-          .allowsHitTesting(false)
-      case .unavailable:
-        EmptyView()
-      }
+      header
+      plate
     }
     .padding(plated ? TodayGlanceLayout.cardPadding : 0)
     .weatherModuleChrome(plated)
-    .contentShape(Rectangle())
-    .onTapGesture {
-      Haptic.impact(.medium)
-      onTap?()
-      store.selectedTab = .radar
-    }
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(
-      RadarFeedCopy.accessibilityLabel(
-        title: headline(ageLine: ageLine, availability: availability)))
-    .accessibilityAddTraits(.isButton)
+    .accessibilityElement(children: .contain)
   }
 
-  private func header(ageLine: String, availability: RadarAvailability) -> some View {
-    HStack(alignment: .center, spacing: DesignTokens.Spacing.space8) {
-      Text(headline(ageLine: ageLine, availability: availability))
+  private var header: some View {
+    HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
+      Text(OutlookRadarCopy.title)
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
+      Text(outlook.sentence)
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
         .lineLimit(1)
         .minimumScaleFactor(0.85)
-      Spacer(minLength: DesignTokens.Spacing.space8)
-      if hoisted, isNowWet, availability == .live {
-        Text(ageLine)
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-          .monospacedDigit()
+    }
+    .frame(maxWidth: .infinity, minHeight: TodayGlanceLayout.radarHeaderHeight, alignment: .leading)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("\(OutlookRadarCopy.title). \(outlook.sentence)")
+  }
+
+  private var plate: some View {
+    ZStack(alignment: .bottom) {
+      map
+        .allowsHitTesting(false)
+        .contentShape(Rectangle())
+        .onTapGesture { openRadarTab() }
+
+      VStack(alignment: .leading, spacing: 0) {
+        HStack {
+          if product == .radar, paint != .unavailable {
+            liveStamp
+          }
+          Spacer(minLength: 0)
+        }
+        .padding(DesignTokens.Spacing.space8)
+        Spacer(minLength: 0)
+        pills
+          .padding(DesignTokens.Spacing.space8)
       }
-      Image(systemName: "chevron.right")
+    }
+  }
+
+  @ViewBuilder
+  private var map: some View {
+    let shown = product == .future ? RadarPreviewPaint.nationalMapsGL : paint
+    switch shown {
+    case .siteDoppler:
+      RadarPreviewCard(
+        paint: .siteDoppler,
+        sweep: sweep,
+        height: RadarPreviewSource.outlookPlateHeight,
+        onPolarFailed: { polarFailed = true }
+      )
+    case .nationalMapsGL:
+      RadarPreviewCard(
+        paint: .nationalMapsGL,
+        height: RadarPreviewSource.outlookPlateHeight,
+        showsFuture: product == .future
+      )
+    case .unavailable:
+      RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
+        .fill(DesignTokens.Palette.radarTrack)
+        .frame(height: RadarPreviewSource.outlookPlateHeight)
+        .overlay {
+          Text(RadarFeedCopy.radarUnavailable)
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(DesignTokens.Palette.textTertiary)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { openRadarTab() }
+    }
+  }
+
+  private var liveStamp: some View {
+    Text(OutlookRadarCopy.livePill)
+      .font(DesignTokens.Typography.micro().weight(.semibold))
+      .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+      .padding(.horizontal, DesignTokens.Spacing.space8)
+      .padding(.vertical, DesignTokens.Spacing.space2)
+      .background(DesignTokens.Palette.radarTrack, in: Capsule())
+      .accessibilityHidden(true)
+  }
+
+  private var pills: some View {
+    HStack(spacing: DesignTokens.Spacing.space8) {
+      productPill(.radar, title: OutlookRadarCopy.radarPill)
+      productPill(.future, title: OutlookRadarCopy.futurePill)
+    }
+  }
+
+  private func productPill(_ value: OutlookRadarProduct, title: String) -> some View {
+    let selected = product == value
+    return Button {
+      selectProduct(value)
+    } label: {
+      Text(title)
         .font(DesignTokens.Typography.caption())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .fontWeight(selected ? .semibold : .regular)
+        .foregroundStyle(
+          selected
+            ? DesignTokens.Palette.radarTextPrimary
+            : DesignTokens.Palette.radarTextSecondary
+        )
+        .frame(maxWidth: .infinity, minHeight: 28)
+        .background(
+          Capsule().fill(
+            selected
+              ? DesignTokens.Palette.radarTrack
+              : Color.clear
+          )
+        )
+        .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
+    .accessibilityLabel(title)
+    .accessibilityAddTraits(selected ? .isSelected : [])
   }
 
-  private func headline(ageLine: String, availability: RadarAvailability) -> String {
-    RadarFeedCopy.headline(
-      conditionCode: weather.conditionCode,
-      siteID: nearestSite?.id,
-      ageLine: ageLine,
-      hoisted: hoisted,
-      availability: availability,
-      paint: paint
-    )
+  private func selectProduct(_ value: OutlookRadarProduct) {
+    Haptic.impact(.light)
+    if value == .future {
+      if !futureFramesAvailable {
+        requestedProduct = .radar
+        return
+      }
+      if !EntitlementChecker.canUseRadarFuture(subscription: SubscriptionManager.shared) {
+        PaywallCoordinator.shared.present(.radarFuture)
+        requestedProduct = .radar
+        return
+      }
+    }
+    requestedProduct = value
   }
 
-  private func availability(now: Date) -> RadarAvailability {
-    if hoisted {
-      if paint == .unavailable { return .unavailable }
-      return RadarAvailability.from(
-        scanDate: sweep?.timestamp, isSiteProduct: true, now: now)
-    }
-    if paint == .nationalMapsGL { return .live }
-    return .unavailable
+  private func openRadarTab() {
+    Haptic.impact(.medium)
+    onTap?()
+    store.pendingRadarShowsFuture = product == .future
+    store.selectedTab = .radar
   }
 
   private func loadSiteSweepIfNeeded() async {

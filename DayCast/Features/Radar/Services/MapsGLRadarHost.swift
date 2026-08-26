@@ -101,8 +101,9 @@ final class MapsGLRadarHost {
     lastNationalUsesMRMS = nil
   }
 
-  /// Snapshot for Today: Live rain only, newest scan, no site products.
-  func syncPreview(opacity: Double, now: Date = Date()) {
+  /// Snapshot for Today: rain only, no site products. `future` uses the same
+  /// MapsGL 12-hour timeline Live FUTURE uses.
+  func syncPreview(opacity: Double, now: Date = Date(), future: Bool = false) {
     pendingOpacity = opacity
     lastOverlayOn = true
     lastIsSiteProduct = false
@@ -115,15 +116,17 @@ final class MapsGLRadarHost {
       return
     }
 
-    let futureChanged = lastFuture != false
+    let futureChanged = lastFuture != future
     if futureChanged {
-      lastFuture = false
-      applyTimelineRange(future: false, on: controller)
+      lastFuture = future
+      applyTimelineRange(future: future, on: controller)
     }
     applyVisibilityIfNeeded(want: want, futureChanged: futureChanged, on: controller)
     guard want else { return }
-    // A few minutes behind wall clock matches Live mosaic's newest scan.
-    let frameDate = now.addingTimeInterval(-8 * 60)
+    let frameDate =
+      future
+      ? now.addingTimeInterval(60 * 60)
+      : now.addingTimeInterval(-8 * 60)
     if lastFrameDate != frameDate {
       lastFrameDate = frameDate
       controller.timeline.goTo(date: frameDate)

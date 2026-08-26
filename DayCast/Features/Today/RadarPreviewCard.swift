@@ -28,6 +28,8 @@ struct RadarPreviewCard: View {
   @Environment(WeatherStore.self) private var store
   var paint: RadarPreviewPaint = .nationalMapsGL
   var sweep: Level3N0BSweep? = nil
+  var height: CGFloat = RadarPreviewSource.outlookPlateHeight
+  var showsFuture: Bool = false
   var onPolarFailed: (() -> Void)? = nil
 
   private var coordinate: CLLocationCoordinate2D? {
@@ -57,7 +59,7 @@ struct RadarPreviewCard: View {
         RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent)
       {
         framedMap {
-          RadarPreviewMapboxMap(center: coord)
+          RadarPreviewMapboxMap(center: coord, showsFuture: showsFuture)
         }
       }
     case .unavailable:
@@ -68,7 +70,7 @@ struct RadarPreviewCard: View {
   private func framedMap<Content: View>(@ViewBuilder content: () -> Content) -> some View {
     content()
       .allowsHitTesting(false)
-      .frame(height: RadarPreviewSource.teaserHeight)
+      .frame(height: height)
       .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
       .overlay(
         RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
@@ -81,8 +83,11 @@ struct RadarPreviewCard: View {
 /// PNG mosaic is a different scale — do not use it when MapsGL is the Live paint.
 enum RadarPreviewSource {
   static let previewBaseMap = RadarBaseMapStyle.dark
-  /// Today teaser map height. Short enough that Your News peeks on iPhone 16.
+  /// Retired postage-stamp height. Outlook plate uses `outlookPlateHeight`.
   static let teaserHeight: CGFloat = 72
+  /// Today Outlook plate map. Taller than the 72pt stamp; pills overlay so
+  /// Your News can still peek the header on iPhone 16.
+  static let outlookPlateHeight: CGFloat = 168
   /// Buried National teaser — same CONUS floor Live uses when local is dry.
   static var previewZoom: Double { RadarLiveCameraPolicy.conusZoom }
   /// Hoisted Site Doppler — same ~120 mi frame Live uses for wet local.
@@ -117,6 +122,7 @@ enum RadarPreviewSource {
 /// Non-interactive Mapbox Dark + the same MapsGL NWS reflectivity Live uses.
 private struct RadarPreviewMapboxMap: UIViewRepresentable {
   let center: CLLocationCoordinate2D
+  var showsFuture: Bool = false
 
   func makeUIView(context: Context) -> MapView {
     if let token = DeveloperAPIKey.mapbox, !token.isEmpty {
@@ -128,7 +134,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       styleURI: RadarPreviewSource.previewBaseMap.styleURI
     )
     let mapView = MapView(
-      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.teaserHeight),
+      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.outlookPlateHeight),
       mapInitOptions: options
     )
     if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
@@ -142,8 +148,13 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
     RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
 
     let coordinator = context.coordinator
+    coordinator.showsFuture = showsFuture
     coordinator.host.onLayerStateChange = { [weak coordinator] in
-      coordinator?.host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
+      guard let coordinator else { return }
+      coordinator.host.syncPreview(
+        opacity: RadarPreferences.defaultRadarOpacity,
+        future: coordinator.showsFuture
+      )
     }
     mapView.mapboxMap.onStyleLoaded.observe { [weak mapView, weak coordinator] _ in
       guard let mapView, let coordinator else { return }
@@ -156,6 +167,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
   }
 
   func updateUIView(_ mapView: MapView, context: Context) {
+    context.coordinator.showsFuture = showsFuture
     let current = mapView.mapboxMap.cameraState.center
     let moved =
       abs(current.latitude - center.latitude) > 0.01
@@ -165,6 +177,10 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
         to: CameraOptions(center: center, zoom: RadarPreviewSource.previewZoom)
       )
     }
+    context.coordinator.host.syncPreview(
+      opacity: RadarPreferences.defaultRadarOpacity,
+      future: showsFuture
+    )
   }
 
   static func dismantleUIView(_ uiView: MapView, coordinator: Coordinator) {
@@ -176,6 +192,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
   @MainActor
   final class Coordinator {
     var styleObservers = Set<AnyCancelable>()
+    var showsFuture = false
     let host: MapsGLRadarHost = {
       let host = MapsGLRadarHost()
       host.paintsStormcells = false
@@ -185,7 +202,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
     func attachRain(to mapView: MapView) {
       RadarPreviewSource.configureTeaser(mapView)
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
-      host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
+      host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity, future: showsFuture)
       host.attach(to: mapView)
     }
   }
@@ -207,7 +224,7 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
       styleURI: RadarPreviewSource.previewBaseMap.styleURI
     )
     let mapView = MapView(
-      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.teaserHeight),
+      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.outlookPlateHeight),
       mapInitOptions: options
     )
     if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
