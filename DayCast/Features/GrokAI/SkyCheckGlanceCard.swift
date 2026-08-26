@@ -71,12 +71,12 @@ struct SkyCheckGlanceCard: View {
       }
 
       HStack(spacing: DesignTokens.Spacing.space8) {
-        destinationButton(
+        SkyCheckSolidChip(
           title: SkyCheckDeskCopy.forecastAction,
           identifier: DayCastAccessibility.Grok.glanceForecast,
           action: onForecast
         )
-        destinationButton(
+        SkyCheckSolidChip(
           title: SkyCheckDeskCopy.radarAction,
           identifier: DayCastAccessibility.Grok.glanceRadar,
           action: onRadar
@@ -91,33 +91,6 @@ struct SkyCheckGlanceCard: View {
       stroke: DesignTokens.Palette.cardStroke,
       cornerRadius: DesignTokens.Card.cornerRadiusMedium
     )
-  }
-
-  private func destinationButton(
-    title: String,
-    identifier: String,
-    action: @escaping () -> Void
-  ) -> some View {
-    Button {
-      Haptic.impact(.light)
-      action()
-    } label: {
-      Text(title)
-        .font(DesignTokens.Typography.caption().weight(.semibold))
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .padding(.horizontal, DesignTokens.Spacing.space12)
-        .frame(minHeight: DesignTokens.Layout.minHitTarget)
-        .background(DesignTokens.Palette.cardElevated)
-        .overlay(
-          RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)
-            .stroke(DesignTokens.Palette.cardHairline, lineWidth: DesignTokens.Card.strokeWidth)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous))
-    }
-    .buttonStyle(.plain)
-    .accessibilityIdentifier(identifier)
-    .accessibilityLabel(title)
-    .accessibilityAddTraits(.isButton)
   }
 
   @ViewBuilder

@@ -14,6 +14,8 @@ final class MapsGLRadarHost {
   private var controller: MapboxMapController?
   private var cancellables = Set<AnyCancellable>()
   private var attachedMapView: MapView?
+  /// `addWeatherLayer` before MapsGL `onLoad` can succeed as a dead layer.
+  private var mapControllerLoaded = false
   private var layerReady = false
   private var stormcellsReady = false
   private var lastVisible: Bool?
@@ -67,7 +69,9 @@ final class MapsGLRadarHost {
     self.controller = controller
 
     controller.onLoad.observe { [weak self] _ in
-      self?.installRadarLayer()
+      guard let self else { return }
+      self.mapControllerLoaded = true
+      self.installRadarLayer()
     }.store(in: &cancellables)
   }
 
@@ -85,6 +89,7 @@ final class MapsGLRadarHost {
     cancellables.removeAll()
     controller = nil
     attachedMapView = nil
+    mapControllerLoaded = false
     layerReady = false
     stormcellsReady = false
     lastVisible = nil
@@ -115,14 +120,7 @@ final class MapsGLRadarHost {
       lastFuture = false
       applyTimelineRange(future: false, on: controller)
     }
-    let cellsWant = cellsWanted()
-    let cellsNeedAttach = cellsWant && !stormcellsReady
-    if lastVisible != want || lastCellsWant != cellsWant || futureChanged
-      || cellsNeedAttach
-    {
-      lastVisible = want
-      applyVisibility(want, on: controller)
-    }
+    applyVisibilityIfNeeded(want: want, futureChanged: futureChanged, on: controller)
     guard want else { return }
     // A few minutes behind wall clock matches Live mosaic's newest scan.
     let frameDate = now.addingTimeInterval(-8 * 60)
@@ -154,19 +152,11 @@ final class MapsGLRadarHost {
       lastFuture = radarState.showsFuture
       applyTimelineRange(future: radarState.showsFuture, on: controller)
     }
-
-    let cellsWant = cellsWanted()
-    let cellsNeedAttach = cellsWant && !stormcellsReady
-    if lastVisible != want || lastCellsWant != cellsWant || futureChanged
-      || cellsNeedAttach
-    {
-      lastVisible = want
-      applyVisibility(want, on: controller)
-    }
+    applyVisibilityIfNeeded(want: want, futureChanged: futureChanged, on: controller)
 
     // Rain and tracks share the MapsGL timeline. Keep goTo even when rain is
     // MRMS tiles so cell motion still keys off the presented scan time.
-    guard want || cellsWant else { return }
+    guard want || cellsWanted() else { return }
 
     if let date = radarState.currentFrameDate, lastFrameDate != date {
       lastFrameDate = date
@@ -190,6 +180,7 @@ final class MapsGLRadarHost {
 
   private func addRadarLayer(on controller: MapboxMapController) {
     guard !layerReady else { return }
+    guard mapControllerLoaded else { return }
     do {
       var config = WeatherService.Radar(service: controller.service)
       config.layer.paint.sample.colorScale = .colorScale(Self.colorScale)
@@ -286,6 +277,23 @@ final class MapsGLRadarHost {
       keysPresent: Self.keysPresent,
       isLive: lastFuture != true
     )
+  }
+
+  private func applyVisibilityIfNeeded(
+    want: Bool,
+    futureChanged: Bool,
+    on controller: MapboxMapController
+  ) {
+    let cellsWant = cellsWanted()
+    let needsPass =
+      lastVisible != want
+      || lastCellsWant != cellsWant
+      || futureChanged
+      || (cellsWant && !stormcellsReady)
+      || (want && !layerReady)
+    guard needsPass else { return }
+    lastVisible = want
+    applyVisibility(want, on: controller)
   }
 
   private func applyVisibility(_ rainWant: Bool, on controller: MapboxMapController) {

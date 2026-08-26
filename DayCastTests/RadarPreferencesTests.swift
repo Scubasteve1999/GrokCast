@@ -66,6 +66,7 @@ final class RadarPreferencesTests: XCTestCase {
 
   func testTodayRadarPreviewUsesMapsGLOnLight() {
     XCTAssertEqual(RadarPreviewSource.previewBaseMap, .light)
+    XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
     XCTAssertEqual(
@@ -141,6 +142,10 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarPalette.usesNearestResampling(
         provider: .mrms, isFuture: false, cameraZoom: 6),
       "National overzoom uses linear so 1 km bins contour")
+    XCTAssertFalse(
+      MapsGLRadarPalette.usesNearestResampling(
+        provider: .xweather, isFuture: false, cameraZoom: 6),
+      "National PNG fallback uses linear so overzoom is not Minecraft")
     XCTAssertFalse(
       MapsGLRadarPalette.usesNearestResampling(
         provider: .mrms, isFuture: false, cameraZoom: 12))

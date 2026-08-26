@@ -73,8 +73,9 @@ enum MapsGLRadarPalette {
     stride(from: bandIntervalDbz, through: 70, by: bandIntervalDbz).map { $0 }
   }
 
-  /// Live PNG (N0B + national fallback) keeps native bins. Linear resampling
-  /// is what turned operational gates into mush.
+  /// Live PNG (N0B IEM overview) keeps native bins. Linear resampling on
+  /// cartesian IEM overview is what turned operational gates into mush.
+  /// National Xweather PNG fallback uses linear overzoom (same as MRMS).
   static let liveRasterUsesNearestResampling = true
   /// IEM RIDGE cartesian PNGs stop adding native detail near WebMercator z9
   /// (~250 m/px, N0B range-gate scale). Past that, IEM tiles are nearest
@@ -101,7 +102,7 @@ enum MapsGLRadarPalette {
   ) -> Bool {
     if paintsPolarRadials { return true }
     if isFuture { return false }
-    if provider == .mrms { return false }
+    if provider == .mrms || provider == .xweather { return false }
     if provider == .iem {
       return cameraZoom <= iemNativeTileZoom
     }

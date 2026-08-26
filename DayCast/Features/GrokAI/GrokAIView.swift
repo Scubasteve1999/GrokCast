@@ -287,8 +287,15 @@ private struct GrokAIViewContent: View {
     horizontalSizeClass == .compact
   }
 
+  /// Compact: the elevated pill is the chrome. A full-bleed
+  /// `ultraThinMaterial` tray on iOS 26 inflates into ice-blue glass over
+  /// **Check this sky** and the last bubble.
   private var composerTrayBackground: AnyShapeStyle {
-    AnyShapeStyle(.ultraThinMaterial)
+    if prefersFigmaStudioLayout {
+      AnyShapeStyle(Color.clear)
+    } else {
+      AnyShapeStyle(.ultraThinMaterial)
+    }
   }
 
   private var skyCheckWeatherBackground: some View {
@@ -500,20 +507,13 @@ private struct GrokAIViewContent: View {
   }
 
   private func skyCheckPhotoCTAButton(viewModel: GrokAIViewModel) -> some View {
-    Button(action: openSkyCheckPicker) {
-      Label(
-        skyCheckPhotoCTATitle(viewModel: viewModel),
-        systemImage: SkyCheckDeskCopy.photoGlyph
-      )
-      .font(DesignTokens.Typography.subsection())
-      .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
-      .padding(.vertical, DesignTokens.Spacing.space4)
-    }
-    .buttonStyle(.borderedProminent)
-    .tint(DesignTokens.Palette.accent)
-    .disabled(aiActionsDisabled)
-    .accessibilityLabel(skyCheckPhotoCTATitle(viewModel: viewModel))
-    .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
+    SkyCheckSolidChip(
+      title: skyCheckPhotoCTATitle(viewModel: viewModel),
+      systemImage: SkyCheckDeskCopy.photoGlyph,
+      identifier: DayCastAccessibility.Grok.stormSpotterAnalyze,
+      isDisabled: aiActionsDisabled,
+      action: openSkyCheckPicker
+    )
   }
 
   private func quickPromptsSection(viewModel: GrokAIViewModel) -> some View {

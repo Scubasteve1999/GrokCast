@@ -83,8 +83,8 @@ enum RadarPreviewSource {
   static let previewBaseMap = RadarBaseMapStyle.light
   /// Today teaser map height. Short enough that Your News peeks on iPhone 16.
   static let teaserHeight: CGFloat = 72
-  /// Buried National teaser — CONUS-ish so nearby cells fit the strip.
-  static let previewZoom: Double = 4.5
+  /// Buried National teaser — same CONUS floor Live uses when local is dry.
+  static var previewZoom: Double { RadarLiveCameraPolicy.conusZoom }
   /// Hoisted Site Doppler — same ~120 mi frame Live uses for wet local.
   static var siteZoom: Double { RadarLiveCameraPolicy.localZoom }
 
@@ -97,6 +97,20 @@ enum RadarPreviewSource {
     MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: true, isSiteProduct: false, keysPresent: keysPresent
     )
+  }
+
+  /// 72pt snapshot is not an interactive map. Radar tab keeps Mapbox chrome.
+  /// Logo/attribution `visibility` is Restricted SPI — hide the views after
+  /// options so `updateOrnaments` cannot unhide them, and park them off-canvas.
+  static func configureTeaser(_ mapView: MapView) {
+    mapView.isUserInteractionEnabled = false
+    mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    mapView.ornaments.options.compass.visibility = .hidden
+    mapView.ornaments.options.scaleBar.visibility = .hidden
+    mapView.ornaments.options.logo.margins = CGPoint(x: 8, y: -80)
+    mapView.ornaments.options.attributionButton.margins = CGPoint(x: 8, y: -80)
+    mapView.ornaments.logoView.isHidden = true
+    mapView.ornaments.attributionButton.isHidden = true
   }
 }
 
@@ -120,26 +134,24 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
     if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
       mapView.contentScaleFactor = scale
     }
-    mapView.isUserInteractionEnabled = false
-    mapView.ornaments.options.compass.visibility = .hidden
-    mapView.ornaments.options.scaleBar.visibility = .hidden
+    RadarPreviewSource.configureTeaser(mapView)
     mapView.mapboxMap.setCamera(
       to: CameraOptions(center: center, zoom: RadarPreviewSource.previewZoom)
     )
     try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
     RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
-    mapView.mapboxMap.onStyleLoaded.observe { [weak mapView] _ in
-      guard let mapView else { return }
-      RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
-    }.store(in: &context.coordinator.styleObservers)
 
-    let host = context.coordinator.host
-    host.onLayerStateChange = { [weak host] in
-      host?.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
+    let coordinator = context.coordinator
+    coordinator.host.onLayerStateChange = { [weak coordinator] in
+      coordinator?.host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
     }
-    host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
-    host.attach(to: mapView)
-    host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
+    mapView.mapboxMap.onStyleLoaded.observe { [weak mapView, weak coordinator] _ in
+      guard let mapView, let coordinator else { return }
+      coordinator.attachRain(to: mapView)
+    }.store(in: &coordinator.styleObservers)
+    if mapView.mapboxMap.isStyleLoaded {
+      coordinator.attachRain(to: mapView)
+    }
     return mapView
   }
 
@@ -169,6 +181,13 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       host.paintsStormcells = false
       return host
     }()
+
+    func attachRain(to mapView: MapView) {
+      RadarPreviewSource.configureTeaser(mapView)
+      RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
+      host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity)
+      host.attach(to: mapView)
+    }
   }
 }
 
@@ -194,9 +213,7 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
     if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
       mapView.contentScaleFactor = scale
     }
-    mapView.isUserInteractionEnabled = false
-    mapView.ornaments.options.compass.visibility = .hidden
-    mapView.ornaments.options.scaleBar.visibility = .hidden
+    RadarPreviewSource.configureTeaser(mapView)
     mapView.mapboxMap.setCamera(
       to: CameraOptions(center: center, zoom: RadarPreviewSource.siteZoom)
     )
@@ -206,6 +223,7 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
     let sweep = self.sweep
     mapView.mapboxMap.onStyleLoaded.observe { [weak mapView] _ in
       guard let mapView else { return }
+      RadarPreviewSource.configureTeaser(mapView)
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
       coordinator.applySweep(sweep, on: mapView)
     }.store(in: &coordinator.styleObservers)

@@ -17,6 +17,7 @@
 		05B78192476CF24EF481B297 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6CF8E942DAF5E1E61B1AC5F5 /* SwiftUI.framework */; };
 		06E04493B1CC2A9EB21982C1 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD8D3F04FAE268A0C8108847 /* WeatherService.swift */; };
 		0836FC0BEA6E23FCB0CB8E8D /* TodayGlanceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = D669A2FCD562FFC0962207D8 /* TodayGlanceLayout.swift */; };
+		087A23401DE98D4BBBE96C10 /* SkyCheckSolidChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = D99C93EAA3091527F869E9D1 /* SkyCheckSolidChip.swift */; };
 		09DA2AC04C923D6009DCCB32 /* SkyCheckDeskCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36673790B405C6EB3B77D5C7 /* SkyCheckDeskCopy.swift */; };
 		0A5BE18E3044E95713404010 /* NWSAlertTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2D7B3F7BFCAFACBA403AF5 /* NWSAlertTests.swift */; };
 		0AFA99D839D8B07107CE8AEF /* LocationPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4E9AE95FC1E293F487ED1B /* LocationPermissionView.swift */; };
@@ -681,6 +682,7 @@
 		D83F27355A300AE91A235E60 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
 		D884FEDCA4E61CDA44DC3109 /* SkyCheckPersistedThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckPersistedThumbnail.swift; sourceTree = "<group>"; };
 		D8E688F5B27F9DF7014D8E57 /* NearbyFeedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyFeedCard.swift; sourceTree = "<group>"; };
+		D99C93EAA3091527F869E9D1 /* SkyCheckSolidChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckSolidChip.swift; sourceTree = "<group>"; };
 		D9A9ABE2CB8AC76932D1040B /* WeatherStageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherStageSheet.swift; sourceTree = "<group>"; };
 		D9E93B8A9BDBA651F3869AD7 /* WidgetWeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetWeatherSnapshot.swift; sourceTree = "<group>"; };
 		DCAC0710F528EB769BB289CD /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
@@ -1347,6 +1349,7 @@
 				1BFE39701BA619079E322DCD /* GrokThinkingIndicator.swift */,
 				596B0FDBD9B84FCFEA863A2E /* SkyCheckCameraPicker.swift */,
 				1B10818D4042DA79C63D610B /* SkyCheckGlanceCard.swift */,
+				D99C93EAA3091527F869E9D1 /* SkyCheckSolidChip.swift */,
 				56F9979C802F261E94D1179C /* StormSpotterPhotoShare.swift */,
 			);
 			path = GrokAI;
@@ -1949,6 +1952,7 @@
 				6883F159BEB9EC704886088A /* SkyCheckGlanceCard.swift in Sources */,
 				FA089717B67683ED0967EF8D /* SkyCheckPersistedThumbnail.swift in Sources */,
 				A8AACF3D69AA080FC4AF7908 /* SkyCheckPhotoIntake.swift in Sources */,
+				087A23401DE98D4BBBE96C10 /* SkyCheckSolidChip.swift in Sources */,
 				051F439FEFFB64E08DC48F00 /* StormSpotterPhotoShare.swift in Sources */,
 				C8435868FF047316EC677E07 /* StreamingText.swift in Sources */,
 				C01FCABE763C1D12C0A0C302 /* SubscriptionManager.swift in Sources */,
