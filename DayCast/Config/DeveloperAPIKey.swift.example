@@ -69,6 +69,9 @@ enum DeveloperAPIKey {
 
   /// Optional AirNow key for fire-detail smoke line only (home AQI uses Open-Meteo).
   static let airNow: String? = nil  // "YOUR_AIRNOW_API_KEY"
+
+  /// NewsData.io Your News key. Nil → NWS AFD/PNS only.
+  static let newsData: String? = nil  // "pub_..."
 }
 
 // The OpenWeatherMap key lives in OpenWeatherMapKeys.swift (see its own .example).

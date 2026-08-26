@@ -10,6 +10,7 @@ enum YourNewsHeadline {
   static func displayTitle(for item: LocalBriefingItem) -> String {
     let office = collapse(item.title)
     guard !office.isEmpty else { return office }
+    if item.productCode == NewsDataParser.productCode { return office }
     let punched = punchUp(office, officeID: item.officeID)
     let candidate = cap(collapse(punched))
     if candidate.isEmpty { return office }

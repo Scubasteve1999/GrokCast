@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Owns NWS AFD KEY MESSAGES + filtered PNS cards for Today + Alerts.
+/// Owns Your News: NewsData weather stories (photos) plus NWS AFD/PNS fill.
 /// WeatherStore only triggers `refresh(for:)` — it does not parse products.
 @MainActor
 @Observable
@@ -47,11 +47,14 @@ final class LocalBriefingStore {
 
     do {
       try Task.checkCancellation()
+      async let newsArticles = NewsDataService.fetchWeatherArticles()
       let cwa = await nwsService.fetchCWA(for: location)
       guard generation == refreshGeneration else { return }
 
+      let newsItems = NewsDataParser.items(from: await newsArticles)
+
       guard let cwa else {
-        items = []
+        items = LocalBriefingParser.mergingNews(newsItems, nws: [])
         locationID = locationKey
         lastRefresh = Date()
         cachedLocationID = locationKey
@@ -114,13 +117,14 @@ final class LocalBriefingStore {
 
       guard generation == refreshGeneration else { return }
 
-      items = LocalBriefingParser.assemble(
+      let nwsItems = LocalBriefingParser.assemble(
         cwa: cwa,
         officeName: officeName,
         afd: afdPayload,
         pns: pnsPayload,
         now: now
       )
+      items = LocalBriefingParser.mergingNews(newsItems, nws: nwsItems)
       locationID = locationKey
       lastRefresh = Date()
       cachedLocationID = locationKey

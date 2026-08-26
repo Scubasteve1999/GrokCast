@@ -3,7 +3,7 @@ import UIKit
 
 /// Your News rail. Today is home; Alerts reuses the same cards.
 /// Max 3 NWS AFD/PNS cards. Tap opens weather.gov in Safari.
-/// Photo only when `item.imageURL` is a real source image. Load fail → text-only.
+/// Photo when `item.imageURL` is a real `https` image. Load fail → text-only.
 struct LocalBriefingSection: View {
   let items: [LocalBriefingItem]
   var accessibilityID: String = DayCastAccessibility.Alerts.localBriefing
@@ -88,7 +88,7 @@ private struct YourNewsCard: View {
     .buttonStyle(.plain)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(accessibilityLabelText)
-    .accessibilityHint("Opens the National Weather Service product in Safari")
+    .accessibilityHint("Opens the story in Safari")
     .accessibilityAddTraits(.isButton)
   }
 

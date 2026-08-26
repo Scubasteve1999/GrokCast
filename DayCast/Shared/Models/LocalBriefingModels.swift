@@ -13,7 +13,7 @@ struct LocalBriefingItem: Identifiable, Codable, Equatable, Sendable {
   let officeID: String
   let imageURL: URL?
 
-  /// Punchy card headline. Office `title` is unchanged for Sky Check / assemble.
+  /// Punchy card headline. Publisher news keeps its own title.
   var displayTitle: String { YourNewsHeadline.displayTitle(for: self) }
 
   func relativeIssuedLabel(relativeTo now: Date = Date()) -> String {
@@ -48,6 +48,22 @@ enum LocalBriefingParser {
     if let date = iso.date(from: string) { return date }
     iso.formatOptions = [.withInternetDateTime]
     return iso.date(from: string)
+  }
+
+  /// NewsData stories first (photos), then NWS AFD/PNS to fill remaining slots.
+  static func mergingNews(_ news: [LocalBriefingItem], nws: [LocalBriefingItem]) -> [LocalBriefingItem] {
+    var out: [LocalBriefingItem] = []
+    var seen = Set<String>()
+    func take(_ item: LocalBriefingItem) {
+      guard out.count < maxCards else { return }
+      let key = item.title.lowercased()
+      guard !seen.contains(key) else { return }
+      seen.insert(key)
+      out.append(item)
+    }
+    for item in news { take(item) }
+    for item in nws { take(item) }
+    return out
   }
 
   /// `KMEG` / `MEG` match CWA `MEG`. Missing office does not match — fail closed.
