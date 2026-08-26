@@ -47,11 +47,16 @@ final class LocalBriefingStore {
 
     do {
       try Task.checkCancellation()
-      async let newsArticles = NewsDataService.fetchWeatherArticles()
+      async let newsArticles = NewsDataService.fetchWeatherArticles(for: location)
       let cwa = await nwsService.fetchCWA(for: location)
       guard generation == refreshGeneration else { return }
 
-      let newsItems = NewsDataParser.items(from: await newsArticles)
+      let market = USLocalNewsMarkets.market(for: location)
+      let newsItems = NewsDataParser.items(
+        from: await newsArticles,
+        place: NewsDataParser.place(from: location.name),
+        requirePlaceMention: market == nil
+      )
 
       guard let cwa else {
         items = LocalBriefingParser.mergingNews(newsItems, nws: [])
