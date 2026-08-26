@@ -17,7 +17,7 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
   var id: String { rawValue }
 
   /// Type-on-photo Now, then one sheet: outlook → news → conditions → week →
-  /// radar → AI / nearby.
+  /// radar → nearby. Take / Imagine live under More (Sky Check), not this feed.
   static let defaultOrder: [FeedItem] = [
     .now,
     .hourly,
@@ -25,7 +25,6 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
     .health,
     .daily,
     .radar,
-    .aiInsight,
     .nearby,
   ]
 

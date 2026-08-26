@@ -275,7 +275,8 @@ struct SettingsView: View {
       SettingsDivider()
       toggleRow(
         title: "Today's Take",
-        subtitle: briefSafety.isFeatureHidden ? "Hidden — tap to restore" : "AI brief on Today",
+        subtitle: briefSafety.isFeatureHidden
+          ? "Hidden — tap to restore" : "Morning brief and widget",
         icon: "sparkles",
         isOn: Binding(
           get: { !briefSafety.isFeatureHidden },

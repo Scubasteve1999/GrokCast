@@ -106,8 +106,8 @@ final class GrokAIViewModel {
       return
     }
 
-    // Imagine stays on Today. Never steal Sky Check weather questions — including
-    // "picture of the sky" / photo analysis — into image generation.
+    // Imagine is off Sky Check and Today. Never steal weather / sky-photo
+    // questions into image generation.
 
     // Show thinking immediately so actions feel responsive during weather prefetch.
     generationTask?.cancel()
@@ -494,7 +494,7 @@ final class GrokAIViewModel {
     )
   }
 
-  /// Imagine stays on Today. Weather / sky-photo questions must stay in chat.
+  /// Imagine is off Sky Check and Today. Weather / sky-photo questions stay in chat.
   static func isImageGenerationRequest(_ text: String) -> Bool {
     let lower = text.lowercased()
     if looksLikeSkyPhotoOrWeatherQuestion(lower) { return false }

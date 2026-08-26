@@ -275,12 +275,14 @@ final class FeedSnapshotBuilderAIInsightTests: XCTestCase {
       daily: [],
       minutely15: []
     )
-    let snapshot = FeedSnapshotBuilder.make(
-      weather: weather,
-      alerts: [],
-      showAIInsight: false
-    )
-    XCTAssertFalse(snapshot.showAIInsight)
-    XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.aiInsight))
+    XCTAssertFalse(
+      FeedAssembler.items(
+        from: FeedSnapshotBuilder.make(weather: weather, alerts: [], showAIInsight: false)
+      ).contains(.aiInsight))
+    XCTAssertFalse(
+      FeedAssembler.items(
+        from: FeedSnapshotBuilder.make(weather: weather, alerts: [], showAIInsight: true)
+      ).contains(.aiInsight),
+      "Today's Take is off the Today feed even if the flag is on")
   }
 }

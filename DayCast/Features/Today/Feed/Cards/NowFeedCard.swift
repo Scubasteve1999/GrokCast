@@ -123,8 +123,6 @@ struct NowDetailView: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
   let score: DayCastScore
-  var isGeneratingImage: Bool
-  var generateImageAction: () -> Void
 
   var body: some View {
     ScrollView {
@@ -152,12 +150,6 @@ struct NowDetailView: View {
           .cardStyle(elevated: true)
         }
         .buttonStyle(.plain)
-
-        GrokImagineButton(
-          weather: weather,
-          isGenerating: isGeneratingImage,
-          action: generateImageAction
-        )
       }
       .padding(DesignTokens.Spacing.space20)
       .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)

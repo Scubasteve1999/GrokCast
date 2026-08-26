@@ -6,12 +6,9 @@ struct TodayFeedView: View {
   @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(FireStore.self) private var fireStore
-  @Environment(GrokBriefSafety.self) private var briefSafety
   @Environment(LocalBriefingStore.self) private var briefingStore
 
   let weather: DayCastWeather
-  var isGeneratingImage: Bool
-  var generateImageAction: () -> Void
 
   @State private var selectedAlert: NWSAlert?
   @State private var showNowDetail = false
@@ -55,7 +52,7 @@ struct TodayFeedView: View {
       weather: weather,
       alerts: store.displayableActiveAlerts,
       showFireCard: showFire,
-      showAIInsight: !briefSafety.isFeatureHidden,
+      showAIInsight: false,
       hasSevereContext: todaySevereContext != nil
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
@@ -197,9 +194,7 @@ struct TodayFeedView: View {
     .navigationDestination(isPresented: $showNowDetail) {
       NowDetailView(
         weather: weather,
-        score: currentScore,
-        isGeneratingImage: isGeneratingImage,
-        generateImageAction: generateImageAction
+        score: currentScore
       )
     }
     .navigationDestination(isPresented: $showAirQualityDetail) {
@@ -259,10 +254,7 @@ struct TodayFeedView: View {
     case .alerts, .decision, .precip:
       EmptyView()
     case .aiInsight:
-      AIInsightFeedCard()
-        .onTapGesture {
-          Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
-        }
+      EmptyView()
     case .hourly:
       HourlyFeedCard(
         weather: weather,

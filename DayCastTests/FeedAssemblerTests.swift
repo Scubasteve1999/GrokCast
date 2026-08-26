@@ -3,6 +3,22 @@ import XCTest
 @testable import DayCast
 
 final class FeedAssemblerTests: XCTestCase {
+  func testTodayFeedNeverIncludesTake() {
+    XCTAssertFalse(FeedItem.defaultOrder.contains(.aiInsight))
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 0,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: false,
+      hasAQI: true,
+      hasSunriseOrSunset: true,
+      showFireCard: true,
+      showAIInsight: true
+    )
+    XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.aiInsight))
+  }
+
   func testDefaultOrderPreservedForFullSnapshot() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
@@ -19,7 +35,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
       [
-        .now, .hourly, .health, .daily, .radar, .aiInsight, .nearby,
+        .now, .hourly, .health, .daily, .radar, .nearby,
       ]
     )
   }
@@ -41,7 +57,7 @@ final class FeedAssemblerTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       items,
-      [.now, .hourly, .health, .daily, .radar, .aiInsight, .nearby]
+      [.now, .hourly, .health, .daily, .radar, .nearby]
     )
     XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .radar)!)
     XCTAssertFalse(items.contains(.decision))
@@ -61,7 +77,7 @@ final class FeedAssemblerTests: XCTestCase {
     )
     XCTAssertEqual(
       FeedAssembler.items(from: snapshot),
-      [.now, .hourly, .health, .radar, .aiInsight]
+      [.now, .hourly, .health, .radar]
     )
   }
 
@@ -85,7 +101,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .radar)!)
     XCTAssertLessThan(items.firstIndex(of: .health)!, items.firstIndex(of: .radar)!)
     XCTAssertLessThan(items.firstIndex(of: .daily)!, items.firstIndex(of: .radar)!)
-    XCTAssertLessThan(items.firstIndex(of: .daily)!, items.firstIndex(of: .aiInsight)!)
+    XCTAssertFalse(items.contains(.aiInsight))
   }
 
   func testWetNowKeepsRadarAfterHealth() {

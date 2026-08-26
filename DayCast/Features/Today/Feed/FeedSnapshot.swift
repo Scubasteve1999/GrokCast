@@ -14,7 +14,7 @@ struct FeedSnapshot: Equatable, Sendable {
   var hasSunriseOrSunset: Bool
   /// Stage 3/4: nearest fire within threshold or fire-weather alert active.
   var showFireCard: Bool
-  /// AI brief card shows whenever we have weather; the card owns loading / empty copy.
+  /// Unused on Today. Take is off this tab; flag kept so snapshots stay Codable-shaped.
   var showAIInsight: Bool
   /// SPC Day 1 ≥ Slight, MD, or severe watch/warning — earns the Today alerts slot without NWS rows.
   var hasSevereContext: Bool = false

@@ -29,7 +29,7 @@ enum FeedAssembler {
     case .alerts, .decision, .precip:
       return false
     case .aiInsight:
-      return snapshot.hasWeather && snapshot.showAIInsight
+      return false
     case .hourly:
       return snapshot.hasWeather && snapshot.hasHourly
     case .health:

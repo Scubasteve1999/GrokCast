@@ -57,12 +57,6 @@ struct TodayView: View {
   var weather: DayCastWeather? { store.displayedWeather }
   var locationName: String { store.currentLocation?.name ?? "—" }
 
-  // Grok Imagine state
-  @State private var isGeneratingImage = false
-  @State private var generatedImageURL: URL?
-  @State private var showImagineResult = false
-  @State private var imagineError: String?
-
   /// Controls the one-time pre-permission explanation sheet shown on first launch
   /// (from the Get Started button in the welcome card). "Continue" in the sheet
   /// calls requestLocationPermission() (triggering the iOS prompt) and marks the flow complete.
@@ -87,11 +81,7 @@ struct TodayView: View {
         {
           TodaySkeleton(statusText: waitingOnLocation ? TodayCopy.gettingLocation : nil)
         } else if let w = weather {
-          TodayFeedView(
-            weather: w,
-            isGeneratingImage: isGeneratingImage,
-            generateImageAction: generateImageForToday
-          )
+          TodayFeedView(weather: w)
         } else {
           emptyLocationGate()
             .padding(.bottom, bottomTabClearance)
@@ -149,32 +139,6 @@ struct TodayView: View {
             .presentationDetents([.medium, .large])
             .onAppear { Analytics.track(.shareStarted, parameters: ["surface": "share_today"]) }
         }
-      }
-      .sheet(isPresented: $showImagineResult) {
-        if let url = generatedImageURL, let w = weather {
-          GrokImagineResultView(
-            imageURL: url,
-            locationName: w.location.name,
-            currentCondition: w.conditionText,
-            temperature: w.currentTemp,
-            onRegenerate: {
-              showImagineResult = false
-              generatedImageURL = nil
-              generateImageForToday()
-            }
-          )
-        }
-      }
-      .alert(
-        "Image Generation Failed",
-        isPresented: Binding(
-          get: { imagineError != nil },
-          set: { if !$0 { imagineError = nil } }
-        )
-      ) {
-        Button("OK") { imagineError = nil }
-      } message: {
-        Text(imagineError ?? "Unknown error")
       }
       .sheet(isPresented: $showPermissionExplanation) {
         permissionExplanation()
@@ -333,73 +297,6 @@ struct TodayView: View {
     .accessibilityLabel("Use current location")
   }
 
-}
-
-struct GrokImagineButton: View {
-  let weather: DayCastWeather
-  let isGenerating: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        if isGenerating {
-          ProgressView()
-            .tint(.white)
-          Text("Generating…")
-            .font(DesignTokens.Typography.subsection())
-        } else {
-          Label("Imagine today", systemImage: "sparkles.rectangle.stack")
-            .font(DesignTokens.Typography.subsection())
-        }
-      }
-      .frame(maxWidth: .infinity)
-      .padding(.vertical, DesignTokens.Spacing.space12)
-    }
-    .buttonStyle(.borderedProminent)
-    .tint(DesignTokens.Palette.accent)
-    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.medium))
-    .disabled(isGenerating)
-    .opacity(isGenerating ? 0.7 : 1.0)
-  }
-}
-
-// MARK: - Grok Imagine Logic
-extension TodayView {
-  private func generateImageForToday() {
-    guard let w = weather else { return }
-
-    imagineError = nil
-    isGeneratingImage = true
-    Haptic.impact(.heavy)
-
-    let prompt = buildImaginePrompt(for: w)
-
-    Task {
-      do {
-        let url = try await GrokBuildService.generateImage(prompt: prompt)
-        isGeneratingImage = false
-        generatedImageURL = url
-        showImagineResult = true
-      } catch {
-        isGeneratingImage = false
-        imagineError = error.localizedDescription
-      }
-    }
-  }
-
-  private func buildImaginePrompt(for w: DayCastWeather) -> String {
-    let condition = w.conditionText.lowercased()
-    let location = w.location.name
-    let temp = store.temperatureUnit.format(w.currentTemp)
-
-    return """
-      A cinematic, photorealistic image of the current weather in \(location): 
-      \(condition) skies, temperature around \(temp). 
-      Beautiful natural lighting, high detail, realistic photography style, 
-      no text, no people unless it enhances the scene.
-      """
-  }
 }
 
 // MARK: - Today Skeleton Loading (Shimmer)

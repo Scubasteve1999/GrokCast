@@ -5,7 +5,7 @@ enum FeedSnapshotBuilder {
     weather: DayCastWeather?,
     alerts: [NWSAlert],
     showFireCard: Bool = false,
-    showAIInsight: Bool = true,
+    showAIInsight: Bool = false,
     hasSevereContext: Bool = false,
     hasLocalBriefing: Bool = false
   ) -> FeedSnapshot {
