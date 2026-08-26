@@ -1,3 +1,4 @@
+import CoreLocation
 import XCTest
 
 @testable import DayCast
@@ -277,6 +278,24 @@ final class LocalBriefingParserTests: XCTestCase {
       LocalBriefingParser.sourceName(officeName: "Tampa Bay Area, FL", cwa: "TBW"),
       "NWS Tampa Bay Area"
     )
+  }
+
+  func testIssuingOfficeMatchesCWAAndICAO() {
+    XCTAssertTrue(LocalBriefingParser.issuingOffice("KMEG", matchesCWA: "MEG"))
+    XCTAssertTrue(LocalBriefingParser.issuingOffice("MEG", matchesCWA: "meg"))
+    XCTAssertFalse(LocalBriefingParser.issuingOffice("KMTR", matchesCWA: "MEG"))
+    XCTAssertFalse(LocalBriefingParser.issuingOffice("San Francisco Bay Area", matchesCWA: "MEG"))
+    XCTAssertFalse(LocalBriefingParser.issuingOffice(nil, matchesCWA: "MEG"))
+    XCTAssertFalse(LocalBriefingParser.issuingOffice("KMEG", matchesCWA: ""))
+  }
+
+  func testSimulatorPinIgnoresApplePark() {
+    let applePark = CLLocation(latitude: 37.3349, longitude: -122.0090)
+    let pinned = LocationService.pinnedIfSimulator(applePark)
+    XCTAssertEqual(
+      pinned.coordinate.latitude, SavedLocation.oliveBranch.latitude, accuracy: 0.0001)
+    XCTAssertEqual(
+      pinned.coordinate.longitude, SavedLocation.oliveBranch.longitude, accuracy: 0.0001)
   }
 
   // MARK: - Honesty / storm reports toggle

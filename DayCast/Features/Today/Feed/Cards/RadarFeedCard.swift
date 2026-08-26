@@ -103,13 +103,7 @@ enum RadarFeedCopy {
   }
 
   static func isLocalWet(_ condition: WeatherCondition) -> Bool {
-    switch condition {
-    case .drizzle, .rain, .sleet, .snow, .snowGrains, .rainShowers, .snowShowers,
-      .thunderstorm:
-      return true
-    case .clear, .mainlyClear, .overcast, .fog, .unknown:
-      return false
-    }
+    condition.isPrecipitating
   }
 
   static func precipWord(for condition: WeatherCondition) -> String {

@@ -50,6 +50,15 @@ enum LocalBriefingParser {
     return iso.date(from: string)
   }
 
+  /// `KMEG` / `MEG` match CWA `MEG`. Missing office does not match — fail closed.
+  static func issuingOffice(_ office: String?, matchesCWA cwa: String) -> Bool {
+    let trimmedCWA = cwa.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    guard !trimmedCWA.isEmpty else { return false }
+    let trimmedOffice = (office ?? "").trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    guard !trimmedOffice.isEmpty else { return false }
+    return trimmedOffice == trimmedCWA || trimmedOffice == "K\(trimmedCWA)"
+  }
+
   /// `Memphis, TN` → `NWS Memphis`. Missing name → `NWS MEG`.
   static func sourceName(officeName: String?, cwa: String) -> String {
     let trimmedCWA = cwa.trimmingCharacters(in: .whitespacesAndNewlines)

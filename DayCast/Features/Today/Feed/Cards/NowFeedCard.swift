@@ -6,7 +6,23 @@ struct NowFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
   var rainLine: String? = nil
+  var face: NowHeroReconcile.Face
   var onTap: () -> Void
+
+  init(
+    weather: DayCastWeather,
+    rainLine: String? = nil,
+    face: NowHeroReconcile.Face? = nil,
+    onTap: @escaping () -> Void
+  ) {
+    self.weather = weather
+    self.rainLine = rainLine
+    self.face =
+      face
+      ?? NowHeroReconcile.Face(
+        conditionText: weather.conditionText, symbolName: weather.symbolName)
+    self.onTap = onTap
+  }
 
   var body: some View {
     TimelineView(.everyMinute) { context in
@@ -30,13 +46,13 @@ struct NowFeedCard: View {
             Spacer(minLength: 8)
 
             VStack(spacing: DesignTokens.Spacing.space4) {
-              Image(systemName: weather.symbolName)
+              Image(systemName: face.symbolName)
                 .font(.system(size: 56, weight: .regular))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.white)
                 .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
                 .accessibilityHidden(true)
-              Text(weather.conditionText)
+              Text(face.conditionText)
                 .font(DesignTokens.Typography.headline())
                 .foregroundStyle(Color.white)
                 .multilineTextAlignment(.center)
@@ -95,7 +111,7 @@ struct NowFeedCard: View {
     let temp = store.formatTemperatureShort(weather.currentTemp)
     let feels = store.formatTemperatureShort(weather.feelsLike)
     var line =
-      "\(place). \(temp), \(weather.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low)))."
+      "\(place). \(temp), \(face.conditionText). Feels like \(feels). High \(Int(round(weather.high))) degrees, low \(Int(round(weather.low)))."
     if let rainLine, !rainLine.isEmpty {
       line += " \(rainLine)."
     }

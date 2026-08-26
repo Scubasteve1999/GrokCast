@@ -117,6 +117,45 @@ enum PrecipOutlookCopy {
   }
 }
 
+/// Open-Meteo current can stay Clear while HRRR/minutecast is already wet.
+/// Rain now owns the hero face. Rain later stays on the Next 2 Hours line.
+enum NowHeroReconcile {
+  struct Face: Equatable {
+    let conditionText: String
+    let symbolName: String
+  }
+
+  static func face(
+    conditionCode: Int,
+    conditionText: String,
+    symbolName: String,
+    summary: MinutecastSummary
+  ) -> Face {
+    let wmo = WeatherCondition(fromWMO: conditionCode)
+    if wmo.isPrecipitating {
+      return Face(conditionText: conditionText, symbolName: symbolName)
+    }
+    switch summary.kind {
+    case .ongoing, .stoppingSoon:
+      return Face(conditionText: WeatherCondition.rain.displayText, symbolName: summary.icon)
+    case .clear, .startsSoon:
+      return Face(conditionText: conditionText, symbolName: symbolName)
+    }
+  }
+
+  static func isNowWet(conditionCode: Int, summary: MinutecastSummary) -> Bool {
+    if WeatherCondition(fromWMO: conditionCode).isPrecipitating {
+      return true
+    }
+    switch summary.kind {
+    case .ongoing, .stoppingSoon:
+      return true
+    case .clear, .startsSoon:
+      return false
+    }
+  }
+}
+
 enum ConditionsCopy {
   static let title = "Conditions"
 

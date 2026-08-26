@@ -100,6 +100,17 @@ enum WeatherCondition: Equatable {
     }
   }
 
+  /// Falling precip / convective, not just cloudy. Used to reconcile Now vs HRRR rain-now.
+  var isPrecipitating: Bool {
+    switch self {
+    case .drizzle, .rain, .sleet, .snow, .snowGrains, .rainShowers, .snowShowers,
+      .thunderstorm:
+      return true
+    case .clear, .mainlyClear, .overcast, .fog, .unknown:
+      return false
+    }
+  }
+
   /// Short precip type label for UI (e.g. "45% Rain" in Forecast rows). Centralizes the old shortPrecipType.
   var shortPrecipType: String {
     switch self {

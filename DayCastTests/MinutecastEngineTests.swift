@@ -213,6 +213,46 @@ final class MinutecastEngineTests: XCTestCase {
     XCTAssertFalse(withCaption.localizedCaseInsensitiveContains("minutecast"))
   }
 
+  func testClearHeroBecomesRainWhenMinutecastIsRainNow() {
+    let ongoing = MinutecastEngine.summary(from: slots(wetAt: Array(0..<8)), now: now)
+    XCTAssertEqual(ongoing.kind, .ongoing)
+    let face = NowHeroReconcile.face(
+      conditionCode: 0,
+      conditionText: "Clear",
+      symbolName: "sun.max.fill",
+      summary: ongoing
+    )
+    XCTAssertEqual(face.conditionText, "Rain")
+    XCTAssertEqual(face.symbolName, ongoing.icon)
+    XCTAssertTrue(NowHeroReconcile.isNowWet(conditionCode: 0, summary: ongoing))
+  }
+
+  func testClearHeroStaysClearWhenRainStartsLater() {
+    let later = MinutecastEngine.summary(from: slots(wetAt: [2]), now: now)
+    XCTAssertEqual(later.kind, .startsSoon)
+    let face = NowHeroReconcile.face(
+      conditionCode: 0,
+      conditionText: "Clear",
+      symbolName: "sun.max.fill",
+      summary: later
+    )
+    XCTAssertEqual(face.conditionText, "Clear")
+    XCTAssertEqual(face.symbolName, "sun.max.fill")
+    XCTAssertFalse(NowHeroReconcile.isNowWet(conditionCode: 0, summary: later))
+  }
+
+  func testWetWMOKeepsItsOwnConditionWhenHRRRIsAlsoWet() {
+    let ongoing = MinutecastEngine.summary(from: slots(wetAt: Array(0..<8)), now: now)
+    let face = NowHeroReconcile.face(
+      conditionCode: 95,
+      conditionText: "Thunderstorm",
+      symbolName: "cloud.bolt.rain.fill",
+      summary: ongoing
+    )
+    XCTAssertEqual(face.conditionText, "Thunderstorm")
+    XCTAssertEqual(face.symbolName, "cloud.bolt.rain.fill")
+  }
+
   func testHeroLineUsesChanceWhenDryAndTimingWhenWet() {
     let dry = MinutecastEngine.summary(from: drySlots(), now: now)
     XCTAssertEqual(

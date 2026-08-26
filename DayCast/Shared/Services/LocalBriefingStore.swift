@@ -74,12 +74,18 @@ final class LocalBriefingStore {
 
       let now = Date()
       let afdSummary = afdSummaries.first { summary in
+        guard LocalBriefingParser.issuingOffice(summary.issuingOffice, matchesCWA: cwa) else {
+          return false
+        }
         guard let issued = LocalBriefingParser.parseIssuance(summary.issuanceTime) else {
           return false
         }
         return LocalBriefingParser.isAFDFresh(issued, now: now)
       }
       let pnsFresh = pnsSummaries.filter { summary in
+        guard LocalBriefingParser.issuingOffice(summary.issuingOffice, matchesCWA: cwa) else {
+          return false
+        }
         guard let issued = LocalBriefingParser.parseIssuance(summary.issuanceTime) else {
           return false
         }

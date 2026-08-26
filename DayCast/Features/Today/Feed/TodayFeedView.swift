@@ -61,6 +61,8 @@ struct TodayFeedView: View {
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)
     snap.hasNextEvent = PrecipFeedVisibility.showsCard(summary: currentMinutecast)
+    snap.isNowWet = NowHeroReconcile.isNowWet(
+      conditionCode: weather.conditionCode, summary: currentMinutecast)
     snap.hasLocalBriefing = hasBriefingForCurrentLocation
     return snap
   }
@@ -232,6 +234,12 @@ struct TodayFeedView: View {
           rainLine: PrecipOutlookCopy.heroLine(
             summary: currentMinutecast,
             rainChance: weather.precipitationChance
+          ),
+          face: NowHeroReconcile.face(
+            conditionCode: weather.conditionCode,
+            conditionText: weather.conditionText,
+            symbolName: weather.symbolName,
+            summary: currentMinutecast
           )
         ) {
           Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])

@@ -259,6 +259,41 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertFalse(FeedAssembler.isRadarStory(snapshot))
   }
 
+  func testBuilderTreatsHRRRRainNowAsWetWhenWMOIsClear() {
+    let now = Date()
+    let wetSlots: [MinutelyForecast] = (0..<8).map { index in
+      MinutelyForecast(
+        time: now.addingTimeInterval(Double(index) * 15 * 60),
+        precipitation: 0.05,
+        precipChance: 80)
+    }
+    let weather = DayCastWeather(
+      location: SavedLocation(name: "Olive Branch", latitude: 34.96, longitude: -89.83),
+      currentTemp: 82,
+      feelsLike: 83,
+      conditionCode: 0,
+      conditionText: "Clear",
+      humidity: 40,
+      windSpeed: 5,
+      uvIndex: 7,
+      precipitationChance: 10,
+      high: 88,
+      low: 68,
+      symbolName: "sun.max.fill",
+      fetchedAt: now,
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: [],
+      daily: [],
+      minutely15: wetSlots
+    )
+    let snapshot = FeedSnapshotBuilder.make(weather: weather, alerts: [])
+    XCTAssertTrue(snapshot.isNowWet)
+    XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
+  }
+
   func testFireCardIndependentOfWeatherExtras() {
     let snapshot = FeedSnapshot(
       hasWeather: true,

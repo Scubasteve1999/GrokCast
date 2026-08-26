@@ -69,10 +69,9 @@ final class LocationService: NSObject {
     error = nil
 
     #if targetEnvironment(simulator)
-      // Force real Olive Branch / Southaven, MS coords (34.9618, -89.8295) for simulator testing.
-      // This ensures the weather API is called with the correct location (no false rain from wrong area).
-      // Real device uses CLLocationManager; simulator is forced for accuracy verification per task.
-      let forcedOlive = CLLocation(latitude: 34.9618, longitude: -89.8295)
+      // Simulator Core Location defaults to Apple Park (MTR). Pin Near Me to Olive Branch
+      // so weather, NWS, and Your News share one CWA (MEG) — same pin as significant updates.
+      let forcedOlive = Self.simulatorPinnedLocation
       currentLocation = forcedOlive
       isLoading = false
       return forcedOlive
@@ -149,6 +148,22 @@ final class LocationService: NSObject {
     }
   }
 
+  /// Simulator CLC still delivers Apple Park unless we pin. Device is unchanged.
+  nonisolated static var simulatorPinnedLocation: CLLocation {
+    CLLocation(
+      latitude: SavedLocation.oliveBranch.latitude,
+      longitude: SavedLocation.oliveBranch.longitude
+    )
+  }
+
+  nonisolated static func pinnedIfSimulator(_ location: CLLocation) -> CLLocation {
+    #if targetEnvironment(simulator)
+      simulatorPinnedLocation
+    #else
+      location
+    #endif
+  }
+
   @MainActor
   public func stopSignificantLocationChanges() {
     if isMonitoringSignificantChanges {
@@ -180,7 +195,8 @@ extension LocationService: @preconcurrency CLLocationManagerDelegate {
 
   @MainActor
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-    guard let location = locations.last else { return }
+    guard let incoming = locations.last else { return }
+    let location = Self.pinnedIfSimulator(incoming)
     currentLocation = location
 
     if continuation != nil {

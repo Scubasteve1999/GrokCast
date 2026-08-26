@@ -32,7 +32,8 @@ enum FeedSnapshotBuilder {
       showFireCard: showFireCard,
       showAIInsight: showAIInsight,
       hasSevereContext: hasSevereContext,
-      isNowWet: RadarFeedCopy.isLocalWet(WeatherCondition(fromWMO: weather.conditionCode)),
+      isNowWet: NowHeroReconcile.isNowWet(
+        conditionCode: weather.conditionCode, summary: summary),
       hasLocalBriefing: hasLocalBriefing
     )
   }
