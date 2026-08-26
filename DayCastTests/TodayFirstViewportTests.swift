@@ -12,7 +12,7 @@ final class TodayFirstViewportTests: XCTestCase {
     let peek =
       TodayGlanceLayout.visibleFeedHeightIPhone16
       - TodayGlanceLayout.oliveBranchStoryStackHeight
-    XCTAssertGreaterThanOrEqual(peek, 0, "Your News header must still peek")
+    XCTAssertGreaterThanOrEqual(peek, 8, "Your News header must still peek")
   }
 
   func testOutlookRadarPlateIsTallerThanThePostageStamp() {
@@ -99,8 +99,12 @@ final class TodayFirstViewportTests: XCTestCase {
 
   func testHourlyGraphFitsInTheOldChipBudget() {
     XCTAssertEqual(TodayGlanceLayout.hourlyGraphHeight, HourlyGraphLayout.height)
-    XCTAssertEqual(TodayGlanceLayout.hourlyTonightLineHeight, 22)
-    XCTAssertLessThanOrEqual(TodayGlanceLayout.hourlyTonightLineHeight, 22)
+    XCTAssertEqual(
+      TodayGlanceLayout.hourlyCardHeight,
+      TodayGlanceLayout.hourlyCardPadding * 2
+        + TodayGlanceLayout.hourlyGraphHeight
+        + TodayGlanceLayout.hourlyInnerSpacing
+    )
     XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, 280)
   }
 

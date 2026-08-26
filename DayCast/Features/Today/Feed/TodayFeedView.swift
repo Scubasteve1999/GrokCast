@@ -258,11 +258,7 @@ struct TodayFeedView: View {
     case .hourly:
       HourlyFeedCard(
         weather: weather,
-        briefingItems: briefingStore.items,
-        plated: plated,
-        isNowWet: snapshot.isNowWet,
-        isNextHourWet: snapshot.hasPrecipContent,
-        officialWarningEvent: officialWarningEvent
+        plated: plated
       ) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         store.selectedTab = .forecast

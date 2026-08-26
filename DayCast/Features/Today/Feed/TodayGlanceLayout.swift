@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// First viewport: type-on-photo Now, live alert chip, tonight line + curve,
+/// First viewport: type-on-photo Now, live alert chip, Temperature curve,
 /// Outlook radar plate, and a Your News peek (or header) on iPhone 16 (852pt).
 enum TodayGlanceLayout {
   /// iPhone 16 logical height. Do not use iPhone 17 / iOS 27 as the peek target.
@@ -24,13 +24,11 @@ enum TodayGlanceLayout {
   static let hourlyHeaderHeight: CGFloat = 28
   static let hourlyInnerSpacing: CGFloat = 8
   static let hourlyCardPadding: CGFloat = DesignTokens.Spacing.space4
-  /// One-line Tonight / next-period sentence above the curve.
-  static let hourlyTonightLineHeight: CGFloat = 22
   static let hourlyPickerHeight: CGFloat = 36
   static var hourlyGraphHeight: CGFloat { HourlyGraphLayout.height }
+  /// Temperature curve only. Outlook owns the tonight sentence.
   static var hourlyCardHeight: CGFloat {
-    hourlyCardPadding * 2 + hourlyTonightLineHeight
-      + hourlyGraphHeight + hourlyInnerSpacing
+    hourlyCardPadding * 2 + hourlyGraphHeight + hourlyInnerSpacing
   }
   static let decisionCardHeight: CGFloat = 56
   static let nextEventCardHeight: CGFloat = 72
@@ -44,8 +42,8 @@ enum TodayGlanceLayout {
       - LocationChipBar.reservedHeight
   }
 
-  /// Now + alert chip + tonight curve + Outlook plate. Your News peeks below
-  /// (header peek is enough if the taller map eats the card peek).
+  /// Now + alert chip + Temperature curve + Outlook plate. Your News peeks below
+  /// (header peek is the floor; card peek is better).
   static var oliveBranchStoryStackHeight: CGFloat {
     nowBudgetHeight + alertChipMinHeight + hourlyCardHeight
       + radarCardHeight + feedSpacing * 3

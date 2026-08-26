@@ -1,52 +1,23 @@
 import SwiftUI
 
 struct HourlyFeedCard: View {
-  @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
-  var briefingItems: [LocalBriefingItem] = []
   var plated: Bool = true
-  var isNowWet: Bool = false
-  var isNextHourWet: Bool = false
-  var officialWarningEvent: String? = nil
   var onTap: () -> Void
 
   private var hours: [HourlyForecast] {
     HourlyGraphHours.upcoming(from: weather)
   }
 
-  private var outlook: TonightOutlook.Result {
-    TonightOutlook.make(
-      weather: weather,
-      briefingItems: briefingItems,
-      unit: store.temperatureUnit,
-      isNowWet: isNowWet,
-      isNextHourWet: isNextHourWet,
-      officialWarningEvent: officialWarningEvent
-    )
-  }
-
   var body: some View {
-    VStack(alignment: .leading, spacing: TodayGlanceLayout.hourlyInnerSpacing) {
-      Text(outlook.sentence)
-        .font(DesignTokens.Typography.body())
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .lineLimit(1)
-        .minimumScaleFactor(0.85)
-        .frame(
-          maxWidth: .infinity,
-          minHeight: TodayGlanceLayout.hourlyTonightLineHeight,
-          alignment: .leading
-        )
-
-      HourlyGraphView(
-        hours: hours,
-        series: .temp,
-        sunrise: weather.daily.first?.sunrise,
-        sunset: weather.daily.first?.sunset,
-        timeZone: weather.locationTimeZone
-      )
-      .frame(height: TodayGlanceLayout.hourlyGraphHeight)
-    }
+    HourlyGraphView(
+      hours: hours,
+      series: .temp,
+      sunrise: weather.daily.first?.sunrise,
+      sunset: weather.daily.first?.sunset,
+      timeZone: weather.locationTimeZone
+    )
+    .frame(height: TodayGlanceLayout.hourlyGraphHeight)
     .padding(plated ? TodayGlanceLayout.hourlyCardPadding : 0)
     .weatherModuleChrome(plated)
     .contentShape(Rectangle())
@@ -60,7 +31,6 @@ struct HourlyFeedCard: View {
 
   private var accessibilitySummary: String {
     Self.accessibilityLabel(
-      sentence: outlook.sentence,
       hourLabel: hours.isEmpty ? nil : "Now",
       temp: hours.first.map { Int(round($0.temp)) },
       precipChance: hours.first?.precipChance
