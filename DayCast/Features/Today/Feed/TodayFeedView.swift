@@ -114,7 +114,7 @@ struct TodayFeedView: View {
   private var heroRows: [TodayFeedRow] {
     feedRows.filter { row in
       switch row {
-      case .errorBanner, .item(.now): return true
+      case .errorBanner, .item(.now), .item(.alerts): return true
       default: return false
       }
     }
@@ -123,7 +123,7 @@ struct TodayFeedView: View {
   private var sheetRows: [TodayFeedRow] {
     feedRows.filter { row in
       switch row {
-      case .errorBanner, .item(.now): return false
+      case .errorBanner, .item(.now), .item(.alerts): return false
       default: return true
       }
     }
@@ -223,35 +223,32 @@ struct TodayFeedView: View {
   private func feedCard(for item: FeedItem, plated: Bool) -> some View {
     switch item {
     case .now:
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-        NowFeedCard(
-          weather: weather,
-          rainLine: PrecipOutlookCopy.heroLine(
-            summary: currentMinutecast,
-            rainChance: weather.precipitationChance
-          ),
-          face: NowHeroReconcile.face(
-            conditionCode: weather.conditionCode,
-            conditionText: weather.conditionText,
-            symbolName: weather.symbolName,
-            summary: currentMinutecast
-          )
-        ) {
-          Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
-          showNowDetail = true
-        }
-        if snapshot.showAlertsSlot {
-          AlertsFeedCard(
-            alerts: store.displayableGroupedAlerts,
-            severeContext: todaySevereContext,
-            sitsOnPhoto: true
-          ) { alert in
-            Analytics.track(.feedCardTap, parameters: ["card": FeedItem.alerts.analyticsName])
-            selectedAlert = alert
-          }
-        }
+      NowFeedCard(
+        weather: weather,
+        rainLine: PrecipOutlookCopy.heroLine(
+          summary: currentMinutecast,
+          rainChance: weather.precipitationChance
+        ),
+        face: NowHeroReconcile.face(
+          conditionCode: weather.conditionCode,
+          conditionText: weather.conditionText,
+          symbolName: weather.symbolName,
+          summary: currentMinutecast
+        )
+      ) {
+        Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
+        showNowDetail = true
       }
-    case .alerts, .decision, .precip:
+    case .alerts:
+      AlertsFeedCard(
+        alerts: store.displayableGroupedAlerts,
+        severeContext: todaySevereContext,
+        sitsOnPhoto: true
+      ) { alert in
+        Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
+        selectedAlert = alert
+      }
+    case .decision, .precip:
       EmptyView()
     case .aiInsight:
       EmptyView()

@@ -1,7 +1,7 @@
 import CoreGraphics
 
-/// First viewport: type-on-photo Now (rain line + alert pill) and the
-/// outlook sheet starting. News / conditions sit below the fold.
+/// First viewport: type-on-photo Now, live alert chip, tonight line + curve,
+/// Site Doppler teaser, and a Your News peek on iPhone 16 (852pt).
 enum TodayGlanceLayout {
   /// iPhone 16 logical height. Do not use iPhone 17 / iOS 27 as the peek target.
   static let iPhone16ScreenHeight: CGFloat = 852
@@ -24,13 +24,13 @@ enum TodayGlanceLayout {
   static let hourlyHeaderHeight: CGFloat = 28
   static let hourlyInnerSpacing: CGFloat = 8
   static let hourlyCardPadding: CGFloat = DesignTokens.Spacing.space4
-  /// Three-line callout for the Tonight / next-period sentence.
-  static let hourlyTonightLineHeight: CGFloat = 56
+  /// One-line Tonight / next-period sentence above the curve.
+  static let hourlyTonightLineHeight: CGFloat = 22
   static let hourlyPickerHeight: CGFloat = 36
   static var hourlyGraphHeight: CGFloat { HourlyGraphLayout.height }
   static var hourlyCardHeight: CGFloat {
-    hourlyCardPadding * 2 + hourlyHeaderHeight + hourlyTonightLineHeight
-      + hourlyGraphHeight + hourlyPickerHeight + hourlyInnerSpacing * 3
+    hourlyCardPadding * 2 + hourlyTonightLineHeight
+      + hourlyGraphHeight + hourlyInnerSpacing
   }
   static let decisionCardHeight: CGFloat = 56
   static let nextEventCardHeight: CGFloat = 72
@@ -44,8 +44,9 @@ enum TodayGlanceLayout {
       - LocationChipBar.reservedHeight
   }
 
-  /// Photo hero + outlook sheet start. Alert pill sits in the hero.
+  /// Now + alert chip + tonight curve + Site Doppler. Your News peeks below.
   static var oliveBranchStoryStackHeight: CGFloat {
-    nowBudgetHeight + alertChipMinHeight + hourlyCardHeight + feedSpacing * 2
+    nowBudgetHeight + alertChipMinHeight + hourlyCardHeight
+      + radarCardHeight + feedSpacing * 3
   }
 }

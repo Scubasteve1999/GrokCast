@@ -6,8 +6,9 @@ enum FeedAssembler {
     snapshot.hasPrecipContent || snapshot.showAlertsSlot || snapshot.isNowWet
   }
 
-  /// Returns visible feed items in product order. Cards with no meaningful data are omitted.
-  /// Alerts, the decision line, and Next 2 Hours live on the Now hero — not extra plates.
+  /// Returns visible feed items in product order. Cards with no meaningful data
+  /// are omitted. Empty alerts stay gone; the decision line and Next 2 Hours
+  /// are not plates on this feed.
   static func items(from snapshot: FeedSnapshot) -> [FeedItem] {
     FeedItem.defaultOrder.filter { shouldShow($0, in: snapshot) }
   }
@@ -26,7 +27,9 @@ enum FeedAssembler {
     switch item {
     case .now:
       return snapshot.hasWeather
-    case .alerts, .decision, .precip:
+    case .alerts:
+      return snapshot.showAlertsSlot
+    case .decision, .precip:
       return false
     case .aiInsight:
       return false

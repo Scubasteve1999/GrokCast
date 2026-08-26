@@ -39,7 +39,7 @@ final class TodayFirstViewportTests: XCTestCase {
     )
   }
 
-  func testFirstViewportOrderIsNowHourlyHealthRadar() {
+  func testFirstViewportOrderIsNowAlertsHourlyRadar() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 1,
@@ -55,8 +55,9 @@ final class TodayFirstViewportTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       Array(items.prefix(4)),
-      [.now, .hourly, .yourNews, .health]
+      [.now, .alerts, .hourly, .radar]
     )
+    XCTAssertLessThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .yourNews)!)
     XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
   }
 
@@ -67,7 +68,8 @@ final class TodayFirstViewportTests: XCTestCase {
 
   func testHourlyGraphFitsInTheOldChipBudget() {
     XCTAssertEqual(TodayGlanceLayout.hourlyGraphHeight, HourlyGraphLayout.height)
-    XCTAssertGreaterThan(TodayGlanceLayout.hourlyTonightLineHeight, 28)
+    XCTAssertEqual(TodayGlanceLayout.hourlyTonightLineHeight, 22)
+    XCTAssertLessThanOrEqual(TodayGlanceLayout.hourlyTonightLineHeight, 22)
     XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, 280)
   }
 
@@ -99,11 +101,12 @@ final class TodayFirstViewportTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(
       Array(items.prefix(5)),
-      [.now, .hourly, .yourNews, .health, .daily]
+      [.now, .alerts, .hourly, .radar, .yourNews]
     )
     XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
     XCTAssertTrue(snapshot.showAlertsSlot)
-    XCTAssertFalse(items.contains(.alerts))
+    XCTAssertTrue(items.contains(.alerts))
+    XCTAssertLessThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .yourNews)!)
     XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
   }
 
