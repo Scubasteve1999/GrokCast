@@ -1,4 +1,3 @@
-• Ask Grok from Siri or Shortcuts — opens chat with your current weather attached
-• Glass radar HUD and a glowing timeline playhead
-• Report or hide Today's Take if a brief looks wrong
-• Share and Rate links now open the live App Store listing
+Today’s first screen shows now, one official NWS alert when you’re warned, tonight’s line and hourly curve, Site Doppler, and Your News.
+
+Forecast has a 48-hour graph and 10-day. Alerts lead with official NWS. Chrome is quieter so the weather can stay dense.

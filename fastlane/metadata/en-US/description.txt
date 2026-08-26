@@ -2,10 +2,9 @@ DayCast is a field weather app for storm spotters, chasers, and people who
 watch the sky themselves.
 
 RADAR
-• Single-site NEXRAD products: super-resolution reflectivity, base and storm-
-  relative velocity, correlation coefficient, differential reflectivity,
-  composite reflectivity
-• Live regional mosaic with animation and frame scrubbing
+• Site Doppler — nearest NEXRAD super-res reflectivity (polar gates)
+• National radar with animation and frame scrubbing
+• Storm winds — storm-relative velocity on Live
 • Forecast radar frames (Pro)
 
 SEVERE WEATHER
