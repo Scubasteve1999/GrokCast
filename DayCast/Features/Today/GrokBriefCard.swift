@@ -11,6 +11,8 @@ struct GrokBriefCard: View {
   static let optionsAccessibilityLabel = "Today's Take options"
   static let collapsedLineLimit = 3
   static let expandCharacterThreshold = 120
+  /// Not-Pro path. Settings BYOK is not the unlock story here.
+  static let lockedCopy = "DayCast Pro includes Today's Take."
 
   static func expandControlTitle(isExpanded: Bool) -> String {
     isExpanded ? "Less" : "More"
@@ -312,7 +314,7 @@ struct GrokBriefCard: View {
   private func fetchBrief(force: Bool) async {
     guard !safety.isFeatureHidden else { return }
     guard store.canUseGrok else {
-      errorMessage = "Add your xAI developer key in Settings to unlock Today's Take."
+      errorMessage = Self.lockedCopy
       return
     }
     if !force, briefText != nil { return }

@@ -45,20 +45,30 @@ final class StormSpotterHonestyTests: XCTestCase {
       copy.localizedCaseInsensitiveContains("not hosted AI"),
       "Paywall must not claim Pro never unlocks hosted AI")
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
-    XCTAssertTrue(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
   }
 
   func testMorningBriefPaywallMentionsProHostedPath() {
     let copy = PaywallFeature.morningBrief.subheadline
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
-    XCTAssertTrue(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
   }
 
-  func testLockedAlertsCopyMentionsProAndBYOK() {
+  func testLockedAlertsCopyMentionsProNotAKey() {
     let copy = GrokAccessRules.lockedAlertsSummaryCopy
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
-    XCTAssertTrue(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
     XCTAssertFalse(copy.hasPrefix("Add an xAI key"))
+  }
+
+  func testTodaysTakeLockedCopyDoesNotAdvertiseAKey() {
+    let copy = GrokBriefCard.lockedCopy
+    XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
   }
 
   @MainActor

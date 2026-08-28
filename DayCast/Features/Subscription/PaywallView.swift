@@ -328,7 +328,7 @@ enum PaywallFeature {
   var subheadline: String {
     switch self {
     case .grokAI:
-      "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat — or bring your own xAI key in Settings."
+      "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat. Official weather, radar, and NWS stay free."
     case .radarFuture:
       "Yearly unlocks 12-hour forecast radar so you can scrub ahead on the Radar tab."
     case .locations:
@@ -336,7 +336,7 @@ enum PaywallFeature {
     case .liveActivity:
       "Yearly shows Score and Next 2 Hours on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:
-      "Schedule a local morning notification from your cached Today's Take. Generating that take needs DayCast Pro or an xAI key in Settings."
+      "Schedule a local morning notification from your cached Today's Take. DayCast Pro includes the AI that writes it."
     case .severeAlerts:
       "NWS warnings and watches with notifications are free for all users. Monthly adds AI and extra locations. Yearly adds Future radar, widgets, and Live Activity."
     }

@@ -53,7 +53,16 @@ final class GrokAccessRulesTests: XCTestCase {
   func testLockedAlertsSummaryCopyIsNotKeyOnly() {
     let copy = GrokAccessRules.lockedAlertsSummaryCopy
     XCTAssertTrue(copy.contains("DayCast Pro"))
-    XCTAssertTrue(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+  }
+
+  func testEmptyStateCopyDoesNotAdvertiseAKey() {
+    let copy = GrokAPIKeyEmptyStateView.bodyCopy
+    XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
+    XCTAssertTrue(copy.localizedCaseInsensitiveContains("free"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
   }
 
   func testMoreTabStaysSelectedOnHubDestinations() {

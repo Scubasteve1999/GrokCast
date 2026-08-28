@@ -1,7 +1,11 @@
 import SwiftUI
 
-/// Shown when Grok AI is locked — Pro is the way in, with BYOK as a secondary path.
+/// Shown when Grok AI is locked — Pro is the way in. Settings BYOK stays as a
+/// secondary action, not body copy.
 struct GrokAPIKeyEmptyStateView: View {
+  static let bodyCopy =
+    "Weather, live radar, and alerts are free. DayCast Pro unlocks AI chat, Today's Take, Explain Radar, and Sky Check."
+
   @Bindable var store: WeatherStore
   @Bindable var subscription: SubscriptionManager
 
@@ -16,9 +20,7 @@ struct GrokAPIKeyEmptyStateView: View {
         .font(DesignTokens.Typography.headline())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
-      Text(
-        "Weather, live radar, and alerts are free. DayCast Pro unlocks AI chat, Today's Take, Explain Radar, and Sky Check — or bring your own xAI key in Settings."
-      )
+      Text(Self.bodyCopy)
       .font(DesignTokens.Typography.callout())
       .foregroundStyle(DesignTokens.Palette.textSecondary)
       .fixedSize(horizontal: false, vertical: true)

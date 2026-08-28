@@ -54,7 +54,7 @@ enum GrokAccessRules {
       : "Included with DayCast Pro"
   }
 
-  /// Locked Alerts summary line. Mentions Pro hosted AI and the BYOK path.
+  /// Locked Alerts summary line. Pro hosted AI — never a Settings key.
   static let lockedAlertsSummaryCopy =
-    "DayCast Pro includes AI alert summaries — or add an xAI key in Settings."
+    "DayCast Pro includes AI alert summaries. Official NWS alerts stay free."
 }
