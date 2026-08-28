@@ -14,15 +14,16 @@ enum GrokAccessRules {
     return isPro && proxyConfigured
   }
 
-  /// Same rule as chat — the widget's one-liner is a Grok call like any other.
+  /// Home Screen AI one-liner is a yearly extra. Developer key is full access.
   static func canUseWidgetGrokBrief(
+    isYearly: Bool,
     isPro: Bool,
     proxyConfigured: Bool,
     hasDeveloperKey: Bool
   ) -> Bool {
-    // The widget surface itself is a Pro feature, so Pro is required even when the
-    // user brought their own key.
-    guard isPro else { return false }
+    guard DayCastEntitlements.canUseYearlyExtras(
+      isYearly: isYearly, hasDeveloperKey: hasDeveloperKey)
+    else { return false }
     return canUseGrokAI(
       isPro: isPro, proxyConfigured: proxyConfigured, hasDeveloperKey: hasDeveloperKey)
   }

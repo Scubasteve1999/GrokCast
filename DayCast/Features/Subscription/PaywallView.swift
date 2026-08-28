@@ -73,24 +73,27 @@ struct PaywallView: View {
         "Chat, Today's Take, Explain Radar, morning brief, and Sky Check photo analysis"
       )
       paywallRow(
-        "Forecast radar (FUTURE)",
-        "cloud.rain.fill",
-        "Animated precipitation outlook you can scrub ahead"
+        "Unlimited saved locations",
+        "mappin.and.ellipse",
+        "Track every place you care about"
       )
       paywallRow(
-        "Live Activity",
-        "lock.rectangle.stack.fill",
-        "Score + Minutecast on Lock Screen when DayCast refreshes weather"
+        "Forecast radar (FUTURE)",
+        "cloud.rain.fill",
+        "12-hour outlook you can scrub on the Radar tab",
+        yearly: true
       )
       paywallRow(
         "Home Screen widgets",
         "rectangle.3.group.fill",
-        "Score, Minutecast, and the AI one-liner on widgets"
+        "Score, Next 2 Hours, and the AI one-liner",
+        yearly: true
       )
       paywallRow(
-        "Unlimited saved locations",
-        "mappin.and.ellipse",
-        "Track every place you care about"
+        "Live Activity",
+        "lock.rectangle.stack.fill",
+        "Score and Next 2 Hours on the Lock Screen when DayCast refreshes",
+        yearly: true
       )
 
       Text(
@@ -109,15 +112,27 @@ struct PaywallView: View {
     )
   }
 
-  private func paywallRow(_ title: String, _ icon: String, _ detail: String) -> some View {
+  private func paywallRow(
+    _ title: String,
+    _ icon: String,
+    _ detail: String,
+    yearly: Bool = false
+  ) -> some View {
     HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
       Image(systemName: icon)
         .foregroundStyle(DesignTokens.Palette.accent)
         .frame(width: 24)
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-        Text(title)
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
+        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space8) {
+          Text(title)
+            .font(DesignTokens.Typography.subsection())
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+          if yearly {
+            Text("Yearly")
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+          }
+        }
         Text(detail)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
@@ -165,7 +180,7 @@ struct PaywallView: View {
           Text(PaywallPeriodCopy.title(forProductID: product.id) ?? product.displayName)
             .font(DesignTokens.Typography.headline())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
-          Text(PaywallPeriodCopy.subtitle(description: product.description, productID: product.id))
+          Text(PaywallPeriodCopy.subtitle(productID: product.id))
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .multilineTextAlignment(.leading)
@@ -211,8 +226,7 @@ struct PaywallView: View {
 
   private func productRowAccessibilityLabel(_ product: Product) -> String {
     let title = PaywallPeriodCopy.title(forProductID: product.id) ?? product.displayName
-    let subtitle = PaywallPeriodCopy.subtitle(
-      description: product.description, productID: product.id)
+    let subtitle = PaywallPeriodCopy.subtitle(productID: product.id)
     var parts = [title, subtitle, product.displayPrice]
     if let savings = savingsLine(for: product) { parts.append(savings) }
     return parts.map {
@@ -316,15 +330,15 @@ enum PaywallFeature {
     case .grokAI:
       "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat — or bring your own xAI key in Settings."
     case .radarFuture:
-      "Pro unlocks animated forecast radar so you can scrub ahead and plan around incoming rain."
+      "Yearly unlocks 12-hour forecast radar so you can scrub ahead on the Radar tab."
     case .locations:
-      "Save unlimited cities and switch between them from Today, Radar, and widgets."
+      "Monthly or Yearly: save unlimited cities and switch between them from Today, Radar, and widgets."
     case .liveActivity:
-      "Pro shows DayCast Score and Minutecast on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
+      "Yearly shows Score and Next 2 Hours on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:
       "Schedule a local morning notification from your cached Today's Take. Generating that take needs DayCast Pro or an xAI key in Settings."
     case .severeAlerts:
-      "NWS warnings and watches with notifications are free for all users. Pro adds forecast radar, Lock Screen weather, and unlimited locations."
+      "NWS warnings and watches with notifications are free for all users. Monthly adds AI and extra locations. Yearly adds Future radar, widgets, and Live Activity."
     }
   }
 

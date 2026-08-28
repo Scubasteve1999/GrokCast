@@ -9,6 +9,8 @@ final class SubscriptionManager {
 
   private(set) var products: [Product] = []
   private(set) var isPro = false
+  /// Yearly extras (Future radar, Live Activity, Pro widgets). Monthly is not this.
+  private(set) var isYearly = false
   /// Apple-signed proof of entitlement, sent to the Grok proxy on every AI call.
   /// The proxy verifies it against Apple's root, so nothing else here is trusted.
   private(set) var proTransactionJWS: String?
@@ -19,10 +21,11 @@ final class SubscriptionManager {
   private var updatesTask: Task<Void, Never>?
 
   private init() {
-    // Hydrate from the last-known entitlement so Pro users aren't paywalled during
-    // the cold-launch window before StoreKit's entitlement check completes.
-    // refreshEntitlements() corrects this within seconds if the subscription lapsed.
-    isPro = WidgetAppGroup.userDefaults?.bool(forKey: WidgetDataStore.isProKey) ?? false
+    // Split App Group flags: monthly keeps AI on cold launch; yearly extras
+    // stay off until StoreKit confirms the yearly product (no monthly flash).
+    let defaults = WidgetAppGroup.userDefaults
+    isPro = defaults?.bool(forKey: WidgetDataStore.isProKey) ?? false
+    isYearly = defaults?.bool(forKey: WidgetDataStore.isYearlyKey) ?? false
   }
 
   func start() async {
@@ -58,24 +61,29 @@ final class SubscriptionManager {
   }
 
   func refreshEntitlements() async {
-    var active = false
-    var signedTransaction: String?
+    var productIDs: Set<String> = []
+    var yearlyJWS: String?
+    var monthlyJWS: String?
 
     for await result in Transaction.currentEntitlements {
       guard case .verified(let transaction) = result else { continue }
       guard DayCastProProducts.all.contains(transaction.productID) else { continue }
-      if transaction.revocationDate == nil {
-        active = true
-        // The JWS, not the transaction id: the proxy needs something only Apple
-        // can produce, and `originalID` is a guessable integer.
-        signedTransaction = result.jwsRepresentation
-        break
+      guard transaction.revocationDate == nil else { continue }
+      productIDs.insert(transaction.productID)
+      // The JWS, not the transaction id: the proxy needs something only Apple
+      // can produce, and `originalID` is a guessable integer. Prefer yearly.
+      if transaction.productID == DayCastProProducts.yearly {
+        yearlyJWS = result.jwsRepresentation
+      } else if monthlyJWS == nil {
+        monthlyJWS = result.jwsRepresentation
       }
     }
 
-    isPro = active
-    proTransactionJWS = signedTransaction
-    syncProFlagToAppGroup(active)
+    let resolved = DayCastProProducts.resolvedEntitlement(productIDs: productIDs)
+    isPro = resolved.isPro
+    isYearly = resolved.isYearly
+    proTransactionJWS = yearlyJWS ?? monthlyJWS
+    syncFlagsToAppGroup(isPro: resolved.isPro, isYearly: resolved.isYearly)
   }
 
   func purchase(_ product: Product) async throws {
@@ -126,7 +134,9 @@ final class SubscriptionManager {
     products.first { $0.id == DayCastProProducts.yearly }
   }
 
-  private func syncProFlagToAppGroup(_ isPro: Bool) {
-    WidgetAppGroup.userDefaults?.set(isPro, forKey: WidgetDataStore.isProKey)
+  private func syncFlagsToAppGroup(isPro: Bool, isYearly: Bool) {
+    let defaults = WidgetAppGroup.userDefaults
+    defaults?.set(isPro, forKey: WidgetDataStore.isProKey)
+    defaults?.set(isYearly, forKey: WidgetDataStore.isYearlyKey)
   }
 }

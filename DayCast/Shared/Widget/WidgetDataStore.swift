@@ -3,13 +3,20 @@ import Foundation
 /// App Group persistence for widget weather snapshots and saved locations.
 enum WidgetDataStore {
   static let isProKey = "daycast_is_pro"
+  /// Yearly extras. Do not hydrate this from `isProKey` — monthly must not flash widgets.
+  static let isYearlyKey = "daycast_is_yearly"
   static let snapshotsKey = "daycast_widget_weather_snapshots"
   static let legacySnapshotKey = "daycast_widget_weather_snapshot"
   static let alertSummariesKey = "daycast_widget_alert_summaries"
   static let savedLocationsKey = "daycast_saved_locations"
 
+  /// Widget Pro extras. Yearly only — not monthly `isPro`.
   static var isProSubscriber: Bool {
-    groupDefaults?.bool(forKey: isProKey) ?? false
+    isYearlySubscriber
+  }
+
+  static var isYearlySubscriber: Bool {
+    groupDefaults?.bool(forKey: isYearlyKey) ?? false
   }
 
   private static var groupDefaults: UserDefaults? {

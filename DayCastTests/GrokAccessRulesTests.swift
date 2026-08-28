@@ -112,14 +112,17 @@ final class GrokAccessRulesTests: XCTestCase {
 
   // MARK: - Widget + morning brief
 
-  func testWidgetBriefRequiresProEvenWithAnOwnKey() {
-    // The widget surface is itself a Pro feature.
+  func testWidgetBriefIsYearlyOrDeveloperKey() {
+    // Monthly Pro is not enough. Developer key is full access.
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isPro: false, proxyConfigured: false, hasDeveloperKey: true))
+        isYearly: false, isPro: true, proxyConfigured: true, hasDeveloperKey: false))
     XCTAssertTrue(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isPro: true, proxyConfigured: true, hasDeveloperKey: false))
+        isYearly: true, isPro: true, proxyConfigured: true, hasDeveloperKey: false))
+    XCTAssertTrue(
+      GrokAccessRules.canUseWidgetGrokBrief(
+        isYearly: false, isPro: false, proxyConfigured: false, hasDeveloperKey: true))
   }
 
   func testMorningBriefFollowsTheChatRule() {

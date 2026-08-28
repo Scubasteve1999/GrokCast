@@ -101,7 +101,7 @@ struct SettingsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
         } else {
-          Text("Unlock AI features, forecast radar, Live Activity, and unlimited locations.")
+          Text("Monthly includes AI and unlimited locations. Yearly adds Future radar, widgets, and Live Activity.")
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
@@ -259,7 +259,9 @@ struct SettingsView: View {
     SettingsGroupCard {
       toggleRow(
         title: "Live Activity",
-        subtitle: subscription.isPro ? "Lock Screen score + Next 2 Hours" : "Requires DayCast Pro",
+        subtitle: EntitlementChecker.canUseLiveActivity(subscription: subscription)
+          ? PaywallPeriodCopy.liveActivityActiveSubtitle
+          : PaywallPeriodCopy.liveActivityRequiresYearly,
         icon: "lock.rectangle.stack.fill",
         isOn: Binding(
           get: { store.liveActivityEnabled },

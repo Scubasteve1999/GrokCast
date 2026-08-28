@@ -6,6 +6,12 @@ enum DayCastProProducts {
   static let yearly = "com.scubasteve1999.DayCast.pro.yearly"
 
   static let all: Set<String> = [monthly, yearly]
+
+  /// Yearly wins when both product ids are entitled.
+  static func resolvedEntitlement(productIDs: Set<String>) -> (isPro: Bool, isYearly: Bool) {
+    let paid = productIDs.intersection(all)
+    return (isPro: !paid.isEmpty, isYearly: paid.contains(yearly))
+  }
 }
 
 /// Row / subscribe copy from the product id. ASC displayName is “DayCast Pro” for both.
@@ -41,14 +47,19 @@ enum PaywallPeriodCopy {
     }
   }
 
-  /// Shared ASC blurb plus the period. Same entitlements; period is what differs.
-  static func subtitle(description: String, productID: String) -> String {
-    let blurb = description.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard let billed = billedLine(forProductID: productID) else { return blurb }
-    if blurb.isEmpty { return "\(billed)." }
-    if blurb.localizedCaseInsensitiveContains(billed) { return blurb }
-    let head = blurb.hasSuffix(".") ? String(blurb.dropLast()) : blurb
-    return "\(head). \(billed)."
+  static let monthlyInclusion = "AI and unlimited locations. Billed monthly."
+  static let yearlyInclusion =
+    "AI, locations, Future radar, widgets, Live Activity. Billed yearly."
+  static let liveActivityRequiresYearly = "Requires Yearly"
+  static let liveActivityActiveSubtitle = "Lock Screen score + Next 2 Hours"
+
+  /// Inclusion line from the product id. Never StoreKit `description` — ASC is the same for both.
+  static func subtitle(productID: String) -> String {
+    switch period(forProductID: productID) {
+    case .monthly: return monthlyInclusion
+    case .yearly: return yearlyInclusion
+    case .unknown: return ""
+    }
   }
 
   static func subscribeTitle(productID: String, displayPrice: String) -> String {
