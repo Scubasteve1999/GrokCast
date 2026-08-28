@@ -7,31 +7,36 @@ Kept in sync with `fastlane/metadata/review_information/notes.txt`.
 
 DayCast combines Open-Meteo forecasts, National Weather Service alerts and observations,
 Mapbox radar, and AI weather features (powered by xAI's Grok) for briefings, radar explanations,
-and storm photo analysis.
+and sky photo analysis (Sky Check).
 
 ## Reviewer access — no account
 
 No account or sign-in is required. Location is optional (defaults to Olive Branch, MS).
-Weather, radar, forecasts, and NWS alerts are free and need no purchase.
+Weather, radar, forecasts, and NWS alerts in the app are free and need no purchase.
 
 ## Reaching the AI features — please read
 
-**AI features require DayCast Pro in this build.** Earlier versions shipped an embedded xAI
-developer key so anyone could use AI; that key has been removed. The key now lives on our server,
-and AI calls are routed through it only for verified subscribers.
+**AI features require a DayCast Pro subscription (Monthly or Yearly) in this build.** Earlier
+versions shipped an embedded xAI developer key so anyone could use AI; that key has been removed.
+The key now lives on our server, and AI calls are routed through it only for verified subscribers.
 
-To review the AI features, **purchase DayCast Pro in the StoreKit sandbox** — sandbox purchases
-are free and are not charged:
+To review the AI features, **purchase DayCast Pro Monthly in the StoreKit sandbox** — sandbox
+purchases are free and are not charged:
 
 1. Open **Settings → DayCast Pro → View DayCast Pro**.
-2. Choose Monthly or Yearly and complete the sandbox purchase.
-3. Return to the **AI** tab and try a quick prompt. It should stream a reply within a few seconds.
+2. Choose **Monthly** and complete the sandbox purchase.
+3. Open **More → Sky Check** and try a quick prompt. It should stream a reply within a few seconds.
+
+Monthly is enough for AI, Today's Take, Explain Radar, Sky Check, and extra saved locations.
+
+**Yearly** is required for Future radar (scrub on the Radar tab), Home Screen / Lock Screen
+widgets, and Live Activity. A Monthly sandbox purchase will not unlock those.
 
 Our server accepts both Production and Sandbox StoreKit environments, so a sandbox subscription
 works exactly like a real one.
 
 **Alternative, if you prefer not to transact:** Settings accepts your own xAI API key (starts with
-`xai-`, from console.x.ai). With a key saved, all AI features unlock without a subscription.
+`xai-`, from console.x.ai). With a key saved, AI features unlock without a subscription.
 
 If AI reports "DayCast Pro unlocks AI features," the subscription has not been recognised yet —
 tap **Restore Purchases** in Settings and retry.
@@ -42,9 +47,9 @@ tap **Restore Purchases** in Settings and retry.
 2. **Today** — now, one official NWS chip when you’re warned, the temperature curve, Outlook on live radar (Site Doppler / National), Your News.
 3. **Radar** — Live Site Doppler on Dark, National when local is clear.
 4. **Alerts** — live NWS watches and warnings.
-5. **AI** — after the sandbox purchase above, try a quick prompt; should stream a reply.
-   Optional: Shortcuts → “Ask Grok” with a question (opens the AI tab and submits).
-6. **Settings → LEGAL & SUPPORT** — Privacy Policy and Terms of Use.
+5. **More → Sky Check** — after the Monthly sandbox purchase above, try a quick prompt; should stream a reply.
+   Optional: Shortcuts → “Ask Grok” with a question (opens Sky Check and submits).
+6. **Settings → Privacy & support** — Privacy Policy and Terms of Use.
 
 ## DayCast Pro (subscriptions) — how to review
 
@@ -53,17 +58,13 @@ Open the paywall from **Settings → DayCast Pro → View DayCast Pro**.
 It can also be triggered by:
 
 - Tapping any AI feature while not subscribed, or
-- Turning on **Live Activity** or **Morning AI Brief** in Settings, or
+- Turning on **Live Activity** (Yearly) or **Morning brief** in Settings, or
 - Trying to save a **second location** (free limit is 1).
 
 Product IDs in this binary:
 
-- `com.scubasteve1999.DayCast.pro.monthly` — DayCast Pro Monthly
-- `com.scubasteve1999.DayCast.pro.yearly` — DayCast Pro Yearly
-
-Pro unlocks: AI chat, Today's Take, Explain Radar, Morning AI Brief, Storm Spotter photo analysis,
-forecast radar (FUTURE), Live Activity (updates when the app refreshes weather), unlimited saved
-locations, and richer widgets.
+- `com.scubasteve1999.DayCast.pro.monthly` — AI, Today's Take, Explain Radar, Sky Check, unlimited saved locations
+- `com.scubasteve1999.DayCast.pro.yearly` — everything Monthly includes, plus Future radar, Home Screen widgets, and Live Activity (updates when the app refreshes weather)
 
 Paywall includes **Privacy Policy** and **Terms of Use (EULA)** links and **Restore Purchases**.
 
@@ -72,12 +73,12 @@ Paywall includes **Privacy Policy** and **Terms of Use (EULA)** links and **Rest
 AI requests go to our proxy server, which forwards them to xAI (`api.x.ai`). Each request carries:
 
 - The current weather context as text (location name, temperature, conditions, alerts).
-- For **Storm Spotter** only: the photo the user explicitly selects, resized and sent as image data.
+- For **Sky Check** only: the photo the user explicitly selects, resized and sent as image data.
 - An Apple-signed StoreKit transaction, used solely to verify an active subscription and apply
   per-subscriber rate limits.
 
 No account, email, contact data, or advertising identifier is sent. The user's photo library is
-accessed only when they pick a photo for Storm Spotter analysis.
+accessed only when they pick a photo for Sky Check analysis.
 
 AI usage has a daily allowance per subscription (resets at midnight UTC) to prevent abuse. It is
 far above normal use and review will not reach it.

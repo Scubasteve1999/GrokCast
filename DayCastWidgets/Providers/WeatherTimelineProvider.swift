@@ -1,11 +1,5 @@
 import WidgetKit
 
-enum WidgetEmptyReason: Equatable {
-  case none
-  case noData
-  case locationMismatch(locationName: String)
-}
-
 struct WeatherWidgetEntry: TimelineEntry {
   let date: Date
   let snapshot: WidgetWeatherSnapshot?
@@ -48,22 +42,22 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
     -> WeatherWidgetEntry
   {
     let now = Date()
-    let resolved = resolveSnapshot(for: configuration, at: now)
-    if let snapshot = resolved.snapshot {
+    if context.isPreview {
       return WeatherWidgetEntry(
         date: now,
-        snapshot: snapshot,
-        alertSummary: resolved.alertSummary,
-        isStale: resolved.isStale,
-        emptyReason: resolved.emptyReason
+        snapshot: .preview,
+        alertSummary: nil,
+        isStale: false,
+        emptyReason: .none
       )
     }
+    let resolved = resolveSnapshot(for: configuration, at: now)
     return WeatherWidgetEntry(
       date: now,
-      snapshot: .preview,
-      alertSummary: nil,
-      isStale: false,
-      emptyReason: .none
+      snapshot: resolved.snapshot,
+      alertSummary: resolved.alertSummary,
+      isStale: resolved.isStale,
+      emptyReason: resolved.emptyReason
     )
   }
 
@@ -134,6 +128,17 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
     at date: Date
   ) -> ResolvedWidgetWeather {
     WidgetDataStore.migrateLegacySnapshotIfNeeded()
+
+    guard WidgetDataStore.canRenderWeather(
+      isYearlySubscriber: WidgetDataStore.isYearlySubscriber)
+    else {
+      return ResolvedWidgetWeather(
+        snapshot: nil,
+        alertSummary: nil,
+        isStale: false,
+        emptyReason: .requiresYearly
+      )
+    }
 
     if let selected = configuration.location {
       guard let snapshot = WidgetDataStore.loadSnapshot(for: selected.id) else {

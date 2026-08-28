@@ -21,30 +21,7 @@ struct WidgetEmptyStateView: View {
     .padding(14)
   }
 
-  private var iconName: String {
-    switch reason {
-    case .locationMismatch: "mappin.slash"
-    case .noData: "cloud.sun"
-    case .none: "cloud.sun"
-    }
-  }
-
-  private var title: String {
-    switch reason {
-    case .locationMismatch: "Open DayCast"
-    case .noData: "Open DayCast"
-    case .none: "Open DayCast"
-    }
-  }
-
-  private var message: String {
-    switch reason {
-    case .locationMismatch(let name):
-      "Select \(name) in the app to update this widget."
-    case .noData:
-      "Refresh weather in the app to update this widget."
-    case .none:
-      "Refresh weather in the app to update this widget."
-    }
-  }
+  private var iconName: String { reason.iconName }
+  private var title: String { reason.title }
+  private var message: String { reason.message }
 }

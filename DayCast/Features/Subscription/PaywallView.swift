@@ -332,7 +332,7 @@ enum PaywallFeature {
     case .radarFuture:
       "Yearly unlocks 12-hour forecast radar so you can scrub ahead on the Radar tab."
     case .locations:
-      "Monthly or Yearly: save unlimited cities and switch between them from Today, Radar, and widgets."
+      "Monthly or Yearly: save unlimited cities and switch between them from Today and Radar."
     case .liveActivity:
       "Yearly shows Score and Next 2 Hours on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:

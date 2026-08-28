@@ -624,7 +624,8 @@ final class WeatherStore {
     }
   }
 
-  /// Persists a widget-readable weather snapshot after a successful refresh.
+  /// Persists a weather snapshot for the in-app Locations list and cold launch.
+  /// Home Screen widgets refuse this unless `daycast_is_yearly`.
   private func persistWidgetSnapshot(
     from weather: DayCastWeather,
     score: DayCastScore? = nil,

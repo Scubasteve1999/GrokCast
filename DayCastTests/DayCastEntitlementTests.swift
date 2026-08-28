@@ -96,6 +96,36 @@ final class DayCastEntitlementTests: XCTestCase {
       ))
   }
 
+  func testHomeScreenWidgetsRequireYearlyFlag() {
+    XCTAssertFalse(
+      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: false))
+    XCTAssertFalse(
+      WidgetDataStore.canRenderWeather(isYearlySubscriber: false))
+    XCTAssertTrue(
+      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: true))
+    XCTAssertEqual(WidgetEmptyReason.requiresYearly.title, "Yearly unlocks widgets")
+    XCTAssertEqual(WidgetEmptyReason.requiresYearly.message, "Tap to open DayCast.")
+  }
+
+  func testMonthlyResolvedEntitlementDoesNotUnlockWidgetSurface() {
+    let monthly = DayCastProProducts.resolvedEntitlement(productIDs: [
+      DayCastProProducts.monthly
+    ])
+    XCTAssertTrue(monthly.isPro)
+    XCTAssertFalse(monthly.isYearly)
+    XCTAssertFalse(
+      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: monthly.isYearly))
+  }
+
+  func testYearlyResolvedEntitlementUnlocksWidgetSurface() {
+    let yearly = DayCastProProducts.resolvedEntitlement(productIDs: [
+      DayCastProProducts.yearly
+    ])
+    XCTAssertTrue(yearly.isYearly)
+    XCTAssertTrue(
+      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: yearly.isYearly))
+  }
+
   func testFreeUserGetsNeitherAINorYearlyExtras() {
     XCTAssertFalse(
       GrokAccessRules.canUseGrokAI(

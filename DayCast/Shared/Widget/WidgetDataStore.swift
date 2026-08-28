@@ -19,6 +19,11 @@ enum WidgetDataStore {
     groupDefaults?.bool(forKey: isYearlyKey) ?? false
   }
 
+  /// Home Screen / Lock Screen weather. Yearly App Group flag only — not monthly `isPro`.
+  static func canRenderWeather(isYearlySubscriber: Bool) -> Bool {
+    isYearlySubscriber
+  }
+
   private static var groupDefaults: UserDefaults? {
     guard let defaults = WidgetAppGroup.userDefaults else {
       return nil

@@ -88,6 +88,11 @@ enum DayCastEntitlements {
   static func canUseYearlyExtras(isYearly: Bool, hasDeveloperKey: Bool) -> Bool {
     isYearly || hasDeveloperKey
   }
+
+  /// Home Screen / Lock Screen weather widgets. App Group `daycast_is_yearly` only.
+  static func canRenderHomeScreenWidgets(isYearlySubscriber: Bool) -> Bool {
+    WidgetDataStore.canRenderWeather(isYearlySubscriber: isYearlySubscriber)
+  }
 }
 
 enum GrokAccessTier: Equatable {

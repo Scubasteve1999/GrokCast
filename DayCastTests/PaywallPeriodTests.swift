@@ -90,4 +90,11 @@ final class PaywallPeriodTests: XCTestCase {
     XCTAssertFalse(
       PaywallPeriodCopy.liveActivityRequiresYearly.localizedCaseInsensitiveContains("Pro"))
   }
+
+  func testLocationsSubheadlineDoesNotPromiseWidgetsOnMonthly() {
+    let copy = PaywallFeature.locations.subheadline
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("widget"))
+    XCTAssertTrue(copy.contains("Today and Radar"))
+    XCTAssertTrue(copy.contains("Monthly or Yearly"))
+  }
 }

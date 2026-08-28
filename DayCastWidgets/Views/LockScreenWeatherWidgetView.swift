@@ -43,15 +43,12 @@ struct LockScreenWeatherWidgetView: View {
     }
   }
 
-  private var emptyIconName: String {
-    switch entry.emptyReason {
-    case .locationMismatch: "mappin.slash"
-    case .noData, .none: "cloud.sun"
-    }
-  }
+  private var emptyIconName: String { entry.emptyReason.iconName }
 
   private var inlineEmptyMessage: String {
     switch entry.emptyReason {
+    case .requiresYearly:
+      WidgetEmptyReason.requiresYearly.title
     case .locationMismatch(let name):
       "Open \(name) in DayCast"
     case .noData:
@@ -63,6 +60,8 @@ struct LockScreenWeatherWidgetView: View {
 
   private var rectangularEmptyMessage: String {
     switch entry.emptyReason {
+    case .requiresYearly:
+      WidgetEmptyReason.requiresYearly.message
     case .locationMismatch(let name):
       "Select \(name) in the app to update."
     case .noData:
