@@ -1,40 +1,35 @@
-DayCast is a field weather app for storm spotters, chasers, and people who
-watch the sky themselves.
+DayCast is the weather app you’d open in a real storm and trust. Honest local now and official NWS alerts, readable Site Doppler and National radar, fast on a normal iPhone.
 
 RADAR
-• Site Doppler — nearest NEXRAD super-res reflectivity (polar gates)
+• Site Doppler — nearest WSR-88D Level III reflectivity (polar gates)
 • National radar with animation and frame scrubbing
-• Storm winds — storm-relative velocity on Live
-• Forecast radar frames (Pro)
+• Storm winds — storm-relative velocity on Live (Layers)
+• Future radar — 12-hour scrub on the Radar tab (Yearly)
 
 SEVERE WEATHER
-• SPC Day 1 outlook probabilities for tornado, hail, and wind
-• Mesoscale discussions
-• Nearby storm reports
+• SPC Day 1 outlook, mesoscale discussions
+• Nearby storm reports (optional, Settings)
 • National Weather Service watches, warnings, and advisories, with
   time-sensitive notifications
 
 SHORT TERM
-• Next-hour precipitation at 15-minute resolution
-• HRRR short-term precipitation for the continental US, shown next to the
-  standard model so you can see when the two disagree
+• Next-hour / Next 2 Hours precipitation
 • Hourly and 10-day forecasts
 
-AI READS (DayCast Pro)
-• Explain Radar — a plain-language read of the frame you are looking at
-• Photo analysis — send a photo of the sky and get a read on the structure
-• Morning brief — a short written summary of the day's setup
-• Chat with current conditions attached
+AI (DayCast Pro — Monthly or Yearly)
+• Sky Check — chat with current conditions; photo check when you want
+• Explain Radar — a plain-language read of the frame
+• Morning brief — a short written summary from Today's Take
 
-ALSO
-• Home Screen and Lock Screen widgets, Live Activity
-• Wildfire layer (NASA FIRMS) with air quality
-• Saved locations, Siri shortcuts
+YEARLY ONLY
+• Future radar
+• Home Screen and Lock Screen widgets
+• Live Activity (updates when the app refreshes weather)
 
 WHAT'S FREE
-Radar, NWS alerts, SPC products, forecasts, and next-hour precipitation are
-free. DayCast Pro adds the AI features, forecast radar, Live Activity, and
-unlimited saved locations. AI has a daily limit.
+Radar, NWS alerts, SPC products, forecasts, and next-hour precipitation
+are free. Monthly adds AI and unlimited saved locations. Yearly adds
+Future radar, widgets, and Live Activity. AI has a daily limit.
 
 DATA SOURCES
 Open-Meteo, the National Weather Service, the Storm Prediction Center, NEXRAD

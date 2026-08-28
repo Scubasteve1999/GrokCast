@@ -1,1 +1,1 @@
-NEXRAD velocity, correlation coefficient, SPC outlooks and mesoscale discussions, NWS warnings, and a plain-language read of the frame.
+Site Doppler and National radar, official NWS alerts, SPC outlook. Weather stays free. Pro is AI and extra cities. Yearly adds Future radar, widgets, and Live Activity.

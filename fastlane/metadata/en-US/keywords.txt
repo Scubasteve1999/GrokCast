@@ -1,1 +1,1 @@
-spotter,chaser,chasing,nexrad,velocity,srv,supercell,mesocyclone,hail,severe,tornado,outlook,nws
+nexrad,radar,nws,outlook,severe,tornado,hail,srv,chaser,spc

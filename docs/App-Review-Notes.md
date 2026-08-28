@@ -5,111 +5,56 @@ Kept in sync with `fastlane/metadata/review_information/notes.txt`.
 
 ---
 
-DayCast combines Open-Meteo forecasts, National Weather Service alerts and observations,
-Mapbox radar, and AI weather features (powered by xAI's Grok) for briefings, radar explanations,
-and sky photo analysis (Sky Check).
+DayCast uses Open-Meteo, NWS alerts/observations, Mapbox radar, and xAI Grok for briefings, Explain Radar, and Sky Check photo analysis.
 
-## Reviewer access — no account
+NO ACCOUNT
+No sign-in. Location is optional (defaults to Olive Branch, MS). Weather, radar, forecasts, and NWS alerts in the app are free.
 
-No account or sign-in is required. Location is optional (defaults to Olive Branch, MS).
-Weather, radar, forecasts, and NWS alerts in the app are free and need no purchase.
+AI — PLEASE READ
+AI requires DayCast Pro (Monthly or Yearly). The old embedded xAI key is gone. Calls go through our proxy for verified subscribers only.
 
-## Reaching the AI features — please read
+Sandbox purchases are free. To review AI:
+1. Settings > DayCast Pro > View DayCast Pro
+2. Choose Monthly and complete the sandbox purchase
+3. More > Sky Check — send a short prompt; it should stream a reply
 
-**AI features require a DayCast Pro subscription (Monthly or Yearly) in this build.** Earlier
-versions shipped an embedded xAI developer key so anyone could use AI; that key has been removed.
-The key now lives on our server, and AI calls are routed through it only for verified subscribers.
+Monthly unlocks AI, Today's Take, Explain Radar, Sky Check, and extra saved locations.
+Yearly is required for Future radar (Radar tab), Home Screen / Lock Screen widgets, and Live Activity. Monthly will not unlock those.
 
-To review the AI features, **purchase DayCast Pro Monthly in the StoreKit sandbox** — sandbox
-purchases are free and are not charged:
+Sandbox and Production StoreKit both work. Restore Purchases if AI still says Pro is required.
 
-1. Open **Settings → DayCast Pro → View DayCast Pro**.
-2. Choose **Monthly** and complete the sandbox purchase.
-3. Open **More → Sky Check** and try a quick prompt. It should stream a reply within a few seconds.
+Alternative: Settings accepts your own xAI key (starts with xai-, from console.x.ai). That unlocks AI without a subscription.
 
-Monthly is enough for AI, Today's Take, Explain Radar, Sky Check, and extra saved locations.
+SUGGESTED PATH
+1. Allow location or keep the default
+2. Today — now, official NWS chip when warned, temperature curve, Outlook on live radar, Your News
+3. Radar — Site Doppler on Dark; National when local is clear
+4. Alerts — live NWS watches and warnings
+5. More > Sky Check after Monthly sandbox purchase
+6. Settings > Privacy & support — Privacy Policy and Terms
 
-**Yearly** is required for Future radar (scrub on the Radar tab), Home Screen / Lock Screen
-widgets, and Live Activity. A Monthly sandbox purchase will not unlock those.
+SUBSCRIPTIONS
+Paywall: Settings > DayCast Pro > View DayCast Pro. Also from an AI tap, Live Activity (Yearly), Morning brief, or saving a second location (free limit is 1).
 
-Our server accepts both Production and Sandbox StoreKit environments, so a sandbox subscription
-works exactly like a real one.
+IDs:
+- com.scubasteve1999.DayCast.pro.monthly — AI + unlimited locations
+- com.scubasteve1999.DayCast.pro.yearly — Monthly plus Future radar, widgets, Live Activity (updates when the app refreshes)
 
-**Alternative, if you prefer not to transact:** Settings accepts your own xAI API key (starts with
-`xai-`, from console.x.ai). With a key saved, AI features unlock without a subscription.
+Paywall has Privacy Policy, Terms of Use (EULA), and Restore Purchases.
 
-If AI reports "DayCast Pro unlocks AI features," the subscription has not been recognised yet —
-tap **Restore Purchases** in Settings and retry.
+AI DATA
+Requests go to our proxy, then xAI (api.x.ai). Payload is weather context as text; Sky Check also sends the user-picked photo (resized); plus an Apple-signed StoreKit transaction for entitlement and rate limits. No account, email, contacts, or IDFA. Photo library only when the user picks a Sky Check photo. Daily AI cap resets midnight UTC; review will not hit it.
 
-## Suggested path
+GUIDELINE 4.7
+Today's Take is off the Today feed in this build. Screening still runs before cache, morning notification, and widget one-liner. Restore or turn the feature off from Settings > Today's Take. Sky Check replies are screened on-device; a blocked reply is replaced with a hide line, never raw Grok. Reports: stephenmoorecm1357@gmail.com (within 24 hours).
 
-1. Allow location when prompted (or use the default location).
-2. **Today** — now, one official NWS chip when you’re warned, the temperature curve, Outlook on live radar (Site Doppler / National), Your News.
-3. **Radar** — Live Site Doppler on Dark, National when local is clear.
-4. **Alerts** — live NWS watches and warnings.
-5. **More → Sky Check** — after the Monthly sandbox purchase above, try a quick prompt; should stream a reply.
-   Optional: Shortcuts → “Ask Grok” with a question (opens Sky Check and submits).
-6. **Settings → Privacy & support** — Privacy Policy and Terms of Use.
+3.1.2
+Paywall shows title, length, and price per plan, plus working links:
+Privacy: https://scubasteve1999.github.io/GrokCast/privacy.html
+Terms: https://scubasteve1999.github.io/GrokCast/terms.html
+Support: https://scubasteve1999.github.io/GrokCast/support.html
 
-## DayCast Pro (subscriptions) — how to review
+LOCATION
+When In Use for forecast. Optional Travel weather may prompt Always for Apple Significant Location Changes only. No location background mode.
 
-Open the paywall from **Settings → DayCast Pro → View DayCast Pro**.
-
-It can also be triggered by:
-
-- Tapping any AI feature while not subscribed, or
-- Turning on **Live Activity** (Yearly) or **Morning brief** in Settings, or
-- Trying to save a **second location** (free limit is 1).
-
-Product IDs in this binary:
-
-- `com.scubasteve1999.DayCast.pro.monthly` — AI, Today's Take, Explain Radar, Sky Check, unlimited saved locations
-- `com.scubasteve1999.DayCast.pro.yearly` — everything Monthly includes, plus Future radar, Home Screen widgets, and Live Activity (updates when the app refreshes weather)
-
-Paywall includes **Privacy Policy** and **Terms of Use (EULA)** links and **Restore Purchases**.
-
-## What the AI features send, and where
-
-AI requests go to our proxy server, which forwards them to xAI (`api.x.ai`). Each request carries:
-
-- The current weather context as text (location name, temperature, conditions, alerts).
-- For **Sky Check** only: the photo the user explicitly selects, resized and sent as image data.
-- An Apple-signed StoreKit transaction, used solely to verify an active subscription and apply
-  per-subscriber rate limits.
-
-No account, email, contact data, or advertising identifier is sent. The user's photo library is
-accessed only when they pick a photo for Sky Check analysis.
-
-AI usage has a daily allowance per subscription (resets at midnight UTC) to prevent abuse. It is
-far above normal use and review will not reach it.
-
-## Guideline 4.7 — Today's Take (AI brief)
-
-Today's Take is a 2–4 sentence weather brief generated off-device by xAI Grok.
-
-- **Filter:** Output is screened on-device before it is shown, cached, sent to widgets, or used
-  in the morning notification. Blocked categories include sexual content, hate, self-harm,
-  graphic violence, prompt-leak dumps, and advice to ignore official warnings. A blocked Grok
-  reply is replaced with a deterministic forecast-only brief, or not shown.
-- **Report:** On the Today's Take card, open the ••• menu → **Report…**. Choose a reason and
-  submit. That opens a pre-filled email to stephenmoorecm1357@gmail.com. We review reports
-  within 24 hours.
-- **Block:** The same menu can **Hide this take** (that brief will not come back) or **Turn off
-  Today's Take**. Restore from **Settings → Today's Take**. Turning it off also clears the
-  widget one-liner and the morning-notification body.
-
-## Subscriptions (3.1.2)
-
-The DayCast Pro paywall (Settings → DayCast Pro → View DayCast Pro) shows the subscription
-title, length, price per plan, and functional Privacy Policy / Terms of Use (EULA) links at
-the bottom of the purchase sheet, per guideline 3.1.2(c).
-
-- Privacy: https://scubasteve1999.github.io/GrokCast/privacy.html
-- Terms: https://scubasteve1999.github.io/GrokCast/terms.html
-- Support: https://scubasteve1999.github.io/GrokCast/support.html
-
-## Location / background
-
-When In Use + optional Significant Location Changes only; no `location` background mode.
-
-**Contact:** stephenmoorecm1357@gmail.com
+Contact: stephenmoorecm1357@gmail.com
