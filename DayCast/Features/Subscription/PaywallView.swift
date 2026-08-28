@@ -162,13 +162,18 @@ struct PaywallView: View {
     } label: {
       HStack {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-          Text(product.displayName)
+          Text(PaywallPeriodCopy.title(forProductID: product.id) ?? product.displayName)
             .font(DesignTokens.Typography.headline())
             .foregroundStyle(DesignTokens.Palette.textPrimary)
-          Text(product.description)
+          Text(PaywallPeriodCopy.subtitle(description: product.description, productID: product.id))
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .multilineTextAlignment(.leading)
+          if let savings = savingsLine(for: product) {
+            Text(savings)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
+          }
         }
         Spacer()
         Text(product.displayPrice)
@@ -188,6 +193,31 @@ struct PaywallView: View {
       )
     }
     .buttonStyle(.plain)
+    .accessibilityLabel(productRowAccessibilityLabel(product))
+  }
+
+  private func savingsLine(for product: Product) -> String? {
+    guard product.id == DayCastProProducts.yearly,
+      let monthly = subscription.monthlyProduct
+    else { return nil }
+    let saved = monthly.price * 12 - product.price
+    guard saved > 0 else { return nil }
+    return PaywallPeriodCopy.savingsLine(
+      monthlyPrice: monthly.price,
+      yearlyPrice: product.price,
+      formattedSavings: product.priceFormatStyle.format(saved)
+    )
+  }
+
+  private func productRowAccessibilityLabel(_ product: Product) -> String {
+    let title = PaywallPeriodCopy.title(forProductID: product.id) ?? product.displayName
+    let subtitle = PaywallPeriodCopy.subtitle(
+      description: product.description, productID: product.id)
+    var parts = [title, subtitle, product.displayPrice]
+    if let savings = savingsLine(for: product) { parts.append(savings) }
+    return parts.map {
+      $0.hasSuffix(".") ? String($0.dropLast()) : $0
+    }.joined(separator: ". ")
   }
 
   private var purchaseButtons: some View {
@@ -211,7 +241,10 @@ struct PaywallView: View {
             if subscription.purchaseInFlight {
               ProgressView()
             } else {
-              Text("Subscribe — \(product.displayPrice)")
+              Text(
+                PaywallPeriodCopy.subscribeTitle(
+                  productID: product.id, displayPrice: product.displayPrice)
+              )
             }
           }
           .frame(maxWidth: .infinity)
