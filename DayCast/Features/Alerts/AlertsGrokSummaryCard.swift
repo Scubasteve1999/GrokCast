@@ -8,6 +8,9 @@ enum AlertsGrokSummaryPresentation {
 
 /// Plain-English Grok summary when active NWS alerts are present.
 struct AlertsGrokSummaryCard: View {
+  /// Free-user CTA on the locked AI summary card (matches Sky Check empty state).
+  static let unlockCTATitle = "Unlock with Pro"
+
   @Environment(WeatherStore.self) private var store
 
   let alerts: [NWSAlert]
@@ -67,6 +70,7 @@ struct AlertsGrokSummaryCard: View {
         Text(GrokAccessRules.lockedAlertsSummaryCopy)
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
+        unlockWithProButton
       } else {
         Text(figmaReadyPrompt)
           .font(DesignTokens.Typography.callout())
@@ -141,6 +145,7 @@ struct AlertsGrokSummaryCard: View {
         Text(GrokAccessRules.lockedAlertsSummaryCopy)
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
+        unlockWithProButton
       } else {
         Button {
           Task { await fetchSummary(force: false) }
@@ -155,6 +160,18 @@ struct AlertsGrokSummaryCard: View {
     }
     .padding(DesignTokens.Spacing.space16)
     .glassCardStyle(strokeTint: DesignTokens.Palette.warning.opacity(0.4))
+  }
+
+  private var unlockWithProButton: some View {
+    Button(Self.unlockCTATitle) {
+      Haptic.impact(.light)
+      PaywallCoordinator.shared.present(.grokAI)
+    }
+    .font(DesignTokens.Typography.caption())
+    .buttonStyle(.borderedProminent)
+    .tint(DesignTokens.Palette.accent)
+    .controlSize(.small)
+    .accessibilityIdentifier("alerts.unlockWithPro")
   }
 
   @MainActor

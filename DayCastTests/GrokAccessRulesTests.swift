@@ -57,6 +57,10 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
   }
 
+  func testLockedAlertsUnlockCTAMatchesSkyCheckEmptyState() {
+    XCTAssertEqual(AlertsGrokSummaryCard.unlockCTATitle, "Unlock with Pro")
+  }
+
   func testEmptyStateCopyDoesNotAdvertiseAKey() {
     let copy = GrokAPIKeyEmptyStateView.bodyCopy
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
