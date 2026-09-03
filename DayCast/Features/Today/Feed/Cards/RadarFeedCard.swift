@@ -123,9 +123,10 @@ enum OutlookRadarProduct: String, CaseIterable, Equatable {
 
   static func resolved(
     requested: OutlookRadarProduct,
-    futureFramesAvailable: Bool
+    futureFramesAvailable: Bool,
+    canUseFuture: Bool = true
   ) -> OutlookRadarProduct {
-    if requested == .future, futureFramesAvailable { return .future }
+    if requested == .future, futureFramesAvailable, canUseFuture { return .future }
     return .radar
   }
 }
@@ -169,10 +170,15 @@ struct RadarFeedCard: View {
     )
   }
 
+  private var canUseFuture: Bool {
+    EntitlementChecker.canUseRadarFuture(subscription: SubscriptionManager.shared)
+  }
+
   private var product: OutlookRadarProduct {
     OutlookRadarProduct.resolved(
       requested: requestedProduct,
-      futureFramesAvailable: futureFramesAvailable
+      futureFramesAvailable: futureFramesAvailable,
+      canUseFuture: canUseFuture
     )
   }
 
@@ -195,9 +201,10 @@ struct RadarFeedCard: View {
       }
       .task {
         futureFramesAvailable = await RadarLoader().probeForecastFramesAvailable()
-        if requestedProduct == .future, !futureFramesAvailable {
-          requestedProduct = .radar
-        }
+        fallBackToRadarIfFutureLocked()
+      }
+      .onChange(of: canUseFuture) { _, _ in
+        fallBackToRadarIfFutureLocked()
       }
   }
 
@@ -298,7 +305,9 @@ struct RadarFeedCard: View {
   private var pills: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       productPill(.radar, title: OutlookRadarCopy.radarPill)
-      productPill(.future, title: OutlookRadarCopy.futurePill)
+      if canUseFuture {
+        productPill(.future, title: OutlookRadarCopy.futurePill)
+      }
     }
   }
 
@@ -337,13 +346,21 @@ struct RadarFeedCard: View {
         requestedProduct = .radar
         return
       }
-      if !EntitlementChecker.canUseRadarFuture(subscription: SubscriptionManager.shared) {
+      if !canUseFuture {
         PaywallCoordinator.shared.present(.radarFuture)
         requestedProduct = .radar
         return
       }
     }
     requestedProduct = value
+  }
+
+  private func fallBackToRadarIfFutureLocked() {
+    if requestedProduct == .future,
+      !futureFramesAvailable || !canUseFuture
+    {
+      requestedProduct = .radar
+    }
   }
 
   private func openRadarTab() {

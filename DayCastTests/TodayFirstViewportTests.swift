@@ -43,6 +43,16 @@ final class TodayFirstViewportTests: XCTestCase {
       OutlookRadarProduct.resolved(requested: .radar, futureFramesAvailable: true),
       .radar
     )
+    XCTAssertEqual(
+      OutlookRadarProduct.resolved(
+        requested: .future, futureFramesAvailable: true, canUseFuture: false),
+      .radar
+    )
+    XCTAssertEqual(
+      OutlookRadarProduct.resolved(
+        requested: .future, futureFramesAvailable: true, canUseFuture: true),
+      .future
+    )
     XCTAssertEqual(TonightOutlook.plateCharacterCount, 44)
     XCTAssertLessThan(TonightOutlook.plateCharacterCount, TonightOutlook.maxCharacterCount)
     let spoken = OutlookRadarCopy.accessibilityLabel(
