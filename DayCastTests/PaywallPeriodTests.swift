@@ -91,10 +91,16 @@ final class PaywallPeriodTests: XCTestCase {
       PaywallPeriodCopy.liveActivityRequiresYearly.localizedCaseInsensitiveContains("Pro"))
   }
 
-  func testLocationsSubheadlineDoesNotPromiseWidgetsOnMonthly() {
+  func testLocationsPaywallCopyNamesFreeLimitAndProUnlimited() {
+    XCTAssertEqual(PaywallFeature.locations.headline, "Save unlimited places")
     let copy = PaywallFeature.locations.subheadline
+    XCTAssertEqual(
+      copy,
+      "Free includes 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
+    )
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("widget"))
-    XCTAssertTrue(copy.contains("Today and Radar"))
-    XCTAssertTrue(copy.contains("Monthly or Yearly"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Yearly"))
+    XCTAssertTrue(copy.contains("DayCast Pro"))
+    XCTAssertTrue(copy.contains("1 saved city"))
   }
 }
