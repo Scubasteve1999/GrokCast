@@ -21,18 +21,19 @@ This document governs all AI agent work on this iOS project.
 
 Notification category IDs use `DAYCAST_*`. In-process deep link uses `Notification.Name.dayCastDeepLink` (raw `"daycast.deepLink"`).
 
-**Always work from the app repo root** (not the marketing site):
+**Always work from the app repo root**:
 
 ```bash
-# Live path on this machine (folder may still be named GrokCast):
-cd /Users/bigstevedev/Documents/GrokCast
-# Prefer Documents/DayCast if/when the directory is renamed.
+cd ~/Projects/GrokCast
+# ~/Documents/GrokCast is an iCloud-synced mirror of the same repo — avoid it,
+# git and xcodebuild operations there can hang indefinitely.
 ```
 
 | Path | What it is |
 |------|------------|
-| `/Users/bigstevedev/Documents/GrokCast` (sources under `DayCast/`) | **iOS app** (this repo) |
-| Separate marketing HTML site (if present) | Not the app binary |
+| `~/Projects/GrokCast` (sources under `DayCast/`) | **iOS app** (this repo) |
+| `~/Projects/GrokCast/docs/*.html` | Marketing/support site — static HTML inside this repo |
+| `~/Documents/GrokCast` | iCloud-synced mirror — do not work from here |
 
 ## Stack
 

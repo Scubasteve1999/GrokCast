@@ -4,18 +4,19 @@ Native SwiftUI iOS weather app (iOS 18+): Open-Meteo primary + NWS hybrid (US al
 
 Deeper background: `AGENTS.md` (full project rules — source of truth), `DesignSystem.md` (color/typography/spacing tokens — follow it for all UI work), `.grok/skills/daycast/SKILL.md` (detailed feature history), `docs/Agent-Handoff-Claude-Cursor.md` (Claude Code ↔ Cursor handoff).
 
-**Always work from the app repo root** (not the marketing site):
+**Always work from the app repo root**:
 
 ```bash
-cd ~/Projects/DayCast
-# real path (prefer this if xcodebuild hangs on Desktop/iCloud):
-cd /Users/bigstevedev/Documents/DayCast
+cd ~/Projects/GrokCast
+# ~/Documents/GrokCast is an iCloud-synced mirror of the same repo — avoid it,
+# git and xcodebuild operations there can hang indefinitely.
 ```
 
 | Path | What it is |
 |------|------------|
-| `~/Projects/DayCast` → `Documents/DayCast` | **iOS app** (this repo) |
-| `~/Projects/DayCast` → `Documents/DayCast` | Marketing site only (HTML) — not the app |
+| `~/Projects/GrokCast` | **iOS app** (this repo; Xcode project/scheme/App Store name are DayCast) |
+| `~/Projects/GrokCast/docs/*.html` | Marketing/support site (privacy, terms, support) — static HTML inside this repo, not a separate one |
+| `~/Documents/GrokCast` | iCloud-synced mirror — do not work from here |
 
 ## Commands
 

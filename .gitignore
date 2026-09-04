@@ -189,3 +189,6 @@ fastlane/AuthKey_*.p8
 fastlane/asc_api_key.json
 fastlane/metadata/review_information/
 fastlane/Preview.html
+
+# One-off App Store Connect review-submission scripts (hardcoded per-build IDs; disposable)
+Scripts/submit_app_review_*.py
