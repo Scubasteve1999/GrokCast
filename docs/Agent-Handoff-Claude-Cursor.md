@@ -68,9 +68,12 @@ Starting agent reads: `git log --oneline -5`, `git status`, then this file.
 - **Secrets:** `DayCast/Config/DeveloperAPIKey.swift` and `OpenWeatherMapKeys.swift` are gitignored.
   When you add a property to the real file, **add it to the `.example` template in the same commit.**
   CI builds from the templates, so drift breaks CI *and* every fresh clone. This broke on 2026-07-31.
-- **`~/Documents/DayCast` is the only working tree.** The old `~/Desktop/DayCast` was deleted on
-  2026-07-31: no commits, no remote, just a stale `fastlane/` subset, so commits made there vanished
-  silently. Don't recreate it — it's iCloud-backed and xcodebuild hangs on it.
+- **`~/Projects/GrokCast` is the working tree** (Xcode project/scheme/App Store name are DayCast;
+  `GrokCast` is the historical bundle-id name — see `AGENTS.md`). The old `~/Desktop/DayCast` was
+  deleted on 2026-07-31: no commits, no remote, just a stale `fastlane/` subset, so commits made there
+  vanished silently. **Correction, 2026-09-04:** this doc previously pointed at `~/Documents/DayCast`,
+  which does not exist. `~/Documents/GrokCast` is an iCloud-synced mirror of this repo — confirmed
+  2026-09-04 that git operations there hang indefinitely. Don't work from it.
 - `xcodegen generate` after touching `project.yml` or adding/removing files.
 - Simulators installed: iPhone 17 Pro Max / 17 / 17e / Air. There is no "iPhone 17 Pro".
 
@@ -86,3 +89,60 @@ gh run list --branch main --limit 3
 ```
 
 If CI is red, that is the handoff — fix it before starting new work.
+
+## Current handoff: Radar cache-race + crash-risk fixes (2026-09-04)
+
+Claude Code ran a strict, multi-pass review of `DayCast/Features/Radar` — no branch, this is review
+output against `main` (HEAD `2e69a42`, CI green, working tree clean). 15 verified correctness bugs, none
+fixed yet. Per the division of labor above (Claude Code reviews the plan, Cursor executes fast
+multi-file edits against it), this is Cursor's to pick up.
+
+**Root cause behind about half the list:** several radar caches are unsynchronized global singletons —
+`Level3N0BSweepStore`, `Level3PolarMeshCache`, `Level3PolarGPUCache`, and the static probe caches in
+`XweatherRadarService` / `OpenWeatherMapRadarService` — written from multiple uncoordinated call paths
+(several triggers inside `RadarState`, plus the Today tab's own independent `RadarLoader`) with no
+generation token or actor isolation. `IEMRadarService.cachedSites` already solved this exact hazard with
+`@MainActor` isolation and a comment explaining why; that fix was never carried to its siblings.
+
+### Fix order
+
+1. **Cache races — one fix pattern, apply at each site:**
+   - `Services/Level3N0BService.swift:29` `loadSiteFramesNear` — mutates shared caches on the first
+     successful fetch with no check that it's still the latest request.
+   - `Services/IEMRadarService.swift:147` — a Level III N0B miss calls `removeAll()` on the shared
+     caches globally instead of scoping the clear to the failing site.
+   - `Services/XweatherRadarService.swift:19` — `probeCache` / `lastProbeFailure` /
+     `preferredLiveLayer` are unsynchronized static vars, mutated concurrently from both the Radar tab
+     and the Today tab's disposable `RadarLoader`.
+   - `Services/OpenWeatherMapRadarService.swift:11` — same pattern, plus one `lastProbeFailure` shared
+     between live-context and forecast-context probes, so failures can misattribute their reason.
+   - `Level3PolarGateMesh.swift:260` — the Today-tab radar teaser and the Radar tab's play loop share
+     one 28-entry LRU with no per-consumer reservation; the teaser can evict a frame the play loop
+     still needs.
+
+2. **Crash risks — one-line bounds checks:**
+   - `Level3N0BDecoder.swift:198` — a radial header read happens before the function's own bounds
+     guard runs; a truncated payload traps instead of returning `nil`.
+   - `Level3PolarMetalHost.swift:296` — force-unwraps a Mapbox-supplied pixel format inside a function
+     whose `catch` exists specifically to avoid this (the documented raster fallback).
+   - `Level3PolarMetalHost.swift:824` — force-subscripts a 16-element array from Mapbox on every frame.
+
+3. **State-correctness bugs:**
+   - `RadarState.swift:541` `setProduct` — the National branch is missing the "still selected" guard
+     the site-product branch already has, so a fast National→Site Doppler tap can lose the second tap.
+   - `RadarPreferences.swift:75` — two one-time basemap migrations cascade; the second reads back what
+     the first just wrote, sweeping Hybrid/Satellite users into Dark unintentionally.
+   - `Level3N0BDecoder.swift:236` — the polar azimuth gap-fill doesn't wrap past due north, so a gap
+     straddling 0°/360° paints a misaligned wedge.
+   - `RadarState.swift:977` `performDefaultRadarLoad` — a redundant site refresh can silently drop a
+     correctly-loaded Site Doppler view back to National on a transient network blip.
+   - `RadarView.swift:130` — two `.task(id:)` modifiers both call `handleLiveOpen`, doubling network
+     probes and camera requests on a single tab open.
+
+4. **Minor:** `Level3PolarMetalHost.swift:108` — the detached mesh-build task has no `[weak self]` and
+   no cancellation check, unlike its sibling fade-pump task; teardown mid-build keeps unnecessary GPU
+   work running.
+
+**Verification:** logic here is readable/testable by either agent, but this touches the live Metal
+render path and the radar control panel — the existing "Radar control panel taps: device only" caveat
+above applies, so a device pass matters more than usual before calling this done.
