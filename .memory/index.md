@@ -1,0 +1,13 @@
+- [[testflight-releases]] — TestFlight build bumps, archives, and uploads
+- [[today-mvp]] — Today tab storm-trust MVP (feed order, honesty, first slice)
+- [[weather-ia-competitive]] — 2026-08-23 layout/IA research vs Apple, RadarScope, CARROT, AccuWeather/TWC, WU
+- [[radar-dry-open]] — dry Live open National radar + camera fit
+- [[radar-best-path]] — RadarScope-class precip data path (IEM vs MRMS vs Level II)
+- [[radar-site-level3]] — Site Doppler Level III polar N0B (AWS decode + paint)
+- [[radar-soft-contour]] — Live precip texture-filter + LUT-snap isocontours
+- [[radar-basemap-dark]] — Mapbox Dark workstation default (Light remains selectable)
+- [[today-outlook-radar]] — Today Outlook plate on live Dark radar (Future pill is Yearly-only)
+- [[radar-lightning]] — Live Radar Xweather CG bolts (range ring removed)
+- [[storm-spotter]] — Sky Check (ex–Storm Spotter) honesty pass, rename, AI polish backlog, chat composer UX
+
+- [[alerts-ai-cta]] — Locked Alerts AI summary Unlock with Pro CTA
