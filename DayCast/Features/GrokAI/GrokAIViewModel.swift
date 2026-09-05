@@ -662,54 +662,7 @@ final class GrokAIViewModel {
   func fetchWeatherBrief() async throws -> String {
     guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
     await ensureWeatherContext()
-    guard let weather = weatherStore.currentWeather else {
-      throw StructuredFetchError.missingWeather
-    }
-
-    let location = weatherStore.currentLocation?.name ?? weather.location.name
-    let unit = weatherStore.temperatureUnit
-    let alertEvents = Array(
-      NWSAlertGrouping.uniqueEvents(from: weatherStore.displayableActiveAlerts).prefix(3))
-    let alertLine = alertEvents.joined(separator: ", ")
-
-    let system = GrokPrompts.todaysTakeSystemPrompt(
-      location: location,
-      weather: weather,
-      unit: unit,
-      alertLine: alertLine
-    )
-
-    let raw: String
-    do {
-      raw = try await completeChat(
-        messages: [
-          GrokBuildMessage(role: "system", content: system),
-          GrokBuildMessage(role: "user", content: "Give me today's weather take."),
-        ],
-        feature: .todaysTake,
-        maxTokens: 280
-      )
-    } catch StructuredFetchError.emptyResponse {
-      raw = LocalWeatherBrief.make(
-        weather: weather,
-        unit: unit,
-        locationName: location,
-        activeAlerts: Array(alertEvents)
-      )
-    }
-
-    guard
-      let finalized = GrokBriefText.finalize(
-        raw: raw,
-        weather: weather,
-        unit: unit,
-        locationName: location,
-        activeAlerts: Array(alertEvents)
-      )
-    else {
-      throw StructuredFetchError.emptyResponse
-    }
-    return finalized
+    return try await GrokBriefGenerator.generate(for: weatherStore, feature: .todaysTake)
   }
 
   func fetchRadarExplanation(context: RadarExplainContext) async throws -> String {

@@ -30,6 +30,7 @@ You are an iOS developer architect for Stephen’s DayCast.
 - Home Screen / Lock Screen widgets render only when `daycast_is_yearly`.
 - Public chrome: **Sky Check** (not Storm Spotter / Briefing Studio). Radar: **Site Doppler** / **National radar** (never MRMS / Mosaic in chrome).
 - Intentional legacy wire names: `grokCastScore`, `grokCastScoreLabel`, `grokBriefOneLiner`.
+- Today's Take has one generate path (`GrokBriefGenerator`) and one cache reader (`GrokBriefCache.loadValidBrief` / `loadValidOneLiner`). Widget and morning-notification one-liners must honor the weather token (temp band / condition). Do not rebuild the `grok_brief_<id>_<day>` key and skip it.
 - Do not change entitlement / paywall / StoreKit Pro logic without explicit approval.
 
 ## Current product map
