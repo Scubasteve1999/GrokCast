@@ -30,7 +30,8 @@ enum FeedSnapshotBuilder {
       hasSevereContext: hasSevereContext,
       isNowWet: NowHeroReconcile.isNowWet(
         conditionCode: weather.conditionCode, summary: summary),
-      hasLocalBriefing: hasLocalBriefing
+      hasLocalBriefing: hasLocalBriefing,
+      hasRadarRelevantAlert: alerts.contains(where: \.isRadarRelevant)
     )
   }
 }

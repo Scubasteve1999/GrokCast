@@ -100,6 +100,33 @@ final class NWSAlertTests: XCTestCase {
     XCTAssertFalse(makeAlert(event: "Special Weather Statement").isSevereEvent)
   }
 
+  // MARK: - isRadarRelevant
+
+  func testRadarRelevantTrueForStormWarningAndWatch() {
+    XCTAssertTrue(makeAlert(event: "Tornado Warning").isRadarRelevant)
+    XCTAssertTrue(makeAlert(event: "Severe Thunderstorm Watch").isRadarRelevant)
+    XCTAssertTrue(makeAlert(event: "Flash Flood Warning").isRadarRelevant)
+    XCTAssertTrue(makeAlert(event: "Winter Storm Warning").isRadarRelevant)
+    XCTAssertTrue(makeAlert(event: "Special Marine Warning").isRadarRelevant)
+  }
+
+  func testRadarRelevantFalseForHeatAndAirQuality() {
+    XCTAssertFalse(makeAlert(event: "Heat Advisory").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Extreme Heat Warning").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Excessive Heat Warning").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Air Quality Alert").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Air Quality Warning").isRadarRelevant)
+  }
+
+  func testRadarRelevantFalseForFreezeFogFireAndWind() {
+    XCTAssertFalse(makeAlert(event: "Freeze Advisory").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Hard Freeze Warning").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Dense Fog Advisory").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Red Flag Warning").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "High Wind Warning").isRadarRelevant)
+    XCTAssertFalse(makeAlert(event: "Special Weather Statement").isRadarRelevant)
+  }
+
   // MARK: - isLifeThreatening
 
   func testTornadoWarningIsLifeThreatening() {

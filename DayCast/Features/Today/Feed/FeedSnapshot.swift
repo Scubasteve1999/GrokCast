@@ -18,6 +18,8 @@ struct FeedSnapshot: Equatable, Sendable {
   var isNowWet: Bool = false
   /// NWS AFD/PNS cards for this city (`LocalBriefingStore`). Hide the rail when false.
   var hasLocalBriefing: Bool = false
+  /// Warning/watch that belongs on radar. Heat and air-quality advisories stay false.
+  var hasRadarRelevantAlert: Bool = false
 
   /// Live official NWS point alerts only. Outlook / MD never keep this slot.
   var showAlertsSlot: Bool { alertCount > 0 }
@@ -33,6 +35,7 @@ struct FeedSnapshot: Equatable, Sendable {
     showFireCard: false,
     hasSevereContext: false,
     isNowWet: false,
-    hasLocalBriefing: false
+    hasLocalBriefing: false,
+    hasRadarRelevantAlert: false
   )
 }

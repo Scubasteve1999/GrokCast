@@ -111,7 +111,8 @@ final class FeedAssemblerTests: XCTestCase {
       hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false,
-      isNowWet: false
+      isNowWet: false,
+      hasRadarRelevantAlert: true
     )
     XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
     XCTAssertEqual(
@@ -382,5 +383,102 @@ final class FeedAssemblerTests: XCTestCase {
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(items, [.now, .hourly, .radar, .health, .daily])
     XCTAssertLessThan(items.firstIndex(of: .hourly)!, items.firstIndex(of: .radar)!)
+  }
+
+  func testHeatAdvisoryOnDryAfternoonIsNotRadarStory() {
+    let weather = dryOliveBranchWeather()
+    let snapshot = FeedSnapshotBuilder.make(
+      weather: weather,
+      alerts: [makeAlert(event: "Heat Advisory", severity: "Moderate")]
+    )
+    XCTAssertFalse(snapshot.isNowWet)
+    XCTAssertFalse(snapshot.hasPrecipContent)
+    XCTAssertFalse(snapshot.hasRadarRelevantAlert)
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertFalse(FeedAssembler.isRadarStory(snapshot))
+    XCTAssertEqual(
+      FeedAssembler.items(from: snapshot),
+      [.now, .alerts, .radar, .health]
+    )
+  }
+
+  func testExtremeHeatWarningOnDryAfternoonIsNotRadarStory() {
+    let snapshot = FeedSnapshotBuilder.make(
+      weather: dryOliveBranchWeather(),
+      alerts: [makeAlert(event: "Extreme Heat Warning", severity: "Extreme")]
+    )
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertFalse(snapshot.hasRadarRelevantAlert)
+    XCTAssertFalse(FeedAssembler.isRadarStory(snapshot))
+  }
+
+  func testAirQualityAlertOnDryAfternoonIsNotRadarStory() {
+    let snapshot = FeedSnapshotBuilder.make(
+      weather: dryOliveBranchWeather(),
+      alerts: [makeAlert(event: "Air Quality Alert", severity: "Moderate")]
+    )
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertFalse(snapshot.hasRadarRelevantAlert)
+    XCTAssertFalse(FeedAssembler.isRadarStory(snapshot))
+  }
+
+  func testTornadoWarningOnDryPointIsRadarStory() {
+    let snapshot = FeedSnapshotBuilder.make(
+      weather: dryOliveBranchWeather(),
+      alerts: [makeAlert(event: "Tornado Warning", severity: "Extreme")]
+    )
+    XCTAssertFalse(snapshot.isNowWet)
+    XCTAssertTrue(snapshot.hasRadarRelevantAlert)
+    XCTAssertTrue(snapshot.showAlertsSlot)
+    XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
+  }
+
+  func testSevereThunderstormWatchOnDryPointIsRadarStory() {
+    let snapshot = FeedSnapshotBuilder.make(
+      weather: dryOliveBranchWeather(),
+      alerts: [makeAlert(event: "Severe Thunderstorm Watch", severity: "Severe")]
+    )
+    XCTAssertTrue(snapshot.hasRadarRelevantAlert)
+    XCTAssertTrue(FeedAssembler.isRadarStory(snapshot))
+  }
+
+  private func dryOliveBranchWeather() -> DayCastWeather {
+    DayCastWeather(
+      location: SavedLocation(name: "Olive Branch", latitude: 34.96, longitude: -89.83),
+      currentTemp: 99,
+      feelsLike: 104,
+      conditionCode: 0,
+      conditionText: "Clear",
+      humidity: 40,
+      windSpeed: 5,
+      uvIndex: 9,
+      precipitationChance: 4,
+      high: 101,
+      low: 78,
+      symbolName: "sun.max.fill",
+      fetchedAt: Date(),
+      timezoneIdentifier: "America/Chicago",
+      airQualityIndex: nil,
+      pm25: nil,
+      pollenLevel: nil,
+      hourly: [],
+      daily: [],
+      minutely15: []
+    )
+  }
+
+  private func makeAlert(event: String, severity: String? = nil) -> NWSAlert {
+    NWSAlert(
+      id: event,
+      event: event,
+      severity: severity,
+      headline: nil,
+      description: nil,
+      instruction: nil,
+      expires: Date().addingTimeInterval(3600),
+      areaDesc: "DeSoto, MS",
+      latitude: 34.96,
+      longitude: -89.83
+    )
   }
 }
