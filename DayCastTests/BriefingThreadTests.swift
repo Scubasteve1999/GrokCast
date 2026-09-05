@@ -145,6 +145,67 @@ final class BriefingThreadTests: XCTestCase {
     XCTAssertFalse(loaded[3].usesSkyCheckAnalysisCard)
   }
 
+  func testSaveOrderSurvivesIdenticalTimestamps() throws {
+    let store = GrokAIConversationStore(inMemory: true)
+    let olive = UUID()
+    let stamp = Date(timeIntervalSince1970: 1_788_643_200)
+    let glance = ChatMessage(
+      role: .assistant,
+      content: "Afternoon heat (96°F). A light shirt works.",
+      timestamp: stamp
+    )
+    let hide = ChatMessage(
+      role: .assistant,
+      content: SkyCheckDeskCopy.replyHidden,
+      timestamp: stamp
+    )
+
+    try store.saveHistory([glance, hide], for: olive)
+
+    let loaded = try store.loadHistory(for: olive)
+    XCTAssertEqual(loaded.map(\.content), [glance.content, SkyCheckDeskCopy.replyHidden])
+    XCTAssertEqual(loaded.map(\.timestamp), [stamp, stamp])
+  }
+
+  func testPersistedOrderPrefersSequenceIndexWhenTimestampsMatch() {
+    let stamp = Date(timeIntervalSince1970: 1_788_643_200)
+    let hide = ChatMessageEntity(
+      role: ChatMessage.Role.assistant.rawValue,
+      content: SkyCheckDeskCopy.replyHidden,
+      timestamp: stamp,
+      sequenceIndex: 1
+    )
+    let glance = ChatMessageEntity(
+      role: ChatMessage.Role.assistant.rawValue,
+      content: "Afternoon heat (96°F). A light shirt works.",
+      timestamp: stamp,
+      sequenceIndex: 0
+    )
+
+    let ordered = GrokAIConversationStore.messagesInPersistedOrder([hide, glance])
+    XCTAssertEqual(
+      ordered.map(\.content),
+      [glance.content, SkyCheckDeskCopy.replyHidden])
+  }
+
+  func testPersistedOrderFallsBackToTimestampWhenIndexMissing() {
+    let earlier = ChatMessageEntity(
+      role: ChatMessage.Role.assistant.rawValue,
+      content: "first",
+      timestamp: Date(timeIntervalSince1970: 1)
+    )
+    let later = ChatMessageEntity(
+      role: ChatMessage.Role.assistant.rawValue,
+      content: "second",
+      timestamp: Date(timeIntervalSince1970: 2)
+    )
+    XCTAssertNil(earlier.sequenceIndex)
+    XCTAssertNil(later.sequenceIndex)
+
+    let ordered = GrokAIConversationStore.messagesInPersistedOrder([later, earlier])
+    XCTAssertEqual(ordered.map(\.content), ["first", "second"])
+  }
+
   func testFullResolutionOriginalIsNotWhatSwiftDataKeeps() throws {
     let store = GrokAIConversationStore(inMemory: true)
     let olive = UUID()
