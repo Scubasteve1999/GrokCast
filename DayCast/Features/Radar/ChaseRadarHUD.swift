@@ -174,6 +174,7 @@ enum ChaseRadarHUDLogic {
 /// Compact strip: SCAN age, city, looking-at product, site id, nearest NWS alert.
 /// SPC Day 1 / outlook lives on Alerts and Today — not here.
 struct ChaseRadarHUD: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   var radarState: RadarState
   let mapCenter: CLLocationCoordinate2D
   var cityName: String?
@@ -194,6 +195,7 @@ struct ChaseRadarHUD: View {
 
       // Map-only slims this strip to SCAN. The Live/24-hr sheet stays up.
     }
+    .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? 300 : 240, alignment: .trailing)
     .accessibilityElement(children: .contain)
   }
 
@@ -203,15 +205,19 @@ struct ChaseRadarHUD: View {
   private func declutteredStrip(at now: Date) -> some View {
     VStack(alignment: .trailing, spacing: 4) {
       Text(scanAgeLine(at: now))
-        .font(DesignTokens.Typography.micro().monospaced())
+        .font(.caption.monospaced())
         .foregroundStyle(scanAgeColor(at: now))
+        .fixedSize(horizontal: false, vertical: true)
 
       if let alert = nearestAlertPresentation {
-        Text(alert.text)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(alertColor(alert))
-          .multilineTextAlignment(.trailing)
-          .lineLimit(2)
+        Label(alert.text, systemImage: "exclamationmark.triangle.fill")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(8)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(alertColor(alert).opacity(0.2), in: RoundedRectangle(cornerRadius: 6))
+          .accessibilityElement(children: .combine)
       }
     }
     .padding(.horizontal, 12)
@@ -221,62 +227,63 @@ struct ChaseRadarHUD: View {
   }
 
   private func fullStrip(at now: Date) -> some View {
-    VStack(alignment: .trailing, spacing: 4) {
-      Text(scanAgeLine(at: now))
-        .font(DesignTokens.Typography.micro().monospaced())
-        .foregroundStyle(scanAgeColor(at: now))
+    VStack(alignment: .leading, spacing: 6) {
+      Text(ChaseRadarHUDLogic.hudCityLine(locationName: cityName))
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+        .fixedSize(horizontal: false, vertical: true)
 
-      Text(
-        ChaseRadarHUDLogic.lookingAtLine(
+      Text(scanAgeLine(at: now))
+        .font(.caption.monospaced())
+        .foregroundStyle(scanAgeColor(at: now))
+        .fixedSize(horizontal: false, vertical: true)
+
+      if !dynamicTypeSize.isAccessibilitySize {
+        Text(
+          ChaseRadarHUDLogic.lookingAtLine(
+            product: radarState.selectedProduct,
+            showsFuture: radarState.showsFuture,
+            siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
+          )
+        )
+        .font(.caption)
+        .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+
+        if let siteID = ChaseRadarHUDLogic.lookingAtSiteSecondary(
           product: radarState.selectedProduct,
           showsFuture: radarState.showsFuture,
           siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
-        )
-      )
-      .font(DesignTokens.Typography.micro())
-      .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.85))
-      .lineLimit(1)
+        ) {
+          Text(siteID)
+            .font(.caption.monospaced())
+            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        }
 
-      if let siteID = ChaseRadarHUDLogic.lookingAtSiteSecondary(
-        product: radarState.selectedProduct,
-        showsFuture: radarState.showsFuture,
-        siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
-      ) {
-        Text(siteID)
-          .font(DesignTokens.Typography.micro().monospaced())
-          .foregroundStyle(DesignTokens.Palette.radarTextPrimary.opacity(0.62))
-          .lineLimit(1)
-      }
-
-      if let takeaway, !takeaway.isEmpty, radarState.siteProductAdvisory == nil {
-        Text(takeaway)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-          .multilineTextAlignment(.trailing)
-          .lineLimit(2)
-          .accessibilityLabel(takeaway)
+        if let takeaway, !takeaway.isEmpty, radarState.siteProductAdvisory == nil {
+          Text(takeaway)
+            .font(.caption)
+            .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityLabel(takeaway)
+        }
       }
 
       if let alert = nearestAlertPresentation {
-        Text(alert.text)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(alertColor(alert))
-          .multilineTextAlignment(.trailing)
-          .lineLimit(2)
+        Label(alert.text, systemImage: "exclamationmark.triangle.fill")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(8)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(alertColor(alert).opacity(0.2), in: RoundedRectangle(cornerRadius: 6))
+          .accessibilityElement(children: .combine)
       }
 
-      if let message = radarState.siteProductUnavailableMessage {
+      if let message = radarState.siteProductUnavailableMessage ?? radarState.siteProductAdvisory {
         Text(message)
-          .font(DesignTokens.Typography.micro())
+          .font(.caption)
           .foregroundStyle(DesignTokens.Palette.warning)
-          .multilineTextAlignment(.trailing)
-          .lineLimit(2)
-      } else if let note = radarState.siteProductAdvisory {
-        Text(note)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.warning)
-          .multilineTextAlignment(.trailing)
-          .lineLimit(2)
+          .fixedSize(horizontal: false, vertical: true)
       }
     }
     .padding(.horizontal, 10)
