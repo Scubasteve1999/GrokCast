@@ -172,7 +172,8 @@ final class TodayFirstViewportTests: XCTestCase {
       hasAQI: true,
       hasSunriseOrSunset: false,
       showFireCard: false,
-      hasLocalBriefing: true
+      hasLocalBriefing: true,
+      hasRadarRelevantAlert: true
     )
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(

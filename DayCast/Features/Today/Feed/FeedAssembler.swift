@@ -1,9 +1,11 @@
 import Foundation
 
 enum FeedAssembler {
-  /// Story-day teaser copy (not feed order): Next 2 Hours, official alerts, or Now is wet.
+  /// Story-day teaser paint (not feed order): Next 2 Hours, radar-relevant
+  /// warning/watch, or Now is wet. Heat / air-quality advisories still earn
+  /// the Alerts card via `showAlertsSlot` but do not hoist Site Doppler.
   static func isRadarStory(_ snapshot: FeedSnapshot) -> Bool {
-    snapshot.hasPrecipContent || snapshot.showAlertsSlot || snapshot.isNowWet
+    snapshot.hasPrecipContent || snapshot.hasRadarRelevantAlert || snapshot.isNowWet
   }
 
   /// Returns visible feed items in product order. Cards with no meaningful data

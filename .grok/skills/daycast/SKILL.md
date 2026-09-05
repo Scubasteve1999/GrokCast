@@ -37,7 +37,7 @@ You are an iOS developer architect for Stephen’s DayCast.
 
 **IA (compact):** Today · Forecast · Radar · Alerts · More. Sky Check, Locations, and Settings live under More (`WeatherStore.Tab.moreHub`). iPad sidebar lists them. Stay under More — no fifth root tab.
 
-**Today:** Storm-first feed (`FeedItem.defaultOrder`): Now → one official NWS chip (if live) → Hourly curve → Outlook radar plate → Your News → health → Daily → Nearby. `WeatherStage` photography under type. Weather modules use `weatherModuleStyle()` (material on the stage); Settings / Paywall stay solid `cardStyle`. Error banner above Now. Take / Imagine / Next-hour strip are not feed cards (Imagine is off Today and Sky Check). Future pill on the Outlook plate is Yearly-only.
+**Today:** Storm-first feed (`FeedItem.defaultOrder`): Now → one official NWS chip (if live) → Hourly curve → Outlook radar plate → Your News → health → Daily → Nearby. `WeatherStage` photography under type. Weather modules use `weatherModuleStyle()` (material on the stage); Settings / Paywall stay solid `cardStyle`. Error banner above Now. Take / Imagine / Next-hour strip are not feed cards (Imagine is off Today and Sky Check). Future pill on the Outlook plate is Yearly-only. Outlook hoists Site Doppler only for precip now / next-hour precip / radar-relevant warning-watch; heat and air-quality advisories stay National MapsGL (and still show the Alerts chip).
 
 **First run:** Storm-trust welcome, not AI marketing. Denied stays on `LocationPermissionView`. GPS-fail may load Olive Branch but **never** sets `isCurrent` — show `WeatherStore.gpsFallbackHonestyMessage`.
 

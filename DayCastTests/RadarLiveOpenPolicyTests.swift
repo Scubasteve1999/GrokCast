@@ -255,11 +255,16 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertEqual(
       RadarPreviewPaint.resolve(
         hoisted: true, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: true),
-      .unavailable
+      .nationalMapsGL
     )
     XCTAssertEqual(
       RadarPreviewPaint.resolve(
         hoisted: true, hasDrawableSweep: true, mapboxPresent: false, mapsGLKeysPresent: true),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: true, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: false),
       .unavailable
     )
     XCTAssertEqual(

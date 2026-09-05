@@ -74,7 +74,8 @@ final class RadarPreferencesTests: XCTestCase {
         hoisted: false, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: true),
       .nationalMapsGL
     )
-    // Buried National teaser stays MapsGL. Hoisted path is Site Doppler, never a blank rect.
+    // Buried National teaser stays MapsGL. Hoisted Site Doppler needs a drawable sweep;
+    // otherwise the same National MapsGL path, never a blank rect.
     XCTAssertTrue(
       MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: true, isSiteProduct: false, keysPresent: true)

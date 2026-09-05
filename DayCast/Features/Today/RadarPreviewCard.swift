@@ -4,6 +4,8 @@ import SwiftUI
 import UIKit
 
 /// What the Today radar teaser is allowed to paint. Never a blank rectangle.
+/// Hoisted Site Doppler only when a sweep can draw. Otherwise National MapsGL
+/// when keys are present. `.unavailable` is missing-keys only.
 enum RadarPreviewPaint: Equatable {
   case nationalMapsGL
   case siteDoppler
@@ -15,10 +17,7 @@ enum RadarPreviewPaint: Equatable {
     mapboxPresent: Bool,
     mapsGLKeysPresent: Bool
   ) -> RadarPreviewPaint {
-    if hoisted {
-      if hasDrawableSweep, mapboxPresent { return .siteDoppler }
-      return .unavailable
-    }
+    if hoisted, hasDrawableSweep, mapboxPresent { return .siteDoppler }
     if mapsGLKeysPresent, mapboxPresent { return .nationalMapsGL }
     return .unavailable
   }

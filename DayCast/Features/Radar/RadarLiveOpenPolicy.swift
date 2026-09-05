@@ -30,7 +30,8 @@ enum RadarLiveOpenPolicy {
 
   /// Read-only Live-open product for a local wet/dry now. Does not fetch tiles.
   /// National is assumed available. Today’s buried teaser is National radar;
-  /// the hoisted teaser is Site Doppler (`FeedAssembler.isRadarStory`).
+  /// the hoisted teaser is Site Doppler when a drawable sweep exists
+  /// (`FeedAssembler.isRadarStory`).
   static func productMatchingLocalNow(hasPrecip: Bool) -> Product {
     productToPresent(
       userExplicitlyChoseSiteDoppler: false,

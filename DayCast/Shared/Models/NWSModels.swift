@@ -93,6 +93,35 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     return lower.contains("warning") || lower.contains("watch")
   }
 
+  /// Warnings and watches that belong on radar (storms / precip).
+  /// Heat, air-quality, freeze, fog, fire, and wind-only products do not hoist Site Doppler.
+  var isRadarRelevant: Bool {
+    guard isWarning || isWatch else { return false }
+    let lower = event.lowercased()
+    return !Self.nonRadarHazardTokens.contains { lower.contains($0) }
+  }
+
+  private static let nonRadarHazardTokens = [
+    "heat",
+    "air quality",
+    "freeze",
+    "frost",
+    "wind chill",
+    "fog",
+    "smoke",
+    "red flag",
+    "fire weather",
+    "wildfire",
+    "high wind",
+    "gale warning",
+    "gale watch",
+    "small craft",
+    "lake wind",
+    "air stagnation",
+    "rip current",
+    "beach hazard",
+  ]
+
   var isWarning: Bool {
     event.lowercased().contains("warning")
   }
