@@ -18,7 +18,7 @@ Then in Xcode:
 1. **Window → Organizer** → select the archive
 2. **Distribute App** → **App Store Connect** → **Upload**
 3. Wait for processing in App Store Connect → **TestFlight**
-4. Add internal testers; run `docs/TestFlight-Radar-Widget-Validation-Checklist.md` on 2+ physical devices
+4. Add internal testers; run TestFlight QA on 2+ physical devices
 
 Optional CLI upload (after archive + export):
 

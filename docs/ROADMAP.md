@@ -4,8 +4,6 @@
 
 This document merges **App Store readiness**, **go-big product strategy**, and **Design System v2** into one phased plan. Each phase delivers user-visible value and moves toward a stunning, review-ready, differentiated app.
 
-**Post-1.0.6 handoff:** [Agent-Handoff-Grok-Next-Version.md](./Agent-Handoff-Grok-Next-Version.md) — gate rules, safe polish, and gated candidates (Spotter Network / mPING). Do not start gated work until a gate trips.
-
 ---
 
 ## Design north star
@@ -144,7 +142,7 @@ See `DesignSystem.md`. Names below map to existing Swift — they are not extra 
 1. Publish `docs/privacy.html` + `docs/support.html` to GitHub Pages
 2. Fill App Store Connect metadata + screenshot set (Today, Radar, Grok)
 3. Write App Review Notes (location, background, xAI key or embedded reviewer key)
-4. Run `docs/TestFlight-Radar-Widget-Validation-Checklist.md` on 2+ devices
+4. Run TestFlight QA on 2+ devices
 5. `./grok-build increment-build --tag` → Archive → Upload
 
 ---
