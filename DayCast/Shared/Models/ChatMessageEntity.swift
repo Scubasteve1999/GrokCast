@@ -5,6 +5,8 @@ import SwiftData
 /// Persists role + content + timestamp + generated image URLs (for Grok AI image gen results).
 /// Sky Check photo turns persist a small JPEG `thumbnailData` only — never the
 /// camera/library original. Legacy rows with nil thumb load as text.
+/// `isStormSpotterAnalysis` is the explicit glance-vs-analysis flag (assistant
+/// analysis rows have no thumb — do not infer from `thumbnailData`).
 @Model
 final class ChatMessageEntity {
   var id: UUID
@@ -16,6 +18,10 @@ final class ChatMessageEntity {
   var locationID: UUID?
   /// Capped JPEG thumb for a Sky Check user photo turn. Nil = text-only.
   var thumbnailData: Data?
+  /// Explicit Sky Check photo-analysis card. Default false = glance / pre-flag row.
+  var isStormSpotterAnalysis: Bool = false
+  /// User notes from the photo turn. Analysis card renders `content`; notes also live on the user caption.
+  var originalNotes: String?
 
   init(
     id: UUID = UUID(),
@@ -24,7 +30,9 @@ final class ChatMessageEntity {
     timestamp: Date = Date(),
     generatedImageURLString: String? = nil,
     locationID: UUID? = nil,
-    thumbnailData: Data? = nil
+    thumbnailData: Data? = nil,
+    isStormSpotterAnalysis: Bool = false,
+    originalNotes: String? = nil
   ) {
     self.id = id
     self.role = role
@@ -33,6 +41,8 @@ final class ChatMessageEntity {
     self.generatedImageURLString = generatedImageURLString
     self.locationID = locationID
     self.thumbnailData = thumbnailData
+    self.isStormSpotterAnalysis = isStormSpotterAnalysis
+    self.originalNotes = originalNotes
   }
 
   /// `thumbnailData` must already be the policy-approved JPEG (or nil).
@@ -45,7 +55,9 @@ final class ChatMessageEntity {
       timestamp: message.timestamp,
       generatedImageURLString: message.generatedImageURL?.absoluteString,
       locationID: locationID,
-      thumbnailData: thumbnailData
+      thumbnailData: thumbnailData,
+      isStormSpotterAnalysis: message.isStormSpotterAnalysis,
+      originalNotes: message.originalNotes
     )
   }
 
@@ -67,6 +79,8 @@ final class ChatMessageEntity {
       content: content,
       timestamp: timestamp,
       imageData: thumb,
+      isStormSpotterAnalysis: isStormSpotterAnalysis,
+      originalNotes: originalNotes,
       generatedImageURL: url
     )
   }

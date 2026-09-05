@@ -734,7 +734,7 @@ private struct GrokAIViewContent: View {
         Spacer(minLength: bubbleGutter)
       } else {
         VStack(alignment: .leading, spacing: 4) {
-          if message.isStormSpotterAnalysis {
+          if message.usesSkyCheckAnalysisCard {
             assistantMessageText(message.content)
               .fixedSize(horizontal: false, vertical: true)
               .padding(.horizontal, DesignTokens.Spacing.space16)

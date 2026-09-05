@@ -68,9 +68,73 @@ final class BriefingThreadTests: XCTestCase {
     XCTAssertNotEqual(oliveLoaded[0].imageData, original)
     XCTAssertEqual(oliveLoaded[1].content, "Shelf cloud.")
     XCTAssertNil(oliveLoaded[1].imageData)
+    XCTAssertTrue(oliveLoaded[1].isStormSpotterAnalysis)
+    XCTAssertTrue(oliveLoaded[1].usesSkyCheckAnalysisCard)
 
     XCTAssertTrue(try store.loadHistory(for: seattle).isEmpty)
     XCTAssertEqual(SkyCheckDeskCopy.photoCTA, "Check this sky")
+  }
+
+  func testEntityMappingPreservesAnalysisFlagWithoutInference() {
+    let analysis = ChatMessage(
+      role: .assistant,
+      content: "Shelf cloud.",
+      isStormSpotterAnalysis: true,
+      originalNotes: "looking southwest"
+    )
+    let entity = ChatMessageEntity(from: analysis, locationID: UUID(), thumbnailData: nil)
+    let restored = entity.toChatMessage()
+    XCTAssertEqual(restored.id, analysis.id)
+    XCTAssertTrue(restored.isStormSpotterAnalysis)
+    XCTAssertEqual(restored.originalNotes, "looking southwest")
+    XCTAssertTrue(restored.usesSkyCheckAnalysisCard)
+    XCTAssertNil(restored.imageData)
+
+    let glance = ChatMessage.assistant("Dry and hot this afternoon.")
+    let glanceRestored = ChatMessageEntity(from: glance, locationID: UUID(), thumbnailData: nil)
+      .toChatMessage()
+    XCTAssertFalse(glanceRestored.isStormSpotterAnalysis)
+    XCTAssertFalse(glanceRestored.usesSkyCheckAnalysisCard)
+    XCTAssertNil(glanceRestored.originalNotes)
+  }
+
+  func testPhotoAnalysisFlagRoundTripsForAnalysisCardPath() throws {
+    let store = GrokAIConversationStore(inMemory: true)
+    let olive = UUID()
+    let thumb = makeJPEG(width: 120, height: 80, quality: 0.6)
+    let turn = ChatMessage.stormSpotterPhotoTurn(
+      locationName: "Olive Branch, MS",
+      thumbnail: thumb,
+      analysis: "Shelf cloud along the gust front.",
+      notes: "looking southwest"
+    )
+    let glance = ChatMessage.assistant(
+      "Afternoon heat (96°F). A light shirt works.")
+    let hide = ChatMessage.assistant(SkyCheckDeskCopy.replyHidden)
+
+    try store.saveHistory([turn.user, turn.assistant, glance, hide], for: olive)
+
+    let loaded = try store.loadHistory(for: olive)
+    XCTAssertEqual(loaded.count, 4)
+
+    XCTAssertEqual(loaded[0].role, .user)
+    XCTAssertFalse(loaded[0].isStormSpotterAnalysis)
+    XCTAssertFalse(loaded[0].usesSkyCheckAnalysisCard)
+
+    XCTAssertEqual(loaded[1].role, .assistant)
+    XCTAssertTrue(loaded[1].isStormSpotterAnalysis)
+    XCTAssertEqual(loaded[1].originalNotes, "looking southwest")
+    XCTAssertEqual(loaded[1].content, "Shelf cloud along the gust front.")
+    XCTAssertTrue(loaded[1].usesSkyCheckAnalysisCard)
+    XCTAssertNil(loaded[1].imageData)
+
+    XCTAssertEqual(loaded[2].content, glance.content)
+    XCTAssertFalse(loaded[2].isStormSpotterAnalysis)
+    XCTAssertFalse(loaded[2].usesSkyCheckAnalysisCard)
+
+    XCTAssertEqual(loaded[3].content, SkyCheckDeskCopy.replyHidden)
+    XCTAssertFalse(loaded[3].isStormSpotterAnalysis)
+    XCTAssertFalse(loaded[3].usesSkyCheckAnalysisCard)
   }
 
   func testFullResolutionOriginalIsNotWhatSwiftDataKeeps() throws {
