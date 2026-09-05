@@ -5,6 +5,26 @@ enum AlertsActiveCopy {
   /// Official NWS rows come first. Grok summarize is a trailing action.
   static let grokFollowsOfficialAlerts = true
 
+  /// Text-only alerts summary — never Sky Check / image-blame copy.
+  static let grokSummaryOffline =
+    "No internet connection. Check your Wi-Fi or cellular and try again."
+  static let grokSummaryTimedOut =
+    "The request timed out. The service may be busy — try again."
+  static let grokSummaryFailed = "Couldn't summarize these alerts. Try again."
+
+  static func grokSummaryError(for error: Error, isOffline: Bool) -> String {
+    if isOffline { return grokSummaryOffline }
+    if let urlError = error as? URLError, urlError.code == .timedOut {
+      return grokSummaryTimedOut
+    }
+    if let localized = error as? LocalizedError,
+      let description = localized.errorDescription, !description.isEmpty
+    {
+      return description
+    }
+    return grokSummaryFailed
+  }
+
   static func stateLine(
     locationName: String?,
     nwsCount: Int,

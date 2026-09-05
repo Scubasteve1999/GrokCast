@@ -207,6 +207,29 @@ final class AlertsActiveCopyTests: XCTestCase {
     XCTAssertEqual(AlertsHonesty.noActiveAlerts, "No active NWS alerts")
   }
 
+  func testGrokSummaryErrorDoesNotUseSkyCheckCopy() {
+    XCTAssertFalse(
+      AlertsActiveCopy.grokSummaryTimedOut.localizedCaseInsensitiveContains("Sky Check"))
+    XCTAssertFalse(AlertsActiveCopy.grokSummaryTimedOut.localizedCaseInsensitiveContains("image"))
+    XCTAssertFalse(
+      AlertsActiveCopy.grokSummaryFailed.localizedCaseInsensitiveContains("Sky Check"))
+    XCTAssertEqual(
+      AlertsActiveCopy.grokSummaryError(for: URLError(.timedOut), isOffline: false),
+      AlertsActiveCopy.grokSummaryTimedOut)
+    XCTAssertEqual(
+      AlertsActiveCopy.grokSummaryError(for: URLError(.timedOut), isOffline: true),
+      AlertsActiveCopy.grokSummaryOffline)
+
+    let raw = NSError(
+      domain: "xAI", code: 42,
+      userInfo: [NSLocalizedDescriptionKey: "internal token dump xyz"])
+    let copy = AlertsActiveCopy.grokSummaryError(for: raw, isOffline: false)
+    XCTAssertEqual(copy, AlertsActiveCopy.grokSummaryFailed)
+    XCTAssertFalse(copy.contains("token dump"))
+    XCTAssertFalse(copy.contains("xyz"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Sky Check"))
+  }
+
   private func date(year: Int, month: Int, day: Int, hour: Int, minute: Int = 0) -> Date {
     calendar.date(
       from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))!

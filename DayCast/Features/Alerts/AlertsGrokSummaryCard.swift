@@ -115,7 +115,8 @@ struct AlertsGrokSummaryCard: View {
       summary = visible
       UserDefaults.standard.set(visible, forKey: cacheKey)
     } catch {
-      errorMessage = store.grokAIViewModel.userFriendlyStormError(for: error)
+      errorMessage = AlertsActiveCopy.grokSummaryError(
+        for: error, isOffline: store.isOffline)
     }
     isLoading = false
   }
