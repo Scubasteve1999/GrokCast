@@ -52,34 +52,52 @@ final class GrokAIConversationStore {
   }
 
   /// Loads messages for one selected city. Legacy rows with no location are dropped.
+  /// Order is last-save array order (`sequenceIndex`), not timestamp alone —
+  /// batch-created turns can share the same `Date()`.
   func loadHistory(for locationID: UUID?) throws -> [ChatMessage] {
     try discardUnscopedMessages()
     guard let locationID else { return [] }
     let descriptor = FetchDescriptor<ChatMessageEntity>(
-      predicate: #Predicate { $0.locationID == locationID },
-      sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+      predicate: #Predicate { $0.locationID == locationID }
     )
     let entities = try modelContext.fetch(descriptor)
-    return entities.map { $0.toChatMessage() }
+    return Self.messagesInPersistedOrder(entities).map { $0.toChatMessage() }
   }
 
   /// Replaces the persisted thread for one city. Other cities are left intact.
   /// User-turn thumbs are compressed + capped; other cities are not rewritten.
+  /// Writes `sequenceIndex` from array order so equal timestamps stay stable.
   func saveHistory(_ messages: [ChatMessage], for locationID: UUID) throws {
     try discardUnscopedMessages()
     try deleteAllPersisted(for: locationID, withoutSaving: true)
 
     let thumbs = SkyCheckPersistedThumbnail.byMessageID(in: messages)
-    for message in messages {
+    for (index, message) in messages.enumerated() {
       modelContext.insert(
         ChatMessageEntity(
           from: message,
           locationID: locationID,
-          thumbnailData: thumbs[message.id]
+          thumbnailData: thumbs[message.id],
+          sequenceIndex: index
         )
       )
     }
     try modelContext.save()
+  }
+
+  /// Save-array order first; missing indices fall back to timestamp, then id.
+  static func messagesInPersistedOrder(_ entities: [ChatMessageEntity]) -> [ChatMessageEntity] {
+    entities.sorted { lhs, rhs in
+      switch (lhs.sequenceIndex, rhs.sequenceIndex) {
+      case let (left?, right?) where left != right:
+        return left < right
+      default:
+        if lhs.timestamp != rhs.timestamp {
+          return lhs.timestamp < rhs.timestamp
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
+      }
+    }
   }
 
   /// Clears the persisted thread for one city.

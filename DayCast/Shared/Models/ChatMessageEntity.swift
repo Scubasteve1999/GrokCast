@@ -22,6 +22,8 @@ final class ChatMessageEntity {
   var isStormSpotterAnalysis: Bool?
   /// User notes from the photo turn. Analysis card renders `content`; notes also live on the user caption.
   var originalNotes: String?
+  /// Position in the city thread at last save. Nil = pre-index row (timestamp order).
+  var sequenceIndex: Int?
 
   init(
     id: UUID = UUID(),
@@ -32,7 +34,8 @@ final class ChatMessageEntity {
     locationID: UUID? = nil,
     thumbnailData: Data? = nil,
     isStormSpotterAnalysis: Bool? = nil,
-    originalNotes: String? = nil
+    originalNotes: String? = nil,
+    sequenceIndex: Int? = nil
   ) {
     self.id = id
     self.role = role
@@ -43,11 +46,17 @@ final class ChatMessageEntity {
     self.thumbnailData = thumbnailData
     self.isStormSpotterAnalysis = isStormSpotterAnalysis
     self.originalNotes = originalNotes
+    self.sequenceIndex = sequenceIndex
   }
 
   /// `thumbnailData` must already be the policy-approved JPEG (or nil).
   /// Do not pass `message.imageData` blindly — it may be a full-res original.
-  convenience init(from message: ChatMessage, locationID: UUID, thumbnailData: Data?) {
+  convenience init(
+    from message: ChatMessage,
+    locationID: UUID,
+    thumbnailData: Data?,
+    sequenceIndex: Int? = nil
+  ) {
     self.init(
       id: message.id,
       role: message.role.rawValue,
@@ -57,7 +66,8 @@ final class ChatMessageEntity {
       locationID: locationID,
       thumbnailData: thumbnailData,
       isStormSpotterAnalysis: message.isStormSpotterAnalysis,
-      originalNotes: message.originalNotes
+      originalNotes: message.originalNotes,
+      sequenceIndex: sequenceIndex
     )
   }
 
