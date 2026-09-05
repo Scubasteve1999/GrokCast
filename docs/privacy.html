@@ -15,7 +15,7 @@
 <body>
   <h1>DayCast Privacy Policy</h1>
 
-  <p class="last-updated">Last updated: August 17, 2026</p>
+  <p class="last-updated">Last updated: September 5, 2026</p>
 
   <p>DayCast ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share your information when you use our app.</p>
 
@@ -24,21 +24,21 @@
   <ul>
     <li><strong>Location Data</strong>: Precise and approximate location (latitude/longitude) to deliver accurate local weather, forecasts, radar, and alerts. This is collected when the app is in use and, with your permission, via low-power Significant Location Changes for optional background weather refresh. Location is used for app functionality, not for advertising or cross-app tracking.</li>
     <li><strong>Device ID &amp; Product Interaction</strong>: An anonymous device identifier and in-app interaction events (for example, which tabs you open, paywall views, and share actions) so we can understand product usage and improve DayCast. This is processed by PostHog. We do not use session replay or screen/element capture.</li>
-    <li><strong>Photos</strong>: If you use Storm Spotter, the sky photo you pick is resized and sent for analysis. We do not scan your library. We do not access the camera unless you choose a photo.</li>
-    <li><strong>Other User Content</strong>: Questions and prompts you type (or tap) in AI features, plus the weather context needed to answer them.</li>
+    <li><strong>Photos</strong>: If you use Sky Check, you can take a sky photo with the camera or pick one from your library. Both feed the same analysis path. The resized image is sent to xAI through the Pro AI proxy. We do not scan your library. Camera is used only when you choose Camera.</li>
+    <li><strong>Other User Content</strong>: Questions and prompts you type (or tap) in AI features, plus the weather context needed to answer them. Those go to the Pro proxy, then to xAI.</li>
   </ul>
 
   <h2>How We Use Your Information</h2>
   <ul>
     <li>To provide real-time weather forecasts, radar, alerts, and location-based features.</li>
-    <li>To power AI weather insights (weather context and optional photos are shared only when you actively use AI features).</li>
+    <li>To power AI weather insights (weather context and optional Sky Check photos are shared only when you actively use AI features; Pro requests go through our proxy, then to xAI).</li>
     <li>To analyze anonymous product usage (analytics) and improve the app.</li>
   </ul>
 
   <h2>Information We Share</h2>
   <p>We share information with the following third parties:</p>
   <ul>
-    <li><strong>AI service provider (xAI)</strong>: Your weather context, prompts, and optional sky photos are sent when you use AI features.</li>
+    <li><strong>AI (Pro proxy → xAI)</strong>: When you use Pro AI features, weather context, prompts, and optional Sky Check photos go to our proxy, which forwards them to xAI.</li>
     <li><strong>Apple</strong>: We use device location services (for local forecasts and optional background refresh) and may reference public NWS station data.</li>
     <li><strong>Weather and map providers</strong>: Open-Meteo and the U.S. National Weather Service (NWS) for forecasts and alerts; Mapbox and Xweather for radar map tiles. Tile requests include the map area you are viewing.</li>
     <li><strong>PostHog</strong>: Anonymous product analytics (device ID and product interaction events). Not used for advertising or tracking you across other companies’ apps or websites.</li>
@@ -46,14 +46,14 @@
   <p>We do not sell your personal information.</p>
 
   <h2>Data Retention</h2>
-  <p>Location data is used in real-time and is not stored on our servers. Analytics events are retained by PostHog according to that service’s retention settings. Weather context and prompts sent for AI features are processed to generate responses and are subject to the AI provider's data practices.</p>
+  <p>Location data is used in real-time and is not stored on our servers. Analytics events are retained by PostHog according to that service’s retention settings. Weather context, prompts, and optional Sky Check photos sent for AI features are processed via the Pro proxy to generate responses and are subject to the AI provider's data practices.</p>
 
   <h2>Your Choices</h2>
   <ul>
     <li>You can disable location access at any time in your device Settings.</li>
     <li>You can turn off Background Weather Updates in the app Settings.</li>
     <li>You can turn off <strong>Share analytics</strong> in DayCast Settings to stop sending product analytics events.</li>
-    <li>You can stop using AI features if you do not want weather context shared with the AI provider.</li>
+    <li>You can stop using AI features if you do not want weather context or Sky Check photos shared via the Pro proxy with the AI provider.</li>
   </ul>
 
   <h2>Children’s Privacy</h2>
