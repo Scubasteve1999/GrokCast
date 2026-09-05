@@ -27,6 +27,11 @@ OWM_CACHE_TTL = "300"
 # Separate from DISABLED so killing AI does not also kill weather.
 OWM_DISABLED = "0"
 
+# Daily rollup just before UTC midnight so it sees finished day totals,
+# not a partial count after the UTC day rolls over. scheduled → runDailyRollup.
+[triggers]
+crons = ["59 23 * * *"]
+
 # Namespace title is SPOTTERCAST_USAGE — the account already has an unrelated
 # USAGE namespace. The binding stays USAGE, which is what the worker references.
 [[kv_namespaces]]
