@@ -18,8 +18,8 @@ final class ChatMessageEntity {
   var locationID: UUID?
   /// Capped JPEG thumb for a Sky Check user photo turn. Nil = text-only.
   var thumbnailData: Data?
-  /// Explicit Sky Check photo-analysis card. Default false = glance / pre-flag row.
-  var isStormSpotterAnalysis: Bool = false
+  /// Explicit Sky Check photo-analysis card. Nil = pre-flag row (glance).
+  var isStormSpotterAnalysis: Bool?
   /// User notes from the photo turn. Analysis card renders `content`; notes also live on the user caption.
   var originalNotes: String?
 
@@ -31,7 +31,7 @@ final class ChatMessageEntity {
     generatedImageURLString: String? = nil,
     locationID: UUID? = nil,
     thumbnailData: Data? = nil,
-    isStormSpotterAnalysis: Bool = false,
+    isStormSpotterAnalysis: Bool? = nil,
     originalNotes: String? = nil
   ) {
     self.id = id
@@ -79,7 +79,7 @@ final class ChatMessageEntity {
       content: content,
       timestamp: timestamp,
       imageData: thumb,
-      isStormSpotterAnalysis: isStormSpotterAnalysis,
+      isStormSpotterAnalysis: isStormSpotterAnalysis ?? false,
       originalNotes: originalNotes,
       generatedImageURL: url
     )

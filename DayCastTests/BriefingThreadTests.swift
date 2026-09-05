@@ -96,6 +96,14 @@ final class BriefingThreadTests: XCTestCase {
     XCTAssertFalse(glanceRestored.isStormSpotterAnalysis)
     XCTAssertFalse(glanceRestored.usesSkyCheckAnalysisCard)
     XCTAssertNil(glanceRestored.originalNotes)
+
+    let preFlag = ChatMessageEntity(
+      role: ChatMessage.Role.assistant.rawValue,
+      content: "Shelf cloud."
+    )
+    XCTAssertNil(preFlag.isStormSpotterAnalysis)
+    XCTAssertFalse(preFlag.toChatMessage().isStormSpotterAnalysis)
+    XCTAssertFalse(preFlag.toChatMessage().usesSkyCheckAnalysisCard)
   }
 
   func testPhotoAnalysisFlagRoundTripsForAnalysisCardPath() throws {
