@@ -479,34 +479,3 @@ struct NWSStationsResponse: Decodable {
 struct NWSStationFeature: Decodable {
   let id: String  // full station URL, e.g. https://api.weather.gov/stations/KOLV
 }
-
-// MARK: - NWS Grid Forecast response models (tolerant decoders for /gridpoints/.../forecast ; periods drive mapping to existing models)
-struct NWSForecastResponse: Decodable {
-  let properties: NWSForecastProperties
-}
-
-struct NWSForecastProperties: Decodable {
-  let periods: [NWSForecastPeriod]
-}
-
-struct NWSForecastPeriod: Decodable {
-  let number: Int
-  let name: String
-  let startTime: String
-  let endTime: String
-  let isDaytime: Bool
-  let temperature: Int?
-  let temperatureUnit: String?
-  let windSpeed: String?
-  let windDirection: String?
-  let icon: String?
-  let shortForecast: String?
-  let detailedForecast: String?
-  let probabilityOfPrecipitation: NWSValueUnit?
-
-  /// PoP as 0–100 for UI; NWS may omit or null the value on dry periods.
-  var precipChancePercent: Int {
-    guard let value = probabilityOfPrecipitation?.value else { return 0 }
-    return max(0, min(100, Int(value.rounded())))
-  }
-}

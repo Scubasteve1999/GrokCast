@@ -175,12 +175,3 @@ struct OneCallTimelineResponse: Decodable {
   let next: String?
   let prev: String?
 }
-
-struct OneCallMinuteDataPoint: Decodable, Equatable {
-  let dt: TimeInterval
-  let precipitation: Double
-}
-
-struct OneCallMinuteTimelineResponse: Decodable {
-  let data: [OneCallMinuteDataPoint]
-}

@@ -10,11 +10,6 @@ enum WidgetDataStore {
   static let alertSummariesKey = "daycast_widget_alert_summaries"
   static let savedLocationsKey = "daycast_saved_locations"
 
-  /// Widget Pro extras. Yearly only — not monthly `isPro`.
-  static var isProSubscriber: Bool {
-    isYearlySubscriber
-  }
-
   static var isYearlySubscriber: Bool {
     groupDefaults?.bool(forKey: isYearlyKey) ?? false
   }

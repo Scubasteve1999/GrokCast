@@ -38,28 +38,6 @@ final class OpenWeatherMapService {
     return error.localizedDescription
   }
 
-  func fetchCurrentWeather(for location: SavedLocation) async throws -> OpenWeatherMapCurrentWeather {
-    isLoading = true
-    error = nil
-    defer { isLoading = false }
-
-    let hybrid = try await fetchHybrid(for: location)
-    return hybrid.0
-  }
-
-  func fetchForecast(for location: SavedLocation, hours: Int = 40) async throws
-    -> OpenWeatherMapForecast
-  {
-    isLoading = true
-    error = nil
-    defer { isLoading = false }
-
-    let hybrid = try await fetchHybrid(for: location)
-    let maxEntries = min(max(hours, 1), 40)
-    let trimmed = Array(hybrid.1.entries.prefix(maxEntries))
-    return OpenWeatherMapForecast(locationName: hybrid.1.locationName, entries: trimmed)
-  }
-
   /// Fetches current + hourly outlook for the hybrid Today/Forecast layer.
   /// Prefers One Call API 4.0; falls back to legacy 2.5 endpoints when subscription is missing.
   func fetchHybrid(for location: SavedLocation) async throws -> (
@@ -78,20 +56,6 @@ final class OpenWeatherMapService {
     async let currentTask = fetchCurrentPayloadLegacy(for: location)
     async let forecastTask = fetchForecastPayloadLegacy(for: location, hours: 40)
     return try await (currentTask, forecastTask)
-  }
-
-  func fetchHourlyTimeline(for location: SavedLocation) async throws -> OpenWeatherMapForecast {
-    isLoading = true
-    error = nil
-    defer { isLoading = false }
-
-    if let timeline = try? await fetchHourlyTimelineOneCall(for: location) {
-      lastDataSource = .oneCall4
-      return timeline
-    }
-
-    lastDataSource = .legacy25
-    return try await fetchForecastPayloadLegacy(for: location, hours: 40)
   }
 
   // MARK: - One Call API 4.0

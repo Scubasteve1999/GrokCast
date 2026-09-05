@@ -31,63 +31,7 @@ struct FigmaSectionLabel: View {
   }
 }
 
-struct FigmaSubsectionLabel: View {
-  let title: String
-
-  var body: some View {
-    Text(title)
-      .font(DesignTokens.Typography.subsection())
-      .foregroundStyle(DesignTokens.Palette.textSecondary)
-      .frame(maxWidth: .infinity, alignment: .leading)
-  }
-}
-
-struct FigmaAccentSectionLabel: View {
-  let title: String
-  let icon: String
-  let color: Color
-
-  var body: some View {
-    HStack(spacing: 6) {
-      Image(systemName: icon)
-        .font(DesignTokens.Typography.symbol())
-      Text(title)
-        .font(DesignTokens.Typography.subsection())
-    }
-    .foregroundStyle(color)
-    .frame(maxWidth: .infinity, alignment: .leading)
-  }
-}
-
-extension View {
-  /// Standard Figma screen content padding (20pt sides, tab-bar bottom clearance).
-  func figmaScreenPadding(top: CGFloat = DesignTokens.Layout.topPadding) -> some View {
-    padding(.horizontal, DesignTokens.Layout.horizontalPadding)
-      .padding(.top, top)
-      .padding(.bottom, DesignTokens.Layout.bottomPadding)
-  }
-}
-
 // MARK: - Section chrome (Settings, More hub, long forms)
-
-struct SettingsSectionHeader: View {
-  let title: String
-  var footer: String? = nil
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      FigmaSectionLabel(title: title)
-
-      if let footer {
-        Text(footer)
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-  }
-}
 
 struct SettingsGroupCard<Content: View>: View {
   @ViewBuilder var content: () -> Content

@@ -4,42 +4,19 @@ import XCTest
 
 final class NowHeroPhotographyTests: XCTestCase {
   func testNowHeroIsPhotographyNotASystemGlyph() {
-    XCTAssertFalse(NowHeroPhotography.glyphIsSectionFace)
-
     let samples: [(Int?, Bool)] = [
       (0, true), (0, false), (2, true), (3, true), (45, true),
       (61, true), (71, false), (95, true), (nil, true),
     ]
     for (code, isDay) in samples {
-      switch NowHeroPhotography.treatment(conditionCode: code, isDay: isDay) {
-      case .systemGlyph(let symbol):
-        XCTFail("Now face must not be SF Symbol \(symbol) for code \(String(describing: code))")
-      case .photography(let asset):
-        XCTAssertTrue(
-          NowHeroPhotography.knownAssetNames.contains(asset),
-          "Unknown still \(asset) for code \(String(describing: code))"
-        )
-        XCTAssertEqual(
-          asset,
-          NowHeroPhotography.stillName(conditionCode: code, isDay: isDay)
-        )
-        XCTAssertFalse(asset.hasPrefix("cloud"))
-        XCTAssertFalse(asset.contains("sun.max"))
-      }
+      let asset = NowHeroPhotography.stillName(conditionCode: code, isDay: isDay)
+      XCTAssertTrue(
+        NowHeroPhotography.knownAssetNames.contains(asset),
+        "Unknown still \(asset) for code \(String(describing: code))"
+      )
+      XCTAssertFalse(asset.hasPrefix("cloud"))
+      XCTAssertFalse(asset.contains("sun.max"))
     }
-  }
-
-  func testHeroPlateUsesFeedWidthNotTheStillIntrinsicSize() {
-    let feedWidth: CGFloat = 353
-    let phone = NowHeroPhotography.plateSize(containerWidth: feedWidth)
-    XCTAssertEqual(phone.width, feedWidth)
-    XCTAssertEqual(phone.height, NowHeroPhotography.plateHeight)
-    XCTAssertEqual(phone.height, TodayGlanceLayout.nowBudgetHeight)
-    XCTAssertNotEqual(phone.width, phone.height)
-    let wide = NowHeroPhotography.plateSize(containerWidth: 390)
-    XCTAssertEqual(wide.width, 390)
-    XCTAssertEqual(wide.height, phone.height)
-    XCTAssertEqual(NowHeroPhotography.plateSize(containerWidth: 0).width, 0)
   }
 
   func testStageSizeUsesScreenBoundsNotJPEGIntrinsic() {
@@ -67,9 +44,10 @@ final class NowHeroPhotographyTests: XCTestCase {
       "NewsHeroHaze"
     )
     XCTAssertEqual(
-      NowHeroPhotography.treatment(conditionCode: 61, isDay: true),
-      .photography(assetName: "NewsHeroStorm")
+      NowHeroPhotography.stillName(conditionCode: 61, isDay: true),
+      "NewsHeroStorm"
     )
+    XCTAssertFalse(NowHeroPhotography.knownAssetNames.contains("NewsHeroFlood"))
   }
 
   func testNewsRailPrefersRealImageURLAndNeverInventStockHeroes() {

@@ -307,7 +307,6 @@ final class WeatherStore {
       configuration: grokConfig, subscription: SubscriptionManager.shared)
   }
   let openWeatherMapService = OpenWeatherMapService()
-  private let keychain = KeychainService.shared
 
   private let savedLocationsKey = "daycast_saved_locations"
   private let hasRequestedLocationPermissionKey = "daycast_has_requested_location_permission"
@@ -332,7 +331,7 @@ final class WeatherStore {
     return status == .authorizedWhenInUse || status == .authorizedAlways
   }
 
-  // NWS: primary for DayCastWeather via grid (--primary-source --grid-system); alerts/obs remain additive hybrid US-only non-fatal
+  // NWS alerts/obs: additive hybrid, US-only, non-fatal. Open-Meteo remains primary.
   var activeAlerts: [NWSAlert] = []
   var alertHistory: [NWSAlert] = []
   private var lastAlertsFetch: Date?
@@ -389,8 +388,7 @@ final class WeatherStore {
   private var lastObservationFetch: Date?
   private var observationForLocation: UUID?
 
-  /// Additive hybrid layer from OpenWeatherMap (current + 3-hour forecast). Open-Meteo remains primary.
-  var currentOpenWeatherMapWeather: OpenWeatherMapCurrentWeather?
+  /// Additive hybrid layer from OpenWeatherMap (3-hour forecast). Open-Meteo remains primary.
   var openWeatherMapForecast: OpenWeatherMapForecast?
   private var lastOpenWeatherMapFetch: Date?
   private var openWeatherMapForLocation: UUID?
@@ -1309,13 +1307,6 @@ final class WeatherStore {
   /// Background entry point for BGAppRefreshTask — uses persisted saved locations.
   ///
   /// Keeps work lightweight: NWS alerts + local notifications + optional rain check.
-  /// Background entry used by silent push. Prefer `performBackgroundRefresh`.
-  @MainActor
-  @discardableResult
-  func performBackgroundAlertCheck(taskStart: CFAbsoluteTime? = nil) async -> Bool {
-    await performBackgroundRefresh(taskStart: taskStart)
-  }
-
   /// Never calls Grok (morning brief) here — that belongs on foreground refresh only.
   ///
   /// Covers NWS alert polling, rain Minutecast checks, fire proximity, and Live Activity
@@ -1561,31 +1552,13 @@ final class WeatherStore {
     }
 
     do {
-      let (current, forecast) = try await openWeatherMapService.fetchHybrid(for: loc)
-      currentOpenWeatherMapWeather = current
+      let (_, forecast) = try await openWeatherMapService.fetchHybrid(for: loc)
       openWeatherMapForecast = forecast
       lastOpenWeatherMapFetch = Date()
       openWeatherMapForLocation = loc.id
     } catch {
       // Non-fatal: preserve last-known-good hybrid data on failure.
     }
-  }
-
-  /// Nearest OpenWeatherMap 3-hour forecast entry within `toleranceMinutes` of `date`.
-  func openWeatherMapEntry(closestTo date: Date, toleranceMinutes: Int = 60)
-    -> OpenWeatherMapForecastEntry?
-  {
-    guard let forecast = openWeatherMapForecast else { return nil }
-    let tolerance = TimeInterval(toleranceMinutes * 60)
-    var best: OpenWeatherMapForecastEntry?
-    var bestDelta = TimeInterval.greatestFiniteMagnitude
-    for entry in forecast.entries {
-      let delta = abs(entry.time.timeIntervalSince(date))
-      guard delta <= tolerance, delta < bestDelta else { continue }
-      bestDelta = delta
-      best = entry
-    }
-    return best
   }
 
   func addLocation(_ location: SavedLocation) -> Bool {
@@ -1629,13 +1602,6 @@ final class WeatherStore {
   /// Removes the Keychain developer key so an embedded TestFlight key (if any) can take over.
   func clearXAIApiKey() {
     try? grokConfig.clearDeveloperKey()
-  }
-
-  // For demo / preview
-  func loadPreviewData() {
-    // Olive Branch preview
-    let olive = SavedLocation(name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295)
-    currentLocation = olive
   }
 
   /// Clears in-memory weather and App Group widget cache for the active location.

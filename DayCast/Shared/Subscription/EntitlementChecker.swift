@@ -5,17 +5,6 @@ import Foundation
 enum EntitlementChecker {
   static let freeSavedLocationLimit = 1
 
-  static func access(
-    subscription: SubscriptionManager,
-    hasDeveloperKey: Bool
-  ) -> GrokAccessTier {
-    GrokAccessRules.tier(
-      isPro: subscription.isPro,
-      proxyConfigured: GrokProxyConfiguration.isConfigured,
-      hasDeveloperKey: hasDeveloperKey
-    ) ?? .free
-  }
-
   static func canUseGrokAI(
     subscription: SubscriptionManager,
     hasDeveloperKey: Bool
@@ -87,11 +76,6 @@ enum EntitlementChecker {
 enum DayCastEntitlements {
   static func canUseYearlyExtras(isYearly: Bool, hasDeveloperKey: Bool) -> Bool {
     isYearly || hasDeveloperKey
-  }
-
-  /// Home Screen / Lock Screen weather widgets. App Group `daycast_is_yearly` only.
-  static func canRenderHomeScreenWidgets(isYearlySubscriber: Bool) -> Bool {
-    WidgetDataStore.canRenderWeather(isYearlySubscriber: isYearlySubscriber)
   }
 }
 
