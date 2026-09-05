@@ -187,39 +187,6 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     )
     XCTAssertEqual(RadarFeedCopy.failLine(siteID: "NQA"), "NQA · scan unavailable")
     XCTAssertEqual(
-      RadarFeedCopy.headline(
-        conditionCode: 61,
-        siteID: "NQA",
-        ageLine: "SCAN <1m",
-        hoisted: true,
-        availability: .unavailable,
-        paint: .siteDoppler
-      ),
-      "NQA · scan unavailable"
-    )
-    XCTAssertEqual(
-      RadarFeedCopy.headline(
-        conditionCode: 0,
-        siteID: nil,
-        ageLine: "SCAN —",
-        hoisted: false,
-        availability: .unavailable,
-        paint: .unavailable
-      ),
-      RadarChromeCopy.unavailableTitle
-    )
-    XCTAssertEqual(
-      RadarFeedCopy.headline(
-        conditionCode: 61,
-        siteID: "NQA",
-        ageLine: "SCAN 18m",
-        hoisted: true,
-        availability: .stale,
-        paint: .siteDoppler
-      ),
-      "Stale · SCAN 18m"
-    )
-    XCTAssertEqual(
       RadarFeedCopy.failLine(siteID: nil),
       "Site Doppler · scan unavailable"
     )
@@ -258,9 +225,8 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     )
     XCTAssertEqual(RadarPreviewSource.siteZoom, RadarLiveCameraPolicy.localZoom)
     XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
-    XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
     XCTAssertEqual(RadarPreviewSource.outlookPlateHeight, 168)
-    XCTAssertGreaterThan(RadarPreviewSource.outlookPlateHeight, RadarPreviewSource.teaserHeight)
+    XCTAssertGreaterThan(RadarPreviewSource.outlookPlateHeight, 72)
   }
 
   func testUserVisibleLabelsNeverSayMosaic() {

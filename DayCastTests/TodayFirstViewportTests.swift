@@ -16,7 +16,6 @@ final class TodayFirstViewportTests: XCTestCase {
   }
 
   func testOutlookRadarPlateIsTallerThanThePostageStamp() {
-    XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
     XCTAssertEqual(RadarPreviewSource.outlookPlateHeight, 168)
     XCTAssertGreaterThanOrEqual(RadarPreviewSource.outlookPlateHeight, 160)
     XCTAssertLessThanOrEqual(RadarPreviewSource.outlookPlateHeight, 180)
@@ -59,8 +58,10 @@ final class TodayFirstViewportTests: XCTestCase {
       sentence: "Thunderstorms possible after 2 AM.",
       product: .radar
     )
-    XCTAssertTrue(spoken.contains("Outlook"))
-    XCTAssertTrue(spoken.contains("Thunderstorms possible after 2 AM."))
+    XCTAssertEqual(
+      spoken,
+      "Outlook. Thunderstorms possible after 2 AM. Radar. Opens the Radar tab."
+    )
     XCTAssertFalse(spoken.localizedCaseInsensitiveContains("Rain now · TLH"))
     XCTAssertFalse(spoken.localizedCaseInsensitiveContains("Intensity"))
   }
@@ -88,7 +89,6 @@ final class TodayFirstViewportTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: true,
-      hasAQI: true,
       hasSunriseOrSunset: false,
       showFireCard: false,
       hasLocalBriefing: true
@@ -169,7 +169,6 @@ final class TodayFirstViewportTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: true,
       hasSunriseOrSunset: false,
       showFireCard: false,
       hasLocalBriefing: true

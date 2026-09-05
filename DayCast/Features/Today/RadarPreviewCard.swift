@@ -83,10 +83,8 @@ struct RadarPreviewCard: View {
 /// PNG mosaic is a different scale — do not use it when MapsGL is the Live paint.
 enum RadarPreviewSource {
   static let previewBaseMap = RadarBaseMapStyle.dark
-  /// Retired postage-stamp height. Outlook plate uses `outlookPlateHeight`.
-  static let teaserHeight: CGFloat = 72
-  /// Today Outlook plate map. Taller than the 72pt stamp; pills overlay so
-  /// Your News can still peek the header on iPhone 16.
+  /// Today Outlook plate map. Pills overlay so Your News can still peek the
+  /// header on iPhone 16.
   static let outlookPlateHeight: CGFloat = 168
   /// Buried National teaser — same CONUS floor Live uses when local is dry.
   static var previewZoom: Double { RadarLiveCameraPolicy.conusZoom }

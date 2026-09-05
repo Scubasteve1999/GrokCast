@@ -5,7 +5,6 @@ enum FeedSnapshotBuilder {
     weather: DayCastWeather?,
     alerts: [NWSAlert],
     showFireCard: Bool = false,
-    hasSevereContext: Bool = false,
     hasLocalBriefing: Bool = false
   ) -> FeedSnapshot {
     guard let weather else { return .empty }
@@ -24,10 +23,8 @@ enum FeedSnapshotBuilder {
       hasHourly: !weather.hourly.isEmpty,
       hasDaily: !weather.daily.isEmpty,
       hasPrecipContent: hasPrecip,
-      hasAQI: weather.airQualityIndex != nil,
       hasSunriseOrSunset: hasSun,
       showFireCard: showFireCard,
-      hasSevereContext: hasSevereContext,
       isNowWet: NowHeroReconcile.isNowWet(
         conditionCode: weather.conditionCode, summary: summary),
       hasLocalBriefing: hasLocalBriefing
