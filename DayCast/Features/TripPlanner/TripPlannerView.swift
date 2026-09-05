@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct TripPlannerView: View {
+  static let travelTipTitle = "Travel tip"
+
   @Environment(WeatherStore.self) private var store
   @State private var destination = ""
   @State private var startDate = Date().addingTimeInterval(86400)
@@ -120,7 +122,7 @@ struct TripPlannerView: View {
         packingSection(packing)
       }
 
-      if let grokAdvice = result.grokAdvice, !grokAdvice.isEmpty {
+      if let grokAdvice = result.grokAdvice.flatMap(TripForecastService.acceptedAdvice) {
         grokAdviceSection(grokAdvice)
       }
     }
@@ -190,7 +192,7 @@ struct TripPlannerView: View {
 
   private func grokAdviceSection(_ advice: String) -> some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("Today's Take")
+      Text(Self.travelTipTitle)
         .font(DesignTokens.Typography.subsection())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .accessibilityAddTraits(.isHeader)

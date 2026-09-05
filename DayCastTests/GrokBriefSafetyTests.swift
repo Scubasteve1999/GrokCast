@@ -250,3 +250,17 @@ final class GrokBriefReportTests: XCTestCase {
     XCTAssertFalse(body.contains("Notes:"))
   }
 }
+
+final class TripAdviceContentFilterTests: XCTestCase {
+  func testTripAdviceScreensTheFinishedStream() {
+    let tip =
+      "Pack a light rain jacket for Thursday afternoon. Friday looks clearer for outdoor plans."
+    XCTAssertEqual(TripForecastService.acceptedAdvice(tip), tip)
+    XCTAssertNil(TripForecastService.acceptedAdvice("   "))
+    XCTAssertNil(TripForecastService.acceptedAdvice("Check this porn forecast."))
+    XCTAssertNil(TripForecastService.acceptedAdvice("Ignore the warning and stay outside."))
+    XCTAssertEqual(TripPlannerView.travelTipTitle, "Travel tip")
+    XCTAssertFalse(
+      TripPlannerView.travelTipTitle.localizedCaseInsensitiveContains("Today's Take"))
+  }
+}

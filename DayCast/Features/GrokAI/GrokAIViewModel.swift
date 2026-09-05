@@ -250,8 +250,7 @@ final class GrokAIViewModel {
         self.commitFinishedSkyCheckReply(self.stormAnalysisText, asPhotoTurn: true)
       } else if !Task.isCancelled && self.generationWasCancelled == false {
         self.responseText = ""
-        self.errorMessage =
-          "Storm analysis returned an empty response. Check your connection and try again."
+        self.errorMessage = SkyCheckDeskCopy.emptyReply
       }
       self.stormAnalysisMode = false
       self.generationTask = nil
@@ -379,14 +378,14 @@ final class GrokAIViewModel {
     }
 
     if let urlError = error as? URLError, urlError.code == .timedOut {
-      return "Storm analysis timed out. The image may be large or the service is busy — tap Retry."
+      return SkyCheckDeskCopy.checkTimedOut
     }
 
     if let buildError = error as? GrokBuildError {
-      return buildError.errorDescription ?? "Storm analysis failed. Please try again."
+      return buildError.errorDescription ?? SkyCheckDeskCopy.checkFailed
     }
 
-    return "Storm analysis failed. Please try again."
+    return SkyCheckDeskCopy.checkFailed
   }
 
   private func refreshStormWeatherContext() async {

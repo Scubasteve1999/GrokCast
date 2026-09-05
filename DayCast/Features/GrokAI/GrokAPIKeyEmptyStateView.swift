@@ -3,6 +3,8 @@ import SwiftUI
 /// Shown when Grok AI is locked — Pro is the way in. Settings BYOK stays as a
 /// secondary action, not body copy.
 struct GrokAPIKeyEmptyStateView: View {
+  static let lockTitle = "Sky Check"
+  static let lockGlyph = "cloud.sun"
   static let bodyCopy =
     "Weather, live radar, and alerts are free. DayCast Pro unlocks AI chat, Today's Take, Explain Radar, and Sky Check."
 
@@ -16,7 +18,7 @@ struct GrokAPIKeyEmptyStateView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Label("AI features", systemImage: "sparkles")
+      Label(Self.lockTitle, systemImage: Self.lockGlyph)
         .font(DesignTokens.Typography.headline())
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
