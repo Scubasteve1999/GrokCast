@@ -713,14 +713,9 @@ final class WeatherStore {
 
   private func cachedGrokBriefOneLiner() -> String? {
     guard !GrokBriefSafety.shared.isFeatureHidden else { return nil }
-    guard let loc = currentLocation else { return nil }
-    let day = Calendar.current.startOfDay(for: Date()).timeIntervalSince1970
-    let key = "grok_brief_\(loc.id.uuidString)_\(Int(day))"
-    guard let text = UserDefaults.standard.string(forKey: key),
-      GrokContentFilter.acceptedText(text) != nil,
-      !GrokBriefSafety.shared.isBriefHidden(text)
-    else { return nil }
-    return String(text.prefix(120))
+    guard let text = GrokBriefCache.loadValidOneLiner(for: self) else { return nil }
+    guard !GrokBriefSafety.shared.isBriefHidden(text) else { return nil }
+    return text
   }
 
   /// Hydrates `currentWeather` from the App Group widget snapshot so cold launch can show
