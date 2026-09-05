@@ -14,8 +14,8 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
   var id: String { rawValue }
 
   /// Type-on-photo Now, then alert chip (when live), tonight + curve, Site
-  /// Doppler, Your News, conditions, week, nearby. Take / Imagine live under
-  /// More (Sky Check), not this feed.
+  /// Doppler, Your News, elevated Conditions, week, fire Nearby. Take /
+  /// Imagine live under More (Sky Check), not this feed.
   static let defaultOrder: [FeedItem] = [
     .now,
     .alerts,

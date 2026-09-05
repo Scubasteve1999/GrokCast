@@ -124,6 +124,11 @@ struct NowDetailView: View {
   let weather: DayCastWeather
   let score: DayCastScore
 
+  private var todaySunTimes: (sunrise: Date?, sunset: Date?) {
+    let day = weather.daily.first
+    return (day?.sunrise, day?.sunset)
+  }
+
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space16) {
@@ -134,6 +139,28 @@ struct NowDetailView: View {
         )
 
         detailsGrid
+
+        if todaySunTimes.sunrise != nil || todaySunTimes.sunset != nil {
+          NavigationLink {
+            SunMoonDetailView(
+              sunrise: todaySunTimes.sunrise,
+              sunset: todaySunTimes.sunset,
+              timeZone: weather.locationTimeZone
+            )
+          } label: {
+            HStack {
+              Label("Sun & Moon", systemImage: "sun.horizon")
+                .font(DesignTokens.Typography.callout())
+              Spacer()
+              Image(systemName: "chevron.right")
+                .font(DesignTokens.Typography.caption())
+                .foregroundStyle(DesignTokens.Palette.textTertiary)
+            }
+            .padding(DesignTokens.Spacing.space16)
+            .cardStyle(elevated: true)
+          }
+          .buttonStyle(.plain)
+        }
 
         NavigationLink {
           TripPlannerView()

@@ -180,6 +180,31 @@ enum NowHeroReconcile {
   }
 }
 
+enum ConditionsVisibility {
+  /// US AQI Moderate or worse. Good air does not earn the Conditions plate.
+  static let elevatedAQIThreshold = 51
+  /// About 5 miles. Clear-day visibility stays off the plate.
+  static let lowVisibilityMeters: Double = 8_047
+
+  /// Hide Conditions on a calm default day. Elevated AQI, an official
+  /// air-quality alert, or low visibility earns the slot.
+  static func shouldShow(
+    aqi: Int?,
+    visibilityMeters: Double?,
+    hasNWSAirQualityAlert: Bool
+  ) -> Bool {
+    if hasNWSAirQualityAlert { return true }
+    if let aqi, aqi >= elevatedAQIThreshold { return true }
+    if let visibilityMeters, visibilityMeters < lowVisibilityMeters { return true }
+    return false
+  }
+
+  /// Now already prints rain on the hero. Don't repeat Precipitation here.
+  static func showsPrecipTile(isNowWet: Bool) -> Bool {
+    !isNowWet
+  }
+}
+
 enum ConditionsCopy {
   static let title = "Conditions"
 
