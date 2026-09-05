@@ -2,22 +2,6 @@ import Foundation
 
 /// Today Now presentation policy. Photography is the face; SF Symbols are chrome only.
 enum NowHeroPhotography {
-  enum Treatment: Equatable {
-    case photography(assetName: String)
-    case systemGlyph(symbolName: String)
-  }
-
-  /// Product rule: a blocky weather glyph is never the face of Now.
-  static let glyphIsSectionFace = false
-
-  /// Plate height. Width is always the feed's proposed width — never the JPEG's.
-  static var plateHeight: CGFloat { TodayGlanceLayout.nowBudgetHeight }
-
-  /// Size an inset still is clipped to. `containerWidth` is the feed card width.
-  static func plateSize(containerWidth: CGFloat) -> CGSize {
-    CGSize(width: max(0, containerWidth), height: plateHeight)
-  }
-
   /// Full-bleed tab stage. Width/height are the screen, never JPEG intrinsic.
   static func stageSize(containerSize: CGSize) -> CGSize {
     CGSize(width: max(0, containerSize.width), height: max(0, containerSize.height))
@@ -26,7 +10,6 @@ enum NowHeroPhotography {
   /// Bundled cinematic stills in `Assets.xcassets`. Not Imagine, not news keywords.
   static let knownAssetNames: Set<String> = [
     "NewsHeroDawn",
-    "NewsHeroFlood",
     "NewsHeroHaze",
     "NewsHeroLightning",
     "NewsHeroSky",
@@ -46,10 +29,6 @@ enum NowHeroPhotography {
     case .thunderstorm:
       return "NewsHeroLightning"
     }
-  }
-
-  static func treatment(conditionCode: Int?, isDay: Bool) -> Treatment {
-    .photography(assetName: stillName(conditionCode: conditionCode, isDay: isDay))
   }
 }
 

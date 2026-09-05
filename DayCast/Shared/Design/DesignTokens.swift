@@ -33,8 +33,6 @@ enum DesignTokens {
     static let radarTrack = SwiftUI.Color.white.opacity(0.16)
     static var radarProgress: SwiftUI.Color { accent }
     static var radarAccent: SwiftUI.Color { accent }
-    static var radarCardBackground: SwiftUI.Color { cardBackground }
-    static var radarCardStroke: SwiftUI.Color { cardStroke }
     static var radarTextPrimary: SwiftUI.Color { textPrimary }
     static var radarTextSecondary: SwiftUI.Color { textSecondary }
   }
@@ -75,7 +73,6 @@ enum DesignTokens {
     /// Legacy aliases — prefer the named fonts below.
     static let cardLabelTracking: CGFloat = 0
     static let tightTracking: CGFloat = 0
-    static let headerTracking: CGFloat = 0
 
     /// Hero temperature — TWC-scale display number on the sky.
     static func displayTemp() -> Font {
@@ -110,20 +107,6 @@ enum DesignTokens {
     static func symbol(_ size: CGFloat = 13) -> Font { .system(size: size, weight: .semibold) }
   }
 
-  /// Decorative motion (particles, shimmer sweeps). Off under Reduce Motion / Low Power.
-  enum Motion {
-    @MainActor
-    static var allowDecorative: Bool {
-      if ProcessInfo.processInfo.isLowPowerModeEnabled { return false }
-      // Accessibility is checked at view level via environment; default true for token helpers.
-      return true
-    }
-  }
-
-  enum Opacity {
-    static let iconWhite: Double = 0.55
-  }
-
   enum Layout {
     static let horizontalPadding: CGFloat = Spacing.space20
     static let topPadding: CGFloat = Spacing.space16
@@ -142,38 +125,6 @@ enum DesignTokens {
     static let hourlyChipWidth: CGFloat = 72
     /// Today Now temp. Below `displayTemp` so the outlook sheet still peeks.
     static let todayTempSize: CGFloat = 88
-  }
-
-  /// Temporary aliases. Prefer `Typography` / `Layout`.
-  enum Figma {
-    enum Typography {
-      static let screenTitle = DesignTokens.Typography.title()
-      static let studioTitle = DesignTokens.Typography.studioTitle()
-      static let sectionLabel = DesignTokens.Typography.caption()
-      static let subsectionLabel = DesignTokens.Typography.subsection()
-      static let cardHeadline = DesignTokens.Typography.headline()
-      static let rowTitle = DesignTokens.Typography.body()
-      static let rowSubtitle = DesignTokens.Typography.caption()
-      static let body = DesignTokens.Typography.callout()
-      static let chipTime = DesignTokens.Typography.caption()
-      static let chipTemp = DesignTokens.Typography.metric()
-      static let locationLabel = DesignTokens.Typography.caption()
-    }
-
-    enum Metrics {
-      static let horizontalPadding = Layout.horizontalPadding
-      static let topPadding = Layout.topPadding
-      static let bottomPadding = Layout.bottomPadding
-      static let sectionSpacing = Layout.sectionSpacing
-      static let cardPadding = Layout.cardPadding
-      static let cardInnerSpacing = Layout.cardInnerSpacing
-      static let cardRadius = Layout.cardRadius
-      static let chipRadius = Layout.chipRadius
-      static let searchRadius = Layout.searchRadius
-      static let heroIconSize = Layout.heroIconSize
-      static let hourlyRowHeight = Layout.hourlyRowHeight
-      static let hourlyChipWidth = Layout.hourlyChipWidth
-    }
   }
 }
 
@@ -227,24 +178,6 @@ extension View {
 
   func dayCastCard(elevated: Bool = false) -> some View {
     cardStyle(elevated: elevated)
-  }
-
-  func tacticalCard() -> some View {
-    dayCastCard()
-  }
-
-  func elevatedCard() -> some View {
-    cardStyle(
-      background: DesignTokens.Palette.cardElevated,
-      stroke: DesignTokens.Palette.cardHairline,
-      cornerRadius: DesignTokens.Card.cornerRadius,
-      elevated: true
-    )
-  }
-
-  /// One quiet shadow. Call sites that stacked this on `cardStyle` no longer get a second layer.
-  func elevatedShadow() -> some View {
-    self.shadow(color: Color.black.opacity(0.32), radius: 12, x: 0, y: 6)
   }
 
   func elevatedCardStyle(

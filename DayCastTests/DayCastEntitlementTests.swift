@@ -98,11 +98,9 @@ final class DayCastEntitlementTests: XCTestCase {
 
   func testHomeScreenWidgetsRequireYearlyFlag() {
     XCTAssertFalse(
-      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: false))
-    XCTAssertFalse(
       WidgetDataStore.canRenderWeather(isYearlySubscriber: false))
     XCTAssertTrue(
-      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: true))
+      WidgetDataStore.canRenderWeather(isYearlySubscriber: true))
     XCTAssertEqual(WidgetEmptyReason.requiresYearly.title, "Yearly unlocks widgets")
     XCTAssertEqual(WidgetEmptyReason.requiresYearly.message, "Tap to open DayCast.")
   }
@@ -114,7 +112,7 @@ final class DayCastEntitlementTests: XCTestCase {
     XCTAssertTrue(monthly.isPro)
     XCTAssertFalse(monthly.isYearly)
     XCTAssertFalse(
-      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: monthly.isYearly))
+      WidgetDataStore.canRenderWeather(isYearlySubscriber: monthly.isYearly))
   }
 
   func testYearlyResolvedEntitlementUnlocksWidgetSurface() {
@@ -123,7 +121,7 @@ final class DayCastEntitlementTests: XCTestCase {
     ])
     XCTAssertTrue(yearly.isYearly)
     XCTAssertTrue(
-      DayCastEntitlements.canRenderHomeScreenWidgets(isYearlySubscriber: yearly.isYearly))
+      WidgetDataStore.canRenderWeather(isYearlySubscriber: yearly.isYearly))
   }
 
   func testFreeUserGetsNeitherAINorYearlyExtras() {

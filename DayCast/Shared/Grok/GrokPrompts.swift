@@ -379,38 +379,6 @@ enum GrokPrompts {
     return "**Severe guidance:**\n" + lines.joined(separator: "\n")
   }
 
-  /// Assembles the full prompt for a storm spotter vision request.
-  /// nearestStationObservation + alerts forwarded so the technical context includes official NWS ground truth + warnings.
-  static func stormSpotterVisionPrompt(
-    for weather: DayCastWeather,
-    unit: TemperatureUnit = .fahrenheit,
-    alerts: [NWSAlert] = [],
-    severeContext: SevereWeatherContext? = nil,
-    shortTermContext: ShortTermPrecipContext? = nil,
-    nearestStationObservation: NWSObservation? = nil,
-    userNotes: String?
-  ) -> String {
-    var prompt = stormSpotterSystemPrompt + "\n\n"
-    prompt += buildTechnicalStormContext(
-      for: weather,
-      unit: unit,
-      alerts: alerts,
-      severeContext: severeContext,
-      shortTermContext: shortTermContext,
-      nearestStationObservation: nearestStationObservation,
-      userNotes: userNotes)
-
-    prompt += """
-
-      Analyze the attached photograph using the conditions above.
-      Clearly separate direct visual observations from inferences.
-      Highlight any notable low-level features, storm organization, or evolution signals.
-      Include practical implications for people outdoors when relevant.
-      """
-
-    return prompt
-  }
-
   /// Chat-desk identity. Glance first: short answer, then 2–3 facts, sources last.
   static let skyCheckChatIdentity = """
     You are Sky Check in DayCast — an honest weather desk for the public. \

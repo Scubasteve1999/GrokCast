@@ -232,34 +232,10 @@ enum WeatherCondition: Equatable {
   }
 }
 
-// MARK: - NWS short forecast to WMO (centralized; night not relevant for code itself)
-extension WeatherCondition {
-  /// Maps NWS shortForecast text to a WMO code for reuse of symbol/text/precip logic.
-  static func wmoCode(fromNWSShortForecast short: String) -> Int {
-    let s = short.lowercased()
-    if s.contains("thunder") { return 95 }
-    if s.contains("snow") { return 71 }
-    if s.contains("sleet") || s.contains("freez") { return 66 }
-    if s.contains("rain") { return 61 }
-    if s.contains("drizzle") { return 51 }
-    if s.contains("fog") { return 45 }
-    if s.contains("overcast") || s.contains("cloudy") { return 3 }
-    if s.contains("clear") || s.contains("sunny") { return 0 }
-    return 2
-  }
-}
-
 // MARK: - Backward compatibility thin wrappers (delegating to canonical type)
-// Existing call sites (OpenMeteoService, NWSService, WeatherModels, Forecast etc) continue to work unchanged.
-// Visual behavior and values identical. Future: callers can migrate to WeatherCondition directly.
 
 /// WMO code -> (SF Symbol name, display text). Delegates to WeatherCondition (single source).
 func mapWeatherCode(_ code: Int, isDay: Bool = true) -> (symbol: String, text: String) {
   let cond = WeatherCondition(fromWMO: code)
   return (cond.symbolName(isDay: isDay), cond.displayText)
-}
-
-/// NWS text -> WMO code. Delegates to WeatherCondition.
-func wmoCode(fromNWSShortForecast short: String) -> Int {
-  WeatherCondition.wmoCode(fromNWSShortForecast: short)
 }

@@ -21,12 +21,9 @@ enum KeychainError: Error, LocalizedError {
   }
 }
 
-/// Supported API key types for multi-key Keychain storage.
-/// Allows separate secure storage for the main xAI key (weather Grok chat/vision)
-/// and a distinct Grok Build key (optional override for special models in Grok AI features).
+/// Keychain account for the pasted xAI developer key.
 enum APIKeyType {
   case xai
-  case grokBuild
 }
 
 final class KeychainService {
@@ -38,7 +35,6 @@ final class KeychainService {
   private func account(for type: APIKeyType) -> String {
     switch type {
     case .xai: return "xai_api_key"
-    case .grokBuild: return "grok_build_api_key"
     }
   }
 
@@ -97,16 +93,6 @@ final class KeychainService {
     return key
   }
 
-  /// Returns the API key for the given type, or nil if not present / load fails.
-  /// This is the entry point used by GrokBuildService (and future multi-key consumers).
-  func getAPIKey(for type: APIKeyType) -> String? {
-    do {
-      return try load(for: type)
-    } catch {
-      return nil
-    }
-  }
-
   func delete() throws {
     try delete(for: .xai)
   }
@@ -129,6 +115,6 @@ final class KeychainService {
   }
 
   func hasKey(for type: APIKeyType) -> Bool {
-    return getAPIKey(for: type) != nil
+    return (try? load(for: type)) != nil
   }
 }

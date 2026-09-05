@@ -82,19 +82,6 @@ final class GrokAIConversationStore {
     try modelContext.save()
   }
 
-  /// Append a single message (used optionally for incremental saves).
-  func append(_ message: ChatMessage, locationID: UUID) throws {
-    let thumb =
-      message.role == .user
-      ? SkyCheckPersistedThumbnail.jpeg(from: message.imageData)
-      : nil
-    let entity = ChatMessageEntity(
-      from: message, locationID: locationID, thumbnailData: thumb)
-    modelContext.insert(entity)
-    try pruneExcessThumbs(for: locationID)
-    try modelContext.save()
-  }
-
   /// Clears the persisted thread for one city.
   func deleteAll(for locationID: UUID) throws {
     try deleteAllPersisted(for: locationID, withoutSaving: false)
@@ -109,24 +96,6 @@ final class GrokAIConversationStore {
       modelContext.delete(entity)
     }
     try modelContext.save()
-  }
-
-  /// Oldest photo thumbs in this city become nil once `maxThumbsPerCity` is exceeded.
-  private func pruneExcessThumbs(for locationID: UUID) throws {
-    let descriptor = FetchDescriptor<ChatMessageEntity>(
-      predicate: #Predicate { $0.locationID == locationID },
-      sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-    )
-    let entities = try modelContext.fetch(descriptor)
-    var remaining = SkyCheckPersistedThumbnail.maxThumbsPerCity
-    for entity in entities {
-      guard entity.thumbnailData != nil else { continue }
-      if remaining > 0 {
-        remaining -= 1
-      } else {
-        entity.thumbnailData = nil
-      }
-    }
   }
 
   private func deleteAllPersisted(for locationID: UUID, withoutSaving: Bool) throws {

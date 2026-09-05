@@ -33,12 +33,7 @@ struct GrokAPIConfiguration {
     self.imageModel = "grok-imagine-image-quality"
   }
 
-  // MARK: - Static convenience (matches GrokAPIConfiguration.swift.example template)
-  static let baseURLString = "https://api.x.ai/v1"
-  static let defaultModelName = "grok-3-mini"
-  static let chatEndpointPath = "/v1/chat/completions"
   static let imageModelName = "grok-imagine-image-quality"
-  static let requestTimeout: TimeInterval = 30
 
   // MARK: - Secure Key Access
 

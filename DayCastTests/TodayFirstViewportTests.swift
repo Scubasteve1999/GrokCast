@@ -75,10 +75,9 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(TodayGlanceLayout.nowBudgetHeight, 112)
     XCTAssertLessThan(TodayGlanceLayout.nowBudgetHeight, 240)
     XCTAssertEqual(TodayGlanceLayout.nowBudgetHeight, 200)
-    XCTAssertFalse(NowHeroPhotography.glyphIsSectionFace)
     XCTAssertEqual(
-      NowHeroPhotography.treatment(conditionCode: 0, isDay: true),
-      .photography(assetName: "NewsHeroSky")
+      NowHeroPhotography.stillName(conditionCode: 0, isDay: true),
+      "NewsHeroSky"
     )
   }
 
