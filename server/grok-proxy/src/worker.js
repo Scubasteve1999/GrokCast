@@ -6,28 +6,28 @@
  * leaked `PROXY_SECRET` alone buys nothing.
  *
  * Bindings (see wrangler.toml):
- *   USAGE                 KV namespace for daily counters
+ *   QUOTAS                SQLite Durable Objects for atomic daily reservations
+ *   USAGE                 KV namespace for retained daily reports
  * Secrets (`wrangler secret put`):
  *   XAI_API_KEY           server-side xAI key
  *   PROXY_SECRET          shared string the app sends; public by necessity
  * Vars:
  *   BUNDLE_ID, PRO_PRODUCT_IDS, ALLOWED_ENVIRONMENTS,
  *   DAILY_CHAT_LIMIT, DAILY_IMAGE_LIMIT, GLOBAL_DAILY_LIMIT,
- *   ALERT_THRESHOLD, DISABLED, OWM_DAILY_LIMIT, OWM_CACHE_TTL, OWM_DISABLED
+ *   ALERT_THRESHOLD, DISABLED, OWM_DAILY_LIMIT, OWM_CACHE_TTL, OWM_DISABLED,
+ *   QUOTA_START_DAY
  * Secrets, continued:
  *   OWM_API_KEY           OpenWeatherMap key; One Call 4.0 is billed per request
  */
 
+import { dailyQuota, quotaSnapshot, quotaActive } from "./quota-ledger.js";
+import { validatedBody, RequestPolicyError } from "./request-policy.js";
 import { TransactionError, verifyTransaction } from "./appleTransaction.js";
 import { handleOpenWeather } from "./openweather.js";
 import {
   GLOBAL_SUBJECT,
-  consume,
   lastReportDay,
-  refund,
   reportKey,
-  resetsAt,
-  snapshot,
 } from "./usage.js";
 
 const XAI_BASE = "https://api.x.ai/v1";
@@ -107,8 +107,8 @@ async function handle(request, env, options = {}) {
     // saying whether today crossed the threshold. That lets an external checker
     // watch it without holding any credential, and leaks no usage figures.
     // Numbers live behind /v1/status.
-    if (!env.USAGE) return jsonResponse(200, { over: false, unavailable: true });
-    const usage = await snapshot(env.USAGE, {
+    if (!env.USAGE || !env.QUOTAS) return jsonResponse(200, { over: false, unavailable: true });
+    const usage = await quotaSnapshot(env, {
       now,
       alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
     });
@@ -128,6 +128,7 @@ async function handle(request, env, options = {}) {
     if (!authorized(request, env)) {
       return errorResponse(401, "Unauthorized", "authentication_error");
     }
+    if (!quotaActive(env, now)) return errorResponse(503, "Weather data temporarily unavailable.", "service_disabled");
     if (env.OWM_DISABLED === "1") {
       return errorResponse(503, "Weather data temporarily unavailable.", "service_disabled");
     }
@@ -141,8 +142,10 @@ async function handle(request, env, options = {}) {
       cacheMatch: (key) => (cache ? cache.match(key) : Promise.resolve(undefined)),
       cachePut: (key, response) => (cache ? cache.put(key, response) : Promise.resolve()),
       consumeQuota: async () => {
-        if (!env.USAGE) return true;
-        const quota = await consume(env.USAGE, {
+        if (!env.QUOTAS) return false;
+        const quota = await dailyQuota(env, now).reserve({
+          id: crypto.randomUUID(),
+          globalLimit: 1,
           bucket: "owm",
           subject: GLOBAL_SUBJECT,
           limit: numberVar(env, "OWM_DAILY_LIMIT", 5000),
@@ -171,13 +174,13 @@ async function handle(request, env, options = {}) {
     if (!authorized(request, env)) {
       return errorResponse(401, "Unauthorized", "authentication_error");
     }
-    if (!env.USAGE) {
-      return errorResponse(503, "Usage store is not bound.", "service_disabled");
+    if (!env.USAGE || !env.QUOTAS) {
+      return errorResponse(503, "Quota/report store is not bound.", "service_disabled");
     }
     return jsonResponse(200, {
       ok: true,
       disabled: env.DISABLED === "1",
-      usage: await snapshot(env.USAGE, {
+      usage: await quotaSnapshot(env, {
         now,
         alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
       }),
@@ -198,8 +201,8 @@ async function handle(request, env, options = {}) {
   if (!env.XAI_API_KEY) {
     return errorResponse(503, "Proxy is not configured.", "service_disabled");
   }
-  if (!env.USAGE) {
-    return errorResponse(503, "Usage store is not bound.", "service_disabled");
+  if (!env.USAGE || !env.QUOTAS) {
+    return errorResponse(503, "Quota/report store is not bound.", "service_disabled");
   }
 
   if (!authorized(request, env)) {
@@ -228,61 +231,62 @@ async function handle(request, env, options = {}) {
     throw error;
   }
 
+  if (!quotaActive(env, now)) return errorResponse(503, "AI is temporarily unavailable.", "service_disabled");
+
   const subject = entitlement.originalTransactionId;
   const limit = numberVar(env, route.limitVar, route.fallback);
 
-  const perUser = await consume(env.USAGE, { bucket: route.bucket, subject, limit, now });
-  if (!perUser.ok) {
-    return errorResponse(
-      429,
-      "AI limit reached for today.",
-      "daily_limit_exceeded",
-      usageHeaders(perUser)
-    );
+  let body;
+  try { body = await validatedBody(request, route.bucket); }
+  catch (error) {
+    if (error instanceof RequestPolicyError) return errorResponse(error.status, error.message, "invalid_request_error");
+    throw error;
   }
 
-  const global = await consume(env.USAGE, {
-    bucket: "global",
-    subject: GLOBAL_SUBJECT,
-    limit: numberVar(env, "GLOBAL_DAILY_LIMIT", 5000),
-    now,
+  const ledger = dailyQuota(env, now);
+  const perUser = await ledger.reserve({
+    id: crypto.randomUUID(), bucket: route.bucket, subject, limit,
+    globalLimit: numberVar(env, "GLOBAL_DAILY_LIMIT", 5000), now,
   });
-  if (!global.ok) {
-    await refund(env.USAGE, { bucket: route.bucket, subject, now });
-    return errorResponse(503, "AI is temporarily unavailable.", "service_capacity", {
-      "X-DayCast-Reset": new Date(resetsAt(now)).toISOString(),
-    });
+  if (!perUser.ok) {
+    const userLimit = perUser.reason === "subscriber";
+    return errorResponse(userLimit ? 429 : 503,
+      userLimit ? "AI limit reached for today." : "AI is temporarily unavailable.",
+      userLimit ? "daily_limit_exceeded" : "service_capacity", usageHeaders(perUser));
   }
 
   const releaseCredits = async () => {
-    await refund(env.USAGE, { bucket: route.bucket, subject, now });
-    await refund(env.USAGE, { bucket: "global", subject: GLOBAL_SUBJECT, now });
+    try { await ledger.refund(perUser.reservationID); }
+    catch { await ledger.refund(perUser.reservationID); } // Safe even if the first reply was lost.
   };
 
   // Rebuild headers rather than forwarding the client's — the inbound set carries
   // Host, the proxy secret, and the transaction, none of which belong upstream.
   const upstreamHeaders = new Headers({
     Authorization: `Bearer ${env.XAI_API_KEY}`,
-    "Content-Type": request.headers.get("Content-Type") ?? "application/json",
+    "Content-Type": "application/json",
   });
   const accept = request.headers.get("Accept");
   if (accept) upstreamHeaders.set("Accept", accept);
 
   let upstream;
   try {
-    upstream = await fetchImpl(`${XAI_BASE}${url.pathname.slice("/v1".length)}${url.search}`, {
+    upstream = await fetchImpl(`${XAI_BASE}${url.pathname.slice("/v1".length)}`, {
       method: "POST",
       headers: upstreamHeaders,
-      body: request.body,
+      body,
+      signal: AbortSignal.timeout(120_000),
     });
   } catch (error) {
-    await releaseCredits();
+    // Delivery is ambiguous: xAI may already have billed this request. Keep the reservation.
     return errorResponse(502, "AI is temporarily unavailable.", "upstream_error");
   }
 
-  // Don't bill a request xAI refused. Body streams untouched on success, so this
-  // is the last point where the outcome is still knowable.
-  if (!upstream.ok) await releaseCredits();
+  // Refund explicit client/rate-limit rejections only. A 5xx may follow billable work.
+  if (upstream.status >= 400 && upstream.status < 500) {
+    await releaseCredits();
+    perUser.remaining = Math.min(limit, perUser.remaining + 1);
+  }
 
   const responseHeaders = new Headers(upstream.headers);
   responseHeaders.delete("Set-Cookie");
@@ -295,7 +299,7 @@ async function handle(request, env, options = {}) {
 
 /**
  * Daily rollup, run by the cron trigger just before UTC midnight so it sees the
- * day's finished totals rather than a partial one.
+ * day's near-final totals; the last minute is not included.
  *
  * There is no notification channel here on purpose: sending email needs a domain
  * onboarded to Cloudflare, and this account has none. The rollup is written to
@@ -303,14 +307,14 @@ async function handle(request, env, options = {}) {
  * puts it in `wrangler tail` too.
  */
 async function runDailyRollup(env, now = Date.now()) {
-  if (!env.USAGE) return null;
+  if (!env.USAGE || !env.QUOTAS) return null;
 
-  const usage = await snapshot(env.USAGE, {
+  const usage = await quotaSnapshot(env, {
     now,
     alertThreshold: numberVar(env, "ALERT_THRESHOLD", 500),
   });
 
-  // Kept for 30 days so a week of history survives the counters' own 48h TTL.
+  // Keep reporting history beyond the ledger's three-day retention.
   await env.USAGE.put(reportKey(usage.day), JSON.stringify(usage), {
     expirationTtl: 30 * 24 * 60 * 60,
   });

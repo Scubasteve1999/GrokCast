@@ -1,0 +1,9 @@
+name = "daycast-quota-local-test"
+main = "runtime-worker.js"
+compatibility_date = "2026-08-01"
+[[durable_objects.bindings]]
+name = "QUOTAS"
+class_name = "DailyQuota"
+[[migrations]]
+tag = "quota-v1"
+new_sqlite_classes = ["DailyQuota"]

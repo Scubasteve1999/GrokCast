@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { consume, dayKey, refund, resetsAt } from "../src/usage.js";
-import { memoryKV } from "./helpers.js";
+import { dayKey, resetsAt } from "../src/usage.js";
+import { testEnv } from "./helpers.js";
+import { dailyQuota } from "../src/quota-ledger.js";
+const memoryKV = () => testEnv();
+const consume = (env, args) => dailyQuota(env, args.now).reserve({ ...args, id: crypto.randomUUID(), globalLimit: 1000 });
 
 const NOON = Date.parse("2026-08-01T12:00:00Z");
 
@@ -58,12 +61,12 @@ test("refund releases a consumed unit and never goes negative", async () => {
   const kv = memoryKV();
   const request = { bucket: "chat", subject: "sub-1", limit: 1, now: NOON };
 
-  await consume(kv, request);
-  await refund(kv, { bucket: "chat", subject: "sub-1", now: NOON });
+  const first = await consume(kv, request);
+  dailyQuota(kv, NOON).refund(first.reservationID);
   assert.equal((await consume(kv, request)).ok, true);
 
-  await refund(kv, { bucket: "chat", subject: "sub-2", now: NOON });
-  assert.equal(await kv.get("usage:v1:chat:sub-2:2026-08-01"), null);
+  dailyQuota(kv, NOON).refund("unknown");
+  assert.equal(dailyQuota(kv, NOON).snapshot(NOON, 100).global, 1);
 });
 
 test("resetsAt is the next UTC midnight", () => {
@@ -71,8 +74,8 @@ test("resetsAt is the next UTC midnight", () => {
   assert.equal(dayKey(NOON), "2026-08-01");
 });
 
-test("a corrupted counter value is treated as zero rather than crashing", async () => {
-  const kv = memoryKV({ "usage:v1:chat:sub-1:2026-08-01": "not-a-number" });
+test("an empty ledger starts with zero usage", async () => {
+  const kv = memoryKV();
   const result = await consume(kv, { bucket: "chat", subject: "sub-1", limit: 2, now: NOON });
   assert.equal(result.ok, true);
   assert.equal(result.used, 1);

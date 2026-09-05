@@ -1,3 +1,4 @@
+import { usageCount } from "./quota-helpers.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -105,7 +106,7 @@ test("a second identical request is served from cache and not billed", async () 
   assert.equal(second.response.headers.get("X-DayCast-Cache"), "HIT");
   assert.equal(upstream.calls.length, 1, "the cached request must not reach OpenWeatherMap");
   assert.equal(
-    env.USAGE.store.get("usage:v1:owm:__global__:2026-08-02"),
+    usageCount(env, "owm", "__global__", Date.parse("2026-08-02T12:00:00Z")),
     "1",
     "a cache hit must not consume quota"
   );

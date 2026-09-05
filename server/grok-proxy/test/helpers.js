@@ -3,6 +3,7 @@
  * chain in fixtures.json, and an in-memory stand-in for Workers KV.
  */
 
+import { quotaNamespace } from "./quota-helpers.js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -123,7 +124,7 @@ export function memoryKV(initial = {}) {
 }
 
 export function testEnv(overrides = {}) {
-  return {
+  const env = {
     XAI_API_KEY: "xai-test-server-key",
     PROXY_SECRET: "test-proxy-secret",
     BUNDLE_ID,
@@ -133,9 +134,32 @@ export function testEnv(overrides = {}) {
     DAILY_IMAGE_LIMIT: "2",
     GLOBAL_DAILY_LIMIT: "100",
     DISABLED: "0",
+    QUOTA_START_DAY: "2020-01-01",
     USAGE: memoryKV(),
+    QUOTAS: quotaNamespace(),
     ...overrides,
   };
+  // Existing reporting fixtures describe counts; seed the SQL ledger with equivalent reservations.
+  if (env.QUOTAS && overrides.USAGE?.store) {
+    for (const [key, value] of overrides.USAGE.store) {
+      const match = /^usage:v1:(chat|image|owm):([^:]+):(.*)$/.exec(key);
+      if (!match) continue;
+      const [, bucket, subject, day] = match;
+      const ledger = env.QUOTAS.getByName(`budget-v1:${day}`);
+      for (let i = 0; i < Number(value); i++) ledger.reserve({id: crypto.randomUUID(), bucket, subject,
+        limit: 100000, globalLimit: 100000, now: Date.parse(day + 'T12:00:00Z')});
+    }
+    for (const [key, value] of overrides.USAGE.store) {
+      const match = /^usage:v1:global:__global__:(.*)$/.exec(key);
+      if (!match) continue;
+      const day = match[1], now = Date.parse(day + 'T12:00:00Z');
+      const ledger = env.QUOTAS.getByName(`budget-v1:${day}`);
+      const missing = Number(value) - ledger.snapshot(now, 500).global;
+      for (let i = 0; i < missing; i++) ledger.reserve({id: crypto.randomUUID(), bucket:'chat', subject:'fixture',
+        limit:100000, globalLimit:100000, now});
+    }
+  }
+  return env;
 }
 
 export function proxyRequest({
@@ -143,7 +167,7 @@ export function proxyRequest({
   method = "POST",
   secret = "test-proxy-secret",
   transaction,
-  body = JSON.stringify({ model: "grok-3-mini", messages: [] }),
+  body = undefined,
 } = {}) {
   const headers = new Headers({ "Content-Type": "application/json" });
   if (secret !== null) headers.set("Authorization", `Bearer ${secret}`);
@@ -153,6 +177,8 @@ export function proxyRequest({
   return new Request(`https://proxy.example.com${path}`, {
     method,
     headers,
-    body: hasBody ? body : undefined,
+    body: hasBody ? (body ?? JSON.stringify(path.includes('images')
+      ? { model: 'grok-imagine-image-quality', prompt: 'Weather illustration', n: 1 }
+      : { model: 'grok-3-mini', messages: [{ role: 'user', content: 'Weather?' }] })) : undefined,
   });
 }
