@@ -7,14 +7,12 @@ alwaysApply: true
 
 Read `docs/Agent-Tooling-Handoff.md` before building, running the app, taking screenshots, or uploading to App Store Connect. Key facts:
 
-- **`~/Documents/DayCast` is the only working tree.** Edit, commit, build, run, and archive there.
-  `~/Desktop/DayCast` **no longer exists** — deleted 2026-07-31. It was a dead leftover with no commits
-  and no git remote, holding only a stale subset of `fastlane/`, so commits made there vanished silently.
-  Earlier guidance said to edit and commit on Desktop and sync via git; that was wrong. If a Desktop tree
-  ever reappears, don't use it — it's iCloud-backed and xcodebuild hangs on it.
+- **`~/Projects/GrokCast` is the only working tree.** Edit, commit, build, run, and archive there.
+  Same path as `AGENTS.md` / `CLAUDE.md`. `~/Documents/GrokCast` is an iCloud-synced mirror —
+  git and xcodebuild can hang there; do not use it. `~/Desktop/DayCast` and `~/Documents/DayCast`
+  are dead leftovers — not canonical, not a second clone.
 - **XcodeBuildMCP** is configured in `~/.cursor/mcp.json` — use it to build_run_sim, screenshot, snapshot_ui, and tap/swipe the app on the simulator. Refresh snapshot refs after every navigation; on iPad tap the LAST of the duplicated tab refs.
-- **Screenshots for the App Store**: capture with `xcrun simctl io <udid> screenshot` (full-res), status bar overridden to 9:41; upload with `LC_ALL=en_US.UTF-8 fastlane deliver` from `~/Documents/DayCast` (it holds the complete
-  fastlane setup — `metadata/`, screenshots, and the ASC key; the Desktop copy is stale). The screenshots
+- **Screenshots for the App Store**: capture with `xcrun simctl io <udid> screenshot` (full-res), status bar overridden to 9:41; upload with `LC_ALL=en_US.UTF-8 fastlane deliver` from `~/Projects/GrokCast` (complete `fastlane/` — `metadata/`, screenshots, and the ASC key). The screenshots
   folder must contain BOTH iPhone and iPad sets.
 - **Build number** lives in `project.yml` (`CURRENT_PROJECT_VERSION`), not agvtool.
 - Secrets: `DayCast/Config/DeveloperAPIKey.swift` and `fastlane/asc_api_key.json` are gitignored — never commit, never print their contents.

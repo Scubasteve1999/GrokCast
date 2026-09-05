@@ -6,24 +6,23 @@ State as of 2026-07-30: **v1.0.5 build 75** on `main`, compiles clean, PostHog p
 
 > Version numbers go stale in this doc faster than anything else. `project.yml` (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`) is the only source of truth — trust it over this line.
 
-## Two clones — critical
+## Working tree
 
-| Tree | Use for | Notes |
-|------|---------|-------|
-| `~/Documents/DayCast` | **Everything** — edits, commits, builds, simulator runs, archiving, fastlane | The only working tree. Stay on `main` (see `.cursor/rules/git-workflow.mdc`) |
-| `~/Desktop/DayCast` | Nothing — do not use | Broken remnant, see below |
+Same path as `AGENTS.md` / `CLAUDE.md`. Do not invent a second clone.
 
-Workflow: edit, commit, and build all in Documents on `main`.
+| Path | Use for |
+|------|---------|
+| `~/Projects/GrokCast` | **Everything** — edits, commits, builds, simulator runs, archiving, fastlane |
+| `~/Documents/GrokCast` | Nothing — iCloud-synced mirror; git and xcodebuild can hang |
+| `~/Desktop/DayCast` / `~/Documents/DayCast` | Nothing — dead leftovers. Not canonical. |
 
-**The Desktop tree is no longer a usable clone** (verified 2026-07-30). It contains only a `fastlane/` folder, has no commits, and `git` there resolves its root to `~/Desktop` itself rather than the project — so `git status` reports unrelated Desktop files as untracked. Earlier revisions of this doc routed editing, committing, and `fastlane deliver` through it; that guidance is dead. Don't commit there, don't `deliver` from there, and don't restore the two-clone workflow without re-cloning first.
-
-Its `fastlane/` folder is a strict subset of the one in Documents (same 10 screenshots; missing `metadata/` and `README-KEY.md`), so nothing is lost by ignoring it. The original reason for the split still holds independently: the Desktop path is on iCloud Drive, where `xcodebuild` hangs — never build or archive from any iCloud-backed tree.
+Workflow: edit, commit, and build in `~/Projects/GrokCast` on `main`. Never build or archive from an iCloud-backed tree.
 
 ## XcodeBuildMCP (build / run / drive the app)
 
 - Installed globally: `/opt/homebrew/bin/xcodebuildmcp` (v2.6.2, Node via Homebrew).
 - Registered in `~/.cursor/mcp.json` and Claude Code (`~/.claude.json`) with env `XCODEBUILDMCP_ENABLED_WORKFLOWS=simulator,simulator-management,ui-automation,debugging,project-discovery` (52 tools: build_run_sim, screenshot, snapshot_ui, tap/swipe/type_text, LLDB attach/breakpoints).
-- Set session defaults first: projectPath `~/Documents/DayCast/DayCast.xcodeproj`, scheme `DayCast`, simulator iPhone 17 Pro Max (UDID `39C3B630-9A6E-4F5F-BE26-2A5A84FF76DE`; iPad Pro 13" M5 is `EACF8950-D3C0-4D22-B2C8-46163C736E2C`). Then `build_run_sim` with empty args.
+- Set session defaults first: projectPath `~/Projects/GrokCast/DayCast.xcodeproj`, scheme `DayCast`, simulator iPhone 17 Pro Max (UDID `39C3B630-9A6E-4F5F-BE26-2A5A84FF76DE`; iPad Pro 13" M5 is `EACF8950-D3C0-4D22-B2C8-46163C736E2C`). Then `build_run_sim` with empty args.
   - UDIDs verified 2026-07-30 (iOS 26.5 runtime). **They are not stable** — Xcode/runtime updates delete and recreate simulators with fresh UDIDs, so a "No booted simulator named X" error usually means the UDID rotated, not that the device is gone. Re-derive rather than trusting this line:
     ```bash
     xcrun simctl list devices available | grep -i "iphone 17 pro max\|ipad pro 13"
@@ -37,7 +36,7 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 
 ## API keys (never commit)
 
-`DayCast/Config/DeveloperAPIKey.swift` — gitignored, exists in BOTH clones, currently has real xai / mapbox / xweather values. Without it: Grok features show "Add key" empty states and the Radar Mapbox map renders black. Values must be quoted Swift strings.
+`DayCast/Config/DeveloperAPIKey.swift` — gitignored, exists in the working tree, currently has real xai / mapbox / xweather values. Without it: Grok features show "Add key" empty states and the Radar Mapbox map renders black. Values must be quoted Swift strings.
 
 ## App Store screenshots
 
@@ -51,10 +50,10 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 ## fastlane (upload screenshots / metadata)
 
 - Auth: `fastlane/asc_api_key.json` (gitignored) — embeds the .p8 content inline (this fastlane version rejects `key_filepath`). Key ID `ZCMMSMJLQD`, key file `fastlane/AuthKey_ZCMMSMJLQD.p8`. Recreate via `fastlane/README-KEY.md`.
-- Always run with `LC_ALL=en_US.UTF-8` from `~/Documents/DayCast` (the Desktop tree this doc used to point at is broken — see "Two clones" above).
+- Always run with `LC_ALL=en_US.UTF-8` from `~/Projects/GrokCast`.
 - Upload screenshots (Deliverfile defaults are screenshot-only + overwrite):
   ```bash
-  cd ~/Documents/DayCast && LC_ALL=en_US.UTF-8 fastlane deliver
+  cd ~/Projects/GrokCast && LC_ALL=en_US.UTF-8 fastlane deliver
   ```
   ⚠️ `overwrite_screenshots` deletes ALL device sets first — the folder must contain BOTH iPhone and iPad sets or the missing one is wiped from the listing.
 - Upload metadata (description/URLs/review notes live in `fastlane/metadata/`):
@@ -72,8 +71,8 @@ Its `fastlane/` folder is a strict subset of the one in Documents (same 10 scree
 
 ## Version bump + archive
 
-- Build number lives in `project.yml` → `CURRENT_PROJECT_VERSION` (currently "50"). **Do not use agvtool** — `xcodegen generate` regenerates the project from project.yml and wipes agvtool bumps. Bump project.yml in both clones, run `xcodegen generate`, commit both files.
-- Archive: `cd ~/Documents/DayCast && ./Scripts/archive_for_testflight.sh` — but codesign needs keychain access, which **fails from agent shells** (`errSecInternalComponent`). Have Stephen run it in his own Terminal or archive from Xcode GUI (Product → Archive → Distribute).
+- Build number lives in `project.yml` → `CURRENT_PROJECT_VERSION` (currently "50"). **Do not use agvtool** — `xcodegen generate` regenerates the project from project.yml and wipes agvtool bumps. Bump `project.yml` in `~/Projects/GrokCast`, run `xcodegen generate`, commit both files.
+- Archive: `cd ~/Projects/GrokCast && ./Scripts/archive_for_testflight.sh` — but codesign needs keychain access, which **fails from agent shells** (`errSecInternalComponent`). Have Stephen run it in his own Terminal or archive from Xcode GUI (Product → Archive → Distribute).
 
 ## Branding rule
 
