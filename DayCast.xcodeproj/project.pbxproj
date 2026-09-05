@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		007734721A78571DEA13764B /* CriticalFlowsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D055CCCAAC27A525349671F /* CriticalFlowsUITests.swift */; };
 		0155E68EFDABDB50FB73FD35 /* ForecastDayDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B9ECCC5BA7C747E15A4A48 /* ForecastDayDetailSheet.swift */; };
-		024DAEB54C8C5A7BEEF2179A /* GrokAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36D9A9CD5E52604358C6809 /* GrokAPIService.swift */; };
 		03CA11047F7C53516CD294A0 /* FireStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB43BA94E89B3F9E53A773B /* FireStore.swift */; };
 		04222CF3D85EB7750DD61AD9 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6C6A80C6BC8285E26C3452F5 /* ActivityKit.framework */; };
 		04ED71ECAC8FF0C7C5284874 /* SkyCheckStreamWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FAD3A1B4C3612CB03477267 /* SkyCheckStreamWriterTests.swift */; };
@@ -57,6 +56,7 @@
 		267828B39AA4CDC0D5199898 /* AlertsHonesty.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFF3590A0973C13109C05D5 /* AlertsHonesty.swift */; };
 		27AAA4C12F0C5229C8D61995 /* DayCastNotificationSounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33D76647C127F11670AACA6 /* DayCastNotificationSounds.swift */; };
 		28269C00FDF35380F4BEE88B /* NIFCFireService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C459B2B538D805B36EF7F19 /* NIFCFireService.swift */; };
+		28311D588EA7F27775F48A03 /* GrokAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D9ED99DFF10370A8C809404 /* GrokAPIService.swift */; };
 		2A03B37C13B771A968BA57A0 /* DailyRowSkeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C96F869480EBCC4B93303B00 /* DailyRowSkeleton.swift */; };
 		2AE069319A85E956E7B7ECEF /* AlertsGrokSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A6923E2CAB5B5F85E5F2F1 /* AlertsGrokSummaryCard.swift */; };
 		2AFB5B6416D43802D2896996 /* RadarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4F357E890956DA2A359350 /* RadarView.swift */; };
@@ -84,6 +84,7 @@
 		3A82E6B62E4A912CCBA0E7A4 /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56069990A593F93BBF0158B4 /* WidgetDataStore.swift */; };
 		3B3EE6C51D83425EC5171EE1 /* FireModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBBCC0A715DAE92CA4751CA /* FireModels.swift */; };
 		3BC18E5E902FDE436652F53C /* ExplainRadarSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D885BD230F6A735983752A8 /* ExplainRadarSheet.swift */; };
+		40D667C89DBD62BD8BC2797C /* GrokBriefCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B235B9CBAA953293A277D1D /* GrokBriefCopy.swift */; };
 		41B5F7A9EA8382AB569DBC74 /* TacticalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F22F1D686BEDA9CC914F4E7 /* TacticalCard.swift */; };
 		42A217D5F5BA432919CA1DAC /* GrokAIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE917EC80A482E45DDFFF40 /* GrokAIView.swift */; };
 		43C5F521F81F879CA4D44DD6 /* NWSWarningRadarOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313EDB6CF096C61129D31746 /* NWSWarningRadarOverlay.swift */; };
@@ -129,6 +130,7 @@
 		61134DF869227794D482DE0C /* GrokQuickPromptButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4AEE70EEECAC60139311156 /* GrokQuickPromptButton.swift */; };
 		61598A0CACE31C7B61C23F32 /* DesignComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D4B766830276F6064C8EAA /* DesignComponents.swift */; };
 		61C085E97A45BB9155F0FC52 /* WeatherStoreFallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C49ACD54781109708295041 /* WeatherStoreFallbackTests.swift */; };
+		61F08014B1873DB131875706 /* LocalWeatherBrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9820C274E5ABD1AF105D22 /* LocalWeatherBrief.swift */; };
 		6266ED50E05325971340404F /* LockScreenWeatherWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145C165123DECCFC7D6B8AAF /* LockScreenWeatherWidgetView.swift */; };
 		62B2BA71DF593418B4C33F62 /* GrokAccessRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE02B6B5C8371EDB6C2893F /* GrokAccessRulesTests.swift */; };
 		62E0BE45A77A60C0681D3815 /* BackgroundTasks.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AF349C645E2E7155588DBC1 /* BackgroundTasks.framework */; };
@@ -153,7 +155,6 @@
 		70B5A91705402128D5CE5CE8 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C6FA010DD5E336453535FDB /* DesignTokens.swift */; };
 		7187C10C70B6156D0C465639 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6635E0E0D1DA00401CBEBD24 /* Metal.framework */; };
 		727EDB8342EED3D4401D4B46 /* GrokBriefSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82AFDBD5FA7F7FC588A7F9B5 /* GrokBriefSafety.swift */; };
-		B2C3D4E5F6A7B8C9D0E1F2A3 /* GrokBriefCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* GrokBriefCopy.swift */; };
 		72BBDBFD282D519CC1A0198A /* GrokUsageLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */; };
 		72F2AE3017181425828C4D66 /* OpenMeteoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87159F8D417E8988A505FC20 /* OpenMeteoModels.swift */; };
 		733B8850D17E7531802C64FF /* OpenMeteoMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845CFA7141503B7259F7CF13 /* OpenMeteoMappingTests.swift */; };
@@ -230,6 +231,7 @@
 		A6B50440C5EAF2A88C924AAF /* WeatherShareService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA85D488DEE88FA27DEDC1B /* WeatherShareService.swift */; };
 		A6E6C7F5324F57FF553015FC /* GrokStormSpotterButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089FC6E13A5CA75B0ADE66A /* GrokStormSpotterButton.swift */; };
 		A726A0857A73D90C40428AEB /* TonightOutlookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134CC4541E4D03E801F27A06 /* TonightOutlookTests.swift */; };
+		A7367342D8B69602DE566B23 /* GrokBriefGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3D8CD954F1FE8D31908313 /* GrokBriefGenerator.swift */; };
 		A7C96A7404A54C514CE81760 /* OpenWeatherMapService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6650C048F6CA59F0AD726F7E /* OpenWeatherMapService.swift */; };
 		A8AACF3D69AA080FC4AF7908 /* SkyCheckPhotoIntake.swift in Sources */ = {isa = PBXBuildFile; fileRef = F205123AA7F04F4E8DCB310B /* SkyCheckPhotoIntake.swift */; };
 		A90E01EFBDEF8BCD79BC0B22 /* AppReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C39E4354D382B96A752F190 /* AppReviewPrompt.swift */; };
@@ -282,6 +284,7 @@
 		CDF1EC8A6BDFE32F316F8AA5 /* YourNewsHeadline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60D3B4ADD46D098DD68B4D5 /* YourNewsHeadline.swift */; };
 		CE0CF934080AB4FA947A6AC8 /* RadarLiveCameraPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06696FC568085178B018376 /* RadarLiveCameraPolicyTests.swift */; };
 		CE1DC8DC97750E84CA154871 /* ForecastHourlyList.swift in Sources */ = {isa = PBXBuildFile; fileRef = E32776910FAED731F8B314EE /* ForecastHourlyList.swift */; };
+		CEE76050B36DF69DC7544CF5 /* GrokBriefCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E19CDB9A004475F7737C31CD /* GrokBriefCacheTests.swift */; };
 		CF76E9083796F4932F312FB1 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B72CDEA7ED3178F84CBA255 /* CoreLocation.framework */; };
 		D0E631D3D618C19232D22917 /* AccessibilityChromeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355578D3B0FCEF6BC78B3304 /* AccessibilityChromeTests.swift */; };
 		D11304558FF63D9B2FE4DDFA /* NewsDataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C3072026CA14D1B9528E2F /* NewsDataModels.swift */; };
@@ -345,6 +348,7 @@
 		FAA148AE9E644CA696A53EFE /* RadarPlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681B8EFA71DA2E012D77F4E3 /* RadarPlaybackTests.swift */; };
 		FABE8812FFF191D5DBE0AC4A /* MinutecastEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F891C2FF47A42F3D04BA76 /* MinutecastEngine.swift */; };
 		FB49DF39846A466D7CECB299 /* WidgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D54D05FF7603861597E4E41 /* WidgetEmptyStateView.swift */; };
+		FC24FFEB61F5CBCCF0F10E90 /* GrokBriefCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A901D67FFAF1A7F2237ECDB2 /* GrokBriefCache.swift */; };
 		FD4527F5B9B3550F698E59CF /* GrokContentFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B5FE3A26D1DE38086ED0EC /* GrokContentFilter.swift */; };
 		FF4100A09E0EF3D82AA81A1F /* NowHeroPhotography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6C72B54896ACA856815D69 /* NowHeroPhotography.swift */; };
 /* End PBXBuildFile section */
@@ -435,6 +439,7 @@
 		28AA26061ED0E34060C8F2DC /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		28B3DC408402D0244ADFBF08 /* SkyCheckGlanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckGlanceTests.swift; sourceTree = "<group>"; };
 		290A4170D1BC4E06D4121736 /* MinutecastEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinutecastEngineTests.swift; sourceTree = "<group>"; };
+		2B235B9CBAA953293A277D1D /* GrokBriefCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefCopy.swift; sourceTree = "<group>"; };
 		2BD31B6F5A5E4CFDBEE2F175 /* LocalBriefingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalBriefingStore.swift; sourceTree = "<group>"; };
 		2C0AFC86FEE2927FE12164C5 /* LocalBriefingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalBriefingSection.swift; sourceTree = "<group>"; };
 		2D2FEAD5D6240B026557FE20 /* TripForecastService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripForecastService.swift; sourceTree = "<group>"; };
@@ -479,6 +484,7 @@
 		4AC714B1341725EFF70C9781 /* NWSAlertGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSAlertGrouping.swift; sourceTree = "<group>"; };
 		4B3755E452B347A5E02F45C9 /* AlertDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertDetailView.swift; sourceTree = "<group>"; };
 		4C7CBAB9D4D1F72AE6A7BE48 /* AlertNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertNotificationService.swift; sourceTree = "<group>"; };
+		4D9ED99DFF10370A8C809404 /* GrokAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIService.swift; sourceTree = "<group>"; };
 		4DA8D92510CAFEF0081456B2 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		4DADC8BCDE4087D2C6298EDA /* RadarProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarProduct.swift; sourceTree = "<group>"; };
 		4DB318A3ABCA183492AFBCE5 /* WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBackground.swift; sourceTree = "<group>"; };
@@ -544,6 +550,7 @@
 		7A561E42BAD2537EC88AEDF3 /* WidgetEmptyReason.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetEmptyReason.swift; sourceTree = "<group>"; };
 		7A58AB2A21809CEDB7773FB7 /* RadarFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarFrame.swift; sourceTree = "<group>"; };
 		7AB0DB4C2E458E445EDC0E3D /* GrokProducts.storekit */ = {isa = PBXFileReference; path = GrokProducts.storekit; sourceTree = "<group>"; };
+		7C3D8CD954F1FE8D31908313 /* GrokBriefGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefGenerator.swift; sourceTree = "<group>"; };
 		7C66B6B55D978BA67FACD2C5 /* AirQualityAndMoonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirQualityAndMoonTests.swift; sourceTree = "<group>"; };
 		7C6FA010DD5E336453535FDB /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		7CB6F193540F15639B2BAE31 /* SkyCheckGlance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckGlance.swift; sourceTree = "<group>"; };
@@ -551,7 +558,6 @@
 		7D8FB9A83B9A639F2725F110 /* AirQualityCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirQualityCategory.swift; sourceTree = "<group>"; };
 		82A1113BF74E1508497BF87F /* SkyCheckContentFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckContentFilterTests.swift; sourceTree = "<group>"; };
 		82AFDBD5FA7F7FC588A7F9B5 /* GrokBriefSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefSafety.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* GrokBriefCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefCopy.swift; sourceTree = "<group>"; };
 		82DDFF7F2E222F230F3CBF9C /* FireProximityDedupe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireProximityDedupe.swift; sourceTree = "<group>"; };
 		831549C03C72C2A73EB2B70A /* DayCastWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DayCastWidgets.entitlements; sourceTree = "<group>"; };
 		832B84A64F640D16C5823816 /* GrokPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokPrompts.swift; sourceTree = "<group>"; };
@@ -601,6 +607,7 @@
 		A7A027B57AA685240B4D5E12 /* WidgetDeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDeepLink.swift; sourceTree = "<group>"; };
 		A7B5FE3A26D1DE38086ED0EC /* GrokContentFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokContentFilter.swift; sourceTree = "<group>"; };
 		A8FA50BF3B362AE1122AC83E /* OpenWeatherMapKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenWeatherMapKeys.swift; sourceTree = "<group>"; };
+		A901D67FFAF1A7F2237ECDB2 /* GrokBriefCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefCache.swift; sourceTree = "<group>"; };
 		A9421C5ABF8EF68B7AF25EA2 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		AA634DC36CA97C5779994E0C /* RadarMapboxRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapboxRepresentable.swift; sourceTree = "<group>"; };
 		ACE02B6B5C8371EDB6C2893F /* GrokAccessRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAccessRulesTests.swift; sourceTree = "<group>"; };
@@ -652,7 +659,6 @@
 		CFF428440D691785729D1494 /* FIRMSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FIRMSService.swift; sourceTree = "<group>"; };
 		D2191CF5981DA494B1921694 /* WeatherLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLiveActivityAttributes.swift; sourceTree = "<group>"; };
 		D2BE2D034F91F61B3827BE0D /* TodayFirstViewportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayFirstViewportTests.swift; sourceTree = "<group>"; };
-		D36D9A9CD5E52604358C6809 /* GrokAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAPIService.swift; sourceTree = "<group>"; };
 		D4AEE70EEECAC60139311156 /* GrokQuickPromptButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokQuickPromptButton.swift; sourceTree = "<group>"; };
 		D669A2FCD562FFC0962207D8 /* TodayGlanceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayGlanceLayout.swift; sourceTree = "<group>"; };
 		D83F27355A300AE91A235E60 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
@@ -661,6 +667,7 @@
 		D99C93EAA3091527F869E9D1 /* SkyCheckSolidChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckSolidChip.swift; sourceTree = "<group>"; };
 		D9A9ABE2CB8AC76932D1040B /* WeatherStageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherStageSheet.swift; sourceTree = "<group>"; };
 		D9E93B8A9BDBA651F3869AD7 /* WidgetWeatherSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetWeatherSnapshot.swift; sourceTree = "<group>"; };
+		DA9820C274E5ABD1AF105D22 /* LocalWeatherBrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWeatherBrief.swift; sourceTree = "<group>"; };
 		DCAC0710F528EB769BB289CD /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		DCFF3590A0973C13109C05D5 /* AlertsHonesty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsHonesty.swift; sourceTree = "<group>"; };
 		DD9055CADE036BA74D5EAE82 /* NIFCDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NIFCDecodingTests.swift; sourceTree = "<group>"; };
@@ -670,6 +677,7 @@
 		E06C4CF3AE9F67AC93E96FFE /* AlertsHonestyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsHonestyTests.swift; sourceTree = "<group>"; };
 		E159F0CF84BB07AFC93BE8C2 /* RadarDataset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarDataset.swift; sourceTree = "<group>"; };
 		E1891FEFDB161B6C30D06811 /* RadarTimelineConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarTimelineConfig.swift; sourceTree = "<group>"; };
+		E19CDB9A004475F7737C31CD /* GrokBriefCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefCacheTests.swift; sourceTree = "<group>"; };
 		E3049625A2F18937DEF5D733 /* HourlyGraphTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyGraphTests.swift; sourceTree = "<group>"; };
 		E32776910FAED731F8B314EE /* ForecastHourlyList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastHourlyList.swift; sourceTree = "<group>"; };
 		E334557A34D21749D249EDC3 /* MapsGLRadarHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapsGLRadarHost.swift; sourceTree = "<group>"; };
@@ -802,7 +810,7 @@
 				A33D76647C127F11670AACA6 /* DayCastNotificationSounds.swift */,
 				1DFDE8EE769A07E52C609DCC /* DayCastScore.swift */,
 				E9A1B4B2B8C878AD0C7F6F55 /* GrokAIConversationStore.swift */,
-				D36D9A9CD5E52604358C6809 /* GrokAPIService.swift */,
+				4D9ED99DFF10370A8C809404 /* GrokAPIService.swift */,
 				4DA8D92510CAFEF0081456B2 /* KeychainService.swift */,
 				2BD31B6F5A5E4CFDBEE2F175 /* LocalBriefingStore.swift */,
 				62C5BE657D13E3388F9E388E /* LocationService.swift */,
@@ -981,6 +989,7 @@
 				61E3830D4313D407C1E85E9A /* FireProximityDedupeTests.swift */,
 				F1E1B9E473D1168D5E638DF0 /* FIRMSDecodingTests.swift */,
 				ACE02B6B5C8371EDB6C2893F /* GrokAccessRulesTests.swift */,
+				E19CDB9A004475F7737C31CD /* GrokBriefCacheTests.swift */,
 				CA836E076434C4855D633891 /* GrokBriefSafetyTests.swift */,
 				9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */,
 				E3049625A2F18937DEF5D733 /* HourlyGraphTests.swift */,
@@ -1151,11 +1160,14 @@
 		73C85237D7368D51D7643B42 /* Grok */ = {
 			isa = PBXGroup;
 			children = (
+				A901D67FFAF1A7F2237ECDB2 /* GrokBriefCache.swift */,
+				2B235B9CBAA953293A277D1D /* GrokBriefCopy.swift */,
+				7C3D8CD954F1FE8D31908313 /* GrokBriefGenerator.swift */,
 				CB6513F466629BAD8F714FDB /* GrokBriefReport.swift */,
 				82AFDBD5FA7F7FC588A7F9B5 /* GrokBriefSafety.swift */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* GrokBriefCopy.swift */,
 				A7B5FE3A26D1DE38086ED0EC /* GrokContentFilter.swift */,
 				832B84A64F640D16C5823816 /* GrokPrompts.swift */,
+				DA9820C274E5ABD1AF105D22 /* LocalWeatherBrief.swift */,
 				36673790B405C6EB3B77D5C7 /* SkyCheckDeskCopy.swift */,
 				7CB6F193540F15639B2BAE31 /* SkyCheckGlance.swift */,
 				D884FEDCA4E61CDA44DC3109 /* SkyCheckPersistedThumbnail.swift */,
@@ -1667,6 +1679,7 @@
 				98F23DD445D5F359476B3122 /* FeedAssemblerTests.swift in Sources */,
 				48DF18E499976042F76CB957 /* FireProximityDedupeTests.swift in Sources */,
 				62B2BA71DF593418B4C33F62 /* GrokAccessRulesTests.swift in Sources */,
+				CEE76050B36DF69DC7544CF5 /* GrokBriefCacheTests.swift in Sources */,
 				32FF7B01937F553DB7019D71 /* GrokBriefSafetyTests.swift in Sources */,
 				72BBDBFD282D519CC1A0198A /* GrokUsageLimiterTests.swift in Sources */,
 				B095626A5A2B2AE76BCFE511 /* HourlyGraphTests.swift in Sources */,
@@ -1776,12 +1789,14 @@
 				30538C6720A62DF1B367221C /* GrokAIViewModel.swift in Sources */,
 				48518656CCD8916BCD624F04 /* GrokAPIConfiguration.swift in Sources */,
 				51A0A9E1B82B381238AB49C4 /* GrokAPIKeyEmptyStateView.swift in Sources */,
+				28311D588EA7F27775F48A03 /* GrokAPIService.swift in Sources */,
 				5424F306C67503AC5F29311D /* GrokAccessRules.swift in Sources */,
 				AB115549C752869FBC8C90D9 /* GrokAuthResolver.swift in Sources */,
+				FC24FFEB61F5CBCCF0F10E90 /* GrokBriefCache.swift in Sources */,
+				40D667C89DBD62BD8BC2797C /* GrokBriefCopy.swift in Sources */,
+				A7367342D8B69602DE566B23 /* GrokBriefGenerator.swift in Sources */,
 				155C8BA21F4FCB11F2BE818E /* GrokBriefReport.swift in Sources */,
 				727EDB8342EED3D4401D4B46 /* GrokBriefSafety.swift in Sources */,
-				B2C3D4E5F6A7B8C9D0E1F2A3 /* GrokBriefCopy.swift in Sources */,
-				024DAEB54C8C5A7BEEF2179A /* GrokAPIService.swift in Sources */,
 				FD4527F5B9B3550F698E59CF /* GrokContentFilter.swift in Sources */,
 				D4D98A28D26C7681E29D8B0E /* GrokErrorView.swift in Sources */,
 				179300F310531FB50546D4F9 /* GrokInputBar.swift in Sources */,
@@ -1816,6 +1831,7 @@
 				8AB092ECC65AE2A8A30AD7A6 /* LocalBriefingModels.swift in Sources */,
 				84B63A277A672A3F613326EE /* LocalBriefingSection.swift in Sources */,
 				550CD06705C754DDDF5C6692 /* LocalBriefingStore.swift in Sources */,
+				61F08014B1873DB131875706 /* LocalWeatherBrief.swift in Sources */,
 				EC0E1CA44F488C6AE693F18A /* Location.swift in Sources */,
 				94E703A99435944B09CABD34 /* LocationChipBar.swift in Sources */,
 				0AFA99D839D8B07107CE8AEF /* LocationPermissionView.swift in Sources */,
@@ -2018,7 +2034,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 157;
+				CURRENT_PROJECT_VERSION = 158;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2076,7 +2092,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 157;
+				CURRENT_PROJECT_VERSION = 158;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
