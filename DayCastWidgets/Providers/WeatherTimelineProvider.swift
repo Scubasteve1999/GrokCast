@@ -24,7 +24,6 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
   typealias Entry = WeatherWidgetEntry
   typealias Intent = WidgetLocationSelectionIntent
 
-  private static let staleThreshold: TimeInterval = 3 * 3600
   private static let relativeLabelOffsetsMinutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
   private static let dataRefreshIntervalMinutes = 45
 
@@ -100,7 +99,7 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
     }
 
     if let snapshot = initialResolved.snapshot {
-      let staleAt = snapshot.fetchedAt.addingTimeInterval(Self.staleThreshold + 1)
+      let staleAt = snapshot.fetchedAt.addingTimeInterval(WidgetRelativeTime.staleThreshold + 1)
       if staleAt > now && staleAt <= nextDataRefresh {
         entryDates.append(staleAt)
       }
@@ -149,7 +148,7 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
           emptyReason: .locationMismatch(locationName: selected.name)
         )
       }
-      let isStale = date.timeIntervalSince(snapshot.fetchedAt) > Self.staleThreshold
+      let isStale = WidgetRelativeTime.isStale(snapshot.fetchedAt, relativeTo: date)
       return ResolvedWidgetWeather(
         snapshot: snapshot,
         alertSummary: WidgetDataStore.loadAlertSummary(for: selected.id, at: date),
@@ -166,7 +165,7 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
         emptyReason: .noData
       )
     }
-    let isStale = date.timeIntervalSince(snapshot.fetchedAt) > Self.staleThreshold
+    let isStale = WidgetRelativeTime.isStale(snapshot.fetchedAt, relativeTo: date)
     return ResolvedWidgetWeather(
       snapshot: snapshot,
       alertSummary: WidgetDataStore.loadAlertSummary(for: snapshot.location.id, at: date),

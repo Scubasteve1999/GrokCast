@@ -14,6 +14,8 @@ struct WeatherLiveActivityAttributes: ActivityAttributes {
     var locationName: String
     var temperatureText: String
     var conditionText: String
+    /// Kept on the ActivityKit payload for in-flight decode. Glance chrome
+    /// does not lead with Score — see `WeatherLiveActivityChrome`.
     var score: Int
     var scoreLabel: String
     var minutecastMessage: String
@@ -52,5 +54,78 @@ struct WeatherLiveActivityAttributes: ActivityAttributes {
       self.detail = detail
       self.severityLevel = severityLevel
     }
+  }
+}
+
+/// Lock Screen / Dynamic Island copy. Score stays on `ContentState` for
+/// ActivityKit decode; these helpers prefer condition, alerts, and Next 2 Hours.
+enum WeatherLiveActivityChrome {
+  static func compactTrailingText(
+    for state: WeatherLiveActivityAttributes.ContentState
+  ) -> String {
+    switch state.variant {
+    case .severeAlert:
+      return "!"
+    case .radarEvent, .standard:
+      return state.temperatureText
+    }
+  }
+
+  static func lockScreenPrimary(
+    for state: WeatherLiveActivityAttributes.ContentState
+  ) -> String {
+    switch state.variant {
+    case .severeAlert:
+      return state.headline ?? "Severe Weather"
+    case .radarEvent:
+      return state.headline ?? "Radar"
+    case .standard:
+      return state.conditionText
+    }
+  }
+
+  static func lockScreenSecondary(
+    for state: WeatherLiveActivityAttributes.ContentState
+  ) -> String? {
+    switch state.variant {
+    case .severeAlert:
+      return nonempty(state.detail)
+    case .radarEvent:
+      return nonempty(state.detail) ?? nonempty(state.minutecastMessage)
+    case .standard:
+      return nonempty(state.minutecastMessage)
+    }
+  }
+
+  static func expandedPrimary(
+    for state: WeatherLiveActivityAttributes.ContentState
+  ) -> String {
+    switch state.variant {
+    case .severeAlert:
+      return state.headline ?? "Severe Weather"
+    case .radarEvent:
+      return nonempty(state.detail) ?? state.minutecastMessage
+    case .standard:
+      return state.conditionText
+    }
+  }
+
+  static func expandedSecondary(
+    for state: WeatherLiveActivityAttributes.ContentState
+  ) -> String? {
+    switch state.variant {
+    case .severeAlert:
+      return nonempty(state.detail) ?? nonempty(state.minutecastMessage)
+    case .radarEvent:
+      return nil
+    case .standard:
+      return nonempty(state.minutecastMessage)
+    }
+  }
+
+  private static func nonempty(_ value: String?) -> String? {
+    guard let value else { return nil }
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? nil : trimmed
   }
 }

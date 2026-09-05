@@ -14,7 +14,8 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   let daily: [DailyForecast]
   let fetchedAt: Date
 
-  /// Optional DayCast Score (0–100) for widgets and Watch complications.
+  /// Optional DayCast Score (0–100). Still written for the App Group contract
+  /// and App Intents; glance widgets no longer lead with it.
   ///
   /// Property names keep the historical `grokCast*` JSON keys so App Group
   /// snapshots written by older installs still decode. Do not rename CodingKeys
@@ -22,7 +23,8 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   let grokCastScore: Int?
   let grokCastScoreLabel: String?
   let minutecastMessage: String?
-  /// First line of the daily Grok brief for medium widget / lock screen flair.
+  /// First line of the daily Grok brief. Still written when yearly-gated;
+  /// glance widgets no longer show sparkles chrome for it.
   let grokBriefOneLiner: String?
 
   private enum CodingKeys: String, CodingKey {
@@ -70,6 +72,15 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     self.grokCastScoreLabel = grokCastScoreLabel
     self.minutecastMessage = minutecastMessage
     self.grokBriefOneLiner = grokBriefOneLiner
+  }
+
+  /// Lock Screen circular gauge range. Always `lowerBound < upperBound` so
+  /// `Gauge` does not trap when high and low are equal or inverted.
+  var circularGaugeRange: ClosedRange<Double> {
+    let lo = min(low, high)
+    let hi = max(low, high)
+    if lo < hi { return lo...hi }
+    return lo...(lo + 1)
   }
 
   init(from decoder: Decoder) throws {

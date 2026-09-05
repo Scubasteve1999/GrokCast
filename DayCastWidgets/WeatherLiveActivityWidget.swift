@@ -66,32 +66,36 @@ struct WeatherLiveActivityWidget: Widget {
         }
         switch state.variant {
         case .severeAlert:
-          Text(state.headline ?? "Severe Weather")
+          Text(WeatherLiveActivityChrome.lockScreenPrimary(for: state))
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(accentColor(for: state))
             .lineLimit(1)
-          if let detail = state.detail {
+          if let detail = WeatherLiveActivityChrome.lockScreenSecondary(for: state) {
             Text(detail)
               .font(DesignTokens.Typography.micro())
               .foregroundStyle(.secondary)
               .lineLimit(1)
           }
         case .radarEvent:
-          Text(state.headline ?? "Radar")
+          Text(WeatherLiveActivityChrome.lockScreenPrimary(for: state))
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(Color.cyan)
             .lineLimit(1)
-          Text(state.detail ?? state.minutecastMessage)
-            .font(DesignTokens.Typography.micro())
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
+          if let detail = WeatherLiveActivityChrome.lockScreenSecondary(for: state) {
+            Text(detail)
+              .font(DesignTokens.Typography.micro())
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
         case .standard:
-          Text(state.conditionText)
+          Text(WeatherLiveActivityChrome.lockScreenPrimary(for: state))
             .font(DesignTokens.Typography.micro())
             .foregroundStyle(.secondary)
-          Text("Score \(state.score) · \(state.minutecastMessage)")
-            .font(DesignTokens.Typography.micro())
-            .lineLimit(1)
+          if let secondary = WeatherLiveActivityChrome.lockScreenSecondary(for: state) {
+            Text(secondary)
+              .font(DesignTokens.Typography.micro())
+              .lineLimit(1)
+          }
         }
       }
     }
@@ -121,28 +125,34 @@ struct WeatherLiveActivityWidget: Widget {
     VStack(alignment: .leading, spacing: 4) {
       switch state.variant {
       case .severeAlert:
-        Text(state.headline ?? "Severe Weather")
+        Text(WeatherLiveActivityChrome.expandedPrimary(for: state))
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(accentColor(for: state))
           .lineLimit(2)
-        Text(state.detail ?? "Score \(state.score) · \(state.scoreLabel)")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(.secondary)
-          .lineLimit(2)
+        if let secondary = WeatherLiveActivityChrome.expandedSecondary(for: state) {
+          Text(secondary)
+            .font(DesignTokens.Typography.micro())
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+        }
       case .radarEvent:
-        Text(state.detail ?? state.minutecastMessage)
+        Text(WeatherLiveActivityChrome.expandedPrimary(for: state))
           .font(DesignTokens.Typography.caption())
           .lineLimit(2)
-        Text("Score \(state.score) · \(state.scoreLabel)")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(.secondary)
+        if let secondary = WeatherLiveActivityChrome.expandedSecondary(for: state) {
+          Text(secondary)
+            .font(DesignTokens.Typography.micro())
+            .foregroundStyle(.secondary)
+        }
       case .standard:
-        Text("Score \(state.score) · \(state.scoreLabel)")
+        Text(WeatherLiveActivityChrome.expandedPrimary(for: state))
           .font(DesignTokens.Typography.caption())
-        Text(state.minutecastMessage)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(.secondary)
-          .lineLimit(2)
+        if let secondary = WeatherLiveActivityChrome.expandedSecondary(for: state) {
+          Text(secondary)
+            .font(DesignTokens.Typography.micro())
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+        }
       }
     }
   }
@@ -153,15 +163,11 @@ struct WeatherLiveActivityWidget: Widget {
   ) -> some View {
     switch state.variant {
     case .severeAlert:
-      Text("!")
+      Text(WeatherLiveActivityChrome.compactTrailingText(for: state))
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(accentColor(for: state))
-    case .radarEvent:
-      Text(state.temperatureText)
-        .font(DesignTokens.Typography.caption())
-        .monospacedDigit()
-    case .standard:
-      Text("\(state.score)")
+    case .radarEvent, .standard:
+      Text(WeatherLiveActivityChrome.compactTrailingText(for: state))
         .font(DesignTokens.Typography.caption())
         .monospacedDigit()
     }
