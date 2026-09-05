@@ -420,6 +420,44 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarChromeCopy.futureChip, "24-hr")
     XCTAssertFalse(RadarChromeCopy.futureChip.localizedCaseInsensitiveContains("Forecast"))
     XCTAssertEqual(RadarChromeCopy.layers, "Layers")
+    XCTAssertEqual(RadarChromeCopy.layersDisplayTitle, "Layers & display")
+  }
+
+  func testFutureChipShowsProLockBeforeTapWhenYearlyExtrasAreOff() {
+    XCTAssertTrue(
+      RadarFutureChipPresentation.showsProLock(
+        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(
+          isYearly: false, hasDeveloperKey: false)))
+    XCTAssertFalse(
+      RadarFutureChipPresentation.showsProLock(
+        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(
+          isYearly: true, hasDeveloperKey: false)))
+    XCTAssertFalse(
+      RadarFutureChipPresentation.showsProLock(
+        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(
+          isYearly: false, hasDeveloperKey: true)))
+    XCTAssertEqual(
+      RadarFutureChipPresentation.title(showsProLock: true),
+      "24-hr · Pro")
+    XCTAssertEqual(
+      RadarFutureChipPresentation.title(showsProLock: false),
+      RadarChromeCopy.futureChip)
+    XCTAssertFalse(
+      RadarFutureChipPresentation.title(showsProLock: true)
+        .localizedCaseInsensitiveContains("Forecast"))
+    XCTAssertEqual(
+      RadarFutureChipPresentation.accessibilityLabel(showsProLock: true),
+      "24-hour radar, requires Pro")
+    XCTAssertEqual(
+      RadarFutureChipPresentation.accessibilityLabel(showsProLock: false),
+      RadarChromeCopy.futureAccessibility)
+    XCTAssertFalse(
+      RadarFutureChipPresentation.isDisabled(showsProLock: true, hasFutureFrames: false),
+      "locked chip stays tappable so `.radarFuture` can present")
+    XCTAssertTrue(
+      RadarFutureChipPresentation.isDisabled(showsProLock: false, hasFutureFrames: false))
+    XCTAssertFalse(
+      RadarFutureChipPresentation.isDisabled(showsProLock: false, hasFutureFrames: true))
   }
 
   func testDefaultBaseMapIsQuietMapboxDark() {
@@ -451,6 +489,34 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarBaseMapStyle.quietWorkstationLabelTextOpacity, 1.0)
     XCTAssertGreaterThanOrEqual(RadarBaseMapStyle.quietWorkstationLabelHaloWidth, 1.8)
     XCTAssertLessThan(RadarBaseMapStyle.quietWorkstationLabelHaloBlur, 1.0)
+    XCTAssertEqual(
+      RadarBaseMapStyle.light.quietWorkstationLabelTextColor,
+      RadarBaseMapStyle.quietWorkstationLightLabelTextColor)
+    XCTAssertEqual(
+      RadarBaseMapStyle.dark.quietWorkstationLabelTextColor,
+      RadarBaseMapStyle.quietWorkstationDarkLabelTextColor)
+    XCTAssertTrue(
+      RadarBaseMapStyle.quietWorkstationLightLabelTextColor.lowercased().contains("1c"),
+      "light towns use near-black type on the pale canvas")
+    XCTAssertTrue(
+      RadarBaseMapStyle.quietWorkstationDarkLabelTextColor.lowercased().contains("f2"),
+      "dark towns stay light on the workstation canvas")
+    XCTAssertGreaterThan(
+      RadarBaseMapStyle.light.quietWorkstationAppliedHaloWidth,
+      RadarBaseMapStyle.dark.quietWorkstationAppliedHaloWidth)
+    XCTAssertEqual(
+      RadarBaseMapStyle.dark.quietWorkstationAppliedHaloWidth,
+      RadarBaseMapStyle.quietWorkstationLabelHaloWidth)
+    XCTAssertTrue(RadarBaseMapStyle.light.appliesQuietWorkstationRoadPunch)
+    XCTAssertFalse(RadarBaseMapStyle.dark.appliesQuietWorkstationRoadPunch)
+    XCTAssertFalse(RadarBaseMapStyle.satelliteStreets.appliesQuietWorkstationRoadPunch)
+    XCTAssertGreaterThanOrEqual(
+      RadarBaseMapStyle.quietWorkstationLightRoadLineIDs.count, 4)
+    XCTAssertFalse(
+      RadarBaseMapStyle.quietWorkstationLightRoadLineIDs.contains("road-label"))
+    XCTAssertEqual(RadarBaseMapStyle.quietWorkstationLightRoadLineColor, "#5a5a5a")
+    XCTAssertGreaterThan(RadarBaseMapStyle.quietWorkstationLightRoadLineOpacity, 0.7)
+    XCTAssertLessThan(RadarBaseMapStyle.quietWorkstationLightRoadLineOpacity, 1.0)
     XCTAssertTrue(
       RadarBaseMapStyle.light.quietWorkstationHaloColor.lowercased().contains("f5"),
       "light canvas keeps the near-white halo")

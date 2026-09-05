@@ -78,12 +78,31 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
   /// Mapbox style-spec paint keys (kebab-case). Probed on Maps SDK examples
   /// (`"text-halo-width": 2`, `"text-halo-color": "#ffffff"`); missing layers
   /// are skipped. Width 2.5 punches through 15–35 dBZ. Light uses a near-white
-  /// halo; Dark uses a near-black halo so white city names read on precip.
+  /// halo + near-black text so towns read on the pale canvas and on precip.
+  /// Dark uses a near-black halo so white city names read on precip.
   static let quietWorkstationLabelTextOpacity = 1.0
   static let quietWorkstationLabelHaloWidth = 2.5
+  static let quietWorkstationLightLabelHaloWidth = 3.0
   static let quietWorkstationLabelHaloBlur = 0.2
   static let quietWorkstationLabelHaloColor = "#f5f5f5"
   static let quietWorkstationDarkLabelHaloColor = "#1a1a1a"
+  static let quietWorkstationLightLabelTextColor = "#1c1c1c"
+  static let quietWorkstationDarkLabelTextColor = "#f2f2f2"
+
+  /// Light-only road lines. Polar / National paint still sit above these fills
+  /// so precip stays dominant; missing IDs are skipped.
+  static let quietWorkstationLightRoadLineIDs = [
+    "road-motorway-trunk",
+    "road-motorway",
+    "road-primary",
+    "road-secondary-tertiary",
+    "road-secondary",
+    "road-major-link",
+    "road-street",
+    "road-minor",
+  ]
+  static let quietWorkstationLightRoadLineColor = "#5a5a5a"
+  static let quietWorkstationLightRoadLineOpacity = 0.88
 
   /// Light and Dark are the quiet workstation canvases. Hybrid / Satellite /
   /// Streets keep their own labels.
@@ -91,8 +110,20 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
     self == .light || self == .dark
   }
 
+  var appliesQuietWorkstationRoadPunch: Bool {
+    self == .light
+  }
+
   var quietWorkstationHaloColor: String {
     self == .dark ? Self.quietWorkstationDarkLabelHaloColor : Self.quietWorkstationLabelHaloColor
+  }
+
+  var quietWorkstationLabelTextColor: String {
+    self == .dark ? Self.quietWorkstationDarkLabelTextColor : Self.quietWorkstationLightLabelTextColor
+  }
+
+  var quietWorkstationAppliedHaloWidth: Double {
+    self == .light ? Self.quietWorkstationLightLabelHaloWidth : Self.quietWorkstationLabelHaloWidth
   }
 
   /// First matching candidate in `styleLayerIDs` (style order). Nil if none.
@@ -121,15 +152,31 @@ enum RadarBaseMapStyle: String, CaseIterable, Identifiable {
       try? mapView.mapboxMap.setLayerProperty(
         for: id, property: "text-opacity", value: Self.quietWorkstationLabelTextOpacity)
       try? mapView.mapboxMap.setLayerProperty(
+        for: id, property: "text-color", value: quietWorkstationLabelTextColor)
+      try? mapView.mapboxMap.setLayerProperty(
         for: id, property: "text-halo-color", value: quietWorkstationHaloColor)
       try? mapView.mapboxMap.setLayerProperty(
-        for: id, property: "text-halo-width", value: Self.quietWorkstationLabelHaloWidth)
+        for: id, property: "text-halo-width", value: quietWorkstationAppliedHaloWidth)
       try? mapView.mapboxMap.setLayerProperty(
         for: id, property: "text-halo-blur", value: Self.quietWorkstationLabelHaloBlur)
       punched.append(id)
     }
+    var roads: [String] = []
+    if appliesQuietWorkstationRoadPunch {
+      for id in Self.quietWorkstationLightRoadLineIDs {
+        guard mapView.mapboxMap.layerExists(withId: id) else { continue }
+        try? mapView.mapboxMap.setLayerProperty(
+          for: id, property: "line-color", value: Self.quietWorkstationLightRoadLineColor)
+        try? mapView.mapboxMap.setLayerProperty(
+          for: id, property: "line-opacity", value: Self.quietWorkstationLightRoadLineOpacity)
+        roads.append(id)
+      }
+    }
     if !punched.isEmpty {
       radarLog("[Mapbox] punched labels \(punched.joined(separator: ","))")
+    }
+    if !roads.isEmpty {
+      radarLog("[Mapbox] punched roads \(roads.joined(separator: ","))")
     }
   }
 }

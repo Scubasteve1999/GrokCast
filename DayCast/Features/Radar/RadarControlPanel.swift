@@ -4,6 +4,7 @@ import SwiftUI
 /// Composes playback controls, timeline scrubber, mode toggle, and opacity for the Mapbox radar tab.
 struct RadarControlPanel: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(SubscriptionManager.self) private var subscription
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Bindable var radarState: RadarState
@@ -243,6 +244,14 @@ struct RadarControlPanel: View {
     .accessibilityLabel(isCollapsed ? "Expand radar controls" : "Collapse radar controls")
   }
 
+  private var canUseRadarFuture: Bool {
+    EntitlementChecker.canUseRadarFuture(subscription: subscription)
+  }
+
+  private var showsFutureProLock: Bool {
+    RadarFutureChipPresentation.showsProLock(canUseYearlyExtras: canUseRadarFuture)
+  }
+
   private var liveForecastPicker: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       modePill(
@@ -253,10 +262,15 @@ struct RadarControlPanel: View {
         radarState.setFutureMode(false)
       }
       modePill(
-        title: RadarChromeCopy.futureChip,
+        title: RadarFutureChipPresentation.title(showsProLock: showsFutureProLock),
         selected: radarState.showsFuture,
-        accessibility: RadarChromeCopy.futureAccessibility,
-        disabled: !radarState.hasFutureFrames
+        accessibility: RadarFutureChipPresentation.accessibilityLabel(
+          showsProLock: showsFutureProLock),
+        disabled: RadarFutureChipPresentation.isDisabled(
+          showsProLock: showsFutureProLock,
+          hasFutureFrames: radarState.hasFutureFrames
+        ),
+        showsProLock: showsFutureProLock
       ) {
         radarState.setFutureMode(true)
       }
@@ -268,26 +282,36 @@ struct RadarControlPanel: View {
     selected: Bool,
     accessibility: String,
     disabled: Bool = false,
+    showsProLock: Bool = false,
     action: @escaping () -> Void
   ) -> some View {
     Button(action: action) {
-      Text(title)
-        .font(DesignTokens.Typography.caption())
-        .fontWeight(selected ? .semibold : .regular)
-        .foregroundStyle(
-          selected ? DesignTokens.Palette.bgPrimary : DesignTokens.Palette.textSecondary
-        )
-        .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
-        .padding(.vertical, 8)
-        .background(
-          RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(
-              selected
-                ? DesignTokens.Palette.textPrimary
-                : DesignTokens.Palette.cardBackground.opacity(0.7)
-            )
-        )
-        .contentShape(Rectangle())
+      HStack(spacing: 4) {
+        if showsProLock {
+          Image(systemName: "lock.fill")
+            .font(DesignTokens.Typography.micro())
+            .accessibilityHidden(true)
+        }
+        Text(title)
+          .font(DesignTokens.Typography.caption())
+          .fontWeight(selected ? .semibold : .regular)
+          .lineLimit(1)
+          .minimumScaleFactor(0.75)
+      }
+      .foregroundStyle(
+        selected ? DesignTokens.Palette.bgPrimary : DesignTokens.Palette.textSecondary
+      )
+      .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
+      .padding(.vertical, 8)
+      .background(
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+          .fill(
+            selected
+              ? DesignTokens.Palette.textPrimary
+              : DesignTokens.Palette.cardBackground.opacity(0.7)
+          )
+      )
+      .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .disabled(disabled)
@@ -508,7 +532,7 @@ struct RadarControlPanel: View {
   }
 }
 
-// MARK: - Display options sheet (legend, map, opacity — kept off the main panel)
+// MARK: - Layers & display sheet (products + opacity first; playback last)
 
 private struct RadarDisplayOptionsSheet: View {
   @Environment(\.dismiss) private var dismiss
@@ -521,14 +545,6 @@ private struct RadarDisplayOptionsSheet: View {
     NavigationStack {
       Form {
         Section {
-          namedSwitch(RadarChromeCopy.autoResumeSwitch, isOn: $radarState.autoResumeAfterScrub)
-          namedSwitch(RadarChromeCopy.mapOnlySwitch, isOn: $isDecluttered)
-        } footer: {
-          Text(
-            "Map only keeps SCAN and hides the extra chase lines. Live, 24-hr, and Layers stay on.")
-        }
-
-        Section {
           productRow(.superResReflectivity)
           productRow(.reflectivity)
           productRow(.stormRelativeVelocity)
@@ -540,10 +556,55 @@ private struct RadarDisplayOptionsSheet: View {
           )
         }
 
-        Section {
-          Button("Explain radar") {
-            onExplain()
+        Section("Opacity") {
+          HStack {
+            Slider(
+              value: $opacity,
+              in: RadarPreferences.radarOpacityRange,
+              step: 0.05
+            )
+            Text(String(format: "%.0f%%", opacity * 100))
+              .font(DesignTokens.Typography.caption().monospacedDigit())
+              .foregroundStyle(.secondary)
+              .frame(width: 40)
           }
+          .disabled(!radarState.showRadarOverlay)
+          .opacity(radarState.showRadarOverlay ? 1 : 0.4)
+        }
+
+        Section {
+          namedSwitch(RadarChromeCopy.radarOverlaySwitch, isOn: $radarState.showRadarOverlay)
+          namedSwitch(
+            RadarChromeCopy.fireLayerSwitch,
+            isOn: Binding(
+              get: { radarState.showFireLayer },
+              set: { newValue in
+                radarState.showFireLayer = newValue
+                Analytics.track(.fireLayerToggle, parameters: ["on": newValue ? "1" : "0"])
+              }
+            )
+          )
+          namedSwitch(
+            RadarChromeCopy.lightningLayerSwitch,
+            isOn: Binding(
+              get: { radarState.showLightningLayer },
+              set: { newValue in
+                radarState.showLightningLayer = newValue
+                Analytics.track(.lightningLayerToggle, parameters: ["on": newValue ? "1" : "0"])
+              }
+            )
+          )
+          Picker("Base map", selection: $radarState.baseMapStyle) {
+            ForEach(RadarBaseMapStyle.allCases) { style in
+              Label(style.displayName, systemImage: style.systemImage).tag(style)
+            }
+          }
+        } header: {
+          Text("Map")
+        } footer: {
+          Text(
+            "Lightning is Live only — recent cloud-to-ground strikes from Vaisala Xweather. Works on Site Doppler and National."
+          )
         }
 
         if showsRasterColorScheme {
@@ -581,57 +642,22 @@ private struct RadarDisplayOptionsSheet: View {
         #endif
 
         Section {
-          namedSwitch(RadarChromeCopy.radarOverlaySwitch, isOn: $radarState.showRadarOverlay)
-          namedSwitch(
-            RadarChromeCopy.fireLayerSwitch,
-            isOn: Binding(
-              get: { radarState.showFireLayer },
-              set: { newValue in
-                radarState.showFireLayer = newValue
-                Analytics.track(.fireLayerToggle, parameters: ["on": newValue ? "1" : "0"])
-              }
-            )
-          )
-          namedSwitch(
-            RadarChromeCopy.lightningLayerSwitch,
-            isOn: Binding(
-              get: { radarState.showLightningLayer },
-              set: { newValue in
-                radarState.showLightningLayer = newValue
-                Analytics.track(.lightningLayerToggle, parameters: ["on": newValue ? "1" : "0"])
-              }
-            )
-          )
-          Picker("Base map", selection: $radarState.baseMapStyle) {
-            ForEach(RadarBaseMapStyle.allCases) { style in
-              Label(style.displayName, systemImage: style.systemImage).tag(style)
-            }
-          }
+          namedSwitch(RadarChromeCopy.autoResumeSwitch, isOn: $radarState.autoResumeAfterScrub)
+          namedSwitch(RadarChromeCopy.mapOnlySwitch, isOn: $isDecluttered)
         } header: {
-          Text("Map")
+          Text("Playback")
         } footer: {
           Text(
-            "Lightning is Live only — recent cloud-to-ground strikes from Vaisala Xweather. Works on Site Doppler and National."
-          )
+            "Map only keeps SCAN and hides the extra chase lines. Live, 24-hr, and Layers stay on.")
         }
 
-        Section("Opacity") {
-          HStack {
-            Slider(
-              value: $opacity,
-              in: RadarPreferences.radarOpacityRange,
-              step: 0.05
-            )
-            Text(String(format: "%.0f%%", opacity * 100))
-              .font(DesignTokens.Typography.caption().monospacedDigit())
-              .foregroundStyle(.secondary)
-              .frame(width: 40)
+        Section {
+          Button("Explain radar") {
+            onExplain()
           }
-          .disabled(!radarState.showRadarOverlay)
-          .opacity(radarState.showRadarOverlay ? 1 : 0.4)
         }
       }
-      .navigationTitle("Display")
+      .navigationTitle(RadarChromeCopy.layersDisplayTitle)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
