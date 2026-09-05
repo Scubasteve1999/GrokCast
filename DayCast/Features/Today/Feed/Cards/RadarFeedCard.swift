@@ -46,28 +46,7 @@ enum RadarFeedCopy {
     return "\(siteProductName) · \(scanUnavailable)"
   }
 
-  static let stalePrefix = "Stale"
   static let radarUnavailable = RadarChromeCopy.unavailableTitle
-
-  static func headline(
-    conditionCode: Int,
-    siteID: String?,
-    ageLine: String,
-    hoisted: Bool,
-    availability: RadarAvailability,
-    paint: RadarPreviewPaint
-  ) -> String {
-    if paint == .unavailable || availability == .unavailable {
-      return hoisted ? failLine(siteID: siteID) : radarUnavailable
-    }
-    if availability == .stale {
-      return "\(stalePrefix) · \(ageLine)"
-    }
-    if hoisted {
-      return siteTitle(conditionCode: conditionCode, siteID: siteID, ageLine: ageLine)
-    }
-    return title(conditionCode: conditionCode, siteID: siteID)
-  }
 
   static func scanAgeLine(scanDate: Date?, now: Date) -> String {
     let minutes = ChaseRadarHUDLogic.scanAgeMinutes(now: now, scanDate: scanDate)
@@ -149,7 +128,6 @@ struct RadarFeedCard: View {
   let weather: DayCastWeather
   var briefingItems: [LocalBriefingItem] = []
   var hoisted: Bool = false
-  var plated: Bool = true
   var isNowWet: Bool = false
   var isNextHourWet: Bool = false
   var officialWarningEvent: String? = nil
@@ -218,8 +196,6 @@ struct RadarFeedCard: View {
       header
       plate
     }
-    .padding(plated ? TodayGlanceLayout.cardPadding : 0)
-    .weatherModuleChrome(plated)
     .accessibilityElement(children: .contain)
   }
 
@@ -264,6 +240,17 @@ struct RadarFeedCard: View {
   @ViewBuilder
   private var map: some View {
     let shown = product == .future ? RadarPreviewPaint.nationalMapsGL : paint
+    mapPaint(shown)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(
+        OutlookRadarCopy.accessibilityLabel(
+          sentence: outlook.plateSentence, product: product)
+      )
+      .accessibilityAddTraits(.isButton)
+  }
+
+  @ViewBuilder
+  private func mapPaint(_ shown: RadarPreviewPaint) -> some View {
     switch shown {
     case .siteDoppler:
       RadarPreviewCard(

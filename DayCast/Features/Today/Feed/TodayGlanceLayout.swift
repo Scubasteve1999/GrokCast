@@ -24,7 +24,6 @@ enum TodayGlanceLayout {
   static let hourlyHeaderHeight: CGFloat = 28
   static let hourlyInnerSpacing: CGFloat = 8
   static let hourlyCardPadding: CGFloat = DesignTokens.Spacing.space4
-  static let hourlyPickerHeight: CGFloat = 36
   static var hourlyGraphHeight: CGFloat { HourlyGraphLayout.height }
   /// Temperature curve only. Outlook owns the tonight sentence.
   static var hourlyCardHeight: CGFloat {
