@@ -38,10 +38,10 @@ enum GrokBriefGenerator {
       extraBlocks: extraBlocks(for: store, weather: weather)
     )
 
-    let streamed = try await GrokBuildService.complete(
+    let streamed = try await GrokAPIService.complete(
       messages: [
-        GrokBuildMessage(role: "system", content: system),
-        GrokBuildMessage(role: "user", content: takeUserMessage),
+        GrokAPIMessage(role: "system", content: system),
+        GrokAPIMessage(role: "user", content: takeUserMessage),
       ],
       feature: feature,
       maxTokens: takeMaxTokens

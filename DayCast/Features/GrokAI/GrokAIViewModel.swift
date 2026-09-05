@@ -128,11 +128,11 @@ final class GrokAIViewModel {
     let systemPrompt = buildWeatherSystemPrompt()
 
     // Build API messages: system first + history turns
-    var apiMessages: [GrokBuildMessage] = [
-      GrokBuildMessage(role: "system", content: systemPrompt)
+    var apiMessages: [GrokAPIMessage] = [
+      GrokAPIMessage(role: "system", content: systemPrompt)
     ]
     for msg in conversationHistory {
-      apiMessages.append(GrokBuildMessage(role: msg.role.rawValue, content: msg.content))
+      apiMessages.append(GrokAPIMessage(role: msg.role.rawValue, content: msg.content))
     }
 
     let generationID = UUID()
@@ -142,7 +142,7 @@ final class GrokAIViewModel {
       var tokenCount = 0
       do {
         // Use streaming for progressive token display
-        for try await token in try GrokBuildService.stream(
+        for try await token in try GrokAPIService.stream(
           messages: apiMessages, feature: .chat)
         {
           if Task.isCancelled || !self.isStreaming { break }
@@ -224,7 +224,7 @@ final class GrokAIViewModel {
     generationTask = Task { @MainActor [weak self] in
       guard let self else { return }
       do {
-        for try await token in try GrokBuildService.streamStormPhoto(
+        for try await token in try GrokAPIService.streamStormPhoto(
           imageData: imageData,
           weather: weather,
           alerts: alerts,
@@ -381,8 +381,8 @@ final class GrokAIViewModel {
       return SkyCheckDeskCopy.checkTimedOut
     }
 
-    if let buildError = error as? GrokBuildError {
-      return buildError.errorDescription ?? SkyCheckDeskCopy.checkFailed
+    if let apiError = error as? GrokAPIServiceError {
+      return apiError.errorDescription ?? SkyCheckDeskCopy.checkFailed
     }
 
     return SkyCheckDeskCopy.checkFailed
@@ -574,7 +574,7 @@ final class GrokAIViewModel {
 
     do {
       let prompt = buildImagePrompt(userDescription: description)
-      let url = try await GrokBuildService.generateImage(prompt: prompt)
+      let url = try await GrokAPIService.generateImage(prompt: prompt)
 
       let assistantMsg = ChatMessage(
         role: .assistant,
@@ -674,8 +674,8 @@ final class GrokAIViewModel {
 
     let raw = try await completeChat(
       messages: [
-        GrokBuildMessage(role: "system", content: RadarExplainCopy.systemPrompt(for: context)),
-        GrokBuildMessage(role: "user", content: "Explain this radar view in plain English."),
+        GrokAPIMessage(role: "system", content: RadarExplainCopy.systemPrompt(for: context)),
+        GrokAPIMessage(role: "user", content: "Explain this radar view in plain English."),
       ],
       feature: .explainRadar,
       maxTokens: 320
@@ -707,8 +707,8 @@ final class GrokAIViewModel {
 
     let raw = try await completeChat(
       messages: [
-        GrokBuildMessage(role: "system", content: system),
-        GrokBuildMessage(role: "user", content: "Summarize these alerts for a regular person."),
+        GrokAPIMessage(role: "system", content: system),
+        GrokAPIMessage(role: "user", content: "Summarize these alerts for a regular person."),
       ],
       feature: .alertsSummary,
       maxTokens: 360
@@ -721,9 +721,9 @@ final class GrokAIViewModel {
   }
 
   private func completeChat(
-    messages: [GrokBuildMessage], feature: GrokFeature, maxTokens: Int
+    messages: [GrokAPIMessage], feature: GrokFeature, maxTokens: Int
   ) async throws -> String {
-    let trimmed = try await GrokBuildService.complete(
+    let trimmed = try await GrokAPIService.complete(
       messages: messages, feature: feature, maxTokens: maxTokens)
     guard !trimmed.isEmpty else { throw StructuredFetchError.emptyResponse }
     return trimmed

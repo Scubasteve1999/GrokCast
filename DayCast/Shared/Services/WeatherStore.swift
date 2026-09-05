@@ -301,7 +301,7 @@ final class WeatherStore {
   /// Secure Grok/xAI API configuration (developer key mode)
   let grokConfig = GrokAPIConfiguration(mode: .developerKey)
 
-  /// Pro + proxy, or a pasted/DEBUG key. All Grok HTTP goes through `GrokBuildService`.
+  /// Pro + proxy, or a pasted/DEBUG key. All Grok HTTP goes through `GrokAPIService`.
   var canUseGrok: Bool {
     GrokAuthResolver.canAccessGrok(
       configuration: grokConfig, subscription: SubscriptionManager.shared)

@@ -233,7 +233,7 @@ enum TripForecastService {
     do {
       let auth = try GrokAuthResolver.resolve(
         for: .chat, feature: .tripPlanner, subscription: SubscriptionManager.shared)
-      let service = GrokBuildService(configuration: GrokBuildConfiguration(auth: auth))
+      let service = GrokAPIService(configuration: GrokAPIServiceConfiguration(auth: auth))
 
       var response = ""
       for try await chunk in service.streamChat(
