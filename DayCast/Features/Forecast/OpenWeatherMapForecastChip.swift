@@ -1,27 +1,10 @@
 import SwiftUI
 
-enum OpenWeatherMapChipLayout {
-  case standard
-  case figma
-}
-
 struct OpenWeatherMapForecastChip: View {
   let entry: OpenWeatherMapForecastEntry
-  var layout: OpenWeatherMapChipLayout = .standard
   var timeZone: TimeZone = .current
 
   var body: some View {
-    Group {
-      switch layout {
-      case .standard:
-        standardLayout
-      case .figma:
-        figmaLayout
-      }
-    }
-  }
-
-  private var figmaLayout: some View {
     VStack(spacing: 6) {
       Text(formattedTime)
         .font(DesignTokens.Typography.caption())
@@ -48,45 +31,6 @@ struct OpenWeatherMapForecastChip: View {
     .padding(.horizontal, 10)
     .padding(.vertical, DesignTokens.Spacing.space12)
     .glassCardStyle(cornerRadius: DesignTokens.Layout.chipRadius)
-  }
-
-  private var standardLayout: some View {
-    VStack(spacing: DesignTokens.Spacing.space8) {
-      Text(formattedTime)
-        .font(DesignTokens.Typography.symbol())
-        .tracking(DesignTokens.Typography.tightTracking)
-        .foregroundStyle(DesignTokens.Palette.textSecondary)
-        .lineLimit(1)
-
-      Image(systemName: entry.symbolName)
-        .font(DesignTokens.Typography.title())
-        .foregroundStyle(DesignTokens.Palette.accentCool)
-        .accessibilityLabel(entry.condition)
-
-      Text("\(Int(round(entry.temperatureF)))°")
-        .font(DesignTokens.Typography.metric())
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .monospacedDigit()
-
-      Text("\(entry.precipitationChance)%")
-        .font(DesignTokens.Typography.micro())
-        .foregroundStyle(DesignTokens.Palette.accent)
-        .lineLimit(1)
-
-      Text(entry.condition)
-        .font(DesignTokens.Typography.micro())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-        .lineLimit(2)
-        .multilineTextAlignment(.center)
-    }
-    .frame(width: 88)
-    .padding(.vertical, DesignTokens.Spacing.space16)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadius
-    )
-    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
   }
 
   private var formattedTime: String {

@@ -52,12 +52,10 @@ struct TodayFeedView: View {
       weather: weather,
       alerts: store.displayableActiveAlerts,
       showFireCard: showFire,
-      showAIInsight: false,
       hasSevereContext: todaySevereContext != nil
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)
-    snap.hasNextEvent = PrecipFeedVisibility.showsCard(summary: currentMinutecast)
     snap.isNowWet = NowHeroReconcile.isNowWet(
       conditionCode: weather.conditionCode, summary: currentMinutecast)
     snap.hasLocalBriefing = hasBriefingForCurrentLocation
@@ -251,10 +249,6 @@ struct TodayFeedView: View {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         selectedAlert = alert
       }
-    case .decision, .precip:
-      EmptyView()
-    case .aiInsight:
-      EmptyView()
     case .hourly:
       HourlyFeedCard(
         weather: weather,

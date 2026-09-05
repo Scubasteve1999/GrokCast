@@ -65,7 +65,7 @@ final class StormSpotterHonestyTests: XCTestCase {
   }
 
   func testTodaysTakeLockedCopyDoesNotAdvertiseAKey() {
-    let copy = GrokBriefCard.lockedCopy
+    let copy = GrokBriefCopy.lockedCopy
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))

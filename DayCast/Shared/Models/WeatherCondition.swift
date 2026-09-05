@@ -3,7 +3,7 @@ import Foundation
 /// Canonical single source of truth for weather conditions based on WMO codes.
 /// Handles mapping, day/night symbols, display text, precip labels, and background/mood categorization.
 /// Night bias for tints is encapsulated here.
-/// Replaces all duplicated WMO switch blocks across DynamicBackgroundView, WeatherBackgroundView,
+/// Replaces all duplicated WMO switch blocks across WeatherBackgroundView,
 /// ForecastView, NWSService, OpenMeteo* etc.
 /// Backward-compatible via thin wrapper functions below (existing call sites unchanged).
 enum WeatherCondition: Equatable {
@@ -140,7 +140,7 @@ enum WeatherCondition: Equatable {
     return symbolName(isDay: isDay)
   }
 
-  // MARK: - Background categorization (for WeatherBackgroundView + DynamicBackgroundView delegation)
+  // MARK: - Background categorization (for WeatherBackgroundView)
   // Single source; eliminates duplicated WMO case lists.
 
   enum BackgroundCategory {
@@ -170,7 +170,6 @@ enum WeatherCondition: Equatable {
   }
 
   // MARK: - Dynamic mood category + tints (night bias moved here)
-  // Used by DynamicBackgroundView to eliminate its private ConditionCategory + duplicated WMO + tint switches.
 
   enum MoodCategory {
     case clear
@@ -189,7 +188,6 @@ enum WeatherCondition: Equatable {
     case .rain, .sleet:
       return .rain
     case .snow:
-      // Dynamic previously fell to neutral for snow; keep behavior via neutral here.
       return .neutral
     case .thunderstorm:
       return .thunderstorm
@@ -199,7 +197,6 @@ enum WeatherCondition: Equatable {
   }
 
   /// Returns the exact hex for mood tint (night bias encapsulated; view does Color(hex:)).
-  /// Matches prior DynamicBackgroundView night/day tints exactly for no visual change.
   func moodTintHex(isDay: Bool) -> String {
     let cat = moodCategory
     if !isDay {

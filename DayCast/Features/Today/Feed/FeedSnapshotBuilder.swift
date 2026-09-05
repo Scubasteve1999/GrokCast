@@ -5,7 +5,6 @@ enum FeedSnapshotBuilder {
     weather: DayCastWeather?,
     alerts: [NWSAlert],
     showFireCard: Bool = false,
-    showAIInsight: Bool = false,
     hasSevereContext: Bool = false,
     hasLocalBriefing: Bool = false
   ) -> FeedSnapshot {
@@ -13,7 +12,6 @@ enum FeedSnapshotBuilder {
 
     let summary = MinutecastEngine.summary(from: weather.minutely15, units: .fahrenheit)
     let hasPrecip = PrecipFeedVisibility.hasContent(summary: summary)
-    let hasNextEvent = PrecipFeedVisibility.showsCard(summary: summary)
 
     let hasSun: Bool = {
       guard let today = weather.daily.first else { return false }
@@ -26,11 +24,9 @@ enum FeedSnapshotBuilder {
       hasHourly: !weather.hourly.isEmpty,
       hasDaily: !weather.daily.isEmpty,
       hasPrecipContent: hasPrecip,
-      hasNextEvent: hasNextEvent,
       hasAQI: weather.airQualityIndex != nil,
       hasSunriseOrSunset: hasSun,
       showFireCard: showFireCard,
-      showAIInsight: showAIInsight,
       hasSevereContext: hasSevereContext,
       isNowWet: NowHeroReconcile.isNowWet(
         conditionCode: weather.conditionCode, summary: summary),

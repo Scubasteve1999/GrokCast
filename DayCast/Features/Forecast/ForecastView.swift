@@ -289,7 +289,7 @@ private struct ForecastAdaptiveBody: View {
           HStack(spacing: DesignTokens.Spacing.space8) {
             ForEach(Array(owm.entries.prefix(8))) { entry in
               OpenWeatherMapForecastChip(
-                entry: entry, layout: .figma, timeZone: timeZone)
+                entry: entry, timeZone: timeZone)
             }
           }
           .padding(.top, DesignTokens.Spacing.space8)
@@ -585,7 +585,7 @@ private struct ForecastDailySkeleton: View {
       ShimmerBlock(width: 72, height: 12, cornerRadius: 4)
       VStack(spacing: 0) {
         ForEach(0..<6, id: \.self) { index in
-          DailyRowSkeleton(layout: .figma, isToday: index == 0)
+          DailyRowSkeleton(isToday: index == 0)
         }
       }
     }

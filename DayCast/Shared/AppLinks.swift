@@ -42,7 +42,6 @@ enum DayCastAccessibility {
     static let openSettings = "daycast.today.openSettings"
     static let statusPill = "daycast.today.statusPill"
     static let alertsSlot = "daycast.today.alertsSlot"
-    static let decision = "daycast.today.decision"
     static let health = "daycast.today.health"
     static let precip = "daycast.today.precip"
     static let yourNews = "daycast.today.yourNews"
