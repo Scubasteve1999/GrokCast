@@ -29,6 +29,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
   private var queuedGPU: GPUMesh?
   private var queuedFade: TimeInterval = 0
   private var fadeTask: Task<Void, Never>?
+  private var meshBuildTask: Task<Void, Never>?
 
   /// Shader / pipeline setup failed — representable must keep IEM/CPU tiles.
   private(set) var pipelineFailed = false
@@ -67,6 +68,8 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       lock.unlock()
       fadeTask?.cancel()
       fadeTask = nil
+      meshBuildTask?.cancel()
+      meshBuildTask = nil
       if wasActive { onReady() }
       return
     }
@@ -78,6 +81,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     if already { return }
 
     let fadeSeconds = Level3PolarCrossfade.durationSeconds(isAnimating: isAnimating)
+    meshBuildTask?.cancel()
     lock.lock()
     generation += 1
     currentKey = key
@@ -105,10 +109,13 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       return
     }
 
-    Task.detached(priority: .userInitiated) {
+    meshBuildTask?.cancel()
+    meshBuildTask = Task.detached(priority: .userInitiated) { [weak self] in
+      guard let self, !Task.isCancelled else { return }
       let cacheHit = Level3PolarMeshCache.shared.cached(
         site: sweep.siteID, timestamp: sweep.timestamp) != nil
       let mesh = Level3PolarMeshCache.shared.mesh(for: sweep)
+      guard !Task.isCancelled else { return }
       let tUpload = CFAbsoluteTimeGetCurrent()
       let gpu: GPUMesh
       if let device {
@@ -117,7 +124,8 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
         gpu = GPUMesh(key: key, buffer: nil, vertexCount: 0, pendingCPU: mesh)
       }
       let uploadMs = (CFAbsoluteTimeGetCurrent() - tUpload) * 1000
-      await MainActor.run {
+      await MainActor.run { [weak self] in
+        guard let self, !Task.isCancelled else { return }
         self.lock.lock()
         let stillCurrent = self.generation == gen
         self.lock.unlock()
@@ -293,7 +301,12 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       pipe.vertexFunction = vertex
       pipe.fragmentFunction = fragment
       pipe.vertexDescriptor = desc
-      pipe.colorAttachments[0].pixelFormat = MTLPixelFormat(rawValue: colorPixelFormat)!
+      guard let colorFormat = MTLPixelFormat(rawValue: colorPixelFormat),
+        let depthFormat = MTLPixelFormat(rawValue: depthStencilPixelFormat)
+      else {
+        throw PipelineError.invalidPixelFormat
+      }
+      pipe.colorAttachments[0].pixelFormat = colorFormat
       pipe.colorAttachments[0].isBlendingEnabled = true
       pipe.colorAttachments[0].rgbBlendOperation = .add
       pipe.colorAttachments[0].alphaBlendOperation = .add
@@ -301,7 +314,6 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       pipe.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
       pipe.colorAttachments[0].sourceAlphaBlendFactor = .one
       pipe.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
-      let depthFormat = MTLPixelFormat(rawValue: depthStencilPixelFormat)!
       pipe.depthAttachmentPixelFormat = depthFormat
       pipe.stencilAttachmentPixelFormat = depthFormat
 
@@ -391,6 +403,7 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
       frontTris: frontMesh.vertexCount / 3,
       backTris: backMesh.vertexCount / 3)
     guard drawFront || drawBack else { return }
+    guard let matrix = Self.mvpMatrix(parameters: parameters) else { return }
     guard let encoder = mtlCommandBuffer.makeRenderCommandEncoder(descriptor: mtlRenderPassDescriptor)
     else { return }
 
@@ -409,7 +422,6 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     }
 
     let worldSize = Float(Projection.worldSize(scale: pow(2, parameters.zoom)))
-    let matrix = Self.mvpMatrix(parameters: parameters)
     if drawFront, let buffer = frontMesh.buffer {
       Self.draw(
         encoder: encoder, buffer: buffer, count: frontMesh.vertexCount,
@@ -426,6 +438,8 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
   func renderingWillEnd() {
     fadeTask?.cancel()
     fadeTask = nil
+    meshBuildTask?.cancel()
+    meshBuildTask = nil
     lock.lock()
     pipelineState = nil
     depthStencilState = nil
@@ -459,15 +473,33 @@ final class Level3PolarMetalHost: NSObject, CustomLayerHost, @unchecked Sendable
     encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: count)
   }
 
-  private static func mvpMatrix(parameters: CustomLayerRenderParameters) -> simd_float4x4 {
-    let projection = parameters.projectionMatrix.level3SimdFloat4x4
-    let transition = parameters.projection.getTransitionMatrix().level3SimdFloat4x4
+  private static func mvpMatrix(parameters: CustomLayerRenderParameters) -> simd_float4x4? {
+    guard let projection = simdFloat4x4(from: parameters.projectionMatrix),
+      let transition = simdFloat4x4(from: parameters.projection.getTransitionMatrix())
+    else { return nil }
     return projection * transition
+  }
+
+  /// Mapbox hands a 16-element column-major matrix. Short arrays skip the frame
+  /// instead of trapping on a force-subscript.
+  static func simdFloat4x4(from numbers: [NSNumber]) -> simd_float4x4? {
+    simdFloat4x4(from: numbers.map { Double(truncating: $0) })
+  }
+
+  static func simdFloat4x4(from numbers: [Double]) -> simd_float4x4? {
+    guard numbers.count >= 16 else { return nil }
+    return simd_float4x4([
+      simd_float4(Float(numbers[0]), Float(numbers[1]), Float(numbers[2]), Float(numbers[3])),
+      simd_float4(Float(numbers[4]), Float(numbers[5]), Float(numbers[6]), Float(numbers[7])),
+      simd_float4(Float(numbers[8]), Float(numbers[9]), Float(numbers[10]), Float(numbers[11])),
+      simd_float4(Float(numbers[12]), Float(numbers[13]), Float(numbers[14]), Float(numbers[15])),
+    ])
   }
 
   private enum PipelineError: Error {
     case noLibrary
     case noFunction
+    case invalidPixelFormat
   }
 }
 
@@ -818,13 +850,3 @@ private struct Level3PolarUniforms {
   var pad1: Float = 0
 }
 
-extension Array where Element == NSNumber {
-  fileprivate var level3SimdFloat4x4: simd_float4x4 {
-    simd_float4x4([
-      simd_float4(self[0].floatValue, self[1].floatValue, self[2].floatValue, self[3].floatValue),
-      simd_float4(self[4].floatValue, self[5].floatValue, self[6].floatValue, self[7].floatValue),
-      simd_float4(self[8].floatValue, self[9].floatValue, self[10].floatValue, self[11].floatValue),
-      simd_float4(self[12].floatValue, self[13].floatValue, self[14].floatValue, self[15].floatValue),
-    ])
-  }
-}

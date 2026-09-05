@@ -35,6 +35,11 @@ struct RadarView: View {
     radarState.showLightningLayer && !radarState.showsFuture
   }
 
+  /// Combined so tab-open and location-id changes share one `handleLiveOpen`.
+  private var radarOpenTaskID: String {
+    "\(store.selectedTab.rawValue)-\(store.currentLocation?.id.uuidString ?? "none")"
+  }
+
   private var radarDataUnavailable: Bool {
     store.selectedTab == .radar
       && RadarChromeCopy.showsUnavailableOverlay(
@@ -112,11 +117,14 @@ struct RadarView: View {
           fireStore.refresh(around: selectedMapCenter, force: false)
         }
       }
-      .task(id: store.selectedTab) {
+      // One open task: tab + location used to each call `handleLiveOpen`,
+      // so a single Radar entry double-probed and issued two camera requests.
+      .task(id: radarOpenTaskID) {
+        let center = selectedMapCenter
+        await radarState.updateNearestSite(for: center)
         if store.selectedTab == .radar {
           // Re-entering Radar after a long idle rebuilds stale frames so FUTURE
           // reflects the provider's newest run; a quick switch is a no-op.
-          let center = selectedMapCenter
           let openFuture = store.consumePendingRadarFuture()
           await radarState.handleLiveOpen(for: center)
           if openFuture {
@@ -124,15 +132,6 @@ struct RadarView: View {
           } else if radarState.showContent {
             radarState.presentLiveNow()
           }
-        }
-      }
-      // Site products (Super-Res/SRV) follow the selected weather location, and the
-      // composite timeline rebuilds when the location moved (provider is per-coordinate).
-      .task(id: store.currentLocation?.id) {
-        let center = selectedMapCenter
-        await radarState.updateNearestSite(for: center)
-        if store.selectedTab == .radar {
-          await radarState.handleLiveOpen(for: center)
         } else {
           await radarState.reloadIfStale(for: center)
         }

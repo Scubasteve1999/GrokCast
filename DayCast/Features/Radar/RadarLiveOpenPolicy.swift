@@ -45,4 +45,18 @@ enum RadarLiveOpenPolicy {
     if let siteID, !siteID.isEmpty { return "\(siteID) is clear" }
     return "Local is clear"
   }
+
+  /// National switch is still selected after an in-flight composite reload.
+  /// A fast follow-up Site Doppler tap must win.
+  static func shouldFinishNationalSwitch(selectedIsNational: Bool) -> Bool {
+    selectedIsNational
+  }
+
+  /// Redundant site refresh failed. Keep Site Doppler when those frames are
+  /// still Live-presentable — a transient miss must not drop to National.
+  static func shouldRestoreNationalAfterFailedSiteRefresh(
+    siteStillPresentable: Bool
+  ) -> Bool {
+    !siteStillPresentable
+  }
 }

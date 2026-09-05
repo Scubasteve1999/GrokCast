@@ -40,6 +40,22 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     )
   }
 
+  func testNationalSwitchDoesNotFinishAfterSiteTap() {
+    XCTAssertTrue(RadarLiveOpenPolicy.shouldFinishNationalSwitch(selectedIsNational: true))
+    XCTAssertFalse(
+      RadarLiveOpenPolicy.shouldFinishNationalSwitch(selectedIsNational: false),
+      "a fast Site Doppler tap must cancel the National finish")
+  }
+
+  func testFailedSiteRefreshKeepsPresentableSiteDoppler() {
+    XCTAssertFalse(
+      RadarLiveOpenPolicy.shouldRestoreNationalAfterFailedSiteRefresh(
+        siteStillPresentable: true))
+    XCTAssertTrue(
+      RadarLiveOpenPolicy.shouldRestoreNationalAfterFailedSiteRefresh(
+        siteStillPresentable: false))
+  }
+
   func testExplicitDrySiteTapStaysOnSiteDoppler() {
     XCTAssertEqual(
       RadarLiveOpenPolicy.productToPresent(
@@ -413,6 +429,30 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertEqual(state.siteProductAdvisory, "NQA is clear")
     XCTAssertEqual(state.cameraRequest?.zoom, RadarLiveCameraPolicy.conusZoom)
     XCTAssertEqual(state.currentIndex, state.timeline.live.count - 1)
+  }
+
+  @MainActor
+  func testTransientSiteRefreshMissKeepsLoadedSiteDoppler() {
+    let now = Date()
+    let state = RadarState()
+    let national = (0...6).map { step in
+      frame(ageMinutes: (6 - step) * 10, now: now)
+    }
+    state.seedCompositeCacheForTesting(frames: national, loadedAt: now)
+    let site = IEMRadarService.Site(id: "NQA", name: "Memphis", lon: -89.9, lat: 35.0)
+    let siteFrames = (0...5).map { step in
+      frame(ageMinutes: (5 - step) * 5, now: now, provider: .iem)
+    }
+    state.seedSiteLiveForTesting(site: site, frames: siteFrames)
+
+    state.applyFailedSiteRefreshForTesting()
+
+    XCTAssertEqual(state.selectedProduct, .superResReflectivity)
+    XCTAssertEqual(state.selectedProduct.displayName, "Site Doppler")
+    XCTAssertFalse(state.timeline.live.isEmpty)
+    XCTAssertTrue(
+      state.timeline.live.contains { $0.provider == .iem },
+      "transient miss must not swap a good Site Doppler loop for National")
   }
 
   @MainActor

@@ -178,7 +178,7 @@ enum Level3N0BDecoder {
     let blockID = r.i16()
     r.skip(4)  // block_len
     let nlayer = r.u16()
-    guard divider == -1, blockID == 1, nlayer >= 1 else { return nil }
+    guard r.ok, divider == -1, blockID == 1, nlayer >= 1 else { return nil }
     let layerDiv = r.i16()
     let layerLen = r.u32()
     guard layerDiv == -1, layerLen > 14, r.remaining >= Int(layerLen) else { return nil }
@@ -195,11 +195,16 @@ enum Level3N0BDecoder {
     var radials: [Level3N0BSweep.Radial] = []
     radials.reserveCapacity(nrad)
     for _ in 0..<nrad {
+      // Packet-16 radial header is 6 bytes (nbytes + start az + delta az).
+      // Read those only when the bytes are present — a truncated payload
+      // must return nil, not trap on an unchecked cursor subscript.
+      guard r.remaining >= 6 else { return nil }
       let nbytes = Int(r.u16())
       let start = Double(r.i16()) * 0.1
       let delta = Double(r.i16()) * 0.1
-      guard nbytes >= 0, r.remaining >= nbytes else { return nil }
+      guard nbytes >= 0, r.remaining >= nbytes, r.ok else { return nil }
       let gates = r.bytes(nbytes)
+      guard r.ok else { return nil }
       radials.append(
         Level3N0BSweep.Radial(
           startAzimuth: start, deltaAzimuth: delta > 0 ? delta : 0.5, gates: gates))
@@ -231,7 +236,12 @@ enum Level3N0BDecoder {
         }
       }
     }
-    if table.contains(0xFFFF), let seed = table.first(where: { $0 != 0xFFFF }) {
+    if table.contains(0xFFFF),
+      let seed = table.last(where: { $0 != 0xFFFF })
+        ?? table.first(where: { $0 != 0xFFFF })
+    {
+      // Seed from the last filled slot so a gap straddling 0°/360° wraps
+      // from due north instead of painting the first clockwise radial backward.
       var last = seed
       for i in 0..<720 {
         if table[i] == 0xFFFF {
@@ -285,18 +295,33 @@ enum Level3N0BDecoder {
 private struct Level3Cursor {
   let data: Data
   var offset = 0
+  var ok = true
 
-  var remaining: Int { data.count - offset }
+  var remaining: Int { max(0, data.count - offset) }
 
-  mutating func skip(_ n: Int) { offset += n }
+  mutating func skip(_ n: Int) {
+    guard ok, remaining >= n else {
+      ok = false
+      return
+    }
+    offset += n
+  }
 
   mutating func u8() -> UInt8 {
+    guard ok, remaining >= 1 else {
+      ok = false
+      return 0
+    }
     let v = data[offset]
     offset += 1
     return v
   }
 
   mutating func u16() -> UInt16 {
+    guard ok, remaining >= 2 else {
+      ok = false
+      return 0
+    }
     let v = UInt16(data[offset]) << 8 | UInt16(data[offset + 1])
     offset += 2
     return v
@@ -307,6 +332,10 @@ private struct Level3Cursor {
   mutating func i32() -> Int32 { Int32(bitPattern: u32()) }
 
   mutating func u32() -> UInt32 {
+    guard ok, remaining >= 4 else {
+      ok = false
+      return 0
+    }
     let v =
       UInt32(data[offset]) << 24
       | UInt32(data[offset + 1]) << 16
@@ -317,6 +346,10 @@ private struct Level3Cursor {
   }
 
   mutating func bytes(_ n: Int) -> [UInt8] {
+    guard ok, n >= 0, remaining >= n else {
+      ok = false
+      return []
+    }
     let end = offset + n
     let slice = data[offset..<end]
     offset = end

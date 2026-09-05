@@ -145,8 +145,9 @@ final class IEMRadarService {
         return polar
       }
       radarLog("[IEM] Level III N0B miss — IEM PNG fallback")
-      Level3N0BSweepStore.shared.removeAll()
-      Level3PolarMeshCache.shared.removeAll()
+      // Do not wipe the shared polar store / mesh. Today’s teaser upserts into
+      // the same caches, and a newer Live `loadSiteFramesNear` may already own
+      // the warm loop. IEM PNG frames do not read polar keys.
     }
 
     var candidates = await nearestSites(to: coordinate, limit: siteFallbackLimit)

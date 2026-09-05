@@ -195,6 +195,83 @@ final class Level3N0BTests: XCTestCase {
       "0.4/0.5/0.6 delta jitter must not drop radials")
   }
 
+  func testTruncatedPacket16RadialHeaderReturnsNil() {
+    let full = Self.miniN0B(site: "TWX", azimuths: [90, 90.5], gates: [146, 146, 96])
+    XCTAssertNotNil(Level3N0BDecoder.decode(full, siteHint: "TWX"))
+
+    // Drop the second radial header + gates so the decoder hits a short read
+    // after nrad advertised two radials.
+    let truncated = full.dropLast(12)
+    XCTAssertNil(
+      Level3N0BDecoder.decode(Data(truncated), siteHint: "TWX"),
+      "truncated packet-16 must return nil instead of trapping")
+  }
+
+  func testAzIndexGapFillWrapsAcrossDueNorth() {
+    // Two radials with a hole straddling 0°/360°. Forward-only fill used to
+    // paint the 10° radial backward into 358–360.
+    let radials = [
+      Level3N0BSweep.Radial(startAzimuth: 10.0, deltaAzimuth: 0.5, gates: [146]),
+      Level3N0BSweep.Radial(startAzimuth: 350.0, deltaAzimuth: 0.5, gates: [96]),
+    ]
+    let idx = Level3N0BDecoder.buildAzIndex(radials)
+    XCTAssertFalse(idx.contains(0xFFFF))
+    XCTAssertEqual(idx[20], 0, "slot 10.0–10.5 is the 10° radial")
+    XCTAssertEqual(idx[700], 1, "slot 350.0–350.5 is the 350° radial")
+    XCTAssertEqual(
+      idx[719], 1,
+      "slot 359.5–360.0 must wrap from the 350° radial, not the 10° neighbor")
+    XCTAssertEqual(
+      idx[0], 1,
+      "slot 0.0–0.5 is still on the north-side radial after wrap")
+  }
+
+  func testSiteLoadGenerationIgnoresStaleWinners() {
+    XCTAssertTrue(Level3N0BService.shouldCommitSiteLoad(requestToken: 3, latestToken: 3))
+    XCTAssertFalse(
+      Level3N0BService.shouldCommitSiteLoad(requestToken: 2, latestToken: 3),
+      "a slower first fetch must not replace caches the newer request owns")
+  }
+
+  func testMeshCacheReservationSurvivesTeaserInsert() {
+    let cache = Level3PolarMeshCache.shared
+    cache.removeAll()
+    defer { cache.removeAll() }
+
+    var playLoop: [Level3N0BSweep] = []
+    let start = Date(timeIntervalSince1970: 1_787_405_984)
+    for i in 0..<Level3PolarMeshCache.maxEntries {
+      playLoop.append(
+        Self.tinySweep(timestamp: start.addingTimeInterval(Double(i) * 60)))
+    }
+    for sweep in playLoop {
+      _ = cache.mesh(for: sweep)
+    }
+    let reserved = Set(
+      playLoop.map { Level3N0BSweepStore.exactKey(site: $0.siteID, timestamp: $0.timestamp) })
+    cache.keepOnly(keys: reserved)
+
+    let oldest = playLoop[0]
+    let teaser = Self.tinySweep(
+      site: "NQA", timestamp: start.addingTimeInterval(Double(playLoop.count) * 60))
+    _ = cache.mesh(for: teaser)
+
+    XCTAssertNotNil(
+      cache.cached(site: oldest.siteID, timestamp: oldest.timestamp),
+      "Today teaser must not evict a reserved play-loop volume")
+    XCTAssertNotNil(cache.cached(site: teaser.siteID, timestamp: teaser.timestamp))
+    XCTAssertGreaterThan(cache.stats().count, Level3PolarMeshCache.maxEntries)
+  }
+
+  func testPolarMatrixConversionGuardsShortArrays() {
+    XCTAssertNil(Level3PolarMetalHost.simdFloat4x4(from: [Double](repeating: 1, count: 15)))
+    let identity = (0..<16).map { $0 % 5 == 0 ? 1.0 : 0.0 }
+    let matrix = Level3PolarMetalHost.simdFloat4x4(from: identity)
+    XCTAssertNotNil(matrix)
+    XCTAssertEqual(matrix?.columns.0.x ?? 0, 1, accuracy: 0.0001)
+    XCTAssertEqual(matrix?.columns.1.y ?? 0, 1, accuracy: 0.0001)
+  }
+
   func testAzIndexSlotCentersKeepJitteredRadials() {
     // N0B Super-Res: 0.4° then 0.5° then 0.6° — the 0.4° radial used to lose
     // its only 0.5° slot to the next start.
@@ -724,6 +801,28 @@ final class Level3N0BTests: XCTestCase {
   }
 
   // MARK: - Fixtures
+
+  private static func tinySweep(
+    site: String = "TWX",
+    timestamp: Date
+  ) -> Level3N0BSweep {
+    let radials = [
+      Level3N0BSweep.Radial(startAzimuth: 90, deltaAzimuth: 0.5, gates: [146]),
+    ]
+    let lut = Level3N0BDecoder.dbzLUT(minValTenths: -320, incrementTenths: 5, numLevels: 254)
+    return Level3N0BSweep(
+      siteID: site,
+      timestamp: timestamp,
+      latitude: 38.997,
+      longitude: -96.232,
+      gateWidthMeters: 250,
+      binCount: 1,
+      radials: radials,
+      azIndex: Level3N0BDecoder.buildAzIndex(radials),
+      dbzLUT: lut,
+      rgbaLUT: Level3N0BDecoder.rgbaLUT(from: lut),
+      hasOrganizedPrecip: true)
+  }
 
   private static func spokeSweep(
     azimuth: Double, byte: UInt8, delta: Double = 0.5, bins: Int = 80,

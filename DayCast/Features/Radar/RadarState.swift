@@ -538,6 +538,9 @@ extension RadarState {
       } else if !restoreCompositeLive(), let coordinate = lastLoadedCoordinate {
         await loadDefaultRadar(for: coordinate)
       }
+      guard RadarLiveOpenPolicy.shouldFinishNationalSwitch(
+        selectedIsNational: selectedProduct == .reflectivity)
+      else { return }
       presentLiveNow()
       return
     }
@@ -574,6 +577,28 @@ extension RadarState {
           siteID: activeSiteProductSite?.id ?? nearestSite?.id)
       }
       requestLocalCamera(respectUserPan: false)
+    }
+  }
+
+  /// A redundant site refresh missed. Keep a correctly loaded Site Doppler
+  /// view — only drop to National when those frames are no longer Live.
+  private func applyFailedSiteRefresh() {
+    let presentable =
+      selectedProduct.isSiteProduct
+      && timeline.hasLive
+      && RadarLivePresentation.isPresentableAsLive(timeline.live, isSiteProduct: true)
+    if RadarLiveOpenPolicy.shouldRestoreNationalAfterFailedSiteRefresh(
+      siteStillPresentable: presentable)
+    {
+      radarLog(
+        "[RadarState] \(selectedProduct.displayName) refresh failed — restoring National radar"
+      )
+      siteProductUnavailableMessage = unavailableMessage(for: selectedProduct)
+      restoreCompositeLive()
+    } else {
+      radarLog(
+        "[RadarState] \(selectedProduct.displayName) refresh missed — keeping loaded Site Doppler"
+      )
     }
   }
 
@@ -666,6 +691,11 @@ extension RadarState {
 
   func applyDefaultLiveOpenPolicyForTesting() async {
     await applyDefaultLiveOpenPolicy()
+  }
+
+  /// Simulates a failed redundant site refresh (transient miss) for tests.
+  func applyFailedSiteRefreshForTesting() {
+    applyFailedSiteRefresh()
   }
 
   /// Dry / failed Site Doppler presents National radar on Live open.
@@ -976,11 +1006,7 @@ extension RadarState {
       radarLog("[RadarState] Keeping \(selectedProduct.displayName) over composite load")
       let refreshed = await refreshActiveSiteProduct()
       if !refreshed {
-        radarLog(
-          "[RadarState] \(selectedProduct.displayName) refresh failed — restoring National radar"
-        )
-        siteProductUnavailableMessage = unavailableMessage(for: selectedProduct)
-        restoreCompositeLive()
+        applyFailedSiteRefresh()
       }
       await applyDefaultLiveOpenPolicy()
     } else {

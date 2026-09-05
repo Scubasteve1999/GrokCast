@@ -12,12 +12,23 @@ enum Level3N0BService {
   private static let listTimeout: TimeInterval = 8
   private static let maxConcurrentDownloads = 6
 
+  /// Monotonic token so a slower first fetch cannot `replace` caches a newer
+  /// `loadSiteFramesNear` already published. Radar + Today both hop through here.
+  @MainActor private static var siteLoadGeneration: UInt64 = 0
+
+  /// True when `requestToken` is still the latest `loadSiteFramesNear`.
+  static func shouldCommitSiteLoad(requestToken: UInt64, latestToken: UInt64) -> Bool {
+    requestToken == latestToken
+  }
+
   @MainActor
   static func loadSiteFramesNear(
     coordinate: CLLocationCoordinate2D,
     preferredSite: IEMRadarService.Site? = nil,
     maxFrames: Int = RadarLivePresentation.siteLoopMaxFrames
   ) async -> IEMRadarService.SiteFrameLoad? {
+    siteLoadGeneration += 1
+    let token = siteLoadGeneration
     var candidates = await IEMRadarService.nearestSites(to: coordinate, limit: 4)
     if let preferredSite, !candidates.contains(where: { $0.id == preferredSite.id }) {
       candidates.insert(preferredSite, at: 0)
@@ -28,9 +39,14 @@ enum Level3N0BService {
 
     for site in candidates {
       let loaded = await loadFrames(site: site, maxFrames: maxFrames)
-      if let load = IEMRadarService.siteFrameLoad(
+      let load = IEMRadarService.siteFrameLoad(
         frames: loaded.frames, site: site, preferred: preferred)
-      {
+      // Always return frames to this caller so a superseded request is not
+      // treated as an N0B miss that would fall through to PNG + cache wipes.
+      guard shouldCommitSiteLoad(requestToken: token, latestToken: siteLoadGeneration) else {
+        return load
+      }
+      if let load {
         Level3N0BSweepStore.shared.replace(loaded.sweeps)
         let sweeps = loaded.sweeps
         let keys = Set(

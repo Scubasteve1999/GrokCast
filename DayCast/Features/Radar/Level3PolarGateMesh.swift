@@ -263,6 +263,9 @@ final class Level3PolarMeshCache: @unchecked Sendable {
   private var byKey: [String: Level3PolarGateMesh.Mesh] = [:]
   private var order: [String] = []
   private var building = Set<String>()
+  /// Play-loop keys. Today’s teaser may insert one extra mesh but must not
+  /// LRU-evict a volume the Radar tab is still playing.
+  private var reservedKeys = Set<String>()
   private var hitCount = 0
   private var missCount = 0
   private var warmPending = false
@@ -303,10 +306,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
       order.remove(at: idx)
     }
     order.append(key)
-    while order.count > Self.maxEntries {
-      let old = order.removeFirst()
-      byKey.removeValue(forKey: old)
-    }
+    evictUnlocked()
     building.remove(key)
     missCount += 1
     condition.broadcast()
@@ -400,6 +400,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
 
   func keepOnly(keys: Set<String>) {
     condition.lock()
+    reservedKeys = keys
     order.removeAll { key in
       if keys.contains(key) { return false }
       byKey.removeValue(forKey: key)
@@ -414,6 +415,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     byKey.removeAll(keepingCapacity: true)
     order.removeAll(keepingCapacity: true)
     building.removeAll(keepingCapacity: true)
+    reservedKeys.removeAll()
     hitCount = 0
     missCount = 0
     warmPending = false
@@ -451,6 +453,18 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     if let idx = order.firstIndex(of: key) {
       order.remove(at: idx)
       order.append(key)
+    }
+  }
+
+  /// Drop the oldest unreserved entry. Reserved play-loop keys stay resident
+  /// even when Today’s teaser inserts a newer volume past `maxEntries`.
+  private func evictUnlocked() {
+    while order.count > Self.maxEntries {
+      guard let idx = order.firstIndex(where: { !reservedKeys.contains($0) }) else {
+        break
+      }
+      let old = order.remove(at: idx)
+      byKey.removeValue(forKey: old)
     }
   }
 }

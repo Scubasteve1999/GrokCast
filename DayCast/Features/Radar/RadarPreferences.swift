@@ -44,38 +44,40 @@ enum RadarPreferences {
 
   static var baseMapStyle: RadarBaseMapStyle {
     get {
-      migrateSatellitePostcardIfNeeded()
-      migrateLightWorkstationIfNeeded()
+      migrateBasemapIfNeeded()
       return store.string(forKey: baseMapStyleKey).flatMap(RadarBaseMapStyle.init(rawValue:))
         ?? .dark
     }
     set { store.set(newValue.rawValue, forKey: baseMapStyleKey) }
   }
 
-  /// One-time: Hybrid/Satellite was the leftover postcard canvas. Live MapsGL
-  /// rain needs a quiet workstation map. Users can still pick Hybrid after.
+  /// One-time: Hybrid/Satellite was the leftover postcard canvas.
   private static let quietBasemapMigratedKey = "radar.pref.quietBasemapMigrated"
-  private static func migrateSatellitePostcardIfNeeded() {
-    guard store.object(forKey: quietBasemapMigratedKey) == nil else { return }
-    store.set(true, forKey: quietBasemapMigratedKey)
-    let raw = store.string(forKey: baseMapStyleKey)
-    if raw == RadarBaseMapStyle.satelliteStreets.rawValue
-      || raw == RadarBaseMapStyle.satellite.rawValue
-    {
-      store.set(RadarBaseMapStyle.light.rawValue, forKey: baseMapStyleKey)
-    }
-  }
-
-  /// One-time: Light was the leftover “quiet gray” default. Mapbox Light is a
-  /// white page, not a workstation. Users can still pick Light after.
+  /// One-time: Light was the leftover “quiet gray” default.
   private static let darkWorkstationMigratedKey = "radar.pref.darkWorkstationMigrated"
-  private static func migrateLightWorkstationIfNeeded() {
-    guard store.object(forKey: darkWorkstationMigratedKey) == nil else { return }
-    store.set(true, forKey: darkWorkstationMigratedKey)
+
+  /// Apply leftover-basemap migrations in one pass. Hybrid/Satellite must not
+  /// write Light as an intermediate that the Light→Dark hop would then consume.
+  /// Users can still pick Hybrid or Light after both flags are set.
+  private static func migrateBasemapIfNeeded() {
+    let quietDone = store.object(forKey: quietBasemapMigratedKey) != nil
+    let darkDone = store.object(forKey: darkWorkstationMigratedKey) != nil
+    if quietDone && darkDone { return }
+
     let raw = store.string(forKey: baseMapStyleKey)
-    if raw == RadarBaseMapStyle.light.rawValue {
+    let isPostcard =
+      raw == RadarBaseMapStyle.satelliteStreets.rawValue
+      || raw == RadarBaseMapStyle.satellite.rawValue
+    let isLight = raw == RadarBaseMapStyle.light.rawValue
+
+    if !quietDone && isPostcard {
+      store.set(RadarBaseMapStyle.dark.rawValue, forKey: baseMapStyleKey)
+    } else if !darkDone && isLight {
       store.set(RadarBaseMapStyle.dark.rawValue, forKey: baseMapStyleKey)
     }
+
+    store.set(true, forKey: quietBasemapMigratedKey)
+    store.set(true, forKey: darkWorkstationMigratedKey)
   }
 
   /// Defaults to true, so absence has to be distinguished from a stored `false` —
