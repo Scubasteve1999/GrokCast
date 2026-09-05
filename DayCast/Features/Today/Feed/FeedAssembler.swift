@@ -33,7 +33,7 @@ enum FeedAssembler {
     case .hourly:
       return snapshot.hasWeather && snapshot.hasHourly
     case .health:
-      return snapshot.hasWeather
+      return snapshot.hasWeather && snapshot.showHealth
     case .yourNews:
       return snapshot.hasLocalBriefing
     case .radar:
@@ -42,7 +42,6 @@ enum FeedAssembler {
       return snapshot.hasWeather && snapshot.hasDaily
     case .nearby:
       return snapshot.showFireCard
-        || (snapshot.hasWeather && snapshot.hasSunriseOrSunset)
     }
   }
 }

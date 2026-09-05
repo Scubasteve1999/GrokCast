@@ -4,15 +4,19 @@ import XCTest
 
 final class TodayFirstViewportTests: XCTestCase {
 
-  func testOliveBranchStoryDayFitsYourNewsPeekOnIPhone16() {
+  func testOliveBranchStoryDayFitsYourNewsCardOnIPhone16() {
     XCTAssertLessThanOrEqual(
       TodayGlanceLayout.oliveBranchStoryStackHeight,
       TodayGlanceLayout.visibleFeedHeightIPhone16
     )
-    let peek =
-      TodayGlanceLayout.visibleFeedHeightIPhone16
-      - TodayGlanceLayout.oliveBranchStoryStackHeight
-    XCTAssertGreaterThanOrEqual(peek, 8, "Your News header must still peek")
+    XCTAssertEqual(TodayGlanceLayout.sheetSectionSpacing, DesignTokens.Spacing.space12)
+    XCTAssertEqual(TodayGlanceLayout.sheetTopPadding, DesignTokens.Spacing.space12)
+    XCTAssertEqual(TodayGlanceLayout.heroBottomPadding, DesignTokens.Spacing.space8)
+    XCTAssertGreaterThanOrEqual(
+      TodayGlanceLayout.oliveBranchYourNewsPeek,
+      TodayGlanceLayout.yourNewsCardPeekHeight,
+      "Your News card body must sit in the first viewport, not header-only"
+    )
   }
 
   func testOutlookRadarPlateIsTallerThanThePostageStamp() {
@@ -74,7 +78,7 @@ final class TodayFirstViewportTests: XCTestCase {
   func testNowHeroBudgetIsCinematicPhotographyNotAGlyphChip() {
     XCTAssertGreaterThanOrEqual(TodayGlanceLayout.nowBudgetHeight, 112)
     XCTAssertLessThan(TodayGlanceLayout.nowBudgetHeight, 240)
-    XCTAssertEqual(TodayGlanceLayout.nowBudgetHeight, 200)
+    XCTAssertEqual(TodayGlanceLayout.nowBudgetHeight, 160)
     XCTAssertEqual(
       NowHeroPhotography.stillName(conditionCode: 0, isDay: true),
       "NewsHeroSky"
@@ -88,8 +92,6 @@ final class TodayFirstViewportTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: true,
-      hasAQI: true,
-      hasSunriseOrSunset: false,
       showFireCard: false,
       hasLocalBriefing: true
     )
@@ -111,9 +113,7 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertEqual(TodayGlanceLayout.hourlyGraphHeight, HourlyGraphLayout.height)
     XCTAssertEqual(
       TodayGlanceLayout.hourlyCardHeight,
-      TodayGlanceLayout.hourlyCardPadding * 2
-        + TodayGlanceLayout.hourlyGraphHeight
-        + TodayGlanceLayout.hourlyInnerSpacing
+      TodayGlanceLayout.hourlyGraphHeight
     )
     XCTAssertLessThan(TodayGlanceLayout.hourlyCardHeight, 280)
   }
@@ -169,8 +169,6 @@ final class TodayFirstViewportTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: true,
-      hasSunriseOrSunset: false,
       showFireCard: false,
       hasLocalBriefing: true,
       hasRadarRelevantAlert: true

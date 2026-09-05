@@ -12,14 +12,31 @@ enum NearbyTileCopy {
     return AirQualityCategory(usAQI: aqi).title
   }
 
+  static func airQualityAccessibility(aqi: Int, title: String, guidance: String) -> String {
+    "Air quality \(aqi), \(title). \(guidance) Opens details."
+  }
+
   static func airQualityAccessibility(aqi: Int, hasNWSAirQualityAlert: Bool) -> String {
     let category = AirQualityCategory(usAQI: aqi)
     if hasNWSAirQualityAlert {
       return
         "Air quality \(aqi), \(category.title). NWS air quality alert in effect. Opens details."
     }
-    return AirQualityFeedCard.accessibilityLabel(
+    return airQualityAccessibility(
       aqi: aqi, title: category.title, guidance: category.guidance)
+  }
+
+  static func fireAccessibility(title: String, subtitle: String) -> String {
+    "Fire. \(title). \(subtitle) Opens details."
+  }
+
+  static func sunMoonAccessibility(
+    sunrise: String,
+    sunset: String,
+    phase: String,
+    litPercent: Int
+  ) -> String {
+    "Sun and moon. Sunrise \(sunrise), sunset \(sunset). \(phase), \(litPercent) percent illuminated. Opens details."
   }
 
   static func fireValue(_ summary: FireFeedSummary) -> String {
@@ -52,21 +69,12 @@ enum NearbyTileCopy {
   }
 }
 
-/// One plate, up to three tiles: Air Quality, Fire, Sun. Below the fold.
+/// Fire plate when a local fire or fire-weather alert is live. Sun lives on
+/// hourly ticks / Now detail — not an Accu-style strip.
 struct NearbyFeedCard: View {
-  var aqi: Int?
-  var hasNWSAirQualityAlert: Bool = false
-  var fire: FireFeedSummary?
-  var sunrise: Date?
-  var sunset: Date?
-  var timeZone: TimeZone = .current
-  var now: Date = Date()
-  var onAirQuality: (() -> Void)?
-  var onFire: (() -> Void)?
-  var onSunMoon: (() -> Void)?
+  var fire: FireFeedSummary
+  var onFire: () -> Void
   var plated: Bool = true
-
-  private var showsSun: Bool { sunrise != nil || sunset != nil }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
@@ -75,56 +83,17 @@ struct NearbyFeedCard: View {
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .accessibilityAddTraits(.isHeader)
 
-      HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
-        if let aqi, let onAirQuality {
-          let category = AirQualityCategory(usAQI: aqi)
-          MetricTile(
-            label: "Air Quality",
-            value: "\(aqi)",
-            support: NearbyTileCopy.airQualitySupport(
-              aqi: aqi, hasNWSAirQualityAlert: hasNWSAirQualityAlert),
-            valueColor: category.color,
-            action: onAirQuality,
-            accessibilityLabel: NearbyTileCopy.airQualityAccessibility(
-              aqi: aqi, hasNWSAirQualityAlert: hasNWSAirQualityAlert)
-          )
-        }
-        if let fire, let onFire {
-          MetricTile(
-            label: "Fire",
-            value: NearbyTileCopy.fireValue(fire),
-            support: NearbyTileCopy.fireSupport(fire),
-            action: onFire,
-            accessibilityLabel: FireFeedCard.accessibilityLabel(
-              title: fire.title, subtitle: fire.subtitle)
-          )
-        }
-        if showsSun, let onSunMoon {
-          let sun = NearbyTileCopy.sunValue(
-            sunrise: sunrise, sunset: sunset, now: now, timeZone: timeZone)
-          MetricTile(
-            label: "Sun",
-            value: sun.value,
-            support: sun.support,
-            action: onSunMoon,
-            accessibilityLabel: SunMoonFeedCard.accessibilityLabel(
-              sunrise: formatTime(sunrise),
-              sunset: formatTime(sunset),
-              phase: MoonPhase.phase(on: now).phase.displayName,
-              litPercent: Int(round(MoonPhase.phase(on: now).illumination * 100))
-            )
-          )
-        }
-      }
+      MetricTile(
+        label: "Fire",
+        value: NearbyTileCopy.fireValue(fire),
+        support: NearbyTileCopy.fireSupport(fire),
+        action: onFire,
+        accessibilityLabel: NearbyTileCopy.fireAccessibility(
+          title: fire.title, subtitle: fire.subtitle)
+      )
     }
     .padding(plated ? DesignTokens.Spacing.space16 : 0)
     .frame(maxWidth: .infinity, alignment: .leading)
     .weatherModuleChrome(plated)
-  }
-
-  private func formatTime(_ date: Date?) -> String {
-    guard let date else { return "--:--" }
-    return LocationTimezone.formatter(dateFormat: "h:mm a", timeZone: timeZone)
-      .string(from: date)
   }
 }

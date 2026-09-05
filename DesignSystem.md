@@ -78,7 +78,7 @@ Editorial labels are title-case, not shouting caps.
 
 Prefer 16 / 24 / 32 for layout. No one-off 10 / 14 / 18 paddings in feature views.
 
-Today first viewport is `TodayGlanceLayout` (iPhone 16 852pt). Your News must peek. Do not buy height by deleting hoist, AQI, or the rail.
+Today first viewport is `TodayGlanceLayout` (iPhone 16 852pt). Unscrolled iPhone 16: Now + live alert chip + tonight + temp curve + Outlook plate + ≥1 Your News card. Density via subtract → pack (`sheetSectionSpacing` 12, `nowBudgetHeight` 160). Conditions and Nearby stay below the fold and must earn the slot. Do not buy height by deleting hoist, Your News, or Radar.
 
 ---
 

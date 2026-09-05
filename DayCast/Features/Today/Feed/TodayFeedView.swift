@@ -3,7 +3,6 @@ import SwiftUI
 /// TWC-style scrolling home feed. Permission / empty gates stay in `TodayView`.
 struct TodayFeedView: View {
   @Environment(WeatherStore.self) private var store
-  @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(FireStore.self) private var fireStore
   @Environment(LocalBriefingStore.self) private var briefingStore
@@ -13,7 +12,6 @@ struct TodayFeedView: View {
   @State private var selectedAlert: NWSAlert?
   @State private var showNowDetail = false
   @State private var showAirQualityDetail = false
-  @State private var showSunMoonDetail = false
   @State private var showFireDetail = false
   @State private var chipBarHeight: CGFloat = LocationChipBar.reservedHeight
 
@@ -51,8 +49,7 @@ struct TodayFeedView: View {
     var snap = FeedSnapshotBuilder.make(
       weather: weather,
       alerts: store.displayableActiveAlerts,
-      showFireCard: showFire,
-      hasSevereContext: todaySevereContext != nil
+      showFireCard: showFire
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)
@@ -65,11 +62,6 @@ struct TodayFeedView: View {
   private var hasBriefingForCurrentLocation: Bool {
     guard let locID = store.currentLocation?.id.uuidString else { return false }
     return briefingStore.locationID == locID && !briefingStore.items.isEmpty
-  }
-
-  private var todaySunTimes: (sunrise: Date?, sunset: Date?) {
-    let day = weather.daily.first
-    return (day?.sunrise, day?.sunset)
   }
 
   private var feedItems: [FeedItem] {
@@ -99,14 +91,6 @@ struct TodayFeedView: View {
         ?? MinutecastEngine.summary(from: hrrr.slots, units: store.temperatureUnit)
     }
     return MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
-  }
-
-  private var todaySevereContext: SevereWeatherContext? {
-    guard let locID = store.currentLocation?.id.uuidString,
-      severeStore.context.locationID == locID,
-      severeStore.context.shouldShowTodayCard
-    else { return nil }
-    return severeStore.context
   }
 
   private var officialWarningEvent: String? {
@@ -149,7 +133,7 @@ struct TodayFeedView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space20)
           .padding(.top, chipBarHeight)
-          .padding(.bottom, DesignTokens.Spacing.space16)
+          .padding(.bottom, TodayGlanceLayout.heroBottomPadding)
 
           if !sheetRows.isEmpty {
             VStack(spacing: TodayGlanceLayout.sheetSectionSpacing) {
@@ -160,7 +144,7 @@ struct TodayFeedView: View {
               }
             }
             .padding(.horizontal, DesignTokens.Spacing.space20)
-            .padding(.top, DesignTokens.Spacing.space20)
+            .padding(.top, TodayGlanceLayout.sheetTopPadding)
             .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(DesignTokens.Palette.bgSecondary)
@@ -203,13 +187,6 @@ struct TodayFeedView: View {
       if let aqi = weather.airQualityIndex {
         AirQualityDetailView(aqi: aqi)
       }
-    }
-    .navigationDestination(isPresented: $showSunMoonDetail) {
-      SunMoonDetailView(
-        sunrise: todaySunTimes.sunrise,
-        sunset: todaySunTimes.sunset,
-        timeZone: weather.locationTimeZone
-      )
     }
     .navigationDestination(isPresented: $showFireDetail) {
       FireDetailView(
@@ -279,6 +256,7 @@ struct TodayFeedView: View {
         hasNWSAirQualityAlert: store.displayableActiveAlerts.contains {
           NearbyTileCopy.isAirQualityAlert($0.event)
         },
+        showsPrecipTile: ConditionsVisibility.showsPrecipTile(isNowWet: snapshot.isNowWet),
         plated: plated,
         onAirQuality: weather.airQualityIndex == nil
           ? nil
@@ -288,28 +266,16 @@ struct TodayFeedView: View {
           }
       )
     case .nearby:
-      NearbyFeedCard(
-        aqi: nil,
-        hasNWSAirQualityAlert: false,
-        fire: nearbyFireSummary,
-        sunrise: todaySunTimes.sunrise,
-        sunset: todaySunTimes.sunset,
-        timeZone: weather.locationTimeZone,
-        onAirQuality: nil,
-        onFire: nearbyFireSummary == nil
-          ? nil
-          : {
+      if let fire = nearbyFireSummary {
+        NearbyFeedCard(
+          fire: fire,
+          onFire: {
             Analytics.track(.feedCardTap, parameters: ["card": "fire"])
             showFireDetail = true
           },
-        onSunMoon: (todaySunTimes.sunrise == nil && todaySunTimes.sunset == nil)
-          ? nil
-          : {
-            Analytics.track(.feedCardTap, parameters: ["card": "sunMoon"])
-            showSunMoonDetail = true
-          },
-        plated: plated
-      )
+          plated: plated
+        )
+      }
     }
   }
 

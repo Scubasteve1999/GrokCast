@@ -5,18 +5,13 @@ enum FeedSnapshotBuilder {
     weather: DayCastWeather?,
     alerts: [NWSAlert],
     showFireCard: Bool = false,
-    hasSevereContext: Bool = false,
     hasLocalBriefing: Bool = false
   ) -> FeedSnapshot {
     guard let weather else { return .empty }
 
     let summary = MinutecastEngine.summary(from: weather.minutely15, units: .fahrenheit)
     let hasPrecip = PrecipFeedVisibility.hasContent(summary: summary)
-
-    let hasSun: Bool = {
-      guard let today = weather.daily.first else { return false }
-      return today.sunrise != nil || today.sunset != nil
-    }()
+    let hasAQAlert = alerts.contains { NearbyTileCopy.isAirQualityAlert($0.event) }
 
     return FeedSnapshot(
       hasWeather: true,
@@ -24,10 +19,12 @@ enum FeedSnapshotBuilder {
       hasHourly: !weather.hourly.isEmpty,
       hasDaily: !weather.daily.isEmpty,
       hasPrecipContent: hasPrecip,
-      hasAQI: weather.airQualityIndex != nil,
-      hasSunriseOrSunset: hasSun,
       showFireCard: showFireCard,
-      hasSevereContext: hasSevereContext,
+      showHealth: ConditionsVisibility.shouldShow(
+        aqi: weather.airQualityIndex,
+        visibilityMeters: weather.visibilityMeters,
+        hasNWSAirQualityAlert: hasAQAlert
+      ),
       isNowWet: NowHeroReconcile.isNowWet(
         conditionCode: weather.conditionCode, summary: summary),
       hasLocalBriefing: hasLocalBriefing,

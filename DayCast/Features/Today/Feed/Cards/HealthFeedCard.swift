@@ -1,11 +1,13 @@
 import SwiftUI
 
-/// Conditions 2×2 on the Today sheet: precip, humidity, visibility, AQI.
-/// Pollen stays off this grid; it hides when the region has no data elsewhere.
+/// Conditions on the Today sheet: humidity, visibility, AQI, and precip
+/// when Now is dry. Hidden on calm days (`ConditionsVisibility`).
+/// Pollen stays off this grid.
 struct HealthFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
   var hasNWSAirQualityAlert: Bool = false
+  var showsPrecipTile: Bool = true
   var plated: Bool = true
   var onAirQuality: (() -> Void)?
 
@@ -23,12 +25,14 @@ struct HealthFeedCard: View {
         ],
         spacing: DesignTokens.Spacing.space12
       ) {
-        conditionTile(
-          label: "Precipitation",
-          value: precip.value,
-          support: precip.support,
-          accessibilityLabel: "Precipitation \(precip.value), \(precip.support)"
-        )
+        if showsPrecipTile {
+          conditionTile(
+            label: "Precipitation",
+            value: precip.value,
+            support: precip.support,
+            accessibilityLabel: "Precipitation \(precip.value), \(precip.support)"
+          )
+        }
         conditionTile(
           label: "Humidity",
           value: "\(weather.humidity)%",

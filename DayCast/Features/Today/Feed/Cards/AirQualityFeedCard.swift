@@ -1,59 +1,5 @@
 import SwiftUI
 
-struct AirQualityFeedCard: View {
-  let aqi: Int
-  var onTap: () -> Void
-
-  private var category: AirQualityCategory { AirQualityCategory(usAQI: aqi) }
-
-  var body: some View {
-    Button(action: onTap) {
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-        HStack {
-          Text("Air Quality")
-            .font(DesignTokens.Typography.subsection())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-            .tracking(DesignTokens.Typography.cardLabelTracking)
-          Spacer()
-          Image(systemName: "chevron.right")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-        }
-
-        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.space12) {
-          Text("\(aqi)")
-            .font(DesignTokens.Typography.widgetTemp(40))
-            .foregroundStyle(category.color)
-            .monospacedDigit()
-
-          VStack(alignment: .leading, spacing: DesignTokens.Spacing.space2) {
-            Text(category.title)
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-            Text(category.guidance)
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-              .fixedSize(horizontal: false, vertical: true)
-              .lineLimit(2)
-          }
-        }
-      }
-      .padding(DesignTokens.Spacing.space16)
-      .cardStyle()
-      .accessibilityHidden(true)
-    }
-    .buttonStyle(.plain)
-    .accessibilityLabel(
-      Self.accessibilityLabel(aqi: aqi, title: category.title, guidance: category.guidance)
-    )
-  }
-
-  /// One VoiceOver string for the whole card. Children stay visual-only.
-  static func accessibilityLabel(aqi: Int, title: String, guidance: String) -> String {
-    "Air quality \(aqi), \(title). \(guidance) Opens details."
-  }
-}
-
 struct AirQualityDetailView: View {
   let aqi: Int
   private var category: AirQualityCategory { AirQualityCategory(usAQI: aqi) }

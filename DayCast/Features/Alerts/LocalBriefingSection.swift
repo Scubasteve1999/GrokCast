@@ -15,7 +15,11 @@ struct LocalBriefingSection: View {
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         Text("Your News")
-          .font(DesignTokens.Typography.studioTitle())
+          .font(
+            sitsInSheet
+              ? DesignTokens.Typography.headline()
+              : DesignTokens.Typography.studioTitle()
+          )
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .accessibilityAddTraits(.isHeader)
 
