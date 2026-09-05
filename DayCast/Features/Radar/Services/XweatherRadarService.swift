@@ -16,8 +16,10 @@ final class XweatherRadarService {
   /// Auth/plan activation recovers quickly (was 1h and kept Forecast dead after subscribe).
   private static let probeUnauthorizedFailureCacheTTL: TimeInterval = 45
   private static let probeTimeout: TimeInterval = 4
+  /// Radar tab + Today’s disposable `RadarLoader` probe concurrently.
+  private static let lock = NSLock()
   private static var probeCache: [String: (result: Bool, date: Date)] = [:]
-  private static var lastProbeFailure: XweatherProbeFailure?
+  private static var lastProbeFailureByKey: [String: XweatherProbeFailure] = [:]
   /// Chosen after a successful live probe (`radar-global` preferred).
   private static var preferredLiveLayer: XweatherRadarLayer = .radarGlobal
 
@@ -41,7 +43,7 @@ final class XweatherRadarService {
 
   /// User-facing hint when probes fail but keys are configured (e.g. daily quota).
   static var userFacingUnavailableMessage: String? {
-    guard let failure = lastProbeFailure else { return nil }
+    guard let failure = currentProbeFailure(preferringLive: true) else { return nil }
     switch failure {
     case .quotaExceeded:
       return "Xweather daily map quota exceeded. Tiles refresh when quota resets."
@@ -154,7 +156,7 @@ final class XweatherRadarService {
       }
 
       let layer: XweatherRadarLayer =
-        direction == .future ? .fradar : preferredLiveLayer
+        direction == .future ? .fradar : liveLayer()
       frames.append(
         XweatherRadarFrame(
           layer: layer,
@@ -202,11 +204,11 @@ final class XweatherRadarService {
   /// Probes `radar-global` first (best mosaic), then plain `radar`.
   static func probeAvailability() async -> Bool {
     if await probeOffsetCached(layer: .radarGlobal, offset: "current", retina: true) {
-      preferredLiveLayer = .radarGlobal
+      setLiveLayer(.radarGlobal)
       return true
     }
     if await probeOffsetCached(layer: .radar, offset: "current", retina: true) {
-      preferredLiveLayer = .radar
+      setLiveLayer(.radar)
       return true
     }
     return false
@@ -219,8 +221,10 @@ final class XweatherRadarService {
 
   /// Clears cached probe results (e.g. after fixing Maps credentials / plan).
   static func invalidateProbeCache() {
+    lock.lock()
     probeCache.removeAll()
-    lastProbeFailure = nil
+    lastProbeFailureByKey.removeAll()
+    lock.unlock()
   }
 
   private static func probeCacheKey(layer: XweatherRadarLayer, offset: String, retina: Bool) -> String {
@@ -264,25 +268,29 @@ final class XweatherRadarService {
         return false
       }
       let ok = (200..<300).contains(http.statusCode) || http.statusCode == 302
+      let key = probeCacheKey(layer: layer, offset: offset, retina: retina)
       if ok {
         if let contentType = http.value(forHTTPHeaderField: "Content-Type")?.lowercased(),
           contentType.contains("json")
         {
-          lastProbeFailure = failureFromResponse(statusCode: http.statusCode, data: data)
+          let failure = failureFromResponse(statusCode: http.statusCode, data: data)
+          setProbeFailure(failure, for: key)
           return false
         }
-        lastProbeFailure = nil
+        setProbeFailure(nil, for: key)
         return true
       }
 
-      lastProbeFailure = failureFromResponse(statusCode: http.statusCode, data: data)
+      let failure = failureFromResponse(statusCode: http.statusCode, data: data)
+      setProbeFailure(failure, for: key)
       radarLog(
-        "[Xweather] Probe failed for \(layer.rawValue)/\(offset): HTTP \(http.statusCode)"
-          + (lastProbeFailure.map { " — \($0)" } ?? "")
+        "[Xweather] Probe failed for \(layer.rawValue)/\(offset): HTTP \(http.statusCode) — \(failure)"
       )
       return false
     } catch {
-      lastProbeFailure = .other(error.localizedDescription)
+      let key = probeCacheKey(layer: layer, offset: offset, retina: retina)
+      let failure = XweatherProbeFailure.other(error.localizedDescription)
+      setProbeFailure(failure, for: key)
       radarLog("[Xweather] Probe failed for \(layer.rawValue)/\(offset): \(error)")
       return false
     }
@@ -317,16 +325,55 @@ final class XweatherRadarService {
 
   /// True when the last probe failed due to bad/missing Maps credentials (not quota).
   static var lastFailureIsUnauthorized: Bool {
-    if case .unauthorized = lastProbeFailure { return true }
+    if case .unauthorized = currentProbeFailure(preferringLive: true) { return true }
     return false
   }
 
+  private static func liveLayer() -> XweatherRadarLayer {
+    lock.lock()
+    defer { lock.unlock() }
+    return preferredLiveLayer
+  }
+
+  private static func setLiveLayer(_ layer: XweatherRadarLayer) {
+    lock.lock()
+    preferredLiveLayer = layer
+    lock.unlock()
+  }
+
+  private static func currentProbeFailure(preferringLive: Bool) -> XweatherProbeFailure? {
+    lock.lock()
+    defer { lock.unlock() }
+    if preferringLive {
+      let liveKeys = [
+        probeCacheKey(layer: .radarGlobal, offset: "current", retina: true),
+        probeCacheKey(layer: .radar, offset: "current", retina: true),
+      ]
+      if let hit = liveKeys.compactMap({ lastProbeFailureByKey[$0] }).first {
+        return hit
+      }
+    }
+    return lastProbeFailureByKey.values.first
+  }
+
+  private static func setProbeFailure(_ failure: XweatherProbeFailure?, for key: String) {
+    lock.lock()
+    if let failure {
+      lastProbeFailureByKey[key] = failure
+    } else {
+      lastProbeFailureByKey[key] = nil
+    }
+    lock.unlock()
+  }
+
   private static func cachedProbe(for key: String) -> Bool? {
+    lock.lock()
+    defer { lock.unlock() }
     guard let entry = probeCache[key] else { return nil }
     let ttl: TimeInterval
     if entry.result {
       ttl = probeSuccessCacheTTL
-    } else if case .unauthorized = lastProbeFailure {
+    } else if case .unauthorized = lastProbeFailureByKey[key] {
       ttl = probeUnauthorizedFailureCacheTTL
     } else {
       ttl = probeFailureCacheTTL
@@ -336,7 +383,9 @@ final class XweatherRadarService {
   }
 
   private static func storeProbe(_ result: Bool, for key: String) {
+    lock.lock()
     probeCache[key] = (result, Date())
+    lock.unlock()
   }
 }
 

@@ -8,8 +8,10 @@ final class OpenWeatherMapRadarService {
   private static let probeSuccessCacheTTL: TimeInterval = 300
   private static let probeFailureCacheTTL: TimeInterval = 3600
   private static let probeTimeout: TimeInterval = 4
+  /// Radar tab + Today’s disposable `RadarLoader` probe concurrently.
+  private static let lock = NSLock()
   private static var probeCache: [String: (result: Bool, date: Date)] = [:]
-  private static var lastProbeFailure: ProbeFailure?
+  private static var lastProbeFailureByKind: [String: ProbeFailure] = [:]
 
   enum ProbeFailure: Equatable, CustomStringConvertible {
     case invalidKey
@@ -36,7 +38,7 @@ final class OpenWeatherMapRadarService {
   }
 
   static var userFacingUnavailableMessage: String? {
-    guard let failure = lastProbeFailure else { return nil }
+    guard let failure = currentProbeFailure() else { return nil }
     switch failure {
     case .invalidKey:
       return "OpenWeatherMap map tiles unavailable (key lacks Maps/precip access)."
@@ -181,18 +183,19 @@ final class OpenWeatherMapRadarService {
       guard let http = response as? HTTPURLResponse else { return false }
       let ok = (200..<300).contains(http.statusCode)
       if ok {
-        lastProbeFailure = nil
+        setProbeFailure(nil, for: kind)
         return true
       }
 
-      lastProbeFailure = failureFromResponse(statusCode: http.statusCode, data: data)
+      let failure = failureFromResponse(statusCode: http.statusCode, data: data)
+      setProbeFailure(failure, for: kind)
       radarLog(
-        "[OpenWeatherMap] Probe failed for \(kind) tm=\(tileEpoch): HTTP \(http.statusCode)"
-          + (lastProbeFailure.map { " — \($0)" } ?? "")
+        "[OpenWeatherMap] Probe failed for \(kind) tm=\(tileEpoch): HTTP \(http.statusCode) — \(failure)"
       )
       return false
     } catch {
-      lastProbeFailure = .other(error.localizedDescription)
+      let failure = ProbeFailure.other(error.localizedDescription)
+      setProbeFailure(failure, for: kind)
       radarLog("[OpenWeatherMap] Probe failed for \(kind) tm=\(tileEpoch): \(error)")
       return false
     }
@@ -218,7 +221,38 @@ final class OpenWeatherMapRadarService {
     return .other("HTTP \(statusCode)")
   }
 
+  private static func failureKindKey(_ kind: RadarFrame.Kind) -> String {
+    switch kind {
+    case .livePrecipitation: "live"
+    case .forecastPrecipitation: "forecast"
+    }
+  }
+
+  /// Live and forecast probes keep separate failure reasons so a forecast
+  /// deny cannot overwrite a live success (or the reverse).
+  private static func currentProbeFailure() -> ProbeFailure? {
+    lock.lock()
+    defer { lock.unlock() }
+    if let live = lastProbeFailureByKind[failureKindKey(.livePrecipitation)] {
+      return live
+    }
+    return lastProbeFailureByKind[failureKindKey(.forecastPrecipitation)]
+  }
+
+  private static func setProbeFailure(_ failure: ProbeFailure?, for kind: RadarFrame.Kind) {
+    lock.lock()
+    let key = failureKindKey(kind)
+    if let failure {
+      lastProbeFailureByKind[key] = failure
+    } else {
+      lastProbeFailureByKind[key] = nil
+    }
+    lock.unlock()
+  }
+
   private static func cachedProbe(for key: String) -> Bool? {
+    lock.lock()
+    defer { lock.unlock() }
     guard let entry = probeCache[key] else { return nil }
     let ttl = entry.result ? probeSuccessCacheTTL : probeFailureCacheTTL
     guard Date().timeIntervalSince(entry.date) < ttl else { return nil }
@@ -226,7 +260,9 @@ final class OpenWeatherMapRadarService {
   }
 
   private static func storeProbe(_ result: Bool, for key: String) {
+    lock.lock()
     probeCache[key] = (result, Date())
+    lock.unlock()
   }
 
   private static func roundToInterval(_ date: Date, minutes: Int) -> Date {

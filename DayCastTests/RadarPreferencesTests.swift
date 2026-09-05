@@ -567,6 +567,17 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarPreferences.baseMapStyle, .satelliteStreets)
   }
 
+  func testBasemapMigrationsComposeWithoutLightHop() {
+    suite.set(RadarBaseMapStyle.satellite.rawValue, forKey: "radar.pref.baseMapStyle")
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
+    XCTAssertNotNil(suite.object(forKey: "radar.pref.quietBasemapMigrated"))
+    XCTAssertNotNil(suite.object(forKey: "radar.pref.darkWorkstationMigrated"))
+
+    // After both one-time flags are set, an intentional Light choice stays.
+    RadarPreferences.baseMapStyle = .light
+    XCTAssertEqual(RadarPreferences.baseMapStyle, .light)
+  }
+
   func testLightWorkstationMigratesToDarkOnce() {
     suite.set(RadarBaseMapStyle.light.rawValue, forKey: "radar.pref.baseMapStyle")
     XCTAssertEqual(RadarPreferences.baseMapStyle, .dark)
