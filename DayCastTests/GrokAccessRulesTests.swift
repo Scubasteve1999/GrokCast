@@ -67,6 +67,9 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("free"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.lockTitle, "Sky Check")
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.lockGlyph, "cloud.sun")
+    XCTAssertFalse(GrokAPIKeyEmptyStateView.lockGlyph.contains("sparkles"))
   }
 
   func testMoreTabStaysSelectedOnHubDestinations() {

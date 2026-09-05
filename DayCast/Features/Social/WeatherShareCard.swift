@@ -4,7 +4,6 @@ struct WeatherShareCard: View {
   let weather: DayCastWeather
   let score: DayCastScore
   let locationName: String
-  let grokBrief: String?
   var unit: TemperatureUnit = .fahrenheit
 
   var body: some View {
@@ -61,19 +60,6 @@ struct WeatherShareCard: View {
       .labelStyle(.titleOnly)
 
       scoreRing
-
-      if let brief = grokBrief, !brief.isEmpty {
-        HStack(alignment: .top, spacing: 6) {
-          Image(systemName: "sparkles")
-            .font(DesignTokens.Typography.caption())
-          Text(brief)
-            .font(DesignTokens.Typography.caption())
-            .lineLimit(2)
-            .multilineTextAlignment(.center)
-        }
-        .foregroundStyle(.white.opacity(0.85))
-        .padding(.horizontal, 20)
-      }
     }
     .padding(.horizontal, 24)
     .frame(maxHeight: .infinity)
@@ -139,8 +125,7 @@ struct WeatherShareCard: View {
   WeatherShareCard(
     weather: DayCastWeather(snapshot: .preview),
     score: DayCastScore(value: 84, label: "Go Outside", subtitle: "Great conditions", icon: "figure.walk"),
-    locationName: "Memphis, TN",
-    grokBrief: "Light jacket this morning; great afternoon for a walk."
+    locationName: "Memphis, TN"
   )
   .padding()
   .background(Color.black)

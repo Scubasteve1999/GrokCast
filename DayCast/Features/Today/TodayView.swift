@@ -132,7 +132,6 @@ struct TodayView: View {
             weather: w,
             score: score,
             locationName: store.currentLocation?.name ?? w.location.name,
-            grokBrief: nil,
             unit: store.temperatureUnit
           )
           ActivityViewRepresentable(items: items, surface: .todayCard)

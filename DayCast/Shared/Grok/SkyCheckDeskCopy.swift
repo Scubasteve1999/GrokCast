@@ -28,6 +28,12 @@ enum SkyCheckDeskCopy {
   /// Finished Sky Check reply failed the 4.7 screen. Honest hide — not a lecture.
   static let replyHidden = "Couldn't show that reply. Try another question."
   static let photoTurnCaption = "Check this sky photo"
+  /// Photo / stream failure — never "Storm analysis" and never raw `localizedDescription`.
+  static let checkTimedOut =
+    "Sky Check timed out. The image may be large or the service is busy — try again."
+  static let checkFailed = "Couldn't finish that check. Try again."
+  static let emptyReply =
+    "Sky Check returned an empty reply. Check your connection and try again."
 
   /// One in-flight generation. Photo check vs chat/Imagine.
   static func generationBusyMessage(isCheckingSky: Bool) -> String {

@@ -3,6 +3,11 @@ import SwiftUI
 
 /// Primary upsell surface for DayCast Pro.
 struct PaywallView: View {
+  static let skyCheckRowTitle = "Sky Check"
+  static let skyCheckRowIcon = "cloud.sun"
+  static let skyCheckRowDetail =
+    "Ask about your weather. Today's Take, Explain Radar, morning brief, and photo check."
+
   @Environment(\.dismiss) private var dismiss
   @Bindable var subscription: SubscriptionManager
 
@@ -68,9 +73,9 @@ struct PaywallView: View {
   private var featureList: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       paywallRow(
-        "AI weather intelligence",
-        "sparkles",
-        "Chat, Today's Take, Explain Radar, morning brief, and Sky Check photo analysis"
+        Self.skyCheckRowTitle,
+        Self.skyCheckRowIcon,
+        Self.skyCheckRowDetail
       )
       paywallRow(
         "Unlimited saved locations",

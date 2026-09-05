@@ -31,6 +31,14 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertTrue(PaywallFeature.grokAI.subheadline.contains("Sky Check"))
     XCTAssertFalse(
       PaywallFeature.grokAI.subheadline.localizedCaseInsensitiveContains("Storm Spotter"))
+    XCTAssertEqual(PaywallView.skyCheckRowTitle, "Sky Check")
+    XCTAssertEqual(PaywallView.skyCheckRowIcon, "cloud.sun")
+    XCTAssertFalse(PaywallView.skyCheckRowIcon.localizedCaseInsensitiveContains("sparkles"))
+    XCTAssertTrue(PaywallView.skyCheckRowDetail.localizedCaseInsensitiveContains("Sky Check")
+      || PaywallView.skyCheckRowDetail.localizedCaseInsensitiveContains("weather"))
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.lockTitle, "Sky Check")
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.lockGlyph, "cloud.sun")
+    XCTAssertFalse(GrokAPIKeyEmptyStateView.lockGlyph.localizedCaseInsensitiveContains("sparkles"))
 
     let share = ShareableBriefText.stormSpotterReport(
       locationName: "Southaven, MS", observerNotes: nil, analysis: "Shelf cloud.")
@@ -138,6 +146,16 @@ final class StormSpotterHonestyTests: XCTestCase {
       SkyCheckDeskCopy.alreadyChecking.localizedCaseInsensitiveContains("spotter"))
     XCTAssertFalse(
       SkyCheckDeskCopy.alreadyAnswering.localizedCaseInsensitiveContains("spotter"))
+    XCTAssertEqual(
+      SkyCheckDeskCopy.checkTimedOut,
+      "Sky Check timed out. The image may be large or the service is busy — try again.")
+    XCTAssertEqual(SkyCheckDeskCopy.checkFailed, "Couldn't finish that check. Try again.")
+    XCTAssertEqual(
+      SkyCheckDeskCopy.emptyReply,
+      "Sky Check returned an empty reply. Check your connection and try again.")
+    XCTAssertFalse(SkyCheckDeskCopy.checkTimedOut.localizedCaseInsensitiveContains("Storm analysis"))
+    XCTAssertFalse(SkyCheckDeskCopy.checkFailed.localizedCaseInsensitiveContains("Storm analysis"))
+    XCTAssertFalse(SkyCheckDeskCopy.emptyReply.localizedCaseInsensitiveContains("Storm analysis"))
   }
 
   func testSkyCheckQuickPromptsDropFieldAndRadarRead() {
@@ -597,6 +615,25 @@ final class StormSpotterHonestyTests: XCTestCase {
       XCTAssertEqual(leftover, .focusInput)
     }
     store.selectedTab = previous
+  }
+
+  @MainActor
+  func testSkyCheckErrorHelperNeverShowsStormAnalysisOrRawNSError() {
+    let viewModel = GrokAIViewModel(
+      weatherStore: WeatherStore(),
+      conversationStore: GrokAIConversationStore(inMemory: true)
+    )
+    XCTAssertEqual(
+      viewModel.userFriendlyStormError(for: URLError(.timedOut)),
+      SkyCheckDeskCopy.checkTimedOut)
+    let raw = NSError(
+      domain: "xAI", code: 42,
+      userInfo: [NSLocalizedDescriptionKey: "internal token dump xyz"])
+    let copy = viewModel.userFriendlyStormError(for: raw)
+    XCTAssertEqual(copy, SkyCheckDeskCopy.checkFailed)
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Storm analysis"))
+    XCTAssertFalse(copy.contains("token dump"))
+    XCTAssertFalse(copy.contains("xyz"))
   }
 
   func testShareReportUsesNotesNotObserverNotes() {

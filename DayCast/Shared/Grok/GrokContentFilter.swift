@@ -1,8 +1,8 @@
 import Foundation
 
 /// Client-side screen for Grok output (App Review Guideline 4.7).
-/// Today's Take / Explain Radar / Alerts use `maxCharacterCount`. Sky Check chat
-/// and vision use `skyCheckMaxCharacterCount` — weather answers are longer.
+/// Today's Take / Explain Radar / Alerts / trip travel tips use `maxCharacterCount`.
+/// Sky Check chat and vision use `skyCheckMaxCharacterCount` — weather answers are longer.
 enum GrokContentFilter {
   enum Verdict: Equatable, Sendable {
     case allowed

@@ -242,11 +242,17 @@ enum TripForecastService {
       ) {
         response += chunk
       }
-      return response.trimmingCharacters(in: .whitespacesAndNewlines)
+      // Screen the finished stream (Guideline 4.7). Blocked / empty → omit the tip.
+      return acceptedAdvice(response)
     } catch {
       // The forecast itself still renders; only the AI tip is dropped.
       return nil
     }
+  }
+
+  /// Trip tips are short (2–3 sentences) — Take's 1,600 cap, not Sky Check's 12k.
+  static func acceptedAdvice(_ raw: String) -> String? {
+    GrokContentFilter.acceptedText(raw)
   }
 
 }

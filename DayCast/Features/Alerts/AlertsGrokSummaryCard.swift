@@ -115,7 +115,8 @@ struct AlertsGrokSummaryCard: View {
       summary = visible
       UserDefaults.standard.set(visible, forKey: cacheKey)
     } catch {
-      errorMessage = error.localizedDescription
+      errorMessage = AlertsActiveCopy.grokSummaryError(
+        for: error, isOffline: store.isOffline)
     }
     isLoading = false
   }
