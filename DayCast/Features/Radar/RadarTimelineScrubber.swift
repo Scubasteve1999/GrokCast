@@ -105,7 +105,10 @@ struct RadarTimelineScrubber: View {
     .accessibilityValue(radarState.currentFrameDisplayTime)
     .accessibilityHint("Adjust to move one radar frame earlier or later.")
     .accessibilityAdjustableAction { direction in
-      handleScrubEditing(true)
+      // Discrete VoiceOver steps are not a held scrub — pause and stay parked.
+      if radarState.isAnimating {
+        radarState.stop()
+      }
       switch direction {
       case .increment:
         radarState.currentIndex = min(clampedIndex + 1, radarState.activeFrameCount - 1)
@@ -114,7 +117,6 @@ struct RadarTimelineScrubber: View {
       @unknown default:
         break
       }
-      handleScrubEditing(false)
     }
   }
 

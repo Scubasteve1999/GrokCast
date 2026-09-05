@@ -150,6 +150,8 @@ final class WeatherStore {
       guard newValue != _temperatureUnit else { return }
       _temperatureUnit = newValue
       invalidateSelectedWeather()
+      // Same-turn as selectLocation: nil weather + not-loading is Today's empty-city gate.
+      isLoadingWeather = currentLocation != nil
       guard loadPersistedState else { return }
       UserDefaults.standard.set(newValue.rawValue, forKey: temperatureUnitKey)
       PushRegistrationService.shared.scheduleSync()
@@ -778,6 +780,10 @@ final class WeatherStore {
     guard let snapshot = WidgetDataStore.loadSnapshot(for: loc.id) else { return }
     let weather = DayCastWeather(snapshot: snapshot)
     currentWeather = Self.weatherMatchingSelection(weather, location: loc, units: temperatureUnit)
+    // Untagged / wrong-unit snapshots are refused; show skeleton until refresh, not the GPS CTA.
+    if currentWeather == nil {
+      isLoadingWeather = true
+    }
   }
 
   /// Persists a lightweight alert summary for widgets after a successful NWS fetch.
