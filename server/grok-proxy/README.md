@@ -3,8 +3,6 @@
 Cloudflare Worker that forwards xAI requests on behalf of verified DayCast Pro
 subscribers. It exists so the xAI key stops shipping inside the app binary.
 
-Scoped in [`docs/1.0.5-AI-GATE-SCOPE.md`](../../docs/1.0.5-AI-GATE-SCOPE.md), workstream A.
-
 ## How access works
 
 The app sends two things:

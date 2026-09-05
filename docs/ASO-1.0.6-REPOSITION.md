@@ -1,6 +1,6 @@
 # Step 4 — App Store reposition (approved copy)
 
-The bet from [`THINKING-PASS-2026-08.md`](THINKING-PASS-2026-08.md): stop competing for generic
+The bet: stop competing for generic
 weather traffic the app cannot win, and be findable by the niche it is already built for.
 
 Approved 2026-08-01. Copy below is final — paste as written.
