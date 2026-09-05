@@ -49,10 +49,6 @@ struct LargeWeatherWidgetView: View {
 
       Spacer(minLength: 0)
 
-      if let brief = snapshot.grokBriefOneLiner, !brief.isEmpty {
-        grokBriefSection(brief)
-      }
-
       WidgetUpdatedFooter(
         fetchedAt: snapshot.fetchedAt,
         isStale: entry.isStale,
@@ -89,20 +85,6 @@ struct LargeWeatherWidgetView: View {
         Image(systemName: snapshot.symbolName)
           .font(DesignTokens.Typography.studioTitle())
           .symbolRenderingMode(.multicolor)
-
-        Spacer(minLength: 0)
-
-        if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
-          VStack(alignment: .trailing, spacing: 1) {
-            Text("\(score)")
-              .font(DesignTokens.Typography.widgetTemp(22))
-              .foregroundStyle(style.primaryText)
-            Text(label)
-              .font(DesignTokens.Typography.micro())
-              .foregroundStyle(style.secondaryText)
-              .lineLimit(1)
-          }
-        }
       }
 
       Text(snapshot.conditionText)
@@ -195,19 +177,6 @@ struct LargeWeatherWidgetView: View {
     .frame(width: 50, height: 12)
   }
 
-  private func grokBriefSection(_ brief: String) -> some View {
-    HStack(alignment: .top, spacing: 4) {
-      Image(systemName: "sparkles")
-        .font(DesignTokens.Typography.micro())
-        .foregroundStyle(style.secondaryText)
-      Text(brief)
-        .font(DesignTokens.Typography.micro())
-        .foregroundStyle(style.primaryText)
-        .lineLimit(3)
-        .minimumScaleFactor(0.9)
-    }
-  }
-
   private func dayLabel(for date: Date) -> String {
     if Calendar.current.isDateInToday(date) {
       return "Today"
@@ -237,7 +206,7 @@ struct DayCastLargeWeatherWidget: Widget {
       LargeWeatherWidgetView(entry: entry)
     }
     .configurationDisplayName("DayCast Daily")
-    .description("Full forecast with hourly, daily, and AI insights.")
+    .description("Full forecast with hourly and daily.")
     .supportedFamilies([.systemLarge])
   }
 }

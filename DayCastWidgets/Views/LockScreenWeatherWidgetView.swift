@@ -72,7 +72,7 @@ struct LockScreenWeatherWidgetView: View {
   }
 
   private func circularContent(snapshot: WidgetWeatherSnapshot) -> some View {
-    Gauge(value: snapshot.currentTemp, in: snapshot.low...snapshot.high) {
+    Gauge(value: snapshot.currentTemp, in: snapshot.circularGaugeRange) {
       Image(systemName: snapshot.symbolName)
         .symbolRenderingMode(.multicolor)
     } currentValueLabel: {

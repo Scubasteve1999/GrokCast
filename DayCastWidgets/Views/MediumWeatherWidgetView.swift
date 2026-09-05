@@ -48,6 +48,11 @@ struct MediumWeatherWidgetView: View {
               .symbolRenderingMode(.multicolor)
           }
 
+          Text(snapshot.conditionText)
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(style.secondaryText)
+            .lineLimit(1)
+
           HStack(spacing: 10) {
             Label("H \(Int(snapshot.high.rounded()))°", systemImage: "arrow.up")
             Label("L \(Int(snapshot.low.rounded()))°", systemImage: "arrow.down")
@@ -56,24 +61,7 @@ struct MediumWeatherWidgetView: View {
           .foregroundStyle(style.secondaryText)
           .labelStyle(.titleOnly)
 
-          if let score = snapshot.grokCastScore, let label = snapshot.grokCastScoreLabel {
-            Text("Score \(score) · \(label)")
-              .font(DesignTokens.Typography.micro())
-              .foregroundStyle(style.secondaryText)
-              .lineLimit(1)
-          }
-
-          if let brief = snapshot.grokBriefOneLiner, !brief.isEmpty {
-            HStack(alignment: .top, spacing: 4) {
-              Image(systemName: "sparkles")
-                .font(DesignTokens.Typography.micro())
-                .foregroundStyle(style.secondaryText)
-              Text(brief)
-                .font(DesignTokens.Typography.micro())
-                .foregroundStyle(style.primaryText)
-                .lineLimit(2)
-            }
-          } else if let minutecast = snapshot.minutecastMessage {
+          if let minutecast = snapshot.minutecastMessage, !minutecast.isEmpty {
             Text(minutecast)
               .font(DesignTokens.Typography.micro())
               .foregroundStyle(style.secondaryText)
