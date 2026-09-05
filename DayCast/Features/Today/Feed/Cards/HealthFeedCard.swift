@@ -6,7 +6,6 @@ struct HealthFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
   var hasNWSAirQualityAlert: Bool = false
-  var plated: Bool = true
   var onAirQuality: (() -> Void)?
 
   var body: some View {
@@ -64,9 +63,7 @@ struct HealthFeedCard: View {
         }
       }
     }
-    .padding(plated ? DesignTokens.Spacing.space16 : 0)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .weatherModuleChrome(plated)
     .accessibilityIdentifier(DayCastAccessibility.Today.health)
   }
 

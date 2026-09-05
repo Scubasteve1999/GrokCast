@@ -36,21 +36,6 @@ enum TodayCopy {
   static let trustNextHour = PrecipOutlookCopy.title
 }
 
-/// Storm-first skeleton slots — must match the glance cards, not the old tactical grid.
-enum TodaySkeletonSlot: String, CaseIterable {
-  case now
-  case hourly
-
-  var feedItem: FeedItem {
-    switch self {
-    case .now: .now
-    case .hourly: .hourly
-    }
-  }
-
-  static var feedOrder: [TodaySkeletonSlot] { [.now, .hourly] }
-}
-
 struct TodayView: View {
   @Environment(WeatherStore.self) private var store
 

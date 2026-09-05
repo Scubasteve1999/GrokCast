@@ -10,7 +10,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: true,
-      hasAQI: true,
       hasSunriseOrSunset: true,
       showFireCard: true
     )
@@ -30,7 +29,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: true,
       hasSunriseOrSunset: true,
       showFireCard: true,
       isNowWet: false
@@ -51,7 +49,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: false,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false
     )
@@ -68,7 +65,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: true,
-      hasAQI: true,
       hasSunriseOrSunset: true,
       showFireCard: true
     )
@@ -89,7 +85,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false,
       isNowWet: true
@@ -108,7 +103,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false,
       isNowWet: false,
@@ -128,7 +122,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: true,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false,
       isNowWet: false
@@ -151,7 +144,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: false,
       hasDaily: false,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false
     )
@@ -165,26 +157,7 @@ final class FeedAssemblerTests: XCTestCase {
     XCTAssertTrue(FeedAssembler.items(from: snapshot).contains(.alerts))
   }
 
-  func testAlertsSlotHidesForSevereContextWithoutNWSAlerts() {
-    let snapshot = FeedSnapshot(
-      hasWeather: true,
-      alertCount: 0,
-      hasHourly: true,
-      hasDaily: true,
-      hasPrecipContent: true,
-      hasAQI: false,
-      hasSunriseOrSunset: false,
-      showFireCard: false,
-      hasSevereContext: true
-    )
-    XCTAssertFalse(snapshot.showAlertsSlot)
-    let items = FeedAssembler.items(from: snapshot)
-    XCTAssertEqual(items.first, .now)
-    XCTAssertFalse(items.contains(.alerts))
-    XCTAssertEqual(Array(items.prefix(4)), [.now, .hourly, .radar, .health])
-  }
-
-  func testBuilderSevereContextDoesNotEarnAlertsSlotWithZeroNWS() {
+  func testBuilderZeroNWSDoesNotEarnAlertsSlot() {
     let weather = DayCastWeather(
       location: SavedLocation(name: "Tampa", latitude: 27.95, longitude: -82.46),
       currentTemp: 75,
@@ -207,13 +180,8 @@ final class FeedAssemblerTests: XCTestCase {
       daily: [],
       minutely15: []
     )
-    let snapshot = FeedSnapshotBuilder.make(
-      weather: weather,
-      alerts: [],
-      hasSevereContext: true
-    )
+    let snapshot = FeedSnapshotBuilder.make(weather: weather, alerts: [])
     XCTAssertEqual(snapshot.alertCount, 0)
-    XCTAssertTrue(snapshot.hasSevereContext)
     XCTAssertFalse(snapshot.showAlertsSlot)
     let items = FeedAssembler.items(from: snapshot)
     XCTAssertEqual(items.first, .now)
@@ -291,7 +259,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: false,
       hasDaily: false,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: true
     )
@@ -301,14 +268,13 @@ final class FeedAssemblerTests: XCTestCase {
     )
   }
 
-  func testAQIAndSunMoonAppearWhenFlagged() {
+  func testSunMoonAppearsWhenFlagged() {
     let snapshot = FeedSnapshot(
       hasWeather: true,
       alertCount: 0,
       hasHourly: false,
       hasDaily: false,
       hasPrecipContent: false,
-      hasAQI: true,
       hasSunriseOrSunset: true,
       showFireCard: false
     )
@@ -325,7 +291,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false,
       hasLocalBriefing: true
@@ -343,7 +308,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false
     )
@@ -357,7 +321,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: true,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false,
       hasLocalBriefing: true
@@ -375,7 +338,6 @@ final class FeedAssemblerTests: XCTestCase {
       hasHourly: true,
       hasDaily: true,
       hasPrecipContent: false,
-      hasAQI: false,
       hasSunriseOrSunset: false,
       showFireCard: false
     )

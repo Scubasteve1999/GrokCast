@@ -3,7 +3,6 @@ import SwiftUI
 /// TWC-style scrolling home feed. Permission / empty gates stay in `TodayView`.
 struct TodayFeedView: View {
   @Environment(WeatherStore.self) private var store
-  @Environment(SevereWeatherStore.self) private var severeStore
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(FireStore.self) private var fireStore
   @Environment(LocalBriefingStore.self) private var briefingStore
@@ -51,8 +50,7 @@ struct TodayFeedView: View {
     var snap = FeedSnapshotBuilder.make(
       weather: weather,
       alerts: store.displayableActiveAlerts,
-      showFireCard: showFire,
-      hasSevereContext: todaySevereContext != nil
+      showFireCard: showFire
     )
     // Prefer live minutecast (HRRR when present) over the builder's Open-Meteo-only check.
     snap.hasPrecipContent = PrecipFeedVisibility.hasContent(summary: currentMinutecast)
@@ -101,14 +99,6 @@ struct TodayFeedView: View {
     return MinutecastEngine.summary(from: weather.minutely15, units: store.temperatureUnit)
   }
 
-  private var todaySevereContext: SevereWeatherContext? {
-    guard let locID = store.currentLocation?.id.uuidString,
-      severeStore.context.locationID == locID,
-      severeStore.context.shouldShowTodayCard
-    else { return nil }
-    return severeStore.context
-  }
-
   private var officialWarningEvent: String? {
     store.displayableGroupedAlerts.first(where: { $0.isWarning && !$0.isExpired })?.event
   }
@@ -143,7 +133,7 @@ struct TodayFeedView: View {
                   errorBanner(error)
                 }
               case .item(let item):
-                feedCard(for: item, plated: false)
+                feedCard(for: item)
               }
             }
           }
@@ -155,7 +145,7 @@ struct TodayFeedView: View {
             VStack(spacing: TodayGlanceLayout.sheetSectionSpacing) {
               ForEach(sheetRows) { row in
                 if case .item(let item) = row {
-                  feedCard(for: item, plated: false)
+                  feedCard(for: item)
                 }
               }
             }
@@ -222,7 +212,7 @@ struct TodayFeedView: View {
   }
 
   @ViewBuilder
-  private func feedCard(for item: FeedItem, plated: Bool) -> some View {
+  private func feedCard(for item: FeedItem) -> some View {
     switch item {
     case .now:
       NowFeedCard(
@@ -251,20 +241,18 @@ struct TodayFeedView: View {
       }
     case .hourly:
       HourlyFeedCard(
-        weather: weather,
-        plated: plated
+        weather: weather
       ) {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         store.selectedTab = .forecast
       }
     case .yourNews:
-      YourNewsFeedCard(items: briefingStore.items, sitsInSheet: !plated)
+      YourNewsFeedCard(items: briefingStore.items, sitsInSheet: true)
     case .radar:
       RadarFeedCard(
         weather: weather,
         briefingItems: briefingStore.items,
         hoisted: FeedAssembler.isRadarStory(snapshot),
-        plated: plated,
         isNowWet: snapshot.isNowWet,
         isNextHourWet: snapshot.hasPrecipContent,
         officialWarningEvent: officialWarningEvent
@@ -272,14 +260,13 @@ struct TodayFeedView: View {
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
       }
     case .daily:
-      DailyFeedCard(weather: weather, plated: plated)
+      DailyFeedCard(weather: weather)
     case .health:
       HealthFeedCard(
         weather: weather,
         hasNWSAirQualityAlert: store.displayableActiveAlerts.contains {
           NearbyTileCopy.isAirQualityAlert($0.event)
         },
-        plated: plated,
         onAirQuality: weather.airQualityIndex == nil
           ? nil
           : {
@@ -289,13 +276,10 @@ struct TodayFeedView: View {
       )
     case .nearby:
       NearbyFeedCard(
-        aqi: nil,
-        hasNWSAirQualityAlert: false,
         fire: nearbyFireSummary,
         sunrise: todaySunTimes.sunrise,
         sunset: todaySunTimes.sunset,
         timeZone: weather.locationTimeZone,
-        onAirQuality: nil,
         onFire: nearbyFireSummary == nil
           ? nil
           : {
@@ -307,8 +291,7 @@ struct TodayFeedView: View {
           : {
             Analytics.track(.feedCardTap, parameters: ["card": "sunMoon"])
             showSunMoonDetail = true
-          },
-        plated: plated
+          }
       )
     }
   }

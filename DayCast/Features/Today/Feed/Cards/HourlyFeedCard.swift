@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HourlyFeedCard: View {
   let weather: DayCastWeather
-  var plated: Bool = true
   var onTap: () -> Void
 
   private var hours: [HourlyForecast] {
@@ -18,8 +17,6 @@ struct HourlyFeedCard: View {
       timeZone: weather.locationTimeZone
     )
     .frame(height: TodayGlanceLayout.hourlyGraphHeight)
-    .padding(plated ? TodayGlanceLayout.hourlyCardPadding : 0)
-    .weatherModuleChrome(plated)
     .contentShape(Rectangle())
     .onTapGesture {
       onTap()

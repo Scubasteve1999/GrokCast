@@ -154,17 +154,17 @@ final class AirQualityAndMoonTests: XCTestCase {
     XCTAssertFalse(label.contains("percent"))
   }
 
-  func testFireFeedCardVoiceOverIsOneLabeledControl() {
-    let label = FireFeedCard.accessibilityLabel(
+  func testNearbyFireTileVoiceOverIsOneLabeledControl() {
+    let label = NearbyTileCopy.fireAccessibility(
       title: "Active fire nearby",
       subtitle: "2 mi away · 3 nearby"
     )
     XCTAssertEqual(label, "Fire. Active fire nearby. 2 mi away · 3 nearby Opens details.")
   }
 
-  func testAirQualityFeedCardVoiceOverIsOneLabeledControl() {
+  func testHealthAirQualityTileVoiceOverIsOneLabeledControl() {
     let category = AirQualityCategory(usAQI: 42)
-    let label = AirQualityFeedCard.accessibilityLabel(
+    let label = NearbyTileCopy.airQualityAccessibility(
       aqi: 42,
       title: category.title,
       guidance: category.guidance
@@ -273,8 +273,8 @@ final class AirQualityAndMoonTests: XCTestCase {
     XCTAssertFalse(sun.value.isEmpty)
   }
 
-  func testSunMoonFeedCardVoiceOverIsOneLabeledControl() {
-    let label = SunMoonFeedCard.accessibilityLabel(
+  func testNearbySunTileVoiceOverIsOneLabeledControl() {
+    let label = NearbyTileCopy.sunMoonAccessibility(
       sunrise: "6:08 AM",
       sunset: "8:18 PM",
       phase: "Waxing Crescent",

@@ -3,7 +3,6 @@ import SwiftUI
 struct DailyFeedCard: View {
   @Environment(WeatherStore.self) private var store
   let weather: DayCastWeather
-  var plated: Bool = true
   @State private var selectedID: Date?
 
   private var days: [DailyForecast] {
@@ -61,8 +60,6 @@ struct DailyFeedCard: View {
         .fixedSize(horizontal: false, vertical: true)
       }
     }
-    .padding(plated ? DesignTokens.Spacing.space16 : 0)
-    .weatherModuleChrome(plated)
     .accessibilityElement(children: .contain)
     .onAppear {
       if selectedID == nil { selectedID = days.first?.id }

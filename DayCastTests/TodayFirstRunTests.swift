@@ -40,12 +40,8 @@ final class TodayFirstRunTests: XCTestCase {
 
   func testSkeletonSlotsMatchStormFirstGlance() {
     XCTAssertEqual(
-      TodaySkeletonSlot.feedOrder.map(\.feedItem),
-      [.now, .hourly])
-    let glance = FeedItem.defaultOrder.filter {
-      TodaySkeletonSlot.feedOrder.map(\.feedItem).contains($0)
-    }
-    XCTAssertEqual(Array(glance.prefix(2)), [.now, .hourly])
+      Array(FeedItem.defaultOrder.prefix(4)),
+      [.now, .alerts, .hourly, .radar])
   }
 
   func testDefaultOliveBranchIsNotANearMeChip() {
