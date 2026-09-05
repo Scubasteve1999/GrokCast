@@ -152,64 +152,6 @@ enum StormReportsPreference {
   }
 }
 
-/// Compact Today-tab severe context card.
-struct SevereContextCard: View {
-  let context: SevereWeatherContext
-
-  private var hasNWSSevere: Bool {
-    context.alerts.contains { $0.isSevereEvent && !$0.isExpired }
-  }
-
-  private var outlookColor: Color {
-    SevereOutlookAccent.color(for: context.day1Outlook.category)
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      HStack(spacing: DesignTokens.Spacing.space8) {
-        Image(systemName: hasNWSSevere ? "exclamationmark.triangle.fill" : "cloud.bolt.rain.fill")
-          .font(DesignTokens.Typography.metric())
-          .foregroundStyle(hasNWSSevere ? DesignTokens.Palette.warning : outlookColor)
-          .accessibilityHidden(true)
-        Text(hasNWSSevere ? "Severe weather" : AlertsHonesty.todayOutlookCardHeading)
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-        Spacer()
-      }
-
-      if context.day1Outlook.isMeaningful {
-        Text(context.day1Outlook.summaryLine)
-          .font(DesignTokens.Typography.headline())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-      }
-
-      if let md = context.mesoscaleDiscussions.first {
-        Text(md.todayCardLine)
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-          .lineLimit(2)
-      }
-
-      if context.alerts.contains(where: { $0.isSevereEvent && !$0.isExpired }) {
-        let count = context.alerts.filter { $0.isSevereEvent && !$0.isExpired }.count
-        Text("\(count) active watch/warning\(count == 1 ? "" : "s") for this location")
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-    }
-    .padding(DesignTokens.Spacing.space16)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .elevatedCardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: hasNWSSevere
-        ? DesignTokens.Palette.warning.opacity(0.45)
-        : outlookColor.opacity(0.45),
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
-    )
-    .accessibilityElement(children: .combine)
-  }
-}
-
 private enum SevereOutlookAccent {
   static func color(for category: SPCOutlookCategory) -> Color {
     switch category {

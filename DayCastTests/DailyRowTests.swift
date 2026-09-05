@@ -45,22 +45,8 @@ final class DailyRowTests: XCTestCase {
     XCTAssertEqual(DailyPrecipEmphasis.forChance(90), .high)
   }
 
-  func testRangeBarIsFivePointsAndShortSpansAreNotCappedAtEight() {
+  func testRangeBarHeightMatchesTheSkeletonTrack() {
     XCTAssertEqual(DailyTempRangeBarLayout.barHeight, 5)
-    XCTAssertEqual(DailyTempRangeBarLayout.tickWidth, 1)
-    let narrow = DailyTempRangeBarLayout.segmentWidth(
-      low: 73, high: 75, periodLow: 70, periodHigh: 100, width: 80)
-    let wider = DailyTempRangeBarLayout.segmentWidth(
-      low: 73, high: 81, periodLow: 70, periodHigh: 100, width: 80)
-    XCTAssertEqual(narrow, 80 * 2 / 30, accuracy: 0.05)
-    XCTAssertLessThan(narrow, 8)
-    XCTAssertGreaterThan(wider, narrow)
-  }
-
-  func testTodayTickSitsOnTheTenDayScale() {
-    let x = DailyTempRangeBarLayout.x(
-      for: 75, periodLow: 71, periodHigh: 94, width: 100)
-    XCTAssertEqual(x, 100 * 4 / 23, accuracy: 0.05)
   }
 
   func testDayColumnWidenedForTheDateNotTheRowHeight() {

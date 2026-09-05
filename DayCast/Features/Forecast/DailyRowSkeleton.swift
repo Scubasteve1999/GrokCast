@@ -1,11 +1,9 @@
 import SwiftUI
 
 struct DailyRowSkeleton: View {
-  var layout: DailyRowLayout = .standard
   var isToday: Bool = false
 
   var body: some View {
-    let _ = layout
     HStack(spacing: DesignTokens.Spacing.space12) {
       ShimmerBlock(width: isToday ? 40 : 36, height: 14, cornerRadius: 4)
         .frame(width: DailyRow.dayColumnWidth, alignment: .leading)

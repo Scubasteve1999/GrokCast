@@ -8,14 +8,10 @@ struct FeedSnapshot: Equatable, Sendable {
   var hasDaily: Bool
   /// Meaningful next-hour / minutecast content (not "clear all day" empty shell).
   var hasPrecipContent: Bool
-  /// Dry or wet next-event card. `hasPrecipContent` is teaser copy, not feed order.
-  var hasNextEvent: Bool = false
   var hasAQI: Bool
   var hasSunriseOrSunset: Bool
   /// Stage 3/4: nearest fire within threshold or fire-weather alert active.
   var showFireCard: Bool
-  /// Unused on Today. Take is off this tab; flag kept so snapshots stay Codable-shaped.
-  var showAIInsight: Bool
   /// SPC Day 1 / MD — Alerts tab only. Does not earn the Today chip.
   var hasSevereContext: Bool = false
   /// Open-Meteo Now is a precip condition (rain / storm / snow / sleet).
@@ -35,7 +31,6 @@ struct FeedSnapshot: Equatable, Sendable {
     hasAQI: false,
     hasSunriseOrSunset: false,
     showFireCard: false,
-    showAIInsight: false,
     hasSevereContext: false,
     isNowWet: false,
     hasLocalBriefing: false

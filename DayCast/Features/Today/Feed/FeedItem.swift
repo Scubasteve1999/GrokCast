@@ -4,14 +4,11 @@ import Foundation
 enum FeedItem: String, CaseIterable, Identifiable, Sendable {
   case now
   case alerts
-  case decision
-  case aiInsight
   case hourly
   case health
   case yourNews
   case radar
   case daily
-  case precip
   case nearby
 
   var id: String { rawValue }

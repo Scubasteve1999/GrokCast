@@ -2,12 +2,6 @@ import SwiftUI
 
 private let alertsContentTopPadding = DesignTokens.Spacing.space16
 
-enum AlertRowLayout {
-  case standard
-  /// Figma Alerts screen: title, meta line, summary body in a card.
-  case figma
-}
-
 struct AlertsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SevereWeatherStore.self) private var severeStore
@@ -186,11 +180,11 @@ struct AlertsView: View {
 
               VStack(spacing: DesignTokens.Spacing.space12) {
                 ForEach(activeAlerts) { alert in
-                  alertRow(alert, isActive: true, layout: .figma)
+                  alertRow(alert, isActive: true)
                 }
               }
 
-              AlertsGrokSummaryCard(alerts: activeAlerts, presentation: .figma)
+              AlertsGrokSummaryCard(alerts: activeAlerts)
             }
           }
 
@@ -216,7 +210,7 @@ struct AlertsView: View {
 
               VStack(spacing: DesignTokens.Spacing.space12) {
                 ForEach(historicalAlerts) { alert in
-                  alertRow(alert, isActive: false, layout: .figma)
+                  alertRow(alert, isActive: false)
                 }
               }
 
@@ -236,22 +230,17 @@ struct AlertsView: View {
     .background(Color.clear)
   }
 
-  private func alertRow(_ alert: NWSAlert, isActive: Bool, layout: AlertRowLayout) -> some View {
+  private func alertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
     Button {
       Haptic.impact(.light)
       selectedAlert = alert
     } label: {
-      switch layout {
-      case .standard:
-        standardAlertRow(alert, isActive: isActive)
-      case .figma:
-        figmaAlertRow(alert, isActive: isActive)
-      }
+      alertCard(alert, isActive: isActive)
     }
     .buttonStyle(.plain)
   }
 
-  private func figmaAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
+  private func alertCard(_ alert: NWSAlert, isActive: Bool) -> some View {
     let tint = NWSAlertStyle.tint(for: alert)
     return HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
       Image(systemName: NWSAlertStyle.iconName(for: alert))
@@ -288,7 +277,7 @@ struct AlertsView: View {
             .multilineTextAlignment(.leading)
         }
 
-        Text(figmaMetaLine(for: alert, isActive: isActive))
+        Text(metaLine(for: alert, isActive: isActive))
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(
             isActive ? DesignTokens.Palette.textSecondary : DesignTokens.Palette.textTertiary
@@ -319,7 +308,7 @@ struct AlertsView: View {
     )
   }
 
-  private func figmaMetaLine(for alert: NWSAlert, isActive: Bool) -> String {
+  private func metaLine(for alert: NWSAlert, isActive: Bool) -> String {
     if isActive {
       return AlertsActiveCopy.untilLine(
         expires: alert.expires,
@@ -337,61 +326,6 @@ struct AlertsView: View {
     if interval < 86_400 { return "today" }
     if interval < 172_800 { return "yesterday" }
     return alert.sortDate.formatted(date: .abbreviated, time: .omitted)
-  }
-
-  private func standardAlertRow(_ alert: NWSAlert, isActive: Bool) -> some View {
-    HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
-      Image(systemName: NWSAlertStyle.iconName(for: alert))
-        .font(DesignTokens.Typography.metric())
-        .foregroundStyle(NWSAlertStyle.tint(for: alert))
-        .frame(width: 28)
-
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space4) {
-        Text(alert.event)
-          .font(DesignTokens.Typography.subsection())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .multilineTextAlignment(.leading)
-
-        if let headline = alert.headline, !headline.isEmpty {
-          Text(headline)
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textPrimary.opacity(0.75))
-            .lineLimit(2)
-            .multilineTextAlignment(.leading)
-        }
-
-        if let area = alert.areaDesc, !area.isEmpty {
-          Text(area)
-            .font(DesignTokens.Typography.micro())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-            .lineLimit(1)
-        }
-
-        Text(rowTimestamp(for: alert, isActive: isActive))
-          .font(DesignTokens.Typography.micro().monospaced())
-          .foregroundStyle(DesignTokens.Palette.textTertiary)
-      }
-
-      Spacer(minLength: 0)
-
-      Image(systemName: "chevron.right")
-        .font(DesignTokens.Typography.caption())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
-    }
-    .padding(DesignTokens.Spacing.space16)
-    .cardStyle(
-      background: DesignTokens.Palette.cardBackground,
-      stroke: DesignTokens.Palette.cardStroke,
-      cornerRadius: DesignTokens.Card.cornerRadiusMedium
-    )
-    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
-  }
-
-  private func rowTimestamp(for alert: NWSAlert, isActive: Bool) -> String {
-    if isActive, let expires = alert.expires {
-      return "Expires \(expires.formatted(date: .abbreviated, time: .shortened))"
-    }
-    return alert.sortDate.formatted(date: .abbreviated, time: .shortened)
   }
 
   private func alertsHero(

@@ -14,10 +14,6 @@ final class MinutecastEngineTests: XCTestCase {
     XCTAssertEqual(summary.icon, "sun.max.fill")
     XCTAssertEqual(summary.strip.count, 8)
     XCTAssertFalse(PrecipFeedVisibility.hasContent(summary: summary))
-    XCTAssertTrue(PrecipFeedVisibility.showsCard(summary: summary))
-    XCTAssertEqual(
-      PrecipFeedVisibility.timingSentence(for: summary),
-      "Dry for the next 2 hours")
   }
 
   func testStartsSoonSummaryFromFirstWetAt30Min() {
@@ -27,9 +23,6 @@ final class MinutecastEngineTests: XCTestCase {
     XCTAssertEqual(summary.message, "Rain likely in ~30 min")
     XCTAssertEqual(summary.icon, "cloud.rain.fill")
     XCTAssertTrue(PrecipFeedVisibility.hasContent(summary: summary))
-    XCTAssertEqual(
-      PrecipFeedVisibility.timingSentence(for: summary),
-      "Rain likely in ~30 min")
   }
 
   func testOngoingSummaryWhenEverySlotIsWet() {
@@ -64,7 +57,6 @@ final class MinutecastEngineTests: XCTestCase {
     XCTAssertEqual(summary.message, "Precipitation data unavailable")
     XCTAssertTrue(summary.strip.isEmpty)
     XCTAssertFalse(PrecipFeedVisibility.hasContent(summary: summary))
-    XCTAssertFalse(PrecipFeedVisibility.showsCard(summary: summary))
   }
 
   func testChanceThresholdFortyFiveCountsAsWet() {
@@ -199,12 +191,12 @@ final class MinutecastEngineTests: XCTestCase {
   }
 
   func testStripAccessibilitySaysNextHourNotMinutecast() {
-    let label = MinutecastStrip.accessibilityLabel(
+    let label = PrecipOutlookCopy.stripAccessibilityLabel(
       message: "Precipitation likely in ~30 min")
     XCTAssertEqual(label, "Next 2 Hours. Precipitation likely in ~30 min")
     XCTAssertFalse(label.localizedCaseInsensitiveContains("minutecast"))
 
-    let withCaption = MinutecastStrip.accessibilityLabel(
+    let withCaption = PrecipOutlookCopy.stripAccessibilityLabel(
       message: "Precipitation now",
       disagreementCaption: "Sources differ · Open-Meteo clearer")
     XCTAssertEqual(
@@ -266,13 +258,6 @@ final class MinutecastEngineTests: XCTestCase {
       wet.message
     )
     XCTAssertFalse(wet.message.localizedCaseInsensitiveContains("minutecast"))
-  }
-
-  func testPrecipCardAccessibilityKeepsNextHourTitle() {
-    let label = PrecipFeedCard.accessibilityLabel(
-      message: "Precipitation likely in ~30 min")
-    XCTAssertEqual(label, "Next 2 Hours. Precipitation likely in ~30 min. Opens forecast.")
-    XCTAssertFalse(label.localizedCaseInsensitiveContains("minutecast"))
   }
 
   // MARK: - Fixtures

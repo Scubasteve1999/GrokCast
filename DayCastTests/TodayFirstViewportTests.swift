@@ -92,7 +92,6 @@ final class TodayFirstViewportTests: XCTestCase {
       hasAQI: true,
       hasSunriseOrSunset: false,
       showFireCard: false,
-      showAIInsight: false,
       hasLocalBriefing: true
     )
     let items = FeedAssembler.items(from: snapshot)
@@ -174,7 +173,6 @@ final class TodayFirstViewportTests: XCTestCase {
       hasAQI: true,
       hasSunriseOrSunset: false,
       showFireCard: false,
-      showAIInsight: false,
       hasLocalBriefing: true
     )
     let items = FeedAssembler.items(from: snapshot)

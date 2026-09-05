@@ -201,20 +201,20 @@ final class GrokBriefSafetyTests: XCTestCase {
   }
 
   func testTakeOptionsAccessibilityLabelNamesTheAction() {
-    let label = GrokBriefCard.optionsAccessibilityLabel
+    let label = GrokBriefCopy.optionsAccessibilityLabel
     XCTAssertFalse(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     XCTAssertTrue(label.localizedCaseInsensitiveContains("Today's Take"))
     XCTAssertEqual(DayCastAccessibility.Today.takeOptions, "daycast.today.takeOptions")
   }
 
   func testTakeCollapsesToThreeLinesWithAMoreControl() {
-    XCTAssertEqual(GrokBriefCard.collapsedLineLimit, 3)
-    XCTAssertEqual(GrokBriefCard.expandControlTitle(isExpanded: false), "More")
-    XCTAssertEqual(GrokBriefCard.expandControlTitle(isExpanded: true), "Less")
-    XCTAssertFalse(GrokBriefCard.showsExpandControl(for: "Short take."))
+    XCTAssertEqual(GrokBriefCopy.collapsedLineLimit, 3)
+    XCTAssertEqual(GrokBriefCopy.expandControlTitle(isExpanded: false), "More")
+    XCTAssertEqual(GrokBriefCopy.expandControlTitle(isExpanded: true), "Less")
+    XCTAssertFalse(GrokBriefCopy.showsExpandControl(for: "Short take."))
     XCTAssertTrue(
-      GrokBriefCard.showsExpandControl(
-        for: String(repeating: "a", count: GrokBriefCard.expandCharacterThreshold + 1)))
+      GrokBriefCopy.showsExpandControl(
+        for: String(repeating: "a", count: GrokBriefCopy.expandCharacterThreshold + 1)))
   }
 }
 
@@ -248,41 +248,5 @@ final class GrokBriefReportTests: XCTestCase {
     XCTAssertTrue(body.contains("Guideline 4.7 report"))
     XCTAssertTrue(body.contains("Memphis"))
     XCTAssertFalse(body.contains("Notes:"))
-  }
-}
-
-final class FeedSnapshotBuilderAIInsightTests: XCTestCase {
-  func testHidesAIInsightWhenAsked() {
-    let weather = DayCastWeather(
-      location: SavedLocation(name: "Test City", latitude: 35, longitude: -90),
-      currentTemp: 70,
-      feelsLike: 70,
-      conditionCode: 0,
-      conditionText: "Clear",
-      humidity: 40,
-      windSpeed: 5,
-      uvIndex: 3,
-      precipitationChance: 5,
-      high: 75,
-      low: 60,
-      symbolName: "sun.max.fill",
-      fetchedAt: Date(),
-      timezoneIdentifier: "America/Chicago",
-      airQualityIndex: nil,
-      pm25: nil,
-      pollenLevel: nil,
-      hourly: [],
-      daily: [],
-      minutely15: []
-    )
-    XCTAssertFalse(
-      FeedAssembler.items(
-        from: FeedSnapshotBuilder.make(weather: weather, alerts: [], showAIInsight: false)
-      ).contains(.aiInsight))
-    XCTAssertFalse(
-      FeedAssembler.items(
-        from: FeedSnapshotBuilder.make(weather: weather, alerts: [], showAIInsight: true)
-      ).contains(.aiInsight),
-      "Today's Take is off the Today feed even if the flag is on")
   }
 }

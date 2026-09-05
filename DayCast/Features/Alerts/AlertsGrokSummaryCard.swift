@@ -1,11 +1,5 @@
 import SwiftUI
 
-enum AlertsGrokSummaryPresentation {
-  case standard
-  /// Figma Alerts screen: single secondary line in a simple card.
-  case figma
-}
-
 /// Plain-English Grok summary when active NWS alerts are present.
 struct AlertsGrokSummaryCard: View {
   /// Free-user CTA on the locked AI summary card (matches Sky Check empty state).
@@ -25,7 +19,6 @@ struct AlertsGrokSummaryCard: View {
   @Environment(WeatherStore.self) private var store
 
   let alerts: [NWSAlert]
-  var presentation: AlertsGrokSummaryPresentation = .standard
 
   @State private var summary: String?
   @State private var isLoading = false
@@ -37,25 +30,6 @@ struct AlertsGrokSummaryCard: View {
   }
 
   var body: some View {
-    Group {
-      switch presentation {
-      case .standard:
-        standardBody
-      case .figma:
-        figmaBody
-      }
-    }
-    .task(id: cacheKey) {
-      if let cached = UserDefaults.standard.string(forKey: cacheKey),
-        let accepted = GrokContentFilter.acceptedText(GrokBriefText.visible(cached))
-      {
-        summary = accepted
-      }
-    }
-  }
-
-  @ViewBuilder
-  private var figmaBody: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Layout.cardInnerSpacing) {
       if isLoading {
         HStack(spacing: 8) {
@@ -85,7 +59,7 @@ struct AlertsGrokSummaryCard: View {
           unlockWithProButton
         }
       } else {
-        Text(figmaReadyPrompt)
+        Text(readyPrompt)
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .onTapGesture {
@@ -100,81 +74,20 @@ struct AlertsGrokSummaryCard: View {
       stroke: DesignTokens.Palette.cardHairline,
       cornerRadius: DesignTokens.Layout.cardRadius
     )
+    .task(id: cacheKey) {
+      if let cached = UserDefaults.standard.string(forKey: cacheKey),
+        let accepted = GrokContentFilter.acceptedText(GrokBriefText.visible(cached))
+      {
+        summary = accepted
+      }
+    }
   }
 
-  private var figmaReadyPrompt: String {
+  private var readyPrompt: String {
     let location = store.currentLocation?.name ?? "your area"
     let count = alerts.count
     let noun = count == 1 ? "alert" : "alerts"
     return "Tap to summarize \(count) active \(noun) for \(location)."
-  }
-
-  private var standardBody: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      HStack {
-        Label("IN PLAIN ENGLISH", systemImage: "text.bubble")
-          .font(DesignTokens.Typography.caption())
-          .tracking(DesignTokens.Typography.cardLabelTracking)
-          .foregroundStyle(DesignTokens.Palette.warning)
-        Spacer()
-        if isLoading {
-          ProgressView().scaleEffect(0.75)
-        }
-      }
-
-      if let summary {
-        Text(GrokBriefText.visible(summary))
-          .font(DesignTokens.Typography.body())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .fixedSize(horizontal: false, vertical: true)
-
-        ShareLink(
-          item: ShareableBriefText.alertsSummary(
-            locationName: store.currentLocation?.name ?? "Your area",
-            summary: summary,
-            alertEvents: alerts.map(\.event)
-          )
-        ) {
-          Label("Share Summary", systemImage: "square.and.arrow.up")
-            .font(DesignTokens.Typography.caption())
-        }
-        .foregroundStyle(DesignTokens.Palette.accent)
-        // ShareLink reports no completion, so intent is all this surface can
-        // measure. The campaign token in the shared link covers the rest.
-        .simultaneousGesture(
-          TapGesture().onEnded {
-            Analytics.track(.shareStarted, parameters: ["surface": "share_alerts"])
-          }
-        )
-      } else if let errorMessage {
-        Text(errorMessage)
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-        if store.canUseGrok {
-          Button("Try Again") { Task { await fetchSummary(force: true) } }
-            .font(DesignTokens.Typography.caption())
-        }
-      } else if !store.canUseGrok {
-        Text(GrokAccessRules.lockedAlertsSummaryCopy)
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.textSecondary)
-        if Self.showsUnlockButton {
-          unlockWithProButton
-        }
-      } else {
-        Button {
-          Task { await fetchSummary(force: false) }
-        } label: {
-          Label("Summarize active alerts", systemImage: "sparkles")
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(DesignTokens.Palette.warning)
-        .disabled(isLoading)
-      }
-    }
-    .padding(DesignTokens.Spacing.space16)
-    .glassCardStyle(strokeTint: DesignTokens.Palette.warning.opacity(0.4))
   }
 
   private var unlockWithProButton: some View {

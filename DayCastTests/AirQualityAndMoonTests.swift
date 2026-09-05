@@ -31,12 +31,10 @@ final class AirQualityAndMoonTests: XCTestCase {
     let clear = MinutecastSummary(
       kind: .clear, message: "No precip expected", icon: "sun.max.fill", strip: [])
     XCTAssertFalse(PrecipFeedVisibility.hasContent(summary: clear))
-    XCTAssertNil(PrecipFeedVisibility.timingSentence(for: clear))
 
     let wet = MinutecastSummary(
       kind: .startsSoon, message: "Rain in about 30 min", icon: "cloud.rain.fill", strip: [])
     XCTAssertTrue(PrecipFeedVisibility.hasContent(summary: wet))
-    XCTAssertEqual(PrecipFeedVisibility.timingSentence(for: wet), "Rain in about 30 min")
   }
 
   func testLocalWeatherBriefFindsDriestDaylightWindow() {

@@ -115,6 +115,30 @@ enum PrecipOutlookCopy {
       return summary.message
     }
   }
+
+  /// VoiceOver for next-hour timing. Product name is “Next 2 Hours”, not Minutecast.
+  static func stripAccessibilityLabel(
+    message: String,
+    disagreementCaption: String? = nil
+  ) -> String {
+    let caption = disagreementCaption?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if caption.isEmpty {
+      return "\(title). \(message)"
+    }
+    return "\(title). \(message). \(caption)"
+  }
+}
+
+enum PrecipFeedVisibility {
+  /// Wet Next 2 Hours content. Drives story-day radar teaser copy, not feed order.
+  static func hasContent(summary: MinutecastSummary) -> Bool {
+    switch summary.kind {
+    case .clear:
+      return false
+    case .startsSoon, .ongoing, .stoppingSoon:
+      return true
+    }
+  }
 }
 
 /// Open-Meteo current can stay Clear while HRRR/minutecast is already wet.

@@ -30,8 +30,6 @@ enum TodayGlanceLayout {
   static var hourlyCardHeight: CGFloat {
     hourlyCardPadding * 2 + hourlyGraphHeight + hourlyInnerSpacing
   }
-  static let decisionCardHeight: CGFloat = 56
-  static let nextEventCardHeight: CGFloat = 72
   static let sheetTopRadius: CGFloat = WeatherStageSheet.topRadius
 
   static var visibleFeedHeightIPhone16: CGFloat {
