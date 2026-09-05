@@ -1,6 +1,6 @@
 # watchOS status
 
-`DayCastWatch/` and `DayCastWatchWidgets/` exist as source, but they are **not** included in `project.yml` / the App Store binary.
+Parked `DayCastWatch/` and `DayCastWatchWidgets/` trees were removed. They were never in `project.yml` or the App Store binary.
 
 DayCast 1.0.x ships **iPhone + iPad + widgets + Live Activities only**.
 
