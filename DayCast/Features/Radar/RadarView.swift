@@ -481,4 +481,5 @@ struct RadarView: View {
     .environment(FireStore.shared)
     .environment(LightningStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(SubscriptionManager.shared)
 }

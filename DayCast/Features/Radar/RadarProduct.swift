@@ -148,9 +148,13 @@ enum RadarColorScheme: String, CaseIterable {
 enum RadarChromeCopy {
   static let liveChip = "Live"
   static let futureChip = "24-hr"
+  /// Locked Future entry. Keep `futureChip` as "24-hr" for Yearly / dev key.
+  static let futureLockedChip = "24-hr · Pro"
   static let layers = "Layers"
+  static let layersDisplayTitle = "Layers & display"
   static let liveAccessibility = "Live radar"
   static let futureAccessibility = "24-hour radar"
+  static let futureLockedAccessibility = "24-hour radar, requires Pro"
 
   static let autoResumeSwitch = "Auto-resume after scrub"
   static let mapOnlySwitch = "Map only"
@@ -186,5 +190,26 @@ enum RadarChromeVisibility {
   static func showsControlSheet(mapOnly: Bool) -> Bool {
     _ = mapOnly
     return true
+  }
+}
+
+/// Presentation-only Future chip. Entitlement / paywall stay in `RadarState`.
+enum RadarFutureChipPresentation {
+  static func showsProLock(canUseYearlyExtras: Bool) -> Bool {
+    !canUseYearlyExtras
+  }
+
+  static func title(showsProLock: Bool) -> String {
+    showsProLock ? RadarChromeCopy.futureLockedChip : RadarChromeCopy.futureChip
+  }
+
+  static func accessibilityLabel(showsProLock: Bool) -> String {
+    showsProLock ? RadarChromeCopy.futureLockedAccessibility : RadarChromeCopy.futureAccessibility
+  }
+
+  /// Locked users must still reach `.radarFuture`. Frame availability only
+  /// disables the chip when Future is already entitled.
+  static func isDisabled(showsProLock: Bool, hasFutureFrames: Bool) -> Bool {
+    !showsProLock && !hasFutureFrames
   }
 }

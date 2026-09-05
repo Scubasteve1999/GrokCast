@@ -214,4 +214,5 @@ struct MainTabView: View {
     .environment(FireStore.shared)
     .environment(LightningStore.shared)
     .environment(GrokBriefSafety.shared)
+    .environment(SubscriptionManager.shared)
 }

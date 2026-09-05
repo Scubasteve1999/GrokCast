@@ -46,8 +46,8 @@ enum MapsGLRadarPalette {
 
   /// Site Doppler / Level III only. Same discrete 5 dBZ hex as
   /// `reflectivityStops`. Fill is saturated so cells read like the High-Res
-  /// green→red reference; labels still punch via halo (`text-opacity` 1 +
-  /// `#f5f5f5`). Do not interpolate.
+  /// green→red reference; labels still punch via `RadarBaseMapStyle`
+  /// quiet-workstation text + halo. Do not interpolate.
   static func polarUnderlayAlpha(forDbz dbz: Double) -> Double {
     switch dbz {
     case 15: return 0.80
