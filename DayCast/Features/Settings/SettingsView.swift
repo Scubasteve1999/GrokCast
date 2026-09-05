@@ -717,9 +717,9 @@ struct SettingsView: View {
 
     Task {
       do {
-        let response = try await GrokBuildService.complete(
+        let response = try await GrokAPIService.complete(
           messages: [
-            GrokBuildMessage(
+            GrokAPIMessage(
               role: "user", content: "Reply with exactly: 'DayCast connection OK'")
           ],
           feature: .connectionTest,

@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - Configuration
-struct GrokBuildConfiguration {
+struct GrokAPIServiceConfiguration {
   let baseURL: URL
   let model: String
 
@@ -17,13 +17,13 @@ struct GrokBuildConfiguration {
   }
 }
 
-// MARK: - GrokBuildService
-final class GrokBuildService {
-  private let configuration: GrokBuildConfiguration
+// MARK: - GrokAPIService
+final class GrokAPIService {
+  private let configuration: GrokAPIServiceConfiguration
   private let session: URLSession
 
   init(
-    configuration: GrokBuildConfiguration,
+    configuration: GrokAPIServiceConfiguration,
     session: URLSession? = nil
   ) {
     self.configuration = configuration
@@ -47,7 +47,7 @@ final class GrokBuildService {
   // MARK: - Streaming
 
   func streamChat(
-    messages: [GrokBuildMessage],
+    messages: [GrokAPIMessage],
     auth: GrokAuthContext,
     temperature: Double = 0.7,
     maxTokens: Int? = nil
@@ -57,7 +57,7 @@ final class GrokBuildService {
         do {
           var request = Self.chatRequest(baseURL: configuration.baseURL, auth: auth)
           request.httpBody = try JSONEncoder().encode(
-            GrokBuildRequest(
+            GrokAPIRequest(
               model: configuration.model,
               messages: messages,
               temperature: temperature,
@@ -125,17 +125,17 @@ final class GrokBuildService {
 
     let (data, response) = try await session.data(for: request)
     guard let http = response as? HTTPURLResponse else {
-      throw GrokBuildError.invalidResponse(statusCode: nil)
+      throw GrokAPIServiceError.invalidResponse(statusCode: nil)
     }
     guard http.statusCode == 200 else {
-      throw GrokBuildError.apiError(statusCode: http.statusCode, message: Self.apiErrorMessage(in: data))
+      throw GrokAPIServiceError.apiError(statusCode: http.statusCode, message: Self.apiErrorMessage(in: data))
     }
     guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
       let dataArray = json["data"] as? [[String: Any]],
       let urlString = dataArray.first?["url"] as? String,
       let url = URL(string: urlString)
     else {
-      throw GrokBuildError.invalidResponse(statusCode: http.statusCode)
+      throw GrokAPIServiceError.invalidResponse(statusCode: http.statusCode)
     }
     return url
   }
@@ -143,14 +143,14 @@ final class GrokBuildService {
   /// Resolve + stream in one hop so callers cannot skip the entitlement meter.
   @MainActor
   static func stream(
-    messages: [GrokBuildMessage],
+    messages: [GrokAPIMessage],
     feature: GrokFeature,
     bucket: GrokUsageBucket = .chat,
     maxTokens: Int? = nil
   ) throws -> AsyncThrowingStream<String, Error> {
     let auth = try GrokAuthResolver.resolve(
       for: bucket, feature: feature, subscription: SubscriptionManager.shared)
-    let service = GrokBuildService(configuration: GrokBuildConfiguration(auth: auth))
+    let service = GrokAPIService(configuration: GrokAPIServiceConfiguration(auth: auth))
     return service.streamChat(messages: messages, auth: auth, maxTokens: maxTokens)
   }
 
@@ -181,7 +181,7 @@ final class GrokBuildService {
     }
     let auth = try GrokAuthResolver.resolve(
       for: .chat, feature: .stormPhoto, subscription: SubscriptionManager.shared)
-    let service = GrokBuildService(configuration: GrokBuildConfiguration(auth: auth))
+    let service = GrokAPIService(configuration: GrokAPIServiceConfiguration(auth: auth))
     return service.streamVision(
       system: system,
       userText: "Analyze the attached sky or storm photograph using the provided context.",
@@ -194,14 +194,14 @@ final class GrokBuildService {
   static func generateImage(prompt: String) async throws -> URL {
     let auth = try GrokAuthResolver.resolve(
       for: .image, feature: .imagine, subscription: SubscriptionManager.shared)
-    let service = GrokBuildService(configuration: GrokBuildConfiguration(auth: auth))
+    let service = GrokAPIService(configuration: GrokAPIServiceConfiguration(auth: auth))
     return try await service.generateImage(
       prompt: prompt, auth: auth, model: GrokAPIConfiguration.imageModelName)
   }
 
   @MainActor
   static func complete(
-    messages: [GrokBuildMessage],
+    messages: [GrokAPIMessage],
     feature: GrokFeature,
     maxTokens: Int
   ) async throws -> String {
@@ -235,14 +235,14 @@ final class GrokBuildService {
         errorData.append(byte)
       }
       continuation.finish(
-        throwing: GrokBuildError.apiError(
+        throwing: GrokAPIServiceError.apiError(
           statusCode: httpResponse.statusCode,
           message: apiErrorMessage(in: errorData)))
       return
     }
 
     guard response is HTTPURLResponse else {
-      continuation.finish(throwing: GrokBuildError.invalidResponse(statusCode: nil))
+      continuation.finish(throwing: GrokAPIServiceError.invalidResponse(statusCode: nil))
       return
     }
 
@@ -256,12 +256,12 @@ final class GrokBuildService {
         return
       }
       guard let data = jsonString.data(using: .utf8) else { continue }
-      if let chunk = try? JSONDecoder().decode(GrokBuildStreamChunk.self, from: data) {
+      if let chunk = try? JSONDecoder().decode(GrokAPIStreamChunk.self, from: data) {
         if let content = chunk.choices.first?.delta.content, !content.isEmpty {
           continuation.yield(content)
         }
       } else if let message = streamErrorMessage(from: data) {
-        continuation.finish(throwing: GrokBuildError.apiError(statusCode: 200, message: message))
+        continuation.finish(throwing: GrokAPIServiceError.apiError(statusCode: 200, message: message))
         return
       }
     }
@@ -296,14 +296,14 @@ final class GrokBuildService {
 }
 
 // MARK: - Supporting Models
-struct GrokBuildMessage: Codable {
+struct GrokAPIMessage: Codable {
   let role: String
   let content: String
 }
 
-struct GrokBuildRequest: Codable {
+struct GrokAPIRequest: Codable {
   let model: String
-  let messages: [GrokBuildMessage]
+  let messages: [GrokAPIMessage]
   let temperature: Double?
   let maxTokens: Int?
   let stream: Bool?
@@ -314,7 +314,7 @@ struct GrokBuildRequest: Codable {
   }
 }
 
-struct GrokBuildStreamChunk: Codable {
+struct GrokAPIStreamChunk: Codable {
   let choices: [StreamChoice]
 
   struct StreamChoice: Codable {
@@ -326,7 +326,7 @@ struct GrokBuildStreamChunk: Codable {
   }
 }
 
-enum GrokBuildError: Error, LocalizedError {
+enum GrokAPIServiceError: Error, LocalizedError {
   case missingAPIKey
   case invalidResponse(statusCode: Int?)
   case apiError(statusCode: Int, message: String)
