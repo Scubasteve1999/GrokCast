@@ -306,7 +306,7 @@ final class Level3PolarMeshCache: @unchecked Sendable {
       order.remove(at: idx)
     }
     order.append(key)
-    evictUnlocked()
+    evictUnlocked(protecting: key)
     building.remove(key)
     missCount += 1
     condition.broadcast()
@@ -456,11 +456,14 @@ final class Level3PolarMeshCache: @unchecked Sendable {
     }
   }
 
-  /// Drop the oldest unreserved entry. Reserved play-loop keys stay resident
-  /// even when Today’s teaser inserts a newer volume past `maxEntries`.
-  private func evictUnlocked() {
+  /// Drop the oldest unreserved volume that is not the one just inserted.
+  /// Reserved play-loop keys stay resident, and Today’s teaser may sit past
+  /// `maxEntries` instead of evicting itself or a reserved frame.
+  private func evictUnlocked(protecting newcomer: String) {
     while order.count > Self.maxEntries {
-      guard let idx = order.firstIndex(where: { !reservedKeys.contains($0) }) else {
+      guard let idx = order.firstIndex(where: { candidate in
+        candidate != newcomer && !reservedKeys.contains(candidate)
+      }) else {
         break
       }
       let old = order.remove(at: idx)
