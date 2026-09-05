@@ -12,6 +12,9 @@ struct ChatMessage: Identifiable, Equatable {
   let originalNotes: String?
   let generatedImageURL: URL?  // for Grok image generation results shown in chat
 
+  /// Sky Check assistant card: analysis markdown vs glance. One persisted flag.
+  var usesSkyCheckAnalysisCard: Bool { isStormSpotterAnalysis }
+
   enum Role: String {
     case system
     case user
