@@ -107,11 +107,12 @@ final class OpenMeteoService {
 
     // Air quality already fetched in parallel above (best effort, may be nil on error/timeout)
 
-    let weather = OpenMeteoWeatherMapper.map(
+    var weather = OpenMeteoWeatherMapper.map(
       location: location,
       response: decoded,
       airQuality: air
     )
+    weather.temperatureUnitRawValue = units.rawValue
 
     isLoading = false
     return weather

@@ -3,6 +3,7 @@ import Foundation
 /// Lightweight weather snapshot written by the main app and read by widgets.
 /// Reuses existing forecast models for stable Date-based identities.
 struct WidgetWeatherSnapshot: Codable, Equatable {
+  let temperatureUnitRawValue: String?
   let location: SavedLocation
   let currentTemp: Double
   let conditionText: String
@@ -28,6 +29,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   let grokBriefOneLiner: String?
 
   private enum CodingKeys: String, CodingKey {
+    case temperatureUnitRawValue
     case location
     case currentTemp
     case conditionText
@@ -57,8 +59,10 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     grokCastScore: Int? = nil,
     grokCastScoreLabel: String? = nil,
     minutecastMessage: String? = nil,
-    grokBriefOneLiner: String? = nil
+    grokBriefOneLiner: String? = nil,
+    temperatureUnitRawValue: String? = nil
   ) {
+    self.temperatureUnitRawValue = temperatureUnitRawValue
     self.location = location
     self.currentTemp = currentTemp
     self.conditionText = conditionText
@@ -85,6 +89,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
 
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
+    temperatureUnitRawValue = try container.decodeIfPresent(String.self, forKey: .temperatureUnitRawValue)
     location = try container.decode(SavedLocation.self, forKey: .location)
     currentTemp = try container.decode(Double.self, forKey: .currentTemp)
     conditionText = try container.decode(String.self, forKey: .conditionText)
@@ -102,6 +107,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
 
   func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encodeIfPresent(temperatureUnitRawValue, forKey: .temperatureUnitRawValue)
     try container.encode(location, forKey: .location)
     try container.encode(currentTemp, forKey: .currentTemp)
     try container.encode(conditionText, forKey: .conditionText)
@@ -121,6 +127,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
 
   /// Builds a widget snapshot from the full app weather model.
   init(weather: DayCastWeather) {
+    temperatureUnitRawValue = weather.temperatureUnitRawValue
     location = weather.location
     currentTemp = weather.currentTemp
     conditionText = weather.conditionText
@@ -145,6 +152,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
     minutecastMessage: String,
     grokBriefOneLiner: String?
   ) {
+    temperatureUnitRawValue = weather.temperatureUnitRawValue
     location = weather.location
     currentTemp = weather.currentTemp
     conditionText = weather.conditionText
@@ -219,6 +227,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
 extension DayCastWeather {
   /// Best-effort reconstruction from a persisted widget snapshot for instant cold-launch display.
   init(snapshot: WidgetWeatherSnapshot) {
+    temperatureUnitRawValue = snapshot.temperatureUnitRawValue
     location = snapshot.location
     currentTemp = snapshot.currentTemp
     feelsLike = snapshot.currentTemp
