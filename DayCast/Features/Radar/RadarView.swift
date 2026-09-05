@@ -14,6 +14,7 @@ struct RadarView: View {
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
   @State private var chaseDecluttered = RadarPreferences.chaseDecluttered
   @State private var showDisplayOptions = false
+  @State private var controlPanelHeight: CGFloat = 156
 
   /// Camera / tile center follows the selected weather location (not device GPS).
   private var selectedMapCenter: CLLocationCoordinate2D {
@@ -308,7 +309,7 @@ struct RadarView: View {
           }
         }
         .padding(.leading, DesignTokens.Spacing.space12)
-        .padding(.bottom, WeatherStageSheet.tabBarClearance + 156)
+        .padding(.bottom, WeatherStageSheet.tabBarClearance + controlPanelHeight + 8)
         .allowsHitTesting(false)
       }
     }
@@ -325,8 +326,11 @@ struct RadarView: View {
         radarState: radarState,
         opacity: $radarOpacity,
         isDecluttered: $chaseDecluttered,
-        showDisplayOptions: $showDisplayOptions
+        showDisplayOptions: $showDisplayOptions,
+        recenterDefaultTrigger: $recenterDefaultTrigger,
+        recenterUserCoordinate: $recenterUserCoordinate
       )
+      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { controlPanelHeight = $0 }
       .padding(.bottom, WeatherStageSheet.tabBarClearance)
       .opacity(
         RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered) && radarControlsInteractive
@@ -383,7 +387,7 @@ struct RadarView: View {
       }
       .padding(.horizontal, 12)
       .padding(.vertical, 7)
-      .frame(maxWidth: 220)
+      .frame(maxWidth: 220, minHeight: DesignTokens.Layout.minHitTarget)
       .background(Color.black.opacity(0.46), in: Capsule())
       .overlay(Capsule().stroke(DesignTokens.Palette.cardHairline, lineWidth: 1))
       .contentShape(Capsule())

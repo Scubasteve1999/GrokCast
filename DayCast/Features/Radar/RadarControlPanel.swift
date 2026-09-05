@@ -5,10 +5,13 @@ import SwiftUI
 struct RadarControlPanel: View {
   @Environment(WeatherStore.self) private var store
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Bindable var radarState: RadarState
   @Binding var opacity: Double
   @Binding var isDecluttered: Bool
   @Binding var showDisplayOptions: Bool
+  @Binding var recenterDefaultTrigger: UUID?
+  @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
 
   @State private var showExplainRadar = false
   /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
@@ -26,8 +29,19 @@ struct RadarControlPanel: View {
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
-      liveForecastPicker
-      compactPlaybackRow
+      slimModeRow
+      ViewThatFits(in: .horizontal) {
+        compactPlaybackRow
+        VStack(alignment: .leading, spacing: 4) {
+          HStack {
+            playbackButton
+            frameTime
+            Spacer(minLength: 0)
+            recenterButton
+          }
+          RadarPlaybackSpeedPicker(radarState: radarState)
+        }
+      }
       RadarTimelineScrubber(radarState: radarState, layout: prefersFigmaHUD ? .figma : .standard)
       compactStatusFooter
     }
@@ -74,33 +88,98 @@ struct RadarControlPanel: View {
     }
   }
 
+  /// Live / 24-hr plus Layers. At accessibility sizes, Layers drops onto its own row.
+  private var slimModeRow: some View {
+    let layout = dynamicTypeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+      : AnyLayout(HStackLayout(spacing: DesignTokens.Spacing.space8))
+    return layout {
+      liveForecastPicker
+      if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+      layersButton
+    }
+  }
+
+  private var layersButton: some View {
+    Button {
+      Haptic.impact(.light)
+      showDisplayOptions = true
+    } label: {
+      HStack(spacing: 4) {
+        Image(systemName: "slider.horizontal.3")
+          .font(.caption)
+        Text(RadarChromeCopy.layers)
+          .font(.caption)
+          .fixedSize(horizontal: true, vertical: false)
+      }
+      .padding(.horizontal, 10)
+      .padding(.vertical, 4)
+      .background(DesignTokens.Palette.radarTrack)
+      .clipShape(Capsule())
+      .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+      .frame(minWidth: DesignTokens.Layout.minHitTarget, minHeight: DesignTokens.Layout.minHitTarget)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(RadarChromeCopy.layers)
+  }
+
   private var compactPlaybackRow: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
-      Button {
-        radarState.togglePlayback()
-      } label: {
-        Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-          .font(DesignTokens.Typography.headline())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .frame(
-            minWidth: DesignTokens.Layout.minHitTarget,
-            minHeight: DesignTokens.Layout.minHitTarget
-          )
-          .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
-
-      Text(radarState.currentFrameDisplayTime)
-        .font(DesignTokens.Typography.callout().monospacedDigit())
-        .fontWeight(.medium)
-        .foregroundStyle(DesignTokens.Palette.textPrimary)
-        .lineLimit(1)
-
+      playbackButton
+      frameTime
       Spacer(minLength: 4)
-
       RadarPlaybackSpeedPicker(radarState: radarState)
+      recenterButton
     }
+  }
+
+  private var playbackButton: some View {
+    Button {
+      radarState.togglePlayback()
+    } label: {
+      Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
+        .font(DesignTokens.Typography.headline())
+        .foregroundStyle(DesignTokens.Palette.textPrimary)
+        .frame(
+          minWidth: DesignTokens.Layout.minHitTarget,
+          minHeight: DesignTokens.Layout.minHitTarget
+        )
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(radarState.isAnimating ? "Pause" : "Play")
+  }
+
+  private var frameTime: some View {
+    Text(radarState.currentFrameDisplayTime)
+      .font(DesignTokens.Typography.callout().monospacedDigit())
+      .fontWeight(.medium)
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+      .fixedSize(horizontal: true, vertical: false)
+      .accessibilityLabel("Frame time, \(radarState.currentFrameDisplayTime)")
+  }
+
+  private var recenterButton: some View {
+    Button {
+      Haptic.impact(.light)
+      recenterUserCoordinate = nil
+      recenterDefaultTrigger = UUID()
+    } label: {
+      Image(systemName: "house.fill")
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.radarAccent)
+        .frame(width: 28, height: 28)
+        .background(DesignTokens.Palette.radarTrack)
+        .clipShape(Capsule())
+        .frame(
+          minWidth: DesignTokens.Layout.minHitTarget,
+          minHeight: DesignTokens.Layout.minHitTarget
+        )
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("Recenter to selected location")
   }
 
   /// Opacity used to live only in the Display sheet — on phone that buried the
@@ -198,7 +277,7 @@ struct RadarControlPanel: View {
         .foregroundStyle(
           selected ? DesignTokens.Palette.bgPrimary : DesignTokens.Palette.textSecondary
         )
-        .frame(maxWidth: .infinity, minHeight: 36)
+        .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
         .padding(.vertical, 8)
         .background(
           RoundedRectangle(cornerRadius: 10, style: .continuous)

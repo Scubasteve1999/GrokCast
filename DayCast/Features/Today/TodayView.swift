@@ -246,7 +246,7 @@ struct TodayView: View {
             actionTitle: "Retry"
           ) {
             Haptic.impact(.medium)
-            Task { await store.useCurrentDeviceLocation() }
+            Task { await store.refreshWeather() }
           }
         } else {
           TodayPrimaryCTA(

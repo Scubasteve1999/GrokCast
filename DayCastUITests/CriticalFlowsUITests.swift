@@ -44,18 +44,21 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(waitForTabBar())
     openTab(.radar)
 
-    let live = app.buttons["Live radar"]
-    let rain = app.staticTexts["Live"]
-    let recenter = app.buttons["Recenter to selected location"]
+    let live = app.buttons["Live radar"].firstMatch
+    let recenter = app.buttons["Recenter to selected location"].firstMatch
+    let layers = app.buttons["Layers"].firstMatch
 
-    let sawLive = live.waitForExistence(timeout: 15)
-    let sawRain = rain.waitForExistence(timeout: 8)
-    let sawRecenter = recenter.waitForExistence(timeout: 8)
-
-    XCTAssertTrue(
-      sawLive || sawRain || sawRecenter,
-      "Radar chrome missing (Live / Recenter)"
-    )
+    XCTAssertTrue(live.waitForExistence(timeout: 15), "Live radar missing")
+    XCTAssertTrue(recenter.exists, "Recenter missing")
+    XCTAssertTrue(layers.exists, "Layers missing")
+    let timeline = app.descendants(matching: .any)["daycast.radar.timeline"].firstMatch
+    XCTAssertTrue(timeline.waitForExistence(timeout: 30), "Radar timeline missing")
+    XCTAssertNotNil(timeline.value)
+    for control in [live, recenter, layers] {
+      XCTAssertGreaterThanOrEqual(control.frame.width, 44)
+      XCTAssertGreaterThanOrEqual(control.frame.height, 44)
+      XCTAssertTrue(control.isHittable)
+    }
   }
 
   // MARK: - 2b. National radar motion tracks, not cone wedges

@@ -125,6 +125,8 @@ struct AirQualityHourly: Decodable {
 
 // Our clean app-facing model (decoupled)
 struct DayCastWeather: Equatable, Codable {
+  /// Unit of the stored temperature and wind numbers. Nil means an older, untagged cache.
+  var temperatureUnitRawValue: String? = nil
   let location: SavedLocation
   let currentTemp: Double
   let feelsLike: Double

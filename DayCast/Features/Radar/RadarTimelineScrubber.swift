@@ -16,6 +16,7 @@ enum RadarTimelinePlayhead {
 }
 
 struct RadarTimelineScrubber: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Bindable var radarState: RadarState
   var layout: RadarTimelineScrubberLayout = .standard
 
@@ -91,10 +92,30 @@ struct RadarTimelineScrubber: View {
             }
         )
       }
-      .frame(height: 24)
+      .frame(height: 44)
 
-      if !labels.isEmpty, count > 1 {
+      if !dynamicTypeSize.isAccessibilitySize, !labels.isEmpty, count > 1 {
         figmaTickLabels(labels: labels, count: count)
+          .accessibilityHidden(true)
+      }
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityIdentifier("daycast.radar.timeline")
+    .accessibilityLabel("Radar timeline")
+    .accessibilityValue(radarState.currentFrameDisplayTime)
+    .accessibilityHint("Adjust to move one radar frame earlier or later.")
+    .accessibilityAdjustableAction { direction in
+      // Discrete VoiceOver steps are not a held scrub — pause and stay parked.
+      if radarState.isAnimating {
+        radarState.stop()
+      }
+      switch direction {
+      case .increment:
+        radarState.currentIndex = min(clampedIndex + 1, radarState.activeFrameCount - 1)
+      case .decrement:
+        radarState.currentIndex = max(clampedIndex - 1, 0)
+      @unknown default:
+        break
       }
     }
   }
@@ -158,7 +179,10 @@ struct RadarTimelineScrubber: View {
         handleScrubEditing(editing)
       }
       .tint(DesignTokens.Palette.radarProgress)
-      .frame(height: 36)
+      .frame(minHeight: 44)
+      .accessibilityIdentifier("daycast.radar.timeline")
+      .accessibilityLabel("Radar timeline")
+      .accessibilityValue(radarState.currentFrameDisplayTime)
 
       tickLabels
     }

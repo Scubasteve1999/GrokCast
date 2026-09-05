@@ -34,13 +34,60 @@ final class NetworkMonitor {
 final class WeatherStore {
   public static let shared = WeatherStore()
 
+  /// Injectable network boundaries for deterministic refresh/race tests.
+  struct Fetchers {
+    var forecast: ((SavedLocation, TemperatureUnit) async throws -> DayCastWeather)?
+    var observation: ((SavedLocation) async throws -> NWSObservation?)?
+    var openWeatherMap: ((SavedLocation) async throws -> (OpenWeatherMapCurrentWeather, OpenWeatherMapForecast))?
+  }
+
+  private let fetchers: Fetchers
+  private let loadPersistedState: Bool
+  private var selectionRevision = UUID()
+  private var forecastRequestID = UUID()
+  private var observationRequestID = UUID()
+  private var openWeatherMapRequestID = UUID()
+  private var alertsRequestID = UUID()
+
+  private struct RequestSelection: Equatable {
+    let location: SavedLocation?
+    let units: TemperatureUnit
+    let revision: UUID
+  }
+
+  private var requestSelection: RequestSelection {
+    RequestSelection(location: currentLocation, units: temperatureUnit, revision: selectionRevision)
+  }
+
+  /// Run synchronously at every selection assignment, including GPS updates with a stable ID.
+  private func invalidateSelectedWeather() {
+    selectionRevision = UUID()
+    currentWeather = nil
+    currentNWSObservation = nil
+    currentOpenWeatherMapWeather = nil
+    openWeatherMapForecast = nil
+    lastObservationFetch = nil
+    observationForLocation = nil
+    lastOpenWeatherMapFetch = nil
+    openWeatherMapForLocation = nil
+    activeAlerts = []
+    lastAlertsFetch = nil
+    alertsForLocation = nil
+    alertsAttemptedForLocation = nil
+    lastAlertsFetchSucceeded = false
+    weatherError = nil
+    isLoadingWeather = false
+  }
+
   /// `didSet` rather than a call at each assignment site: the location is set from
   /// ten places (startup, GPS, picker, defaults), and the push agent needs to know
   /// about all of them. `scheduleSync()` is debounced and skips unchanged payloads,
   /// so the churn during a refresh costs nothing.
   var currentLocation: SavedLocation? {
     didSet {
-      guard currentLocation != oldValue else { return }
+      guard !Self.sameWeatherLocation(currentLocation, oldValue) else { return }
+      invalidateSelectedWeather()
+      guard loadPersistedState else { return }
       PushRegistrationService.shared.scheduleSync()
       alertHistory = AlertHistoryStore.loadHistory(for: currentLocation?.id)
       _grokAIViewModel?.syncThread(to: currentLocation?.id)
@@ -54,7 +101,7 @@ final class WeatherStore {
   /// Weather that belongs to the selected city. Nil while a switch is in flight
   /// so Today/Forecast never pair a new name with the previous city's numbers.
   var displayedWeather: DayCastWeather? {
-    Self.weatherMatchingSelection(currentWeather, location: currentLocation)
+    Self.weatherMatchingSelection(currentWeather, location: currentLocation, units: temperatureUnit)
   }
 
   var selectedTab: Tab = .today
@@ -102,6 +149,10 @@ final class WeatherStore {
     set {
       guard newValue != _temperatureUnit else { return }
       _temperatureUnit = newValue
+      invalidateSelectedWeather()
+      // Same-turn as selectLocation: nil weather + not-loading is Today's empty-city gate.
+      isLoadingWeather = currentLocation != nil
+      guard loadPersistedState else { return }
       UserDefaults.standard.set(newValue.rawValue, forKey: temperatureUnitKey)
       PushRegistrationService.shared.scheduleSync()
       Task { await refreshWeather() }
@@ -388,7 +439,8 @@ final class WeatherStore {
   private var lastObservationFetch: Date?
   private var observationForLocation: UUID?
 
-  /// Additive hybrid layer from OpenWeatherMap (3-hour forecast). Open-Meteo remains primary.
+  /// Additive hybrid layer from OpenWeatherMap (current + 3-hour forecast). Open-Meteo remains primary.
+  var currentOpenWeatherMapWeather: OpenWeatherMapCurrentWeather?
   var openWeatherMapForecast: OpenWeatherMapForecast?
   private var lastOpenWeatherMapFetch: Date?
   private var openWeatherMapForLocation: UUID?
@@ -463,7 +515,16 @@ final class WeatherStore {
     await task.value
   }
 
-  init() {
+  /// An isolated store skips persistence, automatic refreshes, and notification/widget effects.
+  init(loadPersistedState: Bool = true, fetchers: Fetchers = Fetchers()) {
+    self.loadPersistedState = loadPersistedState
+    self.fetchers = fetchers
+    guard loadPersistedState else { return }
+    if let rawUnit = UserDefaults.standard.string(forKey: temperatureUnitKey),
+      let unit = TemperatureUnit(rawValue: rawUnit)
+    {
+      _temperatureUnit = unit
+    }
     WidgetDataStore.migrateLegacySavedLocationsIfNeeded()
     WidgetDataStore.migrateLegacySnapshotIfNeeded()
     loadSavedLocations()
@@ -534,12 +595,6 @@ final class WeatherStore {
 
     Task { @MainActor in
       await refreshAlertNotificationAuthorizationStatus()
-    }
-
-    if let rawUnit = UserDefaults.standard.string(forKey: temperatureUnitKey),
-      let unit = TemperatureUnit(rawValue: rawUnit)
-    {
-      _temperatureUnit = unit
     }
 
     if UserDefaults.standard.object(forKey: liveActivityEnabledKey) != nil {
@@ -662,7 +717,7 @@ final class WeatherStore {
 
   /// Keeps widget score/minutecast, Live Activity, and optional Grok one-liner in sync.
   func syncScoreSurfacesFromCurrentWeather(grokBriefOneLiner: String? = nil) {
-    guard let weather = currentWeather else { return }
+    guard loadPersistedState, let weather = displayedWeather else { return }
     let score = DayCastScoreCalculator.score(
       for: weather, alerts: activeAlerts, units: temperatureUnit)
     let minutecast = MinutecastEngine.summary(
@@ -723,7 +778,12 @@ final class WeatherStore {
   private func hydrateCachedWeatherIfNeeded() {
     guard currentWeather == nil, let loc = currentLocation else { return }
     guard let snapshot = WidgetDataStore.loadSnapshot(for: loc.id) else { return }
-    currentWeather = DayCastWeather(snapshot: snapshot)
+    let weather = DayCastWeather(snapshot: snapshot)
+    currentWeather = Self.weatherMatchingSelection(weather, location: loc, units: temperatureUnit)
+    // Untagged / wrong-unit snapshots are refused; show skeleton until refresh, not the GPS CTA.
+    if currentWeather == nil {
+      isLoadingWeather = true
+    }
   }
 
   /// Persists a lightweight alert summary for widgets after a successful NWS fetch.
@@ -881,7 +941,7 @@ final class WeatherStore {
       isLoadingWeather = true
       weatherError = nil
     }
-    Task { await refreshWeather() }
+    if loadPersistedState { Task { await refreshWeather() } }
   }
 
   private enum WeatherFetchResult {
@@ -891,11 +951,15 @@ final class WeatherStore {
   }
 
   /// Caps slow Open-Meteo responses so cold launch doesn't sit on skeleton shimmer indefinitely.
-  private func fetchPrimaryWeather(for location: SavedLocation) async -> WeatherFetchResult {
+  private func fetchPrimaryWeather(for location: SavedLocation, units: TemperatureUnit) async -> WeatherFetchResult {
     await raceWeatherFetch(timeoutNanoseconds: 8_000_000_000) {
       do {
-        let data = try await self.openMeteo.fetchForecast(
-          for: location, units: self.temperatureUnit)
+        let data: DayCastWeather
+        if let fetch = self.fetchers.forecast {
+          data = try await fetch(location, units)
+        } else {
+          data = try await self.openMeteo.fetchForecast(for: location, units: units)
+        }
         return .success(data)
       } catch is CancellationError {
         return .timedOut
@@ -946,17 +1010,17 @@ final class WeatherStore {
     case failed(Error)
   }
 
-  private func resolveForecast(for location: SavedLocation) async -> ForecastResolution {
-    switch await fetchPrimaryWeather(for: location) {
+  private func resolveForecast(for location: SavedLocation, units: TemperatureUnit) async -> ForecastResolution {
+    switch await fetchPrimaryWeather(for: location, units: units) {
     case .success(let forecast):
       return .fetched(forecast)
     case .timedOut:
-      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
+      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location, units: units) {
         return .lastGood(lastGood, URLError(.timedOut))
       }
       return .failed(URLError(.timedOut))
     case .failure(let error):
-      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location) {
+      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location, units: units) {
         return .lastGood(lastGood, error)
       }
       return .failed(error)
@@ -976,42 +1040,56 @@ final class WeatherStore {
   @MainActor
   func refreshWeather() async {
     guard let loc = currentLocation else { return }
-    let showLoadingIndicator = displayedWeather == nil
-    if showLoadingIndicator {
-      isLoadingWeather = true
-    }
+    let selection = requestSelection
+    let requestID = UUID()
+    forecastRequestID = requestID
+    let units = selection.units
+    isLoadingWeather = displayedWeather == nil
     weatherError = nil
 
-    // Additives start with Open-Meteo so city-switch alerts are not stuck behind the 8s race.
-    Task { await refreshAdditiveSources() }
+    if loadPersistedState {
+      Task {
+        guard self.requestSelection == selection else { return }
+        await self.refreshAdditiveSources()
+      }
+    }
 
-    switch await resolveForecast(for: loc) {
+    let resolution = await resolveForecast(for: loc, units: units)
+    guard requestSelection == selection, forecastRequestID == requestID else { return }
+    defer { isLoadingWeather = false }
+
+    switch resolution {
     case .fetched(let data):
-      guard currentLocation?.id == loc.id else { break }
-      currentWeather = data
+      guard let matching = Self.weatherMatchingSelection(data, location: loc, units: units) else {
+        weatherError = "Weather data could not be loaded. Tap RETRY."
+        return
+      }
+      currentWeather = matching
       syncScoreSurfacesFromCurrentWeather()
-      if rainAlertsEnabled {
-        Task { await RainAlertService.checkAndNotify(weather: data, units: temperatureUnit) }
+      if loadPersistedState, rainAlertsEnabled {
+        Task {
+          guard self.requestSelection == selection else { return }
+          await RainAlertService.checkAndNotify(weather: matching, units: units)
+        }
       }
     case .lastGood(let data, let error):
-      guard currentLocation?.id == loc.id else { break }
-      currentWeather = data
+      guard let matching = Self.weatherMatchingSelection(data, location: loc, units: units) else {
+        weatherError = "Weather data could not be loaded. Tap RETRY."
+        return
+      }
+      currentWeather = matching
       syncScoreSurfacesFromCurrentWeather()
       weatherError =
         isOffline
         ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
         : OpenMeteoService.userFriendlyMessage(for: error)
     case .failed(let error):
-      if currentWeather == nil, currentLocation?.id == loc.id {
+      if displayedWeather == nil {
         weatherError =
           isOffline
           ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
           : OpenMeteoService.userFriendlyMessage(for: error)
       }
-    }
-
-    if showLoadingIndicator {
-      isLoadingWeather = false
     }
   }
 
@@ -1213,6 +1291,9 @@ final class WeatherStore {
   @MainActor
   func refreshAlerts(force: Bool = false) async {
     guard let loc = currentLocation else { return }
+    let selection = requestSelection
+    let requestID = UUID()
+    alertsRequestID = requestID
 
     // 5-minute (300s) in-memory cache per location (per spec: 5-10 min)
     let alertsCacheFresh =
@@ -1223,6 +1304,7 @@ final class WeatherStore {
     if !alertsCacheFresh {
       do {
         let alerts = try await nwsService.fetchActiveAlerts(for: loc)
+        guard requestSelection == selection, alertsRequestID == requestID else { return }
         activeAlerts = alerts
         alertHistory = AlertHistoryStore.merge(
           fetched: alerts,
@@ -1243,6 +1325,7 @@ final class WeatherStore {
         // foreground-alerts fetch cancelled (log removed)
         return
       } catch {
+        guard requestSelection == selection, alertsRequestID == requestID else { return }
         // Non-fatal: retain last-known active alerts so offline UI stays accurate.
         // Only a successful fetch with an empty list authoritatively clears activeAlerts.
         alertsAttemptedForLocation = loc.id
@@ -1251,22 +1334,28 @@ final class WeatherStore {
       }
     }
 
+    guard requestSelection == selection, alertsRequestID == requestID else { return }
+
     // Always kick severe refresh (its own TTL / generation guard). Pass CAP alerts when
     // they belong to this location so Storm Spotter never loses watches/warnings.
     let alertsForSevere: [NWSAlert]? =
       (alertsForLocation == loc.id) ? activeAlerts : nil
     Task {
+      guard self.requestSelection == selection else { return }
       await SevereWeatherStore.shared.refresh(
         for: loc, force: force, alerts: alertsForSevere)
     }
     Task {
+      guard self.requestSelection == selection else { return }
       await LocalBriefingStore.shared.refresh(for: loc, force: force)
     }
     Task {
+      guard self.requestSelection == selection else { return }
       await ShortTermPrecipStore.shared.refresh(for: loc, force: force)
     }
     // Fire data is independent — never await on the weather/alerts path.
     Task {
+      guard self.requestSelection == selection else { return }
       await FireStore.shared.refreshNow(around: loc.coordinate, force: force)
       if fireProximityNotificationsEnabled {
         await FireNotificationService.notifyIfNeeded(
@@ -1312,6 +1401,8 @@ final class WeatherStore {
   @MainActor
   @discardableResult
   func performBackgroundRefresh(taskStart: CFAbsoluteTime? = nil) async -> Bool {
+    let selection = requestSelection
+    let alertRequestID = alertsRequestID
     let needsAlerts = alertNotificationsEnabled
     let needsRain = rainAlertsEnabled
     let needsFire = fireProximityNotificationsEnabled
@@ -1334,9 +1425,10 @@ final class WeatherStore {
     if needsAlerts || needsLiveActivity {
       do {
         let alerts = try await nwsService.fetchActiveAlerts(for: loc, timeout: 8)
+        guard requestSelection == selection, alertsRequestID == alertRequestID else { return false }
         if Self.isBackgroundBudgetExhausted(taskStart) { return false }
 
-        if loc.id == currentLocation?.id {
+        if Self.sameWeatherLocation(loc, currentLocation) {
           activeAlerts = alerts
           lastAlertsFetch = Date()
           alertsForLocation = loc.id
@@ -1348,7 +1440,7 @@ final class WeatherStore {
           into: AlertHistoryStore.loadHistory(for: loc.id)
         )
         AlertHistoryStore.saveHistory(merged, for: loc.id)
-        if loc.id == currentLocation?.id {
+        if Self.sameWeatherLocation(loc, currentLocation) {
           alertHistory = merged
         }
         persistWidgetAlertSummary(for: loc, alerts: alerts)
@@ -1361,13 +1453,16 @@ final class WeatherStore {
       } catch is CancellationError {
         return false
       } catch {
-        if loc.id == currentLocation?.id {
+        guard requestSelection == selection, alertsRequestID == alertRequestID else { return false }
+        if Self.sameWeatherLocation(loc, currentLocation) {
           alertsAttemptedForLocation = loc.id
           lastAlertsFetchSucceeded = false
         }
         alertOK = false
       }
     }
+
+    guard requestSelection == selection else { return false }
 
     if needsFire, !Self.isBackgroundBudgetExhausted(taskStart) {
       await FireStore.shared.refreshNow(around: loc.coordinate, force: false)
@@ -1382,24 +1477,27 @@ final class WeatherStore {
       }
     }
 
+    guard requestSelection == selection else { return false }
+
     if needsLiveActivity || needsAlerts || needsRain,
       !Self.isBackgroundBudgetExhausted(taskStart)
     {
       // Fetch without calling refreshWeather(for:), which would overwrite currentLocation
       // and yank a user off a manually selected city after BGAppRefresh / silent push.
+      let foregroundRequestID = forecastRequestID
       guard let weather = await fetchWeatherWithoutSelecting(location: loc) else {
         return alertOK
       }
       if Self.isBackgroundBudgetExhausted(taskStart) { return alertOK }
 
-      if loc.id == currentLocation?.id {
+      if Self.sameWeatherLocation(loc, currentLocation), foregroundRequestID == forecastRequestID {
         currentWeather = weather
         syncScoreSurfacesFromCurrentWeather()
         if needsRain {
           await RainAlertService.checkAndNotify(
             weather: weather, units: temperatureUnit, taskStart: taskStart)
         }
-      } else if needsLiveActivity || needsRain {
+      } else if !Self.sameWeatherLocation(loc, currentLocation), needsLiveActivity || needsRain {
         // Keep the selected-city UI intact; still refresh LA + widgets for the BG target
         // (usually the device "Current Location" entry).
         publishBackgroundWeatherSurfaces(weather: weather, locationName: loc.name)
@@ -1416,7 +1514,10 @@ final class WeatherStore {
   /// Primary/NWS weather fetch that never mutates `currentLocation` or loading UI.
   @MainActor
   private func fetchWeatherWithoutSelecting(location: SavedLocation) async -> DayCastWeather? {
-    switch await resolveForecast(for: location) {
+    let selection = requestSelection
+    let result = await resolveForecast(for: location, units: selection.units)
+    guard requestSelection == selection else { return nil }
+    switch result {
     case .fetched(let weather):
       return weather
     case .lastGood(let weather, _):
@@ -1429,19 +1530,31 @@ final class WeatherStore {
   /// Last-good Open-Meteo (or previously installed forecast) for this location only.
   /// Never reuse another city's numbers as a fallback.
   nonisolated static func lastGoodOpenMeteo(
-    _ weather: DayCastWeather?, for location: SavedLocation
+    _ weather: DayCastWeather?, for location: SavedLocation, units: TemperatureUnit? = nil
   ) -> DayCastWeather? {
-    weatherMatchingSelection(weather, location: location)
+    weatherMatchingSelection(weather, location: location, units: units)
+  }
+
+  /// SavedLocation equality compares only IDs; GPS updates can move the same saved entry.
+  nonisolated static func sameWeatherLocation(_ lhs: SavedLocation?, _ rhs: SavedLocation?) -> Bool {
+    switch (lhs, rhs) {
+    case (nil, nil): return true
+    case (let lhs?, let rhs?):
+      return lhs.id == rhs.id && lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+        && lhs.name == rhs.name
+    default: return false
+    }
   }
 
   /// Hero/Forecast weather must match the selected city. A location-only mismatch
   /// is treated as "not ready" rather than showing the previous city's numbers.
   nonisolated static func weatherMatchingSelection(
-    _ weather: DayCastWeather?, location: SavedLocation?
+    _ weather: DayCastWeather?, location: SavedLocation?, units: TemperatureUnit? = nil
   ) -> DayCastWeather? {
     guard let weather else { return nil }
+    if let units, weather.temperatureUnitRawValue != units.rawValue { return nil }
     guard let location else { return weather }
-    return weather.location.id == location.id ? weather : nil
+    return sameWeatherLocation(weather.location, location) ? weather : nil
   }
 
   /// Updates widgets + Live Activity from a background fetch without changing the selected city.
@@ -1511,6 +1624,9 @@ final class WeatherStore {
   @MainActor
   func refreshNWSObservation() async {
     guard let loc = currentLocation else { return }
+    let selection = requestSelection
+    let requestID = UUID()
+    observationRequestID = requestID
 
     // 5-minute (300s) in-memory cache per location (same as alerts)
     if let last = lastObservationFetch,
@@ -1522,11 +1638,18 @@ final class WeatherStore {
     }
 
     do {
-      let obs = try await nwsService.fetchLatestObservation(for: loc)
+      let obs: NWSObservation?
+      if let fetch = fetchers.observation {
+        obs = try await fetch(loc)
+      } else {
+        obs = try await nwsService.fetchLatestObservation(for: loc)
+      }
+      guard requestSelection == selection, observationRequestID == requestID else { return }
       currentNWSObservation = obs
       lastObservationFetch = Date()
       observationForLocation = loc.id
     } catch {
+      guard requestSelection == selection, observationRequestID == requestID else { return }
       // Non-fatal: NWS is secondary data. Silently nil so UI/prompts see no observation.
       // NWS observation fetch failed (non-fatal, log removed for release)
       currentNWSObservation = nil
@@ -1536,7 +1659,10 @@ final class WeatherStore {
   @MainActor
   func refreshOpenWeatherMap() async {
     guard let loc = currentLocation else { return }
-    guard OpenWeatherMapRadarService.apiKeyConfigured else { return }
+    guard fetchers.openWeatherMap != nil || OpenWeatherMapRadarService.apiKeyConfigured else { return }
+    let selection = requestSelection
+    let requestID = UUID()
+    openWeatherMapRequestID = requestID
 
     if let last = lastOpenWeatherMapFetch,
       let cachedLocId = openWeatherMapForLocation,
@@ -1547,11 +1673,20 @@ final class WeatherStore {
     }
 
     do {
-      let (_, forecast) = try await openWeatherMapService.fetchHybrid(for: loc)
+      let current: OpenWeatherMapCurrentWeather
+      let forecast: OpenWeatherMapForecast
+      if let fetch = fetchers.openWeatherMap {
+        (current, forecast) = try await fetch(loc)
+      } else {
+        (current, forecast) = try await openWeatherMapService.fetchHybrid(for: loc)
+      }
+      guard requestSelection == selection, openWeatherMapRequestID == requestID else { return }
+      currentOpenWeatherMapWeather = current
       openWeatherMapForecast = forecast
       lastOpenWeatherMapFetch = Date()
       openWeatherMapForLocation = loc.id
     } catch {
+      guard requestSelection == selection, openWeatherMapRequestID == requestID else { return }
       // Non-fatal: preserve last-known-good hybrid data on failure.
     }
   }
@@ -1577,6 +1712,7 @@ final class WeatherStore {
     savedLocations.removeAll { $0.id == location.id }
     if currentLocation?.id == location.id {
       currentLocation = savedLocations.first
+      if loadPersistedState { Task { await refreshWeather() } }
     }
     WidgetDataStore.removeData(for: location.id)
     saveLocations()

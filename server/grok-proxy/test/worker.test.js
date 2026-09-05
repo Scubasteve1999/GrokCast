@@ -1,3 +1,4 @@
+import { usageCount } from "./quota-helpers.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -130,7 +131,7 @@ test("the global ceiling shields the bill and refunds the user's credit", async 
   const { response } = await call(proxyRequest({ transaction }), { env, upstream });
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.type, "service_capacity");
-  assert.equal(env.USAGE.store.get("usage:v1:chat:2000000800000001:" + new Date().toISOString().slice(0, 10)), "1");
+  assert.equal(usageCount(env, "chat", "2000000800000001"), "1");
 });
 
 test("the kill switch stops everything without touching xAI", async () => {
@@ -154,11 +155,10 @@ test("an upstream rejection is not billed to the subscriber", async () => {
   const { response } = await call(proxyRequest({ transaction }), { env, upstream });
   assert.equal(response.status, 400);
 
-  const day = new Date().toISOString().slice(0, 10);
-  assert.equal(env.USAGE.store.get(`usage:v1:chat:2000000800000001:${day}`), "0");
+  assert.equal(usageCount(env, "chat", "2000000800000001"), "0");
 });
 
-test("an upstream network failure returns 502 and refunds", async () => {
+test("an ambiguous upstream network failure returns 502 and retains the reservation", async () => {
   const env = testEnv();
   const failing = {
     calls: [],
@@ -174,7 +174,7 @@ test("an upstream network failure returns 502 and refunds", async () => {
 
   assert.equal(response.status, 502);
   const day = new Date().toISOString().slice(0, 10);
-  assert.equal(env.USAGE.store.get(`usage:v1:chat:2000000800000001:${day}`), "0");
+  assert.equal(usageCount(env, "chat", "2000000800000001"), "1");
 });
 
 test("a missing KV binding fails closed", async () => {

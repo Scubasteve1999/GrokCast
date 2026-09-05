@@ -1,17 +1,8 @@
-/**
- * Daily request counters in Workers KV.
- *
- * Chat and image generation get separate budgets — image calls cost far more
- * per request and must not be able to drain the chat allowance.
- *
- * KV is eventually consistent, so two concurrent requests can read the same
- * count and both write count+1, undercounting by one. That is acceptable for a
- * per-user fairness cap; the global ceiling is the control that actually bounds
- * spend. Move to a Durable Object if per-user accuracy ever has to be exact.
+/** Legacy read-only KV reporting and UTC date helpers.
+ * Live quotas are exclusively enforced by quota-ledger.js; KV is never a fallback.
  */
 
 const KEY_PREFIX = "usage:v1";
-const TTL_SECONDS = 48 * 60 * 60;
 
 /** Subject used for the account-wide counter, distinct from any transaction id. */
 export const GLOBAL_SUBJECT = "__global__";
@@ -66,29 +57,11 @@ export async function lastReportDay(kv) {
 }
 
 /**
- * Consumes one unit from a counter.
- * @returns {Promise<{ok: boolean, used: number, limit: number, remaining: number, resetsAt: number}>}
- */
-export async function consume(kv, { bucket, subject, limit, now = Date.now() }) {
-  const day = dayKey(now);
-  const key = counterKey(bucket, subject, day);
-  const used = await readCount(kv, key);
-
-  if (used >= limit) {
-    return { ok: false, used, limit, remaining: 0, resetsAt: resetsAt(now) };
-  }
-
-  const next = used + 1;
-  await kv.put(key, String(next), { expirationTtl: TTL_SECONDS });
-
-  return { ok: true, used: next, limit, remaining: limit - next, resetsAt: resetsAt(now) };
-}
-
-/**
  * Reads a day's usage without consuming anything.
  *
  * Counts subscribers by listing per-bucket keys rather than storing a separate
  * total, so the number cannot drift out of step with the counters it describes.
+ * Live admission uses quota-ledger.js; this remains for fixture/legacy report tests.
  */
 export async function snapshot(kv, { now = Date.now(), alertThreshold }) {
   const day = dayKey(now);
@@ -124,13 +97,4 @@ export async function snapshot(kv, { now = Date.now(), alertThreshold }) {
     threshold: alertThreshold ?? null,
     over: alertThreshold != null && global >= alertThreshold,
   };
-}
-
-/** Returns a consumed unit after an upstream failure, so errors are not billed to the user. */
-export async function refund(kv, { bucket, subject, now = Date.now() }) {
-  const day = dayKey(now);
-  const key = counterKey(bucket, subject, day);
-  const used = await readCount(kv, key);
-  if (used <= 0) return;
-  await kv.put(key, String(used - 1), { expirationTtl: TTL_SECONDS });
 }

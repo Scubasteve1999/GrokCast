@@ -126,6 +126,10 @@ struct RadarPlaybackSpeedPicker: View {
             )
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
+            .frame(
+              minWidth: DesignTokens.Layout.minHitTarget,
+              minHeight: DesignTokens.Layout.minHitTarget
+            )
             .background(
               RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(

@@ -1,5 +1,5 @@
 name = "daycast-grok-proxy"
-main = "src/worker.js"
+main = "src/index.js"
 compatibility_date = "2026-08-01"
 
 # Secrets (never in this file — `wrangler secret put <NAME>`):
@@ -8,6 +8,9 @@ compatibility_date = "2026-08-01"
 #   OWM_API_KEY    OpenWeatherMap key (One Call 4.0 is billed per request)
 
 [vars]
+# Required at first deployment: next UTC day after disabling the legacy Worker.
+# Empty fails closed; see DEPLOYMENT.md. Keep this date on later deployments.
+QUOTA_START_DAY = "2026-09-06"
 BUNDLE_ID = "com.scubasteve1999.DayCast"
 PRO_PRODUCT_IDS = "com.scubasteve1999.DayCast.pro.monthly,com.scubasteve1999.DayCast.pro.yearly"
 ALLOWED_ENVIRONMENTS = "Production,Sandbox"
@@ -37,3 +40,12 @@ crons = ["59 23 * * *"]
 [[kv_namespaces]]
 binding = "USAGE"
 id = "cf48dd7853ca419db9d4224a43e58c1b"
+
+# One SQLite ledger per UTC budget day; never revert to KV counters on failure.
+[[durable_objects.bindings]]
+name = "QUOTAS"
+class_name = "DailyQuota"
+
+[[migrations]]
+tag = "quota-v1"
+new_sqlite_classes = ["DailyQuota"]
