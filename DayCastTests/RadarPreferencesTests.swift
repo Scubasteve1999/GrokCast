@@ -69,6 +69,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
+    XCTAssertEqual(RadarPreviewSource.previewOpacity, RadarPreferences.radarOpacity)
     XCTAssertEqual(
       RadarPreviewPaint.resolve(
         hoisted: false, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: true),
@@ -103,10 +104,10 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(stop(10)?.hex, "#0000F6")
     XCTAssertEqual(stop(10)?.alpha, 0)
     XCTAssertEqual(stop(15)?.hex, "#00FF00")
-    XCTAssertEqual(stop(15)?.alpha ?? -1, 0.99, accuracy: 0.0001)
+    XCTAssertEqual(stop(15)?.alpha ?? -1, 0.72, accuracy: 0.0001)
     XCTAssertEqual(stop(20)?.hex, "#00C800")
-    XCTAssertEqual(stop(20)?.alpha, 1)
-    XCTAssertEqual(stop(25)?.alpha, 1)
+    XCTAssertEqual(stop(20)?.alpha ?? -1, 0.82, accuracy: 0.0001)
+    XCTAssertEqual(stop(25)?.alpha ?? -1, 0.90, accuracy: 0.0001)
     XCTAssertEqual(stop(35)?.hex, "#E7C000")
     XCTAssertEqual(stop(40)?.hex, "#FF9000")
     XCTAssertEqual(stop(40)?.alpha, 1)
@@ -118,7 +119,7 @@ final class RadarPreferencesTests: XCTestCase {
     XCTAssertEqual(stop(70)?.alpha, 1)
     XCTAssertEqual(
       stop(5)?.alpha, 0, "National keys 5 dBZ cyan so bilinear cannot grow a blue skirt")
-    XCTAssertEqual(stop(30)?.alpha, 1)
+    XCTAssertEqual(stop(30)?.alpha, 1, "cores stay solid; only 15–25 soft-down")
     XCTAssertEqual(
       MapsGLRadarPalette.colorScaleBreaks, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70])
     XCTAssertTrue(MapsGLRadarPalette.liveRasterUsesNearestResampling)
@@ -669,6 +670,71 @@ final class RadarPreferencesTests: XCTestCase {
       RadarPreferences.radarOpacityRange.lowerBound,
       accuracy: 0.0001
     )
+  }
+
+  func testDefaultOpacityLeavesBasemapHeadroom() {
+    XCTAssertEqual(RadarPreferences.defaultRadarOpacity, 0.76, accuracy: 0.0001)
+    XCTAssertEqual(RadarPreferences.legacyOpaqueRadarOpacity, 0.95, accuracy: 0.0001)
+    XCTAssertEqual(RadarPreferences.radarOpacityRange.upperBound, 1.0, accuracy: 0.0001)
+    XCTAssertLessThan(RadarPreferences.defaultRadarOpacity, 0.90)
+    XCTAssertGreaterThan(RadarPreferences.defaultRadarOpacity, 0.69)
+  }
+
+  func testLegacyOpaqueDefaultMigratesOnce() {
+    suite.set(RadarPreferences.legacyOpaqueRadarOpacity, forKey: "radar.pref.radarOpacity")
+    XCTAssertEqual(
+      RadarPreferences.radarOpacity,
+      RadarPreferences.defaultRadarOpacity,
+      accuracy: 0.0001
+    )
+
+    RadarPreferences.radarOpacity = 0.90
+    XCTAssertEqual(RadarPreferences.radarOpacity, 0.90, accuracy: 0.0001)
+  }
+
+  func testUserChosenOpacityIsNotMigrated() {
+    suite.set(0.55, forKey: "radar.pref.radarOpacity")
+    XCTAssertEqual(RadarPreferences.radarOpacity, 0.55, accuracy: 0.0001)
+  }
+
+  func testTodayTeaserHonorsStoredOpacity() {
+    RadarPreferences.radarOpacity = 0.60
+    XCTAssertEqual(RadarPreviewSource.previewOpacity, 0.60, accuracy: 0.0001)
+    XCTAssertGreaterThan(
+      abs(RadarPreviewSource.previewOpacity - RadarPreferences.legacyOpaqueRadarOpacity),
+      0.0001
+    )
+  }
+
+  func testMapsGLSliderReappliesOpacityWithoutRemount() {
+    XCTAssertFalse(
+      MapsGLRadarHost.needsOpacityReapply(
+        layerReady: false, lastApplied: nil, pending: 0.60))
+    XCTAssertTrue(
+      MapsGLRadarHost.needsOpacityReapply(
+        layerReady: true, lastApplied: nil, pending: 0.60))
+    XCTAssertFalse(
+      MapsGLRadarHost.needsOpacityReapply(
+        layerReady: true, lastApplied: 0.76, pending: 0.76))
+    XCTAssertTrue(
+      MapsGLRadarHost.needsOpacityReapply(
+        layerReady: true, lastApplied: 0.76, pending: 0.55),
+      "slider must move paint.opacity after the first add")
+  }
+
+  func testDefaultSiteMidBinLeavesBasemapHeadroom() {
+    let mid = MapsGLRadarPalette.defaultEffectivePolarAlpha(forDbz: 25)
+    let core = MapsGLRadarPalette.defaultEffectivePolarAlpha(forDbz: 45)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25), 0.58, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 35), 0.70, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45), 0.90, accuracy: 0.0001)
+    XCTAssertLessThan(mid, 0.50, "25 dBZ × default slider must leave roads visible")
+    XCTAssertGreaterThan(mid, 0.35, "25 dBZ still reads as rain, not a ghost")
+    XCTAssertGreaterThan(core, 0.60, "cores stay authoritative")
+    XCTAssertLessThan(core, 0.80, "cores are thinner fill, not a solid sheet")
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 10), 0)
+    XCTAssertFalse(MapsGLRadarPalette.interpolatesStops)
+    XCTAssertEqual(MapsGLRadarPalette.bandIntervalDbz, 5)
   }
 
   func testStoredOpacityOutOfRangeIsClampedOnRead() {

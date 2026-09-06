@@ -24,11 +24,16 @@ enum RadarPreferences {
   private static let playbackSpeedKey = "radar.pref.playbackSpeed"
   private static let radarOpacityKey = "radar.pref.radarOpacity"
   private static let chaseDeclutteredKey = "radar.pref.chaseDecluttered"
+  /// One-time: leftover 0.95 factory default washed out the basemap.
+  private static let translucentDefaultMigratedKey = "radar.pref.translucentDefaultMigrated"
+  /// Factory default before the underlay restore. Migrated down once.
+  static let legacyOpaqueRadarOpacity: Double = 0.95
 
   /// Matches the Display sheet / panel slider. Out-of-range values would either
   /// wash the layer out or make it opaque enough to hide the base map.
+  /// Max stays 1.0 so Layers can still push a solid sheet; do not default there.
   static let radarOpacityRange: ClosedRange<Double> = 0.4...1.0
-  static let defaultRadarOpacity: Double = 0.95
+  static let defaultRadarOpacity: Double = 0.76
 
   static func clampedRadarOpacity(_ value: Double) -> Double {
     guard value.isFinite else { return defaultRadarOpacity }
@@ -114,12 +119,26 @@ enum RadarPreferences {
   /// map or vanish the radar on restore.
   static var radarOpacity: Double {
     get {
+      migrateOpaqueDefaultIfNeeded()
       guard let stored = store.object(forKey: radarOpacityKey) as? Double else {
         return defaultRadarOpacity
       }
       return clampedRadarOpacity(stored)
     }
     set { store.set(clampedRadarOpacity(newValue), forKey: radarOpacityKey) }
+  }
+
+  /// Existing installs stored the old 0.95 factory default. Move that one
+  /// value down so they see geography under precip; a user who later pushes
+  /// the slider back to 0.95 keeps it after this flag is set.
+  private static func migrateOpaqueDefaultIfNeeded() {
+    if store.object(forKey: translucentDefaultMigratedKey) != nil { return }
+    if let stored = store.object(forKey: radarOpacityKey) as? Double,
+      abs(stored - legacyOpaqueRadarOpacity) < 0.0001
+    {
+      store.set(defaultRadarOpacity, forKey: radarOpacityKey)
+    }
+    store.set(true, forKey: translucentDefaultMigratedKey)
   }
 
   /// Map-only: slims the chase HUD to SCAN. Does not hide the Live/24-hr sheet.

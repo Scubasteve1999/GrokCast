@@ -103,7 +103,11 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertEqual(sweep.rgbaLUT[Int(96)].3, 0, "15 dBZ is below the 25 dBZ paint floor")
     XCTAssertGreaterThan(sweep.rgbaLUT[Int(116)].3, 0, "25 dBZ paints")
     XCTAssertLessThan(sweep.rgbaLUT[Int(116)].3, 255, "25 dBZ underlay is not fully opaque")
-    XCTAssertGreaterThan(sweep.rgbaLUT[Int(116)].3, 220, "25 dBZ fill is saturated")
+    let a25 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25)
+    XCTAssertEqual(
+      sweep.rgbaLUT[Int(116)].3, UInt8((a25 * 255).rounded()),
+      "25 dBZ uses polar underlay alpha")
+    XCTAssertLessThan(a25, 0.70, "25 dBZ must leave basemap headroom")
   }
 
   func testOrganizedPrecipIgnoresClearAirClutterRing() {
@@ -344,21 +348,25 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertFalse(MapsGLRadarPalette.interpolatesSamples)
     XCTAssertEqual(MapsGLRadarPalette.sampleSmoothing, 0)
     XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 10), 0)
-    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15), 0.80, accuracy: 0.0001)
-    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 20), 0.86, accuracy: 0.0001)
-    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 30), 0.93, accuracy: 0.0001)
-    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 35), 0.95, accuracy: 0.0001)
-    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45), 0.97, accuracy: 0.0001)
-    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 70), 1, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15), 0.48, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 20), 0.52, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25), 0.58, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 30), 0.64, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 35), 0.70, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45), 0.90, accuracy: 0.0001)
+    XCTAssertEqual(MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 70), 0.96, accuracy: 0.0001)
     XCTAssertLessThan(
       MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 15),
       MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 15 }?.alpha ?? 1)
     XCTAssertEqual(
       MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 15 }?.alpha ?? -1,
-      0.99,
+      0.72,
       accuracy: 0.0001,
-      "National / MapsGL stays near-opaque")
-    XCTAssertEqual(MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 20 }?.alpha, 1)
+      "National / MapsGL light rain is translucent")
+    XCTAssertEqual(
+      MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 20 }?.alpha ?? -1,
+      0.82,
+      accuracy: 0.0001)
     XCTAssertEqual(MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 15 }?.hex, "#00FF00")
     XCTAssertEqual(MapsGLRadarPalette.reflectivityStops.first { $0.dbz == 45 }?.hex, "#FF0000")
 
@@ -366,11 +374,14 @@ final class Level3N0BTests: XCTestCase {
     let rgba = Level3N0BDecoder.rgbaLUT(from: lut)
     XCTAssertEqual(rgba[96].3, 0, "15 dBZ no longer paints on Site")
     XCTAssertEqual(rgba[106].3, 0, "20 dBZ no longer paints on Site")
-    XCTAssertEqual(rgba[116].3, UInt8((0.90 * 255).rounded()))
-    XCTAssertGreaterThan(rgba[116].3, 220, "25 dBZ fill is saturated vs the faded 0.42 underlay")
-    XCTAssertLessThan(rgba[116].3, 255, "25 dBZ is not a fully solid sheet")
+    XCTAssertEqual(
+      rgba[116].3,
+      UInt8((MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 25) * 255).rounded()))
+    XCTAssertGreaterThan(rgba[116].3, 120, "25 dBZ still paints as rain")
+    XCTAssertLessThan(rgba[116].3, 180, "25 dBZ is an underlay, not a solid sheet")
     let a45 = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45)
-    XCTAssertGreaterThan(a45, 0.9)
+    XCTAssertGreaterThan(a45, 0.85)
+    XCTAssertLessThan(a45, 0.97)
     let byte45 = 156
     XCTAssertEqual(lut[byte45], 45, accuracy: 0.01)
     XCTAssertEqual(rgba[byte45].3, UInt8((a45 * 255).rounded()))
@@ -388,12 +399,17 @@ final class Level3N0BTests: XCTestCase {
     XCTAssertGreaterThan(outA, 0)
     let unpremulG = outG / outA * 255
     XCTAssertEqual(unpremulG, 144, accuracy: 2, "no wash / white rays from opacity multiply")
-    XCTAssertLessThan(outA / 255, 0.95, "25 dBZ * default slider still shows some underlay")
-    XCTAssertGreaterThan(outA / 255, 0.75, "25 dBZ fill stays strong after slider")
+    XCTAssertLessThan(outA / 255, 0.50, "25 dBZ × default slider leaves basemap headroom")
+    XCTAssertGreaterThan(outA / 255, 0.35, "25 dBZ still reads as rain after slider")
 
     let coreAlpha = MapsGLRadarPalette.polarUnderlayAlpha(forDbz: 45)
     let coreA = (coreAlpha * 255).rounded() * global
-    XCTAssertGreaterThan(coreA / 255, 0.85, "red cores stay strong after slider")
+    XCTAssertGreaterThan(coreA / 255, 0.60, "red cores stay authoritative after slider")
+    XCTAssertLessThan(coreA / 255, 0.80, "red cores are thinner fill, not a solid sheet")
+    XCTAssertEqual(
+      MapsGLRadarPalette.defaultEffectivePolarAlpha(forDbz: 25),
+      stopAlpha * global,
+      accuracy: 0.0001)
   }
 
   func testPolarResamplingStaysNearestAtStreetZoom() {

@@ -746,7 +746,10 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
           layer.rasterBrightnessMin = .constant(desired.brightnessMin)
           layer.rasterHueRotate = .constant(desired.hueRotate)
           layer.rasterResampling = .constant(desired.nearestResampling ? .nearest : .linear)
-          try mapView.mapboxMap.addLayer(layer)
+          // Same below-label slot polar Metal uses so PNG / Future / MRMS
+          // fallback cannot sit above punched road + settlement names.
+          let position = RadarBaseMapStyle.polarUnderlayLayerPosition(on: mapView)
+          try mapView.mapboxMap.addLayer(layer, layerPosition: position)
         }
 
         layersInstalled = true

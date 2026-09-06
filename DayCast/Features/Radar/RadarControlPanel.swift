@@ -44,6 +44,7 @@ struct RadarControlPanel: View {
         }
       }
       RadarTimelineScrubber(radarState: radarState, layout: prefersFigmaHUD ? .figma : .standard)
+      compactOpacityRow
       compactStatusFooter
     }
     .padding(.horizontal, DesignTokens.Spacing.space20)
@@ -183,8 +184,8 @@ struct RadarControlPanel: View {
     .accessibilityLabel("Recenter to selected location")
   }
 
-  /// Opacity used to live only in the Display sheet — on phone that buried the
-  /// control people tweak every session. Dim when the overlay is off.
+  /// Live-panel slider so basemap recovery is one thumb away. Layers sheet
+  /// still has the same control. Dim when the overlay is off.
   private var compactOpacityRow: some View {
     HStack(spacing: DesignTokens.Spacing.space8) {
       Image(systemName: "circle.lefthalf.filled")
