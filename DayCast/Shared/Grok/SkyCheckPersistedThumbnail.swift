@@ -37,7 +37,7 @@ enum SkyCheckPersistedThumbnail {
   }
 
   /// Newest-first map of user-turn IDs to thumbs that pass the city cap.
-  /// Assistant / Imagine payloads are never included.
+  /// Assistant generated-image payloads are never included.
   static func byMessageID(in messages: [ChatMessage]) -> [UUID: Data] {
     var result: [UUID: Data] = [:]
     var remaining = maxThumbsPerCity

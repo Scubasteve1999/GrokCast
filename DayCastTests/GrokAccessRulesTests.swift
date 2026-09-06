@@ -58,7 +58,9 @@ final class GrokAccessRulesTests: XCTestCase {
   }
 
   func testLockedAlertsUnlockCTAMatchesSkyCheckEmptyState() {
-    XCTAssertEqual(AlertsGrokSummaryCard.unlockCTATitle, "Unlock with Pro")
+    XCTAssertEqual(AlertsGrokSummaryCard.unlockCTATitle, GrokAPIKeyEmptyStateView.unlockCTATitle)
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.unlockCTATitle, "Unlock with Pro")
+    XCTAssertFalse(GrokAPIKeyEmptyStateView.unlockCTATitle.localizedCaseInsensitiveContains("key"))
   }
 
   func testEmptyStateCopyDoesNotAdvertiseAKey() {
@@ -67,9 +69,11 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("free"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("own key"))
     XCTAssertEqual(GrokAPIKeyEmptyStateView.lockTitle, "Sky Check")
     XCTAssertEqual(GrokAPIKeyEmptyStateView.lockGlyph, "cloud.sun")
     XCTAssertFalse(GrokAPIKeyEmptyStateView.lockGlyph.contains("sparkles"))
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.unlockCTATitle, "Unlock with Pro")
   }
 
   func testMoreTabStaysSelectedOnHubDestinations() {

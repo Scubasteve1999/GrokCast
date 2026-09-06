@@ -110,36 +110,6 @@ final class GrokAPIService {
     }
   }
 
-  func generateImage(prompt: String, auth: GrokAuthContext, model: String) async throws -> URL {
-    var request = URLRequest(url: configuration.baseURL.appendingPathComponent("images/generations"))
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    auth.applying(to: &request)
-    request.timeoutInterval = 60
-    request.httpBody = try JSONSerialization.data(withJSONObject: [
-      "model": model,
-      "prompt": prompt,
-      "n": 1,
-      "response_format": "url",
-    ])
-
-    let (data, response) = try await session.data(for: request)
-    guard let http = response as? HTTPURLResponse else {
-      throw GrokAPIServiceError.invalidResponse(statusCode: nil)
-    }
-    guard http.statusCode == 200 else {
-      throw GrokAPIServiceError.apiError(statusCode: http.statusCode, message: Self.apiErrorMessage(in: data))
-    }
-    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-      let dataArray = json["data"] as? [[String: Any]],
-      let urlString = dataArray.first?["url"] as? String,
-      let url = URL(string: urlString)
-    else {
-      throw GrokAPIServiceError.invalidResponse(statusCode: http.statusCode)
-    }
-    return url
-  }
-
   /// Resolve + stream in one hop so callers cannot skip the entitlement meter.
   @MainActor
   static func stream(
@@ -188,15 +158,6 @@ final class GrokAPIService {
       imageJPEG: jpeg,
       auth: auth
     )
-  }
-
-  @MainActor
-  static func generateImage(prompt: String) async throws -> URL {
-    let auth = try GrokAuthResolver.resolve(
-      for: .image, feature: .imagine, subscription: SubscriptionManager.shared)
-    let service = GrokAPIService(configuration: GrokAPIServiceConfiguration(auth: auth))
-    return try await service.generateImage(
-      prompt: prompt, auth: auth, model: GrokAPIConfiguration.imageModelName)
   }
 
   @MainActor
