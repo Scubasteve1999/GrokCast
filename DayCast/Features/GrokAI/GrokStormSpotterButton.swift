@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct GrokStormSpotterButton: View {
+  var title: String = SkyCheckDeskCopy.photoCTA
   let action: () -> Void
 
   var body: some View {
@@ -17,7 +18,7 @@ struct GrokStormSpotterButton: View {
         Image(systemName: SkyCheckDeskCopy.photoGlyph)
           .font(DesignTokens.Typography.subsection())
 
-        Text(SkyCheckDeskCopy.photoCTA)
+        Text(title)
           .font(DesignTokens.Typography.subsection())
           .tracking(DesignTokens.Typography.cardLabelTracking)
       }
@@ -37,7 +38,7 @@ struct GrokStormSpotterButton: View {
       )
     }
     .buttonStyle(.plain)
-    .accessibilityLabel(SkyCheckDeskCopy.photoCTA)
+    .accessibilityLabel(title)
   }
 }
 

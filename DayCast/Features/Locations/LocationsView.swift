@@ -746,7 +746,14 @@ private struct LocationsSwipeDeleteRow<Content: View>: View {
   let onDelete: () -> Void
   @ViewBuilder var content: () -> Content
 
+  private enum DragAxis {
+    case undecided
+    case horizontal
+    case vertical
+  }
+
   @State private var offset: CGFloat = 0
+  @State private var dragAxis: DragAxis = .undecided
   private let revealWidth: CGFloat = 80
 
   var body: some View {
@@ -760,6 +767,8 @@ private struct LocationsSwipeDeleteRow<Content: View>: View {
           .background(DesignTokens.Palette.danger)
       }
       .buttonStyle(.plain)
+      .disabled(!isDeleteRevealed)
+      .accessibilityHidden(!isDeleteRevealed)
       .accessibilityLabel("Delete")
       .accessibilityIdentifier(deleteAccessibilityID)
 
@@ -767,20 +776,21 @@ private struct LocationsSwipeDeleteRow<Content: View>: View {
         .background(DesignTokens.Palette.cardBackground)
         .offset(x: revealedOffset)
         .animation(.easeOut(duration: 0.2), value: revealedOffset)
-        .simultaneousGesture(
-          DragGesture(minimumDistance: 24)
-            .onChanged { value in
-              let x = min(0, value.translation.width)
-              offset = max(-revealWidth, x)
-            }
-            .onEnded { value in
-              withAnimation(.easeOut(duration: 0.2)) {
-                offset = value.translation.width < -(revealWidth / 2) ? -revealWidth : 0
-              }
-            }
-        )
+
+      if blocksRowSelect {
+        Color.clear
+          .contentShape(Rectangle())
+          .padding(.trailing, isDeleteRevealed ? revealWidth : 0)
+          .onTapGesture {
+            guard !isEditing else { return }
+            withAnimation(.easeOut(duration: 0.2)) { offset = 0 }
+          }
+          .accessibilityHidden(true)
+      }
     }
     .clipped()
+    .contentShape(Rectangle())
+    .simultaneousGesture(swipeGesture)
     .onChange(of: isEditing) { _, editing in
       if !editing { offset = 0 }
     }
@@ -788,6 +798,38 @@ private struct LocationsSwipeDeleteRow<Content: View>: View {
 
   private var revealedOffset: CGFloat {
     isEditing ? -revealWidth : offset
+  }
+
+  private var isDeleteRevealed: Bool {
+    revealedOffset != 0
+  }
+
+  /// Block LocationRow's select Button while a horizontal swipe is live or
+  /// Delete is showing — otherwise the same pan selects the city and Saved
+  /// hides that row (`listedSavedLocations` drops the current city).
+  private var blocksRowSelect: Bool {
+    dragAxis == .horizontal || isDeleteRevealed
+  }
+
+  private var swipeGesture: some Gesture {
+    DragGesture(minimumDistance: 24)
+      .onChanged { value in
+        let dx = value.translation.width
+        let dy = value.translation.height
+        if dragAxis == .undecided {
+          dragAxis = abs(dx) > abs(dy) ? .horizontal : .vertical
+        }
+        guard dragAxis == .horizontal else { return }
+        offset = max(-revealWidth, min(0, dx))
+      }
+      .onEnded { value in
+        if dragAxis == .horizontal {
+          withAnimation(.easeOut(duration: 0.2)) {
+            offset = value.translation.width < -(revealWidth / 2) ? -revealWidth : 0
+          }
+        }
+        dragAxis = .undecided
+      }
   }
 }
 

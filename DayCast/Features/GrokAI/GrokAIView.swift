@@ -587,12 +587,20 @@ private struct GrokAIViewContent: View {
             }
             .disabled(aiActionsDisabled)
           }
-          GrokStormSpotterButton {
+          GrokStormSpotterButton(title: skyCheckPhotoCTATitle(viewModel: viewModel)) {
             openSkyCheckPicker()
           }
           .disabled(photoCTADisabled)
           .opacity(photoCTAGate == .explainUnavailable ? 0.55 : 1)
         }
+      }
+
+      if photoCTAGate == .explainUnavailable {
+        Text(SkyCheckDeskCopy.photoUnavailableExplanation)
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textSecondary)
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityIdentifier(DayCastAccessibility.Grok.skyCheckCameraFail)
       }
     }
   }
