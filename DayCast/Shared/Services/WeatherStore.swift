@@ -1694,7 +1694,7 @@ final class WeatherStore {
   func addLocation(_ location: SavedLocation) -> Bool {
     guard
       EntitlementChecker.canAddLocation(
-        currentCount: savedLocations.count, subscription: SubscriptionManager.shared)
+        locations: savedLocations, subscription: SubscriptionManager.shared)
     else {
       return false
     }

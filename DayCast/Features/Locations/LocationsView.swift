@@ -3,8 +3,16 @@ import SwiftUI
 private let locationsContentTopPadding = DesignTokens.Spacing.space16
 private let bottomTabClearance = DesignTokens.Layout.tabBarScrollClearance
 
+/// Locations chrome. Free is Near Me + one named city; GPS is not a saved slot.
+enum LocationsCopy {
+  static let freeLimitChip = "Free includes Near Me + 1 saved city"
+  static let saveUnlimitedCTA = "Save unlimited places"
+  static let emptySaved = "No saved cities yet. Search above to add one."
+}
+
 struct LocationsView: View {
   @Environment(WeatherStore.self) private var store
+  @Environment(SubscriptionManager.self) private var subscription
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
   @State private var searchText = ""
@@ -25,6 +33,10 @@ struct LocationsView: View {
 
   private var prefersFigmaLayout: Bool {
     horizontalSizeClass == .compact
+  }
+
+  private var showsFreeLimitChrome: Bool {
+    !subscription.isPro
   }
 
   var body: some View {
@@ -211,7 +223,7 @@ struct LocationsView: View {
 
       SettingsGroupCard {
         if listedSaved.isEmpty {
-          Text("No saved cities yet. Search above to add one.")
+          Text(LocationsCopy.emptySaved)
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(DesignTokens.Spacing.space16)
@@ -234,6 +246,13 @@ struct LocationsView: View {
               }
             }
           }
+        }
+
+        if showsFreeLimitChrome {
+          SettingsDivider()
+          freeLimitFooter
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.vertical, DesignTokens.Spacing.space12)
         }
       }
     }
@@ -275,7 +294,7 @@ struct LocationsView: View {
   }
 
   private var savedLocationsSection: some View {
-    Section("Saved Locations") {
+    Section {
       ForEach(listedSaved) { loc in
         LocationRow(
           location: loc,
@@ -287,7 +306,30 @@ struct LocationsView: View {
         .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
       }
       .onDelete(perform: deleteLocations)
+    } header: {
+      Text("Saved Locations")
+    } footer: {
+      if showsFreeLimitChrome {
+        freeLimitFooter
+      }
     }
+  }
+
+  private var freeLimitFooter: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+      Text(LocationsCopy.freeLimitChip)
+        .font(DesignTokens.Typography.caption())
+        .foregroundStyle(DesignTokens.Palette.textTertiary)
+        .accessibilityIdentifier(DayCastAccessibility.Locations.freeLimitChip)
+      Button(LocationsCopy.saveUnlimitedCTA) {
+        PaywallCoordinator.shared.present(.locations)
+      }
+      .font(DesignTokens.Typography.caption().weight(.semibold))
+      .foregroundStyle(DesignTokens.Palette.accent)
+      .accessibilityIdentifier(DayCastAccessibility.Locations.saveUnlimitedCTA)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .contain)
   }
 
   @ViewBuilder
@@ -391,8 +433,8 @@ struct LocationsView: View {
       candidate: candidate,
       saved: store.savedLocations,
       canAdd: EntitlementChecker.canAddLocation(
-        currentCount: store.savedLocations.count,
-        subscription: SubscriptionManager.shared
+        locations: store.savedLocations,
+        subscription: subscription
       )
     )
     switch decision {
@@ -679,4 +721,5 @@ enum LocationRowLayout {
 #Preview {
   LocationsView()
     .environment(WeatherStore())
+    .environment(SubscriptionManager.shared)
 }

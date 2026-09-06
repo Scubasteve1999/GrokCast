@@ -187,9 +187,10 @@ final class MapsGLRadarHost {
 
   /// Slider must move rain after the first add. `addWeatherLayer` is a no-op
   /// once `layerReady`; re-apply `paint.opacity` from `pendingOpacity`.
-  static func needsOpacityReapply(layerReady: Bool, lastApplied: Double?, pending: Double)
-    -> Bool
-  {
+  /// Pure Bool — `nonisolated` so DayCastTests can call it off the main actor.
+  nonisolated static func needsOpacityReapply(
+    layerReady: Bool, lastApplied: Double?, pending: Double
+  ) -> Bool {
     guard layerReady else { return false }
     guard let lastApplied else { return true }
     return abs(lastApplied - pending) > 0.0001

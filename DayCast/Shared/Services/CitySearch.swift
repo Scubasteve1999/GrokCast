@@ -221,9 +221,11 @@ enum CitySearch {
   }
 
   /// What Locations should do after the user taps a city.
-  /// Free accounts keep one saved city; choosing another replaces that slot
-  /// instead of dead-ending on the paywall. A GPS current-location pin is
-  /// not replaced — extra saved cities stay Pro.
+  /// Free is Near Me (GPS) + one named city. `canAdd` must use named count
+  /// (`EntitlementChecker.namedSavedCount`), not raw array length.
+  /// Replace the single named city only when that named city is the only
+  /// saved entry. GPS is never replaced. GPS + one named already fills the
+  /// free allotment — another named city is Pro.
   static func selection(
     candidate: SavedLocation,
     saved: [SavedLocation],

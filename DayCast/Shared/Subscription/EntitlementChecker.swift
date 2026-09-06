@@ -3,7 +3,18 @@ import Foundation
 /// Unified access rules for DayCast Free vs Pro.
 @MainActor
 enum EntitlementChecker {
-  static let freeSavedLocationLimit = 1
+  /// Free: one named saved city. GPS Near Me (`isCurrent`) does not count.
+  nonisolated static let freeSavedLocationLimit = 1
+
+  /// Named saved cities only. GPS pins are Near Me, not a free slot.
+  nonisolated static func namedSavedCount(in locations: [SavedLocation]) -> Int {
+    locations.lazy.filter { !$0.isCurrent }.count
+  }
+
+  /// Same as `namedSavedCount` — the value `canAddLocation` compares to the free limit.
+  nonisolated static func countTowardFreeLocationLimit(_ locations: [SavedLocation]) -> Int {
+    namedSavedCount(in: locations)
+  }
 
   static func canUseGrokAI(
     subscription: SubscriptionManager,
@@ -63,12 +74,21 @@ enum EntitlementChecker {
     subscription.isPro ? nil : freeSavedLocationLimit
   }
 
+  /// Free may add a named city when named count is below the limit.
+  /// Pass `namedSavedCount` — never raw `savedLocations.count` (that counted GPS).
+  nonisolated static func canAddLocation(namedCount: Int, isPro: Bool) -> Bool {
+    isPro || namedCount < freeSavedLocationLimit
+  }
+
+  nonisolated static func canAddLocation(locations: [SavedLocation], isPro: Bool) -> Bool {
+    canAddLocation(namedCount: namedSavedCount(in: locations), isPro: isPro)
+  }
+
   static func canAddLocation(
-    currentCount: Int,
+    locations: [SavedLocation],
     subscription: SubscriptionManager
   ) -> Bool {
-    guard let limit = maxSavedLocations(subscription: subscription) else { return true }
-    return currentCount < limit
+    canAddLocation(locations: locations, isPro: subscription.isPro)
   }
 }
 
