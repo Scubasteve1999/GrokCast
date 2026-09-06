@@ -204,13 +204,15 @@ final class MapsGLRadarHost {
   }
 
   private func applyRadarPaintOpacity(_ opacity: Double, on controller: MapboxMapController) {
-    // Encoded rain is a Metal CustomLayer. Mutate MapsGL paint so the next
-    // frame picks up the slider. Also poke Mapbox raster-opacity in case the
-    // host bridged a styled layer instead of Metal.
-    if var layer = controller.weatherLayer(for: .radar) {
-      var paint = layer.paint
-      paint.opacity = Opacity(value: Float(opacity))
-      layer.paint = paint
+    // `weatherLayer(for:)` is `any LayerProtocol` — no `paint` member.
+    // Encoded rain is a Metal CustomLayer, so Mapbox raster-opacity is a
+    // no-op. Quiet-replace the weather layer with the new `paint.opacity`
+    // (host + timeline stay). Do not notify PNG fallback mid-replace.
+    if layerReady {
+      controller.removeWeatherLayer(for: .radar)
+      layerReady = false
+      lastAppliedOpacity = nil
+      addRadarLayer(on: controller, notify: false)
     }
     if let map = attachedMapView?.mapboxMap,
       map.layerExists(withId: MapsGLLiveRainLayers.radarID)
@@ -222,10 +224,10 @@ final class MapsGLRadarHost {
       )
     }
     attachedMapView?.mapboxMap.triggerRepaint()
-    lastAppliedOpacity = opacity
+    lastAppliedOpacity = layerReady ? opacity : nil
   }
 
-  private func addRadarLayer(on controller: MapboxMapController) {
+  private func addRadarLayer(on controller: MapboxMapController, notify: Bool = true) {
     if layerReady {
       applyPendingOpacityIfNeeded(on: controller)
       return
@@ -250,11 +252,12 @@ final class MapsGLRadarHost {
       layerReady = true
       lastAppliedOpacity = opacity
       radarLog("[MapsGL] radar layer added")
-      onLayerStateChange?()
+      if notify { onLayerStateChange?() }
     } catch {
       radarLog("[MapsGL] Failed to add radar layer: \(error)")
       layerReady = false
       lastAppliedOpacity = nil
+      onLayerStateChange?()
     }
   }
 
