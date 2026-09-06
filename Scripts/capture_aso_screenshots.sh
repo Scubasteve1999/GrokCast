@@ -68,4 +68,4 @@ capture grok "03-grok.png"
 
 echo ""
 echo "✅ Screenshots saved to Marketing/AppStore/"
-echo "   Upload the 6.7\" set in App Store Connect when ready (see docs/App-Store-Connect.md)"
+echo "   Upload the 6.7\" set in App Store Connect when ready (see fastlane/metadata/ and docs/App-Store-Connect.md)"
