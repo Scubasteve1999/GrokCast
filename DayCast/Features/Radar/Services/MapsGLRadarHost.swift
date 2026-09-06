@@ -28,6 +28,8 @@ final class MapsGLRadarHost {
   private var lastNationalUsesMRMS: Bool?
   private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
   private var lastAppliedOpacity: Double?
+  /// Latest pending wins; intermediates while the slider is moving are skipped.
+  private var opacityReplaceTask: Task<Void, Never>?
   /// Today preview is rain-only. Live Radar paints StormcellsTracks paths only.
   var paintsStormcells = true
 
@@ -101,6 +103,8 @@ final class MapsGLRadarHost {
     lastIsSiteProduct = nil
     lastNationalUsesMRMS = nil
     lastAppliedOpacity = nil
+    opacityReplaceTask?.cancel()
+    opacityReplaceTask = nil
   }
 
   /// Snapshot for Today: rain only, no site products. `future` uses the same
@@ -188,6 +192,7 @@ final class MapsGLRadarHost {
   /// Slider must move rain after the first add. `addWeatherLayer` is a no-op
   /// once `layerReady`; re-apply `paint.opacity` from `pendingOpacity`.
   /// Pure Bool — `nonisolated` so DayCastTests can call it off the main actor.
+  /// Remount is not required (`layerReady` stays true for a pending change).
   nonisolated static func needsOpacityReapply(
     layerReady: Bool, lastApplied: Double?, pending: Double
   ) -> Bool {
@@ -196,7 +201,39 @@ final class MapsGLRadarHost {
     return abs(lastApplied - pending) > 0.0001
   }
 
-  private func applyPendingOpacityIfNeeded(on controller: MapboxMapController) {
+  /// MapsGL Apple 1.6.1 styles encoded rain at add time. Debounce replace so
+  /// a Live slider drag does not remove+flash rain on every 0.05 step.
+  nonisolated static let opacityReplaceDebounceMilliseconds = 120
+
+  nonisolated static var opacityReplaceDebounceNanoseconds: UInt64 {
+    UInt64(opacityReplaceDebounceMilliseconds) * 1_000_000
+  }
+
+  /// Scrub commits only the latest pending value after the debounce window.
+  nonisolated static func latestOpacityForReplace(pendingSequence: [Double]) -> Double? {
+    pendingSequence.last
+  }
+
+  private func applyPendingOpacityIfNeeded(on _: MapboxMapController) {
+    let opacity = RadarPreferences.clampedRadarOpacity(pendingOpacity)
+    guard Self.needsOpacityReapply(
+      layerReady: layerReady, lastApplied: lastAppliedOpacity, pending: opacity)
+    else { return }
+    scheduleDebouncedOpacityReplace()
+  }
+
+  private func scheduleDebouncedOpacityReplace() {
+    opacityReplaceTask?.cancel()
+    let delay = Self.opacityReplaceDebounceNanoseconds
+    opacityReplaceTask = Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: delay)
+      guard !Task.isCancelled, let self else { return }
+      self.commitOpacityReplaceIfNeeded()
+    }
+  }
+
+  private func commitOpacityReplaceIfNeeded() {
+    guard let controller else { return }
     let opacity = RadarPreferences.clampedRadarOpacity(pendingOpacity)
     guard Self.needsOpacityReapply(
       layerReady: layerReady, lastApplied: lastAppliedOpacity, pending: opacity)
@@ -205,10 +242,10 @@ final class MapsGLRadarHost {
   }
 
   private func applyRadarPaintOpacity(_ opacity: Double, on controller: MapboxMapController) {
-    // `weatherLayer(for:)` is `any LayerProtocol` — no `paint` member.
-    // Encoded rain is a Metal CustomLayer, so Mapbox raster-opacity is a
-    // no-op. Quiet-replace the weather layer with the new `paint.opacity`
-    // (host + timeline stay). Do not notify PNG fallback mid-replace.
+    // Encoded rain is a Metal CustomLayer. MapsGL styles `paint.opacity` at
+    // add time; `weatherLayer(for:)` is `any LayerProtocol` with no `paint`
+    // setter, and Mapbox `raster-opacity` is a no-op on that CustomLayer.
+    // Replace once (debounced) with the latest pending value.
     if layerReady {
       controller.removeWeatherLayer(for: .radar)
       layerReady = false

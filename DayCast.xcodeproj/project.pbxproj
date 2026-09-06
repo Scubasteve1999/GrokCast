@@ -305,6 +305,7 @@
 		DCC58A98CCAAE28D11A8EC25 /* SkyCheckContentFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A1113BF74E1508497BF87F /* SkyCheckContentFilterTests.swift */; };
 		DD2DE1219B8896359E42BCAA /* WidgetLocationIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5AF9E68C779614D061E015 /* WidgetLocationIntent.swift */; };
 		DD2E398A678774E34EFFA36A /* RadarPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */; };
+		19A8B3C4D5E6F708192A3B4C /* RadarMapChromeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E41B07A93D52F16E0A7C24 /* RadarMapChromeTests.swift */; };
 		DD4ECF7D5903D513DE461A08 /* IEMSiteReflectivityPaint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEBBBD67AF13BFEF4942CCC /* IEMSiteReflectivityPaint.swift */; };
 		DE9F67A5409184A71341BA4D /* OpenWeatherMapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEA6290A57B074770F52FC /* OpenWeatherMapModels.swift */; };
 		DF63DA86213D1400CC46E498 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 77CB0BCDFD3523F362B23407 /* PostHog */; };
@@ -577,6 +578,7 @@
 		8EECF17A2ACB8D01BFF9AAA5 /* HourlyGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyGraphView.swift; sourceTree = "<group>"; };
 		8F168B5CECD8D70210FC35C5 /* Haptic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptic.swift; sourceTree = "<group>"; };
 		9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPreferencesTests.swift; sourceTree = "<group>"; };
+		C8E41B07A93D52F16E0A7C24 /* RadarMapChromeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapChromeTests.swift; sourceTree = "<group>"; };
 		93DB2ABC43A84A7E02CAC21F /* WidgetAppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetAppGroup.swift; sourceTree = "<group>"; };
 		9441131245BEE8DBF12B28F0 /* RadarPreviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPreviewCard.swift; sourceTree = "<group>"; };
 		95BCE48FC1EDB5354E99502E /* ReadableContentWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadableContentWidth.swift; sourceTree = "<group>"; };
@@ -1011,6 +1013,7 @@
 				E06696FC568085178B018376 /* RadarLiveCameraPolicyTests.swift */,
 				EAD92E31CA2EEE492A20ED3E /* RadarLiveOpenPolicyTests.swift */,
 				999642A4FA30958744EFB10A /* RadarLivePresentationTests.swift */,
+				C8E41B07A93D52F16E0A7C24 /* RadarMapChromeTests.swift */,
 				681B8EFA71DA2E012D77F4E3 /* RadarPlaybackTests.swift */,
 				9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */,
 				17543378FDF6091A61B11432 /* RadarStatePreferencesTests.swift */,
@@ -1701,6 +1704,7 @@
 				CE0CF934080AB4FA947A6AC8 /* RadarLiveCameraPolicyTests.swift in Sources */,
 				18D1F0A3DFEB34A754BE172B /* RadarLiveOpenPolicyTests.swift in Sources */,
 				CB01A7E8C8B51AFC3DBF12F0 /* RadarLivePresentationTests.swift in Sources */,
+				19A8B3C4D5E6F708192A3B4C /* RadarMapChromeTests.swift in Sources */,
 				FAA148AE9E644CA696A53EFE /* RadarPlaybackTests.swift in Sources */,
 				DD2E398A678774E34EFFA36A /* RadarPreferencesTests.swift in Sources */,
 				333F681A818532B3BCA2AFD6 /* RadarStatePreferencesTests.swift in Sources */,

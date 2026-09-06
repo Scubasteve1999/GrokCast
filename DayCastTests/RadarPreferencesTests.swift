@@ -709,7 +709,8 @@ final class RadarPreferencesTests: XCTestCase {
   func testMapsGLSliderReappliesOpacityWithoutRemount() {
     XCTAssertFalse(
       MapsGLRadarHost.needsOpacityReapply(
-        layerReady: false, lastApplied: nil, pending: 0.60))
+        layerReady: false, lastApplied: nil, pending: 0.60),
+      "layer not ready is not the apply path — remount is not the mechanism")
     XCTAssertTrue(
       MapsGLRadarHost.needsOpacityReapply(
         layerReady: true, lastApplied: nil, pending: 0.60))
@@ -720,6 +721,18 @@ final class RadarPreferencesTests: XCTestCase {
       MapsGLRadarHost.needsOpacityReapply(
         layerReady: true, lastApplied: 0.76, pending: 0.55),
       "slider must move paint.opacity after the first add")
+  }
+
+  func testMapsGLOpacityReplaceIsDebouncedWhileScrubbing() {
+    XCTAssertEqual(MapsGLRadarHost.opacityReplaceDebounceMilliseconds, 120)
+    XCTAssertGreaterThanOrEqual(MapsGLRadarHost.opacityReplaceDebounceMilliseconds, 100)
+    XCTAssertLessThanOrEqual(MapsGLRadarHost.opacityReplaceDebounceMilliseconds, 150)
+    XCTAssertEqual(
+      MapsGLRadarHost.latestOpacityForReplace(pendingSequence: [0.76, 0.70, 0.65, 0.55]),
+      0.55,
+      "drag commits the last pending value, not every intermediate step"
+    )
+    XCTAssertNil(MapsGLRadarHost.latestOpacityForReplace(pendingSequence: []))
   }
 
   func testDefaultSiteMidBinLeavesBasemapHeadroom() {

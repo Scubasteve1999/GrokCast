@@ -1,5 +1,21 @@
 import SwiftUI
 
+/// Shared field-chrome geometry for the Live map overlays.
+enum RadarMapChromeLayout {
+  /// Map fills the Radar tab GeometryReader. Do not impose a 400pt floor.
+  static let imposesMinimumMapSize = false
+
+  static let overlayGap: CGFloat = 8
+
+  /// Colorbar and layer rail sit on the same baseline above the Live dock.
+  static func fieldOverlayBottomInset(
+    tabBarClearance: CGFloat = WeatherStageSheet.tabBarClearance,
+    controlPanelHeight: CGFloat
+  ) -> CGFloat {
+    tabBarClearance + controlPanelHeight + overlayGap
+  }
+}
+
 /// Vertical map-edge layer toggles. Product / map options stay in Layers.
 struct RadarLayerRail: View {
   @Bindable var radarState: RadarState
