@@ -5,6 +5,9 @@ import Foundation
 enum SkyCheckDeskCopy {
   static let photoCTA = "Check this sky"
   static let checkAnotherCTA = "Check another"
+  static let photoUnavailableCTA = "Photo check unavailable"
+  static let photoUnavailableExplanation =
+    "Sky Check needs a working AI connection. Add your own key in Settings, or try again later."
   static let cameraSource = "Camera"
   static let librarySource = "Photo Library"
   static let photoGlyph = "camera"

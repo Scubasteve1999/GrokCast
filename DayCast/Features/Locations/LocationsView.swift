@@ -14,6 +14,7 @@ struct LocationsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @State private var editMode: EditMode = .inactive
 
   @State private var searchText = ""
   @State private var searchResults: [CitySearchResult] = []
@@ -53,10 +54,17 @@ struct LocationsView: View {
       .navigationBarTitleDisplayMode(prefersFigmaLayout ? .inline : .large)
       .weatherShowsThroughNavigationBar()
       .toolbar {
-        if !prefersFigmaLayout {
+        if !isShowingSearch {
           EditButton()
-            .disabled(isShowingSearch)
+            .disabled(listedSaved.isEmpty)
         }
+      }
+      .environment(\.editMode, $editMode)
+      .onChange(of: isShowingSearch) { _, showing in
+        if showing { editMode = .inactive }
+      }
+      .onChange(of: listedSaved.isEmpty) { _, empty in
+        if empty { editMode = .inactive }
       }
     }
   }
@@ -230,19 +238,25 @@ struct LocationsView: View {
         } else {
           ForEach(Array(listedSaved.enumerated()), id: \.element.id) { index, loc in
             if index > 0 { SettingsDivider() }
-            LocationRow(
-              location: loc,
-              isSelected: store.currentLocation?.id == loc.id,
-              layout: .figma,
-              weather: weatherSnapshot(for: loc)
+            LocationsSwipeDeleteRow(
+              deleteAccessibilityID: DayCastAccessibility.Locations.deleteSaved(loc.name),
+              isEditing: editMode.isEditing,
+              onDelete: { store.removeLocation(loc) }
             ) {
-              store.selectLocation(loc)
-            }
-            .padding(.horizontal, DesignTokens.Spacing.space16)
-            .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
-            .contextMenu {
-              Button("Delete", role: .destructive) {
-                store.removeLocation(loc)
+              LocationRow(
+                location: loc,
+                isSelected: store.currentLocation?.id == loc.id,
+                layout: .figma,
+                weather: weatherSnapshot(for: loc)
+              ) {
+                store.selectLocation(loc)
+              }
+              .padding(.horizontal, DesignTokens.Spacing.space16)
+              .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
+              .contextMenu {
+                Button("Delete", role: .destructive) {
+                  store.removeLocation(loc)
+                }
               }
             }
           }
@@ -304,6 +318,12 @@ struct LocationsView: View {
           store.selectLocation(loc)
         }
         .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+          Button("Delete", role: .destructive) {
+            store.removeLocation(loc)
+          }
+          .accessibilityIdentifier(DayCastAccessibility.Locations.deleteSaved(loc.name))
+        }
       }
       .onDelete(perform: deleteLocations)
     } header: {
@@ -716,6 +736,59 @@ struct LocationRow: View {
 enum LocationRowLayout {
   case standard
   case figma
+}
+
+/// Compact Locations is a ScrollView, not a List — `swipeActions` does not apply.
+/// Reveal a Delete control on swipe or when Edit is on.
+private struct LocationsSwipeDeleteRow<Content: View>: View {
+  let deleteAccessibilityID: String
+  let isEditing: Bool
+  let onDelete: () -> Void
+  @ViewBuilder var content: () -> Content
+
+  @State private var offset: CGFloat = 0
+  private let revealWidth: CGFloat = 80
+
+  var body: some View {
+    ZStack(alignment: .trailing) {
+      Button(role: .destructive, action: onDelete) {
+        Image(systemName: "trash")
+          .font(DesignTokens.Typography.subsection())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .frame(width: revealWidth)
+          .frame(maxHeight: .infinity)
+          .background(DesignTokens.Palette.danger)
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Delete")
+      .accessibilityIdentifier(deleteAccessibilityID)
+
+      content()
+        .background(DesignTokens.Palette.cardBackground)
+        .offset(x: revealedOffset)
+        .animation(.easeOut(duration: 0.2), value: revealedOffset)
+        .simultaneousGesture(
+          DragGesture(minimumDistance: 24)
+            .onChanged { value in
+              let x = min(0, value.translation.width)
+              offset = max(-revealWidth, x)
+            }
+            .onEnded { value in
+              withAnimation(.easeOut(duration: 0.2)) {
+                offset = value.translation.width < -(revealWidth / 2) ? -revealWidth : 0
+              }
+            }
+        )
+    }
+    .clipped()
+    .onChange(of: isEditing) { _, editing in
+      if !editing { offset = 0 }
+    }
+  }
+
+  private var revealedOffset: CGFloat {
+    isEditing ? -revealWidth : offset
+  }
 }
 
 #Preview {

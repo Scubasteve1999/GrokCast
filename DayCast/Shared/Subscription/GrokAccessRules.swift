@@ -58,3 +58,21 @@ enum GrokAccessRules {
   static let lockedAlertsSummaryCopy =
     "DayCast Pro includes AI alert summaries. Official NWS alerts stay free."
 }
+
+/// Photo CTA before the picker. Never a silent no-op when Grok is locked.
+enum SkyCheckPhotoCTAGate: Equatable {
+  case openPicker
+  case presentPaywall
+  case explainUnavailable
+
+  static func resolve(canUseGrok: Bool, canUnlockViaPro: Bool) -> Self {
+    if canUseGrok { return .openPicker }
+    if canUnlockViaPro { return .presentPaywall }
+    return .explainUnavailable
+  }
+
+  var allowsPicker: Bool { self == .openPicker }
+
+  /// Disabled only when we cannot open the picker or the paywall.
+  var isCTADisabled: Bool { self == .explainUnavailable }
+}

@@ -63,7 +63,16 @@ private struct GrokAIViewContent: View {
                 quickPromptsSection(viewModel: viewModel)
 
                 if prefersFigmaStudioLayout, showsPhotoWell(viewModel: viewModel) {
-                  skyCheckPhotoWell(viewModel: viewModel)
+                  VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
+                    skyCheckPhotoWell(viewModel: viewModel)
+                    if photoCTAGate == .explainUnavailable {
+                      Text(SkyCheckDeskCopy.photoUnavailableExplanation)
+                        .font(DesignTokens.Typography.caption())
+                        .foregroundStyle(DesignTokens.Palette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier(DayCastAccessibility.Grok.skyCheckCameraFail)
+                    }
+                  }
                 }
 
                 ForEach(viewModel.conversationHistory) { message in
@@ -117,7 +126,13 @@ private struct GrokAIViewContent: View {
                 if prefersFigmaStudioLayout, showsPhotoCTAButton(viewModel: viewModel) {
                   VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
                     skyCheckPhotoCTAButton(viewModel: viewModel)
-                    if hasCompletedPhotoCheck(viewModel: viewModel) {
+                    if photoCTAGate == .explainUnavailable {
+                      Text(SkyCheckDeskCopy.photoUnavailableExplanation)
+                        .font(DesignTokens.Typography.caption())
+                        .foregroundStyle(DesignTokens.Palette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier(DayCastAccessibility.Grok.skyCheckCameraFail)
+                    } else if hasCompletedPhotoCheck(viewModel: viewModel) {
                       Text(SkyCheckDeskCopy.hedge)
                         .font(DesignTokens.Typography.caption())
                         .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -367,16 +382,22 @@ private struct GrokAIViewContent: View {
       && !viewModel.stormAnalysisMode
   }
 
+  private var photoCTAGate: SkyCheckPhotoCTAGate {
+    SkyCheckPhotoCTAGate.resolve(
+      canUseGrok: weatherStore.canUseGrok,
+      canUnlockViaPro: PaywallCoordinator.shared.canUnlockGrokViaPro
+    )
+  }
+
   private func openSkyCheckPicker() {
     isInputFocused = false
-    Task {
-      guard weatherStore.canUseGrok else {
-        if PaywallCoordinator.shared.canUnlockGrokViaPro {
-          PaywallCoordinator.shared.present(.grokAI)
-        }
-        return
-      }
+    switch photoCTAGate {
+    case .openPicker:
       showPhotoSourceChooser = true
+    case .presentPaywall:
+      PaywallCoordinator.shared.present(.grokAI)
+    case .explainUnavailable:
+      photoCaptureFailMessage = SkyCheckDeskCopy.photoUnavailableExplanation
     }
   }
 
@@ -501,7 +522,8 @@ private struct GrokAIViewContent: View {
       )
     }
     .buttonStyle(.plain)
-    .disabled(aiActionsDisabled)
+    .disabled(photoCTADisabled)
+    .opacity(photoCTAGate == .explainUnavailable ? 0.55 : 1)
     .accessibilityLabel(skyCheckPhotoCTATitle(viewModel: viewModel))
     .accessibilityIdentifier(DayCastAccessibility.Grok.stormSpotterAnalyze)
   }
@@ -511,7 +533,7 @@ private struct GrokAIViewContent: View {
       title: skyCheckPhotoCTATitle(viewModel: viewModel),
       systemImage: SkyCheckDeskCopy.photoGlyph,
       identifier: DayCastAccessibility.Grok.stormSpotterAnalyze,
-      isDisabled: aiActionsDisabled,
+      isDisabled: photoCTADisabled,
       action: openSkyCheckPicker
     )
   }
@@ -528,6 +550,13 @@ private struct GrokAIViewContent: View {
 
   private var aiActionsDisabled: Bool {
     !weatherStore.canUseGrok
+      || weatherStore.grokAIViewModel.isStreaming
+      || weatherStore.grokAIViewModel.isGeneratingImage
+  }
+
+  /// Photo CTA may still open the paywall when Grok is locked but Pro can unlock it.
+  private var photoCTADisabled: Bool {
+    photoCTAGate.isCTADisabled
       || weatherStore.grokAIViewModel.isStreaming
       || weatherStore.grokAIViewModel.isGeneratingImage
   }
@@ -561,7 +590,8 @@ private struct GrokAIViewContent: View {
           GrokStormSpotterButton {
             openSkyCheckPicker()
           }
-          .disabled(aiActionsDisabled)
+          .disabled(photoCTADisabled)
+          .opacity(photoCTAGate == .explainUnavailable ? 0.55 : 1)
         }
       }
     }
@@ -894,7 +924,10 @@ private struct GrokAIViewContent: View {
   }
 
   private func skyCheckPhotoCTATitle(viewModel: GrokAIViewModel) -> String {
-    hasCompletedPhotoCheck(viewModel: viewModel)
+    if photoCTAGate == .explainUnavailable {
+      return SkyCheckDeskCopy.photoUnavailableCTA
+    }
+    return hasCompletedPhotoCheck(viewModel: viewModel)
       ? SkyCheckDeskCopy.checkAnotherCTA : SkyCheckDeskCopy.photoCTA
   }
 

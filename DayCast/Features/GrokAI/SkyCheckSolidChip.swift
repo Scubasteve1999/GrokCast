@@ -30,6 +30,7 @@ struct SkyCheckSolidChip: View {
     }
     .buttonStyle(.plain)
     .disabled(isDisabled)
+    .opacity(isDisabled ? 0.55 : 1)
     .accessibilityLabel(title)
     .accessibilityIdentifier(identifier)
     .accessibilityAddTraits(.isButton)
