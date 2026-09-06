@@ -251,6 +251,7 @@
 		B385528E5B850D4B20A5A190 /* NWSAlertStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3600D9B80B037243C58F7DA5 /* NWSAlertStyle.swift */; };
 		B41A36D29CF539536FD2D385 /* ChaseRadarHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA77D2B6D45112F5E5BAA6D /* ChaseRadarHUD.swift */; };
 		B667EF69341E50F8471F60B1 /* SkyCheckChatLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3653C7C72253E31D861952 /* SkyCheckChatLayoutTests.swift */; };
+		B78B9C1E15170F889EFB451F /* RadarMapChromeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC94BC9B469F7F862A6FC2F5 /* RadarMapChromeTests.swift */; };
 		B7CFECF50DD8DF429EA59758 /* YourNewsHeadlineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBED9327993F3ECB0312BA59 /* YourNewsHeadlineTests.swift */; };
 		BAA83D3DFA354BE964E0470A /* LocationTimezone.swift in Sources */ = {isa = PBXBuildFile; fileRef = F295E923861F93E0C3D128FB /* LocationTimezone.swift */; };
 		BC3F66EB1BF86F8A8D2C65AC /* TodayFirstRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44656C52DD09DEA3CC9AAA3E /* TodayFirstRunTests.swift */; };
@@ -305,7 +306,6 @@
 		DCC58A98CCAAE28D11A8EC25 /* SkyCheckContentFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A1113BF74E1508497BF87F /* SkyCheckContentFilterTests.swift */; };
 		DD2DE1219B8896359E42BCAA /* WidgetLocationIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5AF9E68C779614D061E015 /* WidgetLocationIntent.swift */; };
 		DD2E398A678774E34EFFA36A /* RadarPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */; };
-		19A8B3C4D5E6F708192A3B4C /* RadarMapChromeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E41B07A93D52F16E0A7C24 /* RadarMapChromeTests.swift */; };
 		DD4ECF7D5903D513DE461A08 /* IEMSiteReflectivityPaint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEBBBD67AF13BFEF4942CCC /* IEMSiteReflectivityPaint.swift */; };
 		DE9F67A5409184A71341BA4D /* OpenWeatherMapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEA6290A57B074770F52FC /* OpenWeatherMapModels.swift */; };
 		DF63DA86213D1400CC46E498 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 77CB0BCDFD3523F362B23407 /* PostHog */; };
@@ -578,7 +578,6 @@
 		8EECF17A2ACB8D01BFF9AAA5 /* HourlyGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HourlyGraphView.swift; sourceTree = "<group>"; };
 		8F168B5CECD8D70210FC35C5 /* Haptic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptic.swift; sourceTree = "<group>"; };
 		9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPreferencesTests.swift; sourceTree = "<group>"; };
-		C8E41B07A93D52F16E0A7C24 /* RadarMapChromeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapChromeTests.swift; sourceTree = "<group>"; };
 		93DB2ABC43A84A7E02CAC21F /* WidgetAppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetAppGroup.swift; sourceTree = "<group>"; };
 		9441131245BEE8DBF12B28F0 /* RadarPreviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPreviewCard.swift; sourceTree = "<group>"; };
 		95BCE48FC1EDB5354E99502E /* ReadableContentWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadableContentWidth.swift; sourceTree = "<group>"; };
@@ -696,6 +695,7 @@
 		EAD92E31CA2EEE492A20ED3E /* RadarLiveOpenPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarLiveOpenPolicyTests.swift; sourceTree = "<group>"; };
 		EAF65F71D51C7B2963F1F266 /* RadarPlaybackControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarPlaybackControls.swift; sourceTree = "<group>"; };
 		EBA77D2B6D45112F5E5BAA6D /* ChaseRadarHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaseRadarHUD.swift; sourceTree = "<group>"; };
+		EC94BC9B469F7F862A6FC2F5 /* RadarMapChromeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarMapChromeTests.swift; sourceTree = "<group>"; };
 		ED1CDB2F814212B8976E31EF /* DayCastProConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastProConfig.swift; sourceTree = "<group>"; };
 		EF18D20F2770C5CF861F9706 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F072F8659C6A79BCCFEAD712 /* RadarLivePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarLivePresentation.swift; sourceTree = "<group>"; };
@@ -1013,7 +1013,7 @@
 				E06696FC568085178B018376 /* RadarLiveCameraPolicyTests.swift */,
 				EAD92E31CA2EEE492A20ED3E /* RadarLiveOpenPolicyTests.swift */,
 				999642A4FA30958744EFB10A /* RadarLivePresentationTests.swift */,
-				C8E41B07A93D52F16E0A7C24 /* RadarMapChromeTests.swift */,
+				EC94BC9B469F7F862A6FC2F5 /* RadarMapChromeTests.swift */,
 				681B8EFA71DA2E012D77F4E3 /* RadarPlaybackTests.swift */,
 				9054FD5E608454E631CFB339 /* RadarPreferencesTests.swift */,
 				17543378FDF6091A61B11432 /* RadarStatePreferencesTests.swift */,
@@ -1704,7 +1704,7 @@
 				CE0CF934080AB4FA947A6AC8 /* RadarLiveCameraPolicyTests.swift in Sources */,
 				18D1F0A3DFEB34A754BE172B /* RadarLiveOpenPolicyTests.swift in Sources */,
 				CB01A7E8C8B51AFC3DBF12F0 /* RadarLivePresentationTests.swift in Sources */,
-				19A8B3C4D5E6F708192A3B4C /* RadarMapChromeTests.swift in Sources */,
+				B78B9C1E15170F889EFB451F /* RadarMapChromeTests.swift in Sources */,
 				FAA148AE9E644CA696A53EFE /* RadarPlaybackTests.swift in Sources */,
 				DD2E398A678774E34EFFA36A /* RadarPreferencesTests.swift in Sources */,
 				333F681A818532B3BCA2AFD6 /* RadarStatePreferencesTests.swift in Sources */,
@@ -2038,7 +2038,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 161;
+				CURRENT_PROJECT_VERSION = 162;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2096,7 +2096,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 161;
+				CURRENT_PROJECT_VERSION = 162;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
