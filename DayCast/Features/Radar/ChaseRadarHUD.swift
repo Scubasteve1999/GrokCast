@@ -109,7 +109,7 @@ enum ChaseRadarHUDLogic {
     )
   }
 
-  /// City before the comma so the strip stays one line. Empty → “This location”.
+  /// City before the comma. Kept for tests / option-B; the location chip owns the city.
   static func hudCityLine(locationName: String?) -> String {
     guard let raw = locationName?.trimmingCharacters(in: .whitespacesAndNewlines),
       !raw.isEmpty
@@ -169,15 +169,74 @@ enum ChaseRadarHUDLogic {
   }
 }
 
+/// Width budget so the location chip and Chase HUD never share the same pixels.
+/// Chip owns the city + recenter; HUD is SCAN / looking-at / takeaway / alert.
+enum RadarTopChromeLayout {
+  static let gap: CGFloat = DesignTokens.Spacing.space8
+  static let horizontalInset: CGFloat = DesignTokens.Spacing.space16
+  static let hudFraction: CGFloat = 0.55
+  static let chipHardCap: CGFloat = 220
+  static let hudHardCap: CGFloat = 240
+  static let hudAccessibilityHardCap: CGFloat = 300
+  /// Fallback when GeometryReader has not reported a width yet (iPhone 16).
+  static let defaultContainerWidth: CGFloat = 393
+
+  /// Location chip prints the city; the HUD must not reprint it.
+  static let chipOwnsCity = true
+  static var hudShowsCityLine: Bool { !chipOwnsCity }
+
+  struct Budget: Equatable {
+    var chipMaxWidth: CGFloat
+    var hudMaxWidth: CGFloat
+    var stacksVertically: Bool
+  }
+
+  static func budget(
+    containerWidth: CGFloat,
+    isAccessibilitySize: Bool
+  ) -> Budget {
+    let width = containerWidth > 1 ? containerWidth : defaultContainerWidth
+    let available = max(0, width - horizontalInset * 2)
+
+    if isAccessibilitySize {
+      return Budget(
+        chipMaxWidth: min(chipHardCap, available),
+        hudMaxWidth: min(hudAccessibilityHardCap, available),
+        stacksVertically: true
+      )
+    }
+
+    // HUD first (SCAN / alert stay readable), chip takes leftover up to its cap.
+    let hud = min(hudHardCap, (available * hudFraction).rounded(.down))
+    let chip = min(chipHardCap, max(0, available - hud - gap))
+    let leftover = available - chip - hud - gap
+    if leftover < 0 || chip < 72 || hud < 96 {
+      return Budget(
+        chipMaxWidth: min(chipHardCap, available),
+        hudMaxWidth: min(hudHardCap, available),
+        stacksVertically: true
+      )
+    }
+    return Budget(chipMaxWidth: chip, hudMaxWidth: hud, stacksVertically: false)
+  }
+
+  /// Side-by-side occupancy including insets. Stacked layouts cannot collide horizontally.
+  static func occupiesWithinContainer(_ budget: Budget, containerWidth: CGFloat) -> Bool {
+    if budget.stacksVertically { return true }
+    let width = containerWidth > 1 ? containerWidth : defaultContainerWidth
+    return budget.chipMaxWidth + budget.hudMaxWidth + gap + horizontalInset * 2
+      <= width + 0.5
+  }
+}
+
 // MARK: - View
 
-/// Compact strip: SCAN age, city, looking-at product, site id, nearest NWS alert.
-/// SPC Day 1 / outlook lives on Alerts and Today — not here.
+/// Compact strip: SCAN age, looking-at product, site id, nearest NWS alert.
+/// City lives on the location chip. SPC Day 1 / outlook lives on Alerts and Today.
 struct ChaseRadarHUD: View {
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   var radarState: RadarState
   let mapCenter: CLLocationCoordinate2D
-  var cityName: String?
   let alerts: [NWSAlert]
   var takeaway: String? = nil
   @Binding var isDecluttered: Bool
@@ -195,7 +254,7 @@ struct ChaseRadarHUD: View {
 
       // Map-only slims this strip to SCAN. The Live/24-hr sheet stays up.
     }
-    .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? 300 : 240, alignment: .trailing)
+    .frame(maxWidth: .infinity, alignment: .trailing)
     .accessibilityElement(children: .contain)
   }
 
@@ -228,11 +287,7 @@ struct ChaseRadarHUD: View {
 
   private func fullStrip(at now: Date) -> some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(ChaseRadarHUDLogic.hudCityLine(locationName: cityName))
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(DesignTokens.Palette.radarTextPrimary)
-        .fixedSize(horizontal: false, vertical: true)
-
+      // City is the location chip — do not print hudCityLine here (TF 161 overlap).
       Text(scanAgeLine(at: now))
         .font(.caption.monospaced())
         .foregroundStyle(scanAgeColor(at: now))

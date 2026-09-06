@@ -113,6 +113,8 @@ final class ChaseRadarHUDTests: XCTestCase {
     )
     XCTAssertEqual(ChaseRadarHUDLogic.hudCityLine(locationName: "Seattle, WA"), "Seattle")
     XCTAssertEqual(ChaseRadarHUDLogic.hudCityLine(locationName: nil), "This location")
+    XCTAssertTrue(RadarTopChromeLayout.chipOwnsCity)
+    XCTAssertFalse(RadarTopChromeLayout.hudShowsCityLine)
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: false),
       "National radar"
@@ -264,5 +266,42 @@ final class ChaseRadarHUDTests: XCTestCase {
     XCTAssertEqual(result?.text.contains("Severe Thunderstorm Warning"), true)
     XCTAssertFalse(result?.text.contains("SVR") == true)
     XCTAssertEqual(result?.isCovering, false)
+  }
+
+  func testIPhone16WidthBudgetDoesNotOverlap() {
+    let width: CGFloat = 393
+    let budget = RadarTopChromeLayout.budget(containerWidth: width, isAccessibilitySize: false)
+    XCTAssertFalse(budget.stacksVertically)
+    XCTAssertTrue(RadarTopChromeLayout.occupiesWithinContainer(budget, containerWidth: width))
+    let available = width - RadarTopChromeLayout.horizontalInset * 2
+    XCTAssertLessThanOrEqual(budget.hudMaxWidth, available * RadarTopChromeLayout.hudFraction + 0.5)
+    XCTAssertLessThanOrEqual(budget.chipMaxWidth, RadarTopChromeLayout.chipHardCap)
+    XCTAssertGreaterThanOrEqual(available - budget.chipMaxWidth - budget.hudMaxWidth, RadarTopChromeLayout.gap)
+  }
+
+  func testNarrowPhoneStillFitsOrStacks() {
+    for width: CGFloat in [320, 375, 430, 768] {
+      let budget = RadarTopChromeLayout.budget(containerWidth: width, isAccessibilitySize: false)
+      XCTAssertTrue(
+        RadarTopChromeLayout.occupiesWithinContainer(budget, containerWidth: width),
+        "width \(width) collided: \(budget)"
+      )
+    }
+  }
+
+  func testAccessibilitySizeStacksInsteadOfOverlapping() {
+    let width: CGFloat = 393
+    let budget = RadarTopChromeLayout.budget(containerWidth: width, isAccessibilitySize: true)
+    XCTAssertTrue(budget.stacksVertically)
+    XCTAssertTrue(RadarTopChromeLayout.occupiesWithinContainer(budget, containerWidth: width))
+    let available = width - RadarTopChromeLayout.horizontalInset * 2
+    XCTAssertEqual(budget.chipMaxWidth, min(RadarTopChromeLayout.chipHardCap, available))
+    XCTAssertEqual(budget.hudMaxWidth, min(RadarTopChromeLayout.hudAccessibilityHardCap, available))
+  }
+
+  func testUnmeasuredWidthUsesIPhone16Fallback() {
+    let fallback = RadarTopChromeLayout.budget(containerWidth: 0, isAccessibilitySize: false)
+    let explicit = RadarTopChromeLayout.budget(containerWidth: 393, isAccessibilitySize: false)
+    XCTAssertEqual(fallback, explicit)
   }
 }
