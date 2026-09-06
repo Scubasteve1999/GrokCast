@@ -178,6 +178,6 @@ final class RadarStatePreferencesTests: XCTestCase {
     XCTAssertEqual(
       RadarTileProvider.iem.maxZoom, MapsGLRadarPalette.iemDisplayMaxZoom, accuracy: 0.0001)
     XCTAssertEqual(RadarTileProvider.iem.maxZoom, 12, accuracy: 0.0001)
-    XCTAssertEqual(RadarPreferences.defaultRadarOpacity, 0.95, accuracy: 0.0001)
+    XCTAssertEqual(RadarPreferences.defaultRadarOpacity, 0.76, accuracy: 0.0001)
   }
 }

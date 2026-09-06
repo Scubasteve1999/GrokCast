@@ -103,6 +103,10 @@ enum RadarPreviewSource {
     )
   }
 
+  /// Honor the Live slider (and the one-time 0.95→0.76 migrate). Do not
+  /// force the old factory 0.95 on the Outlook teaser.
+  static var previewOpacity: Double { RadarPreferences.radarOpacity }
+
   /// 72pt snapshot is not an interactive map. Radar tab keeps Mapbox chrome.
   /// Logo/attribution `visibility` is Restricted SPI — hide the views after
   /// options so `updateOrnaments` cannot unhide them, and park them off-canvas.
@@ -151,7 +155,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
     coordinator.host.onLayerStateChange = { [weak coordinator] in
       guard let coordinator else { return }
       coordinator.host.syncPreview(
-        opacity: RadarPreferences.defaultRadarOpacity,
+        opacity: RadarPreviewSource.previewOpacity,
         future: coordinator.showsFuture
       )
     }
@@ -177,7 +181,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       )
     }
     context.coordinator.host.syncPreview(
-      opacity: RadarPreferences.defaultRadarOpacity,
+      opacity: RadarPreviewSource.previewOpacity,
       future: showsFuture
     )
   }
@@ -201,7 +205,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
     func attachRain(to mapView: MapView) {
       RadarPreviewSource.configureTeaser(mapView)
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
-      host.syncPreview(opacity: RadarPreferences.defaultRadarOpacity, future: showsFuture)
+      host.syncPreview(opacity: RadarPreviewSource.previewOpacity, future: showsFuture)
       host.attach(to: mapView)
     }
   }
@@ -287,7 +291,7 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
       let key = Level3N0BSweepStore.exactKey(site: sweep.siteID, timestamp: sweep.timestamp)
       polarHost.setSweep(
         sweep,
-        opacity: Float(RadarPreferences.defaultRadarOpacity),
+        opacity: Float(RadarPreviewSource.previewOpacity),
         isAnimating: false
       ) {
         mapView.mapboxMap.triggerRepaint()

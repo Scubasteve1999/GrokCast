@@ -27,6 +27,7 @@ final class MapsGLRadarHost {
   private var lastIsSiteProduct: Bool?
   private var lastNationalUsesMRMS: Bool?
   private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
+  private var lastAppliedOpacity: Double?
   /// Today preview is rain-only. Live Radar paints StormcellsTracks paths only.
   var paintsStormcells = true
 
@@ -99,6 +100,7 @@ final class MapsGLRadarHost {
     lastOverlayOn = nil
     lastIsSiteProduct = nil
     lastNationalUsesMRMS = nil
+    lastAppliedOpacity = nil
   }
 
   /// Snapshot for Today: rain only, no site products. `future` uses the same
@@ -122,6 +124,7 @@ final class MapsGLRadarHost {
       applyTimelineRange(future: future, on: controller)
     }
     applyVisibilityIfNeeded(want: want, futureChanged: futureChanged, on: controller)
+    applyPendingOpacityIfNeeded(on: controller)
     guard want else { return }
     let frameDate =
       future
@@ -156,6 +159,7 @@ final class MapsGLRadarHost {
       applyTimelineRange(future: radarState.showsFuture, on: controller)
     }
     applyVisibilityIfNeeded(want: want, futureChanged: futureChanged, on: controller)
+    applyPendingOpacityIfNeeded(on: controller)
 
     // Rain and tracks share the MapsGL timeline. Keep goTo even when rain is
     // MRMS tiles so cell motion still keys off the presented scan time.
@@ -181,8 +185,51 @@ final class MapsGLRadarHost {
     onLayerStateChange?()
   }
 
+  /// Slider must move rain after the first add. `addWeatherLayer` is a no-op
+  /// once `layerReady`; re-apply `paint.opacity` from `pendingOpacity`.
+  static func needsOpacityReapply(layerReady: Bool, lastApplied: Double?, pending: Double)
+    -> Bool
+  {
+    guard layerReady else { return false }
+    guard let lastApplied else { return true }
+    return abs(lastApplied - pending) > 0.0001
+  }
+
+  private func applyPendingOpacityIfNeeded(on controller: MapboxMapController) {
+    let opacity = RadarPreferences.clampedRadarOpacity(pendingOpacity)
+    guard Self.needsOpacityReapply(
+      layerReady: layerReady, lastApplied: lastAppliedOpacity, pending: opacity)
+    else { return }
+    applyRadarPaintOpacity(opacity, on: controller)
+  }
+
+  private func applyRadarPaintOpacity(_ opacity: Double, on controller: MapboxMapController) {
+    // Encoded rain is a Metal CustomLayer. Mutate MapsGL paint so the next
+    // frame picks up the slider. Also poke Mapbox raster-opacity in case the
+    // host bridged a styled layer instead of Metal.
+    if var layer = controller.weatherLayer(for: .radar) {
+      var paint = layer.paint
+      paint.opacity = Opacity(value: Float(opacity))
+      layer.paint = paint
+    }
+    if let map = attachedMapView?.mapboxMap,
+      map.layerExists(withId: MapsGLLiveRainLayers.radarID)
+    {
+      try? map.setLayerProperty(
+        for: MapsGLLiveRainLayers.radarID,
+        property: "raster-opacity",
+        value: opacity
+      )
+    }
+    attachedMapView?.mapboxMap.triggerRepaint()
+    lastAppliedOpacity = opacity
+  }
+
   private func addRadarLayer(on controller: MapboxMapController) {
-    guard !layerReady else { return }
+    if layerReady {
+      applyPendingOpacityIfNeeded(on: controller)
+      return
+    }
     guard mapControllerLoaded else { return }
     do {
       var config = WeatherService.Radar(service: controller.service)
@@ -196,15 +243,18 @@ final class MapsGLRadarHost {
       config.layer.paint.sample.quality = .exact
       config.layer.paint.sample.meld = false
       config.layer.paint.sample.drawRange = 5...75
-      config.layer.paint.opacity = Opacity(value: Float(pendingOpacity))
+      let opacity = RadarPreferences.clampedRadarOpacity(pendingOpacity)
+      config.layer.paint.opacity = Opacity(value: Float(opacity))
       config.layer.quality = .exact
       try controller.addWeatherLayer(config: config)
       layerReady = true
+      lastAppliedOpacity = opacity
       radarLog("[MapsGL] radar layer added")
       onLayerStateChange?()
     } catch {
       radarLog("[MapsGL] Failed to add radar layer: \(error)")
       layerReady = false
+      lastAppliedOpacity = nil
     }
   }
 
@@ -213,6 +263,7 @@ final class MapsGLRadarHost {
     controller.removeWeatherLayer(for: .radar)
     layerReady = false
     lastVisible = false
+    lastAppliedOpacity = nil
     radarLog("[MapsGL] radar layer removed")
     onLayerStateChange?()
   }

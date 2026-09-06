@@ -23,16 +23,18 @@ enum MapsGLRadarPalette {
   /// Official NWS 16-level hex. 0/5/10 dBZ cyan-blue stay alpha 0 so National
   /// and MapsGL do not paint a blue clear-air skirt (bilinear + LUT-snap
   /// grew one when 5/10 were opaque). National visible rain floors at 15 green.
-  /// 20+ dBZ is solid so yellow/orange/red/purple cores punch.
+  /// 15–25 dBZ are translucent so roads/terrain read under light precip;
+  /// 30+ stays solid so yellow/orange/red/purple cores punch. Global slider
+  /// (`RadarPreferences.radarOpacity`) still multiplies every stop.
   /// Site Doppler paint/legend floors at `Level3N0BDecoder.precipFloorDbz` (25)
-  /// and uses `polarUnderlayAlpha(forDbz:)` (same hex, stronger fill).
+  /// and uses `polarUnderlayAlpha(forDbz:)` (same hex, underlay fill).
   static let reflectivityStops: [Stop] = [
     Stop(dbz: 0, hex: "#00ECEC", alpha: 0),
     Stop(dbz: 5, hex: "#01A0F6", alpha: 0),
     Stop(dbz: 10, hex: "#0000F6", alpha: 0),
-    Stop(dbz: 15, hex: "#00FF00", alpha: 0.99),
-    Stop(dbz: 20, hex: "#00C800", alpha: 1),
-    Stop(dbz: 25, hex: "#009000", alpha: 1),
+    Stop(dbz: 15, hex: "#00FF00", alpha: 0.72),
+    Stop(dbz: 20, hex: "#00C800", alpha: 0.82),
+    Stop(dbz: 25, hex: "#009000", alpha: 0.90),
     Stop(dbz: 30, hex: "#FFFF00", alpha: 1),
     Stop(dbz: 35, hex: "#E7C000", alpha: 1),
     Stop(dbz: 40, hex: "#FF9000", alpha: 1),
@@ -45,26 +47,33 @@ enum MapsGLRadarPalette {
   ]
 
   /// Site Doppler / Level III only. Same discrete 5 dBZ hex as
-  /// `reflectivityStops`. Fill is saturated so cells read like the High-Res
-  /// green→red reference; labels still punch via `RadarBaseMapStyle`
-  /// quiet-workstation text + halo. Do not interpolate.
+  /// `reflectivityStops`. Mid bins stay translucent so the Dark basemap
+  /// (roads / terrain) reads under 25–40 dBZ; cores stay hot. Labels still
+  /// punch via `RadarBaseMapStyle` quiet-workstation text + halo.
+  /// Do not interpolate. Do not paint below the 25 dBZ Site floor.
   static func polarUnderlayAlpha(forDbz dbz: Double) -> Double {
     switch dbz {
-    case 15: return 0.80
-    case 20: return 0.86
-    case 25: return 0.90
-    case 30: return 0.93
-    case 35: return 0.95
-    case 40: return 0.96
-    case 45: return 0.97
-    case 50: return 0.98
-    case 55: return 0.98
-    case 60: return 0.99
-    case 65: return 0.99
-    case 70: return 1
+    case 15: return 0.48
+    case 20: return 0.52
+    case 25: return 0.58
+    case 30: return 0.64
+    case 35: return 0.70
+    case 40: return 0.80
+    case 45: return 0.90
+    case 50: return 0.92
+    case 55: return 0.93
+    case 60: return 0.94
+    case 65: return 0.95
+    case 70: return 0.96
     default:
-      return dbz < 15 ? 0 : 1
+      return dbz < 15 ? 0 : 0.96
     }
+  }
+
+  /// LUT stop × factory slider. Mid bins must leave basemap headroom;
+  /// cores stay authoritative. Not a pixel screenshot.
+  static func defaultEffectivePolarAlpha(forDbz dbz: Double) -> Double {
+    polarUnderlayAlpha(forDbz: dbz) * RadarPreferences.defaultRadarOpacity
   }
 
   /// Explicit 5 dBZ breaks so MapsGL cannot fall back to a smooth gradient
