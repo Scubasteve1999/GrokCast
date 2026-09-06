@@ -25,7 +25,44 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(RadarPreviewSource.outlookPlateHeight, 160)
     XCTAssertLessThanOrEqual(RadarPreviewSource.outlookPlateHeight, 180)
     XCTAssertEqual(TodayGlanceLayout.radarMapHeight, RadarPreviewSource.outlookPlateHeight)
+    XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, RadarPreviewSource.outlookPlateHeight)
     XCTAssertEqual(RadarPreviewSource.previewBaseMap, .dark)
+  }
+
+  func testOutlookPreviewNeverResolvesToZeroHeight() {
+    let missingSweep = RadarPreviewPaint.display(
+      paint: .siteDoppler,
+      hasCoordinate: true,
+      hasSweep: false,
+      mapsGLReady: true
+    )
+    XCTAssertEqual(missingSweep, .nationalMapsGL)
+
+    let missingKeys = RadarPreviewPaint.display(
+      paint: .siteDoppler,
+      hasCoordinate: true,
+      hasSweep: false,
+      mapsGLReady: false
+    )
+    XCTAssertEqual(missingKeys, .unavailable)
+
+    let missingCoord = RadarPreviewPaint.display(
+      paint: .nationalMapsGL,
+      hasCoordinate: false,
+      hasSweep: false,
+      mapsGLReady: true
+    )
+    XCTAssertEqual(missingCoord, .unavailable)
+
+    let explicitHole = RadarPreviewPaint.display(
+      paint: .unavailable,
+      hasCoordinate: false,
+      hasSweep: false,
+      mapsGLReady: false
+    )
+    XCTAssertEqual(explicitHole, .unavailable)
+    XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, 168)
+    XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, RadarPreviewSource.outlookPlateHeight)
   }
 
   func testOutlookPlateCopyIsNotIntensityOrScanHeadline() {
@@ -79,9 +116,23 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(TodayGlanceLayout.nowBudgetHeight, 112)
     XCTAssertLessThan(TodayGlanceLayout.nowBudgetHeight, 240)
     XCTAssertEqual(TodayGlanceLayout.nowBudgetHeight, 160)
+    XCTAssertEqual(TodayGlanceLayout.nowHeroMaxHeight, TodayGlanceLayout.nowBudgetHeight)
     XCTAssertEqual(
       NowHeroPhotography.stillName(conditionCode: 0, isDay: true),
       "NewsHeroSky"
+    )
+  }
+
+  func testWetNowCannotGrowPastTheHeroBudget() {
+    XCTAssertEqual(TodayGlanceLayout.nowBudgetHeight, 160)
+    XCTAssertEqual(TodayGlanceLayout.nowHeroMaxHeight, 160)
+    XCTAssertLessThanOrEqual(
+      TodayGlanceLayout.oliveBranchStoryStackHeight,
+      TodayGlanceLayout.visibleFeedHeightIPhone16
+    )
+    XCTAssertGreaterThanOrEqual(
+      TodayGlanceLayout.oliveBranchYourNewsPeek,
+      TodayGlanceLayout.yourNewsCardPeekHeight
     )
   }
 
@@ -160,6 +211,54 @@ final class TodayFirstViewportTests: XCTestCase {
     XCTAssertEqual(chips.count, 1)
     XCTAssertEqual(chips.first?.id, "ffw")
     XCTAssertEqual(AlertsFeedCard.chipTitle(for: warning), "Flash Flood Warning")
+  }
+
+  func testYourNewsPeekIsTextFirstAndHoldsWhileBriefingPending() {
+    XCTAssertTrue(YourNewsPeekLayout.headlineBeforePhoto)
+    XCTAssertEqual(YourNewsCopy.title, "Your News")
+    XCTAssertEqual(YourNewsCopy.loading, "Loading local briefing…")
+    XCTAssertGreaterThanOrEqual(
+      TodayGlanceLayout.yourNewsCardPeekHeight, 80)
+
+    XCTAssertTrue(
+      LocalBriefingSlot.isPending(
+        currentLocationID: "olive",
+        storeLocationID: nil,
+        itemCount: 0,
+        isRefreshing: false
+      )
+    )
+    XCTAssertTrue(
+      LocalBriefingSlot.isPending(
+        currentLocationID: "olive",
+        storeLocationID: "tampa",
+        itemCount: 2,
+        isRefreshing: true
+      )
+    )
+    XCTAssertFalse(
+      LocalBriefingSlot.isPending(
+        currentLocationID: "olive",
+        storeLocationID: "olive",
+        itemCount: 0,
+        isRefreshing: false
+      )
+    )
+
+    let pending = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 1,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: true,
+      showFireCard: false,
+      hasLocalBriefing: false,
+      isLocalBriefingPending: true
+    )
+    let items = FeedAssembler.items(from: pending)
+    XCTAssertTrue(items.contains(.yourNews))
+    XCTAssertLessThan(items.firstIndex(of: .radar)!, items.firstIndex(of: .yourNews)!)
+    XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
   }
 
   func testStoryDayKeepsAlertsHourlyAndYourNews() {

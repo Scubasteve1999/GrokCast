@@ -77,7 +77,7 @@ struct NowFeedCard: View {
             Text(rainLine)
               .font(DesignTokens.Typography.callout())
               .foregroundStyle(Color.white.opacity(0.92))
-              .lineLimit(2)
+              .lineLimit(1)
               .minimumScaleFactor(0.85)
               .shadow(color: .black.opacity(0.4), radius: 4, y: 1)
               .accessibilityIdentifier(DayCastAccessibility.Today.precip)
@@ -93,8 +93,10 @@ struct NowFeedCard: View {
         .frame(
           maxWidth: .infinity,
           minHeight: TodayGlanceLayout.nowBudgetHeight,
-          alignment: .leading
+          maxHeight: TodayGlanceLayout.nowHeroMaxHeight,
+          alignment: .topLeading
         )
+        .clipped()
         .opacity(heroOpacity)
         .contentShape(Rectangle())
       }

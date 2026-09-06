@@ -1,6 +1,16 @@
 import SwiftUI
 import UIKit
 
+enum YourNewsCopy {
+  static let title = "Your News"
+  static let loading = "Loading local briefing…"
+}
+
+/// Today peek stacks headline before photography so the first viewport shows a title.
+enum YourNewsPeekLayout {
+  static let headlineBeforePhoto = true
+}
+
 /// Your News rail. Today is home; Alerts reuses the same cards.
 /// Max 3 NWS AFD/PNS cards. Tap opens weather.gov in Safari.
 /// Photo when `item.imageURL` is a real `https` image. Load fail → text-only.
@@ -8,36 +18,64 @@ struct LocalBriefingSection: View {
   let items: [LocalBriefingItem]
   var accessibilityID: String = DayCastAccessibility.Alerts.localBriefing
   var sitsInSheet: Bool = false
+  var isPending: Bool = false
 
   var body: some View {
     if !items.isEmpty {
-      let visible = Array(items.prefix(LocalBriefingParser.maxCards))
-
-      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-        Text("Your News")
-          .font(
-            sitsInSheet
-              ? DesignTokens.Typography.headline()
-              : DesignTokens.Typography.studioTitle()
-          )
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-          .accessibilityAddTraits(.isHeader)
-
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
-            ForEach(visible) { item in
-              YourNewsCard(item: item, sitsInSheet: sitsInSheet)
-                .containerRelativeFrame(.horizontal) { len, _ in min(280, len * 0.78) }
-            }
-          }
-          .scrollTargetLayout()
-        }
-        .scrollTargetBehavior(.viewAligned)
-        .padding(.horizontal, -DesignTokens.Layout.horizontalPadding)
-        .padding(.leading, DesignTokens.Layout.horizontalPadding)
-      }
-      .accessibilityIdentifier(accessibilityID)
+      rail
+    } else if isPending {
+      pendingPlaceholder
     }
+  }
+
+  private var rail: some View {
+    let visible = Array(items.prefix(LocalBriefingParser.maxCards))
+
+    return VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      sectionTitle
+
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
+          ForEach(visible) { item in
+            YourNewsCard(item: item, sitsInSheet: sitsInSheet)
+              .containerRelativeFrame(.horizontal) { len, _ in min(280, len * 0.78) }
+          }
+        }
+        .scrollTargetLayout()
+      }
+      .scrollTargetBehavior(.viewAligned)
+      .padding(.horizontal, -DesignTokens.Layout.horizontalPadding)
+      .padding(.leading, DesignTokens.Layout.horizontalPadding)
+    }
+    .accessibilityIdentifier(accessibilityID)
+  }
+
+  private var pendingPlaceholder: some View {
+    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
+      sectionTitle
+      Text(YourNewsCopy.loading)
+        .font(DesignTokens.Typography.callout())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .frame(
+          maxWidth: .infinity,
+          minHeight: TodayGlanceLayout.yourNewsCardPeekHeight,
+          alignment: .leading
+        )
+    }
+    .accessibilityIdentifier(accessibilityID)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("\(YourNewsCopy.title). \(YourNewsCopy.loading)")
+  }
+
+  private var sectionTitle: some View {
+    Text(YourNewsCopy.title)
+      .font(
+        sitsInSheet
+          ? DesignTokens.Typography.headline()
+          : DesignTokens.Typography.studioTitle()
+      )
+      .foregroundStyle(DesignTokens.Palette.textPrimary)
+      .accessibilityAddTraits(.isHeader)
   }
 }
 
@@ -52,25 +90,6 @@ private struct YourNewsCard: View {
       UIApplication.shared.open(item.url)
     } label: {
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-        if let imageURL = YourNewsPhotography.cardImageURL(for: item) {
-          AsyncImage(url: imageURL) { phase in
-            switch phase {
-            case .success(let image):
-              Color.clear
-                .aspectRatio(sitsInSheet ? 4 / 3 : 16 / 9, contentMode: .fit)
-                .overlay {
-                  image
-                    .resizable()
-                    .scaledToFill()
-                }
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            default:
-              EmptyView()
-            }
-          }
-        }
-
         Text(item.displayTitle)
           .font(DesignTokens.Typography.headline())
           .fontWeight(.bold)
@@ -83,6 +102,12 @@ private struct YourNewsCard: View {
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(DesignTokens.Palette.textTertiary)
           .lineLimit(1)
+
+        if YourNewsPeekLayout.headlineBeforePhoto,
+          let imageURL = YourNewsPhotography.cardImageURL(for: item)
+        {
+          photo(imageURL)
+        }
       }
       .padding(sitsInSheet ? 0 : DesignTokens.Spacing.space12)
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,6 +119,26 @@ private struct YourNewsCard: View {
     .accessibilityLabel(accessibilityLabelText)
     .accessibilityHint("Opens the story in Safari")
     .accessibilityAddTraits(.isButton)
+  }
+
+  @ViewBuilder
+  private func photo(_ imageURL: URL) -> some View {
+    AsyncImage(url: imageURL) { phase in
+      switch phase {
+      case .success(let image):
+        Color.clear
+          .aspectRatio(sitsInSheet ? 4 / 3 : 16 / 9, contentMode: .fit)
+          .overlay {
+            image
+              .resizable()
+              .scaledToFill()
+          }
+          .clipped()
+          .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+      default:
+        EmptyView()
+      }
+    }
   }
 
   private var accessibilityLabelText: String {

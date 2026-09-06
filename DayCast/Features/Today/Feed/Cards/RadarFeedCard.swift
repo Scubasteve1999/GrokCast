@@ -265,32 +265,13 @@ struct RadarFeedCard: View {
   @ViewBuilder
   private var map: some View {
     let shown = product == .future ? RadarPreviewPaint.nationalMapsGL : paint
-    switch shown {
-    case .siteDoppler:
-      RadarPreviewCard(
-        paint: .siteDoppler,
-        sweep: sweep,
-        height: RadarPreviewSource.outlookPlateHeight,
-        onPolarFailed: { polarFailed = true }
-      )
-    case .nationalMapsGL:
-      RadarPreviewCard(
-        paint: .nationalMapsGL,
-        height: RadarPreviewSource.outlookPlateHeight,
-        showsFuture: product == .future
-      )
-    case .unavailable:
-      RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
-        .fill(DesignTokens.Palette.radarTrack)
-        .frame(height: RadarPreviewSource.outlookPlateHeight)
-        .overlay {
-          Text(RadarFeedCopy.radarUnavailable)
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { openRadarTab() }
-    }
+    RadarPreviewCard(
+      paint: shown,
+      sweep: shown == .siteDoppler ? sweep : nil,
+      height: RadarPreviewPaint.reservedPlateHeight,
+      showsFuture: product == .future,
+      onPolarFailed: { polarFailed = true }
+    )
   }
 
   private var liveStamp: some View {

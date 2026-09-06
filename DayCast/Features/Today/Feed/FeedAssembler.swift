@@ -35,7 +35,7 @@ enum FeedAssembler {
     case .health:
       return snapshot.hasWeather && snapshot.showHealth
     case .yourNews:
-      return snapshot.hasLocalBriefing
+      return snapshot.hasLocalBriefing || snapshot.isLocalBriefingPending
     case .radar:
       return snapshot.hasWeather
     case .daily:

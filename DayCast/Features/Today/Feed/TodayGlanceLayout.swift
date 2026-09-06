@@ -15,7 +15,9 @@ enum TodayGlanceLayout {
   static let cardPadding: CGFloat = DesignTokens.Spacing.space12
   static var nowTempSize: CGFloat { DesignTokens.Layout.todayTempSize }
   /// Type-on-stage Now (temp + glyph + feels + rain line). Photo is the tab background.
+  /// Hard cap — wet rain / minutecast lines cannot grow the hero past this.
   static let nowBudgetHeight: CGFloat = 160
+  static var nowHeroMaxHeight: CGFloat { nowBudgetHeight }
   static let alertChipMinHeight: CGFloat = 56
   static let radarHeaderHeight: CGFloat = 22
   static let radarInnerSpacing: CGFloat = DesignTokens.Spacing.space8

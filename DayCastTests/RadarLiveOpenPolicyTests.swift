@@ -281,7 +281,18 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
     XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
     XCTAssertEqual(RadarPreviewSource.outlookPlateHeight, 168)
+    XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, 168)
     XCTAssertGreaterThan(RadarPreviewSource.outlookPlateHeight, RadarPreviewSource.teaserHeight)
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: true),
+      .nationalMapsGL
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: false, hasSweep: false, mapsGLReady: true),
+      .unavailable
+    )
   }
 
   func testUserVisibleLabelsNeverSayMosaic() {
