@@ -83,6 +83,8 @@ enum DayCastAccessibility {
     static let searchField = "daycast.locations.searchField"
     static let searchSubmit = "daycast.locations.searchSubmit"
     static let chips = "daycast.locations.chips"
+    static let freeLimitChip = "daycast.locations.freeLimit"
+    static let saveUnlimitedCTA = "daycast.locations.saveUnlimited"
     static func result(_ name: String) -> String { "daycast.locations.result.\(name)" }
     static func chip(_ name: String) -> String { "daycast.locations.chip.\(name)" }
     static func savedRow(_ name: String) -> String { "daycast.locations.saved.\(name)" }

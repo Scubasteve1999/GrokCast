@@ -96,11 +96,12 @@ final class PaywallPeriodTests: XCTestCase {
     let copy = PaywallFeature.locations.subheadline
     XCTAssertEqual(
       copy,
-      "Free includes 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
+      "Free includes Near Me + 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
     )
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("widget"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Yearly"))
     XCTAssertTrue(copy.contains("DayCast Pro"))
+    XCTAssertTrue(copy.contains("Near Me"))
     XCTAssertTrue(copy.contains("1 saved city"))
   }
 }

@@ -49,7 +49,7 @@ You are an iOS developer architect for Stephen’s DayCast.
 
 **Sky Check:** Chat desk under More. Empty copy is weather-questions first, photo second (`SkyCheckDeskCopy.emptyPitch`). One writer per stream (`appendSkyCheckStreamToken`: photo → `stormAnalysisText`, chat → `responseText`). Screen finished replies with `GrokContentFilter.acceptedSkyCheckText` (12k). Take / Explain Radar / Alerts / trip travel tips use the 1,600 cap. Compact composer pads `CompactTabBar.chromeHeight` (69). Internal type names may still say StormSpotter. Today’s Take card is off Today (`GrokBriefCopy` remains for Settings / paywall). Do not advertise adding a key on paywall / Sky Check empty / Alerts locked copy — Settings BYOK stays.
 
-**Widgets / paywall:** `isPro` = any paid product (AI, extra locations). Yearly extras: Future radar, widgets, Live Activity (`canUseRadarFuture`, `canUseLiveActivity`, `canUseWidgetGrokBrief`). Official weather / radar / NWS stay free. Developer key is full in-app access.
+**Widgets / paywall:** `isPro` = any paid product (AI, extra locations). Yearly extras: Future radar, widgets, Live Activity (`canUseRadarFuture`, `canUseLiveActivity`, `canUseWidgetGrokBrief`). Official weather / radar / NWS stay free. Developer key is full in-app access. Free locations: Near Me (GPS `isCurrent`) + 1 named saved city — GPS does not count toward `freeSavedLocationLimit`.
 
 ## Agent workflow
 

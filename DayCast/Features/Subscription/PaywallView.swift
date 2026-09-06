@@ -337,7 +337,7 @@ enum PaywallFeature {
     case .radarFuture:
       "Yearly unlocks 12-hour forecast radar so you can scrub ahead on the Radar tab."
     case .locations:
-      "Free includes 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
+      "Free includes Near Me + 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
     case .liveActivity:
       "Yearly shows Score and Next 2 Hours on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:

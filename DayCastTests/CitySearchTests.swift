@@ -89,6 +89,48 @@ final class CitySearchTests: XCTestCase {
     )
   }
 
+  func testSelectingAddsNamedCityWhenGPSOnlyAndCanAdd() {
+    let gps = SavedLocation(
+      name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295, isCurrent: true)
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    XCTAssertEqual(
+      CitySearch.selection(candidate: seattle, saved: [gps], canAdd: true),
+      .add
+    )
+  }
+
+  func testSelectingPaywallsWhenGPSAndOneNamedAlreadyFillFreeAllotment() {
+    let gps = SavedLocation(
+      name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295, isCurrent: true)
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    XCTAssertEqual(
+      CitySearch.selection(candidate: denver, saved: [gps, seattle], canAdd: false),
+      .paywall
+    )
+  }
+
+  func testSelectingPaywallsWhenTwoNamedCitiesAreAlreadySaved() {
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    let miami = SavedLocation(name: "Miami, FL", latitude: 25.7617, longitude: -80.1918)
+    XCTAssertEqual(
+      CitySearch.selection(candidate: miami, saved: [seattle, denver], canAdd: false),
+      .paywall
+    )
+  }
+
+  func testSelectingAddsWhenProCanAddRegardlessOfCount() {
+    let gps = SavedLocation(
+      name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295, isCurrent: true)
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    XCTAssertEqual(
+      CitySearch.selection(candidate: denver, saved: [gps, seattle], canAdd: true),
+      .add
+    )
+  }
+
   func testSelectingAnExistingCityDoesNotAddADuplicate() {
     let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
     XCTAssertEqual(
