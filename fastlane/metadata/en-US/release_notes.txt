@@ -1,5 +1,7 @@
-Today opens on now, one official NWS chip when you’re warned, the temperature curve, and Outlook on live radar — Site Doppler when it’s wet, National when it’s quiet. Radar | Future on the map. Your News peeks under the plate.
+Today stays dense: Now, official NWS when warned, the temperature curve, Outlook on live radar, and Your News peeks with a real headline.
 
-Forecast keeps the 48-hour graph and 10-day. Alerts stay official NWS first.
+Radar: clearer Site Doppler underlay, HUD that does not collide with the location chip, Live Site | National on the dock, and a steadier opacity slider.
 
-DayCast Pro is two periods. Monthly includes AI and extra saved places. Yearly adds Future radar, Home Screen widgets, and Live Activity.
+Free includes Near Me + 1 saved city. Settings shows Monthly vs Yearly unlocks. Sky Check photo check explains itself when AI is unavailable.
+
+DayCast Pro: Monthly = AI + unlimited places. Yearly adds Future radar, widgets, and Live Activity.

@@ -14,11 +14,11 @@ AI — PLEASE READ
 AI requires DayCast Pro (Monthly or Yearly). The old embedded xAI key is gone. Calls go through our proxy for verified subscribers only.
 
 Sandbox purchases are free. To review AI:
-1. Settings > DayCast Pro > View DayCast Pro
+1. Settings > DayCast Pro > View DayCast Pro (general DayCast Pro paywall)
 2. Choose Monthly and complete the sandbox purchase
 3. More > Sky Check — send a short prompt; it should stream a reply
 
-Monthly unlocks AI, Today's Take, Explain Radar, Sky Check, and extra saved locations.
+Monthly unlocks AI, Today's Take, Explain Radar, Sky Check, and unlimited saved locations.
 Yearly is required for Future radar (Radar tab), Home Screen / Lock Screen widgets, and Live Activity. Monthly will not unlock those.
 
 Sandbox and Production StoreKit both work. Restore Purchases if AI still says Pro is required.
@@ -28,13 +28,15 @@ Alternative: Settings accepts your own xAI key (starts with xai-, from console.x
 SUGGESTED PATH
 1. Allow location or keep the default
 2. Today — now, official NWS chip when warned, temperature curve, Outlook on live radar, Your News
-3. Radar — Site Doppler on Dark; National when local is clear
+3. Radar — Site Doppler on Dark; National when local is clear; Live Site | National chips on the dock
 4. Alerts — live NWS watches and warnings
 5. More > Sky Check after Monthly sandbox purchase
 6. Settings > Privacy & support — Privacy Policy and Terms
 
 SUBSCRIPTIONS
-Paywall: Settings > DayCast Pro > View DayCast Pro. Also from an AI tap, Live Activity (Yearly), Morning brief, or saving a second location (free limit is 1).
+Paywall: Settings > DayCast Pro > View DayCast Pro (general Pro). Also from an AI tap, Live Activity (Yearly), Morning brief, or Locations when Free already has Near Me (GPS) + 1 named city.
+
+Free includes Near Me (GPS) + 1 named saved city. GPS does not consume the free named slot.
 
 IDs:
 - com.scubasteve1999.DayCast.pro.monthly — AI + unlimited locations
