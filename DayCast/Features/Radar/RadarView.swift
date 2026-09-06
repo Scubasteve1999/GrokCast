@@ -7,8 +7,10 @@ struct RadarView: View {
   @Environment(LightningStore.self) private var lightningStore
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
   @State private var radarOpacity: Double = RadarPreferences.radarOpacity
+  @State private var radarChromeWidth: CGFloat = 0
   @State private var radarState = RadarState()
   @State private var recenterDefaultTrigger: UUID?
   @State private var recenterUserCoordinate: CLLocationCoordinate2D?
@@ -234,46 +236,15 @@ struct RadarView: View {
       .allowsHitTesting(radarControlsInteractive)
       .opacity(radarDataUnavailable ? 0.45 : 1)
     }
-    .overlay(alignment: .topLeading) {
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { radarChromeWidth = $0 }
+    .overlay(alignment: .top) {
       if store.selectedTab == .radar {
-        VStack(alignment: .leading, spacing: 8) {
-          // Keep offline cue even when decluttered — it's safety-critical chrome.
-          if store.isOffline {
-            Text("Offline — showing last loaded tiles if available")
-              .font(DesignTokens.Typography.micro())
-              .foregroundStyle(DesignTokens.Palette.warning)
-              .padding(.horizontal, DesignTokens.Spacing.space12)
-              .padding(.vertical, 6)
-              .background(DesignTokens.Palette.cardBackground.opacity(0.92), in: Capsule())
-          }
-          radarLocationChip
-        }
-        .safeAreaPadding(.top)
-        .padding(.top, 4)
-        .padding(.leading, DesignTokens.Spacing.space16)
+        radarTopChrome
       }
     }
     .overlay(alignment: .topLeading) {
       if store.selectedTab == .radar {
         warningPolygonVoiceOver
-      }
-    }
-    .overlay(alignment: .topTrailing) {
-      if store.selectedTab == .radar {
-        ChaseRadarHUD(
-          radarState: radarState,
-          mapCenter: selectedMapCenter,
-          cityName: store.currentLocation?.name,
-          alerts: store.displayableActiveAlerts,
-          takeaway: radarTakeaway,
-          isDecluttered: $chaseDecluttered
-        )
-        .safeAreaPadding(.top)
-        .padding(.top, 4)
-        .padding(.trailing, DesignTokens.Spacing.space16)
-        .opacity(radarDataUnavailable ? 0.4 : 1)
-        .allowsHitTesting(radarControlsInteractive)
-        .accessibilityHidden(radarDataUnavailable)
       }
     }
     .overlay(alignment: .trailing) {
@@ -366,6 +337,71 @@ struct RadarView: View {
     }
   }
 
+  private var radarTopChromeBudget: RadarTopChromeLayout.Budget {
+    RadarTopChromeLayout.budget(
+      containerWidth: radarChromeWidth,
+      isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+    )
+  }
+
+  /// One top bar — chip + HUD — so they cannot independently overlap.
+  @ViewBuilder
+  private var radarTopChrome: some View {
+    let budget = radarTopChromeBudget
+    Group {
+      if budget.stacksVertically {
+        VStack(alignment: .leading, spacing: RadarTopChromeLayout.gap) {
+          radarLeadingChrome
+            .frame(maxWidth: budget.chipMaxWidth, alignment: .leading)
+          chaseRadarHUD
+            .frame(maxWidth: budget.hudMaxWidth, alignment: .trailing)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+      } else {
+        HStack(alignment: .top, spacing: RadarTopChromeLayout.gap) {
+          radarLeadingChrome
+            .frame(maxWidth: budget.chipMaxWidth, alignment: .leading)
+            .layoutPriority(0)
+          Spacer(minLength: 0)
+          chaseRadarHUD
+            .frame(maxWidth: budget.hudMaxWidth, alignment: .trailing)
+            .layoutPriority(1)
+        }
+      }
+    }
+    .padding(.horizontal, RadarTopChromeLayout.horizontalInset)
+    .safeAreaPadding(.top)
+    .padding(.top, 4)
+  }
+
+  private var radarLeadingChrome: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      // Keep offline cue even when decluttered — it's safety-critical chrome.
+      if store.isOffline {
+        Text("Offline — showing last loaded tiles if available")
+          .font(DesignTokens.Typography.micro())
+          .foregroundStyle(DesignTokens.Palette.warning)
+          .padding(.horizontal, DesignTokens.Spacing.space12)
+          .padding(.vertical, 6)
+          .background(DesignTokens.Palette.cardBackground.opacity(0.92), in: Capsule())
+      }
+      radarLocationChip
+    }
+  }
+
+  private var chaseRadarHUD: some View {
+    ChaseRadarHUD(
+      radarState: radarState,
+      mapCenter: selectedMapCenter,
+      alerts: store.displayableActiveAlerts,
+      takeaway: radarTakeaway,
+      isDecluttered: $chaseDecluttered
+    )
+    .opacity(radarDataUnavailable ? 0.4 : 1)
+    .allowsHitTesting(radarControlsInteractive)
+    .accessibilityHidden(radarDataUnavailable)
+  }
+
   private var radarLocationChip: some View {
     Button {
       Haptic.impact(.light)
@@ -386,7 +422,7 @@ struct RadarView: View {
       }
       .padding(.horizontal, 12)
       .padding(.vertical, 7)
-      .frame(maxWidth: 220, minHeight: DesignTokens.Layout.minHitTarget)
+      .frame(minHeight: DesignTokens.Layout.minHitTarget)
       .background(Color.black.opacity(0.46), in: Capsule())
       .overlay(Capsule().stroke(DesignTokens.Palette.cardHairline, lineWidth: 1))
       .contentShape(Capsule())
