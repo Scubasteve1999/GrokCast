@@ -248,6 +248,26 @@ enum MapsGLLiveRainLayers {
   /// Removed on host detach. Radar first, then cell motion.
   static var detachIDs: [String] { [radarID] + stormcellIDs }
 
+  /// Hazard overlays that must stay above encoded rain. Remount uses the
+  /// first of these still in the style so replacement rain does not cover them.
+  static var overlayIDsAboveRain: [String] {
+    stormcellIDs + [
+      FireRadarOverlay.perimetersFillLayerID,
+      FireRadarOverlay.perimetersLineLayerID,
+      FireRadarOverlay.hotspotsLayerID,
+      NWSWarningRadarOverlay.fillLayerID,
+      NWSWarningRadarOverlay.lineLayerID,
+      LightningRadarOverlay.layerID,
+    ]
+  }
+
+  /// Lowest overlay currently in the style stack. Nil when rain is alone
+  /// (Today teaser). Caller moves `radar` below this id after remount.
+  static func radarRestackBelowLayerID(in styleLayerIDs: [String]) -> String? {
+    let overlays = Set(overlayIDsAboveRain)
+    return styleLayerIDs.first { overlays.contains($0) }
+  }
+
   /// Host must pass the real overlay + site flags. Do not fold rainWant into
   /// overlayOn and then lie that `isSiteProduct` is false — that kept tracks
   /// on N0B. Site products and overlay-off must return false so the host

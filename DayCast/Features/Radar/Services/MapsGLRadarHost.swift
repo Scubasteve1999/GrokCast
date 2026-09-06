@@ -28,6 +28,8 @@ final class MapsGLRadarHost {
   private var lastNationalUsesMRMS: Bool?
   private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
   private var lastAppliedOpacity: Double?
+  /// Blocks notify-driven `sync` from re-entering `addWeatherLayer`.
+  private var isAddingRadarLayer = false
   /// Today preview is rain-only. Live Radar paints StormcellsTracks paths only.
   var paintsStormcells = true
 
@@ -60,10 +62,15 @@ final class MapsGLRadarHost {
     let controller = MapboxMapController(map: mapView, account: account)
     // Metal rain is a CustomLayer. Circle/line tracks must sit above it or
     // they composite under the encoded overlay and look like "no tracks".
-    controller.placementProvider = MapboxMapController.PlacementProvider { layer, _ in
+    controller.placementProvider = MapboxMapController.PlacementProvider { [weak self] layer, _ in
       var placement = MapboxMapController.Placement()
       if MapsGLLiveRainLayers.stormcellIDs.contains(layer.id) {
         placement.position = .above(MapsGLLiveRainLayers.radarID)
+      } else if layer.id == MapsGLLiveRainLayers.radarID,
+        let ids = self?.attachedMapView?.mapboxMap.allLayerIdentifiers.map(\.id),
+        let below = MapsGLLiveRainLayers.radarRestackBelowLayerID(in: ids)
+      {
+        placement.position = .below(below)
       }
       return placement
     }
@@ -101,6 +108,7 @@ final class MapsGLRadarHost {
     lastIsSiteProduct = nil
     lastNationalUsesMRMS = nil
     lastAppliedOpacity = nil
+    isAddingRadarLayer = false
   }
 
   /// Snapshot for Today: rain only, no site products. `future` uses the same
@@ -213,6 +221,10 @@ final class MapsGLRadarHost {
       layerReady = false
       lastAppliedOpacity = nil
       addRadarLayer(on: controller, notify: false)
+      if !layerReady {
+        // Rain is gone. Restore PNG after add's reentrancy guard has dropped.
+        onLayerStateChange?()
+      }
     }
     if let map = attachedMapView?.mapboxMap,
       map.layerExists(withId: MapsGLLiveRainLayers.radarID)
@@ -227,12 +239,20 @@ final class MapsGLRadarHost {
     lastAppliedOpacity = layerReady ? opacity : nil
   }
 
+  /// Notify-driven `sync` must not call `addWeatherLayer` on the same stack.
+  static func shouldBeginRadarLayerAdd(isAdding: Bool) -> Bool {
+    !isAdding
+  }
+
   private func addRadarLayer(on controller: MapboxMapController, notify: Bool = true) {
     if layerReady {
       applyPendingOpacityIfNeeded(on: controller)
       return
     }
     guard mapControllerLoaded else { return }
+    guard Self.shouldBeginRadarLayerAdd(isAdding: isAddingRadarLayer) else { return }
+    isAddingRadarLayer = true
+    defer { isAddingRadarLayer = false }
     do {
       var config = WeatherService.Radar(service: controller.service)
       config.layer.paint.sample.colorScale = .colorScale(Self.colorScale)
@@ -251,14 +271,27 @@ final class MapsGLRadarHost {
       try controller.addWeatherLayer(config: config)
       layerReady = true
       lastAppliedOpacity = opacity
+      restackRadarBelowOverlays()
       radarLog("[MapsGL] radar layer added")
       if notify { onLayerStateChange?() }
     } catch {
       radarLog("[MapsGL] Failed to add radar layer: \(error)")
       layerReady = false
       lastAppliedOpacity = nil
-      onLayerStateChange?()
+      // Honor `notify` so a quiet remount cannot re-enter `sync` on failure.
+      // Live `refreshDesiredState` and the Today teaser `syncPreview` both
+      // call `sync` while `layerReady` is still false.
+      if notify { onLayerStateChange?() }
     }
+  }
+
+  private func restackRadarBelowOverlays() {
+    guard let map = attachedMapView?.mapboxMap else { return }
+    let radarID = MapsGLLiveRainLayers.radarID
+    guard map.layerExists(withId: radarID) else { return }
+    let ids = map.allLayerIdentifiers.map(\.id)
+    guard let below = MapsGLLiveRainLayers.radarRestackBelowLayerID(in: ids) else { return }
+    try? map.moveLayer(withId: radarID, to: .below(below))
   }
 
   private func removeRadarLayer(on controller: MapboxMapController) {
@@ -348,7 +381,7 @@ final class MapsGLRadarHost {
       || futureChanged
       || (cellsWant && !stormcellsReady)
       || (want && !layerReady)
-    guard needsPass else { return }
+    guard !isAddingRadarLayer, needsPass else { return }
     lastVisible = want
     applyVisibility(want, on: controller)
   }

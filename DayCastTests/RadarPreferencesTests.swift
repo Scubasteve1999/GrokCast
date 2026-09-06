@@ -722,6 +722,43 @@ final class RadarPreferencesTests: XCTestCase {
       "slider must move paint.opacity after the first add")
   }
 
+  func testFailedRadarRemountDoesNotReenterAdd() {
+    XCTAssertTrue(MapsGLRadarHost.shouldBeginRadarLayerAdd(isAdding: false))
+    XCTAssertFalse(
+      MapsGLRadarHost.shouldBeginRadarLayerAdd(isAdding: true),
+      "notify-driven sync must not retry addWeatherLayer on the same stack")
+  }
+
+  func testRemountedRainStacksBelowOverlays() {
+    XCTAssertEqual(
+      MapsGLLiveRainLayers.radarRestackBelowLayerID(in: [
+        "settlement-label",
+        "stormcells-tracks",
+        "nws-warning-fill",
+        "nws-warning-line",
+        "radar",
+      ]),
+      "stormcells-tracks")
+    XCTAssertEqual(
+      MapsGLLiveRainLayers.radarRestackBelowLayerID(in: [
+        "fire-perimeters-fill",
+        "lightning-strikes-bolts",
+        "radar",
+      ]),
+      "fire-perimeters-fill")
+    XCTAssertNil(
+      MapsGLLiveRainLayers.radarRestackBelowLayerID(in: [
+        "settlement-label",
+        "radar",
+      ]),
+      "Today teaser is rain-only — nothing to restack under")
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.overlayIDsAboveRain.contains("stormcells-tracks"))
+    XCTAssertTrue(
+      MapsGLLiveRainLayers.overlayIDsAboveRain.contains("lightning-strikes-bolts"))
+    XCTAssertFalse(MapsGLLiveRainLayers.overlayIDsAboveRain.contains("radar"))
+  }
+
   func testDefaultSiteMidBinLeavesBasemapHeadroom() {
     let mid = MapsGLRadarPalette.defaultEffectivePolarAlpha(forDbz: 25)
     let core = MapsGLRadarPalette.defaultEffectivePolarAlpha(forDbz: 45)
