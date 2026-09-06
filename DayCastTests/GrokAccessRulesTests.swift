@@ -149,4 +149,32 @@ final class GrokAccessRulesTests: XCTestCase {
       GrokAccessRules.canUseMorningBrief(
         isPro: false, proxyConfigured: false, hasDeveloperKey: true))
   }
+
+  func testPhotoCTAOpensPickerWhenGrokIsAvailable() {
+    let gate = SkyCheckPhotoCTAGate.resolve(canUseGrok: true, canUnlockViaPro: false)
+    XCTAssertEqual(gate, .openPicker)
+    XCTAssertTrue(gate.allowsPicker)
+    XCTAssertFalse(gate.isCTADisabled)
+  }
+
+  func testPhotoCTAPresentsPaywallWhenLockedAndProCanUnlock() {
+    let gate = SkyCheckPhotoCTAGate.resolve(canUseGrok: false, canUnlockViaPro: true)
+    XCTAssertEqual(gate, .presentPaywall)
+    XCTAssertFalse(gate.allowsPicker)
+    XCTAssertFalse(gate.isCTADisabled)
+  }
+
+  func testPhotoCTAExplainsWhenProButProxyIsDown() {
+    let canUse = GrokAccessRules.canUseGrokAI(
+      isPro: true, proxyConfigured: false, hasDeveloperKey: false)
+    XCTAssertFalse(canUse)
+    let gate = SkyCheckPhotoCTAGate.resolve(canUseGrok: canUse, canUnlockViaPro: false)
+    XCTAssertEqual(gate, .explainUnavailable)
+    XCTAssertFalse(gate.allowsPicker)
+    XCTAssertTrue(gate.isCTADisabled)
+    XCTAssertEqual(SkyCheckDeskCopy.photoUnavailableCTA, "Photo check unavailable")
+    XCTAssertTrue(
+      SkyCheckDeskCopy.photoUnavailableExplanation.localizedCaseInsensitiveContains("Settings"))
+    XCTAssertFalse(SkyCheckDeskCopy.photoUnavailableExplanation.isEmpty)
+  }
 }

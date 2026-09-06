@@ -311,7 +311,8 @@ struct PaywallView: View {
   }
 }
 
-enum PaywallFeature {
+enum PaywallFeature: Equatable {
+  case dayCastPro
   case grokAI
   case radarFuture
   case locations
@@ -319,8 +320,12 @@ enum PaywallFeature {
   case morningBrief
   case severeAlerts
 
+  /// Settings "View DayCast Pro" — general pitch, not a single feature.
+  static var settingsEntry: PaywallFeature { .dayCastPro }
+
   var headline: String {
     switch self {
+    case .dayCastPro: "DayCast Pro"
     case .grokAI: "Sky Check and AI weather"
     case .radarFuture: "See what's coming"
     case .locations: "Save unlimited places"
@@ -332,6 +337,8 @@ enum PaywallFeature {
 
   var subheadline: String {
     switch self {
+    case .dayCastPro:
+      "\(PaywallPeriodCopy.generalProPitch) \(PaywallPeriodCopy.officialWeatherStaysFree)"
     case .grokAI:
       "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat. Official weather, radar, and NWS stay free."
     case .radarFuture:
@@ -349,6 +356,7 @@ enum PaywallFeature {
 
   var icon: String {
     switch self {
+    case .dayCastPro: "checkmark.seal.fill"
     case .grokAI: "cloud.bolt.fill"
     case .radarFuture: "cloud.rain.fill"
     case .locations: "mappin.and.ellipse"
@@ -360,6 +368,7 @@ enum PaywallFeature {
 
   var analyticsName: String {
     switch self {
+    case .dayCastPro: "daycast_pro"
     case .grokAI: "grok_ai"
     case .radarFuture: "radar_future"
     case .locations: "locations"

@@ -104,4 +104,45 @@ final class PaywallPeriodTests: XCTestCase {
     XCTAssertTrue(copy.contains("Near Me"))
     XCTAssertTrue(copy.contains("1 saved city"))
   }
+
+  func testSettingsEntryUsesGeneralProPaywallNotLocations() {
+    XCTAssertEqual(PaywallFeature.settingsEntry, .dayCastPro)
+    XCTAssertNotEqual(PaywallFeature.settingsEntry, .locations)
+    XCTAssertEqual(PaywallFeature.dayCastPro.headline, "DayCast Pro")
+    XCTAssertEqual(PaywallFeature.dayCastPro.analyticsName, "daycast_pro")
+
+    let copy = PaywallFeature.dayCastPro.subheadline
+    XCTAssertTrue(copy.contains(PaywallPeriodCopy.generalProPitch))
+    XCTAssertTrue(copy.contains(PaywallPeriodCopy.officialWeatherStaysFree))
+    XCTAssertTrue(copy.contains("Monthly"))
+    XCTAssertTrue(copy.contains("Yearly"))
+    XCTAssertTrue(copy.contains("Future radar"))
+    XCTAssertFalse(copy.contains("Save unlimited places"))
+    XCTAssertFalse(copy.hasPrefix("Free includes Near Me"))
+  }
+
+  func testActivePlanUnlockCopyMatchesMonthlyAndYearlyTiers() {
+    XCTAssertEqual(PaywallPeriodCopy.activePlanTitle(isYearly: false), "Monthly")
+    XCTAssertEqual(PaywallPeriodCopy.activePlanTitle(isYearly: true), "Yearly")
+    XCTAssertEqual(
+      PaywallPeriodCopy.activePlanUnlocks(isYearly: false),
+      PaywallPeriodCopy.monthlyUnlocks
+    )
+    XCTAssertEqual(
+      PaywallPeriodCopy.activePlanUnlocks(isYearly: true),
+      PaywallPeriodCopy.yearlyUnlocks
+    )
+    XCTAssertEqual(PaywallPeriodCopy.monthlyUnlocks, "AI and unlimited locations")
+    XCTAssertEqual(
+      PaywallPeriodCopy.yearlyUnlocks,
+      "AI, locations, Future radar, widgets, Live Activity"
+    )
+    XCTAssertFalse(PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("Future"))
+    XCTAssertFalse(PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("widget"))
+    XCTAssertFalse(
+      PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("Live Activity"))
+    XCTAssertTrue(PaywallPeriodCopy.yearlyUnlocks.contains("Future radar"))
+    XCTAssertTrue(PaywallPeriodCopy.yearlyUnlocks.contains("widgets"))
+    XCTAssertTrue(PaywallPeriodCopy.yearlyUnlocks.contains("Live Activity"))
+  }
 }

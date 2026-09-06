@@ -219,6 +219,9 @@ final class DayCastEntitlementTests: XCTestCase {
     XCTAssertTrue(LocationsCopy.freeLimitChip.contains("1 saved city"))
     XCTAssertEqual(LocationsCopy.saveUnlimitedCTA, PaywallFeature.locations.headline)
     XCTAssertEqual(DayCastAccessibility.Locations.freeLimitChip, "daycast.locations.freeLimit")
+    XCTAssertEqual(
+      DayCastAccessibility.Locations.deleteSaved("Seattle, WA"),
+      "daycast.locations.delete.Seattle, WA")
   }
 
   func testFreeUserGetsNeitherAINorYearlyExtras() {

@@ -68,6 +68,8 @@ enum DayCastAccessibility {
 
   enum Settings {
     static let proEntry = "daycast.settings.pro"
+    static let activePlan = "daycast.settings.pro.plan"
+    static let activeUnlocks = "daycast.settings.pro.unlocks"
   }
 
   enum Alerts {
@@ -88,5 +90,6 @@ enum DayCastAccessibility {
     static func result(_ name: String) -> String { "daycast.locations.result.\(name)" }
     static func chip(_ name: String) -> String { "daycast.locations.chip.\(name)" }
     static func savedRow(_ name: String) -> String { "daycast.locations.saved.\(name)" }
+    static func deleteSaved(_ name: String) -> String { "daycast.locations.delete.\(name)" }
   }
 }

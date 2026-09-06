@@ -97,6 +97,9 @@ final class AccessibilityChromeTests: XCTestCase {
     XCTAssertEqual(SettingsChrome.sectionTitles.count, 7)
     XCTAssertEqual(SettingsChrome.sectionTitles.first, "DayCast Pro")
     XCTAssertEqual(SettingsChrome.sectionTitles.last, "Developer")
+    XCTAssertEqual(DayCastAccessibility.Settings.proEntry, "daycast.settings.pro")
+    XCTAssertEqual(DayCastAccessibility.Settings.activePlan, "daycast.settings.pro.plan")
+    XCTAssertEqual(DayCastAccessibility.Settings.activeUnlocks, "daycast.settings.pro.unlocks")
   }
 
   func testAppGroupIdentifierStaysDayCast() {

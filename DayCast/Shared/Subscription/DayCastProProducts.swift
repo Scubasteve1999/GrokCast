@@ -47,11 +47,28 @@ enum PaywallPeriodCopy {
     }
   }
 
-  static let monthlyInclusion = "AI and unlimited locations. Billed monthly."
-  static let yearlyInclusion =
-    "AI, locations, Future radar, widgets, Live Activity. Billed yearly."
+  /// Settings free-state + general Pro paywall. Official weather stays free.
+  static let generalProPitch =
+    "Monthly includes AI and unlimited locations. Yearly adds Future radar, widgets, and Live Activity."
+  static let officialWeatherStaysFree =
+    "Official weather, radar, and NWS stay free."
+
+  /// Active-plan unlock lines — same facts as the paywall inclusion copy, without billing.
+  static let monthlyUnlocks = "AI and unlimited locations"
+  static let yearlyUnlocks = "AI, locations, Future radar, widgets, Live Activity"
+
+  static var monthlyInclusion: String { "\(monthlyUnlocks). Billed monthly." }
+  static var yearlyInclusion: String { "\(yearlyUnlocks). Billed yearly." }
   static let liveActivityRequiresYearly = "Requires Yearly"
   static let liveActivityActiveSubtitle = "Lock Screen score + Next 2 Hours"
+
+  static func activePlanTitle(isYearly: Bool) -> String {
+    isYearly ? "Yearly" : "Monthly"
+  }
+
+  static func activePlanUnlocks(isYearly: Bool) -> String {
+    isYearly ? yearlyUnlocks : monthlyUnlocks
+  }
 
   /// Inclusion line from the product id. Never StoreKit `description` — ASC is the same for both.
   static func subtitle(productID: String) -> String {

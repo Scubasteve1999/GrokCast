@@ -57,6 +57,7 @@ struct SettingsView: View {
           }
         }
     }
+    .preferredColorScheme(.dark)
   }
 
   private var settingsScroll: some View {
@@ -77,6 +78,7 @@ struct SettingsView: View {
     }
     .scrollContentBackground(.hidden)
     .background(DesignTokens.Palette.bgPrimary)
+    .preferredColorScheme(.dark)
   }
 
   private func settingsSection<Card: View>(_ title: String, card: Card) -> some View {
@@ -94,6 +96,20 @@ struct SettingsView: View {
             .foregroundStyle(DesignTokens.Palette.success)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
+
+          Text(PaywallPeriodCopy.activePlanTitle(isYearly: subscription.isYearly))
+            .font(DesignTokens.Typography.subsection())
+            .foregroundStyle(DesignTokens.Palette.textPrimary)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .accessibilityIdentifier(DayCastAccessibility.Settings.activePlan)
+
+          Text(PaywallPeriodCopy.activePlanUnlocks(isYearly: subscription.isYearly))
+            .font(DesignTokens.Typography.callout())
+            .foregroundStyle(DesignTokens.Palette.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .accessibilityIdentifier(DayCastAccessibility.Settings.activeUnlocks)
+
           Button("Manage Subscription") {
             if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
               UIApplication.shared.open(url)
@@ -101,14 +117,14 @@ struct SettingsView: View {
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
         } else {
-          Text("Monthly includes AI and unlimited locations. Yearly adds Future radar, widgets, and Live Activity.")
+          Text(PaywallPeriodCopy.generalProPitch)
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(.horizontal, DesignTokens.Spacing.space16)
             .padding(.top, DesignTokens.Spacing.space16)
 
           Button("View DayCast Pro") {
-            PaywallCoordinator.shared.present(.locations)
+            PaywallCoordinator.shared.present(PaywallFeature.settingsEntry)
           }
           .font(DesignTokens.Typography.subsection())
           .foregroundStyle(DesignTokens.Palette.textPrimary)
@@ -791,4 +807,5 @@ final class LabeledUISwitch: UISwitch {
     .environment(SubscriptionManager.shared)
     .environment(GrokBriefSafety())
     .environment(SevereWeatherStore.shared)
+    .preferredColorScheme(.dark)
 }
