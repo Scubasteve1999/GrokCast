@@ -16,6 +16,8 @@ struct FeedSnapshot: Equatable, Sendable {
   var isNowWet: Bool = false
   /// NWS AFD/PNS cards for this city (`LocalBriefingStore`). Hide the rail when false.
   var hasLocalBriefing: Bool = false
+  /// Weather is up but this city's briefing has not settled yet. Hold the slot.
+  var isLocalBriefingPending: Bool = false
   /// Warning/watch that belongs on radar. Heat and air-quality advisories stay false.
   var hasRadarRelevantAlert: Bool = false
 
@@ -32,6 +34,24 @@ struct FeedSnapshot: Equatable, Sendable {
     showHealth: false,
     isNowWet: false,
     hasLocalBriefing: false,
+    isLocalBriefingPending: false,
     hasRadarRelevantAlert: false
   )
+}
+
+/// Your News rail visibility. Pending holds height so Daily cannot jump into the peek.
+enum LocalBriefingSlot {
+  /// Store has not settled this city yet (in flight, or still on a previous location).
+  static func isPending(
+    currentLocationID: String?,
+    storeLocationID: String?,
+    itemCount: Int,
+    isRefreshing: Bool
+  ) -> Bool {
+    guard let currentLocationID else { return false }
+    let matches = storeLocationID == currentLocationID
+    if matches && itemCount > 0 { return false }
+    if matches && !isRefreshing { return false }
+    return true
+  }
 }

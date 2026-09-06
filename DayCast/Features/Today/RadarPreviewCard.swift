@@ -21,6 +21,30 @@ enum RadarPreviewPaint: Equatable {
     if mapsGLKeysPresent, mapboxPresent { return .nationalMapsGL }
     return .unavailable
   }
+
+  /// Inner Today map branch. Missing sweep/keys/coord never resolve to a blank hole.
+  /// Prefer National MapsGL when a coordinate and keys exist; gray plate otherwise.
+  static func display(
+    paint: RadarPreviewPaint,
+    hasCoordinate: Bool,
+    hasSweep: Bool,
+    mapsGLReady: Bool
+  ) -> RadarPreviewPaint {
+    switch paint {
+    case .siteDoppler:
+      if hasCoordinate, hasSweep { return .siteDoppler }
+      if hasCoordinate, mapsGLReady { return .nationalMapsGL }
+      return .unavailable
+    case .nationalMapsGL:
+      if hasCoordinate, mapsGLReady { return .nationalMapsGL }
+      return .unavailable
+    case .unavailable:
+      return .unavailable
+    }
+  }
+
+  /// Every Today Outlook map branch reserves this height, including unavailable.
+  static var reservedPlateHeight: CGFloat { RadarPreviewSource.outlookPlateHeight }
 }
 
 struct RadarPreviewCard: View {
@@ -38,11 +62,19 @@ struct RadarPreviewCard: View {
 
   var body: some View {
     radarMap
+      .frame(height: height)
+      .clipped()
   }
 
   @ViewBuilder
   private var radarMap: some View {
-    switch paint {
+    let shown = RadarPreviewPaint.display(
+      paint: paint,
+      hasCoordinate: coordinate != nil,
+      hasSweep: sweep != nil,
+      mapsGLReady: RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent)
+    )
+    switch shown {
     case .siteDoppler:
       if let coord = coordinate, let sweep {
         framedMap {
@@ -52,17 +84,19 @@ struct RadarPreviewCard: View {
             onPolarFailed: onPolarFailed
           )
         }
+      } else {
+        RadarPreviewUnavailablePlate(height: height)
       }
     case .nationalMapsGL:
-      if let coord = coordinate,
-        RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent)
-      {
+      if let coord = coordinate {
         framedMap {
           RadarPreviewMapboxMap(center: coord, showsFuture: showsFuture)
         }
+      } else {
+        RadarPreviewUnavailablePlate(height: height)
       }
     case .unavailable:
-      EmptyView()
+      RadarPreviewUnavailablePlate(height: height)
     }
   }
 
@@ -71,6 +105,26 @@ struct RadarPreviewCard: View {
       .allowsHitTesting(false)
       .frame(height: height)
       .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius))
+      .overlay(
+        RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
+          .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)
+      )
+  }
+}
+
+/// Gray Outlook plate. Always `outlookPlateHeight` — never a zero-height hole.
+struct RadarPreviewUnavailablePlate: View {
+  var height: CGFloat = RadarPreviewSource.outlookPlateHeight
+
+  var body: some View {
+    RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
+      .fill(DesignTokens.Palette.radarTrack)
+      .frame(height: height)
+      .overlay {
+        Text(RadarFeedCopy.radarUnavailable)
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      }
       .overlay(
         RoundedRectangle(cornerRadius: DesignTokens.Card.cornerRadius)
           .stroke(DesignTokens.Palette.cardStroke, lineWidth: 1)

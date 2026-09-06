@@ -56,6 +56,12 @@ struct TodayFeedView: View {
     snap.isNowWet = NowHeroReconcile.isNowWet(
       conditionCode: weather.conditionCode, summary: currentMinutecast)
     snap.hasLocalBriefing = hasBriefingForCurrentLocation
+    snap.isLocalBriefingPending = LocalBriefingSlot.isPending(
+      currentLocationID: store.currentLocation?.id.uuidString,
+      storeLocationID: briefingStore.locationID,
+      itemCount: briefingStore.items.count,
+      isRefreshing: briefingStore.isRefreshing
+    )
     return snap
   }
 
@@ -235,7 +241,11 @@ struct TodayFeedView: View {
         store.selectedTab = .forecast
       }
     case .yourNews:
-      YourNewsFeedCard(items: briefingStore.items, sitsInSheet: !plated)
+      YourNewsFeedCard(
+        items: hasBriefingForCurrentLocation ? briefingStore.items : [],
+        sitsInSheet: !plated,
+        isPending: snapshot.isLocalBriefingPending
+      )
     case .radar:
       RadarFeedCard(
         weather: weather,

@@ -342,7 +342,23 @@ final class FeedAssemblerTests: XCTestCase {
       hasPrecipContent: false,
       showFireCard: false
     )
+    XCTAssertFalse(snapshot.isLocalBriefingPending)
     XCTAssertFalse(FeedAssembler.items(from: snapshot).contains(.yourNews))
+  }
+
+  func testYourNewsHeldWhenBriefingPending() {
+    let snapshot = FeedSnapshot(
+      hasWeather: true,
+      alertCount: 0,
+      hasHourly: true,
+      hasDaily: true,
+      hasPrecipContent: false,
+      showFireCard: false,
+      isLocalBriefingPending: true
+    )
+    let items = FeedAssembler.items(from: snapshot)
+    XCTAssertEqual(items, [.now, .hourly, .radar, .yourNews, .daily])
+    XCTAssertLessThan(items.firstIndex(of: .yourNews)!, items.firstIndex(of: .daily)!)
   }
 
   func testStoryDayKeepsYourNewsAfterHourly() {
