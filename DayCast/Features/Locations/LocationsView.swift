@@ -60,6 +60,12 @@ struct LocationsView: View {
         }
       }
       .environment(\.editMode, $editMode)
+      .onChange(of: isShowingSearch) { _, showing in
+        if showing { editMode = .inactive }
+      }
+      .onChange(of: listedSaved.isEmpty) { _, empty in
+        if empty { editMode = .inactive }
+      }
     }
   }
 
