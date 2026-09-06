@@ -219,7 +219,6 @@ struct RadarView: View {
                 alerts: store.displayableActiveAlerts
               )
               .frame(width: geo.size.width, height: geo.size.height)
-              .frame(minWidth: 400, minHeight: 400)
               .ignoresSafeArea(edges: [.top, .bottom])
             } else {
               Color.clear
@@ -227,7 +226,6 @@ struct RadarView: View {
                 .ignoresSafeArea(edges: [.top, .bottom])
             }
           }
-          .frame(minWidth: 400, minHeight: 400)
         } else {
           Color.clear.ignoresSafeArea(edges: [.top, .bottom])
         }
@@ -247,13 +245,16 @@ struct RadarView: View {
         warningPolygonVoiceOver
       }
     }
-    .overlay(alignment: .trailing) {
+    .overlay(alignment: .bottomTrailing) {
       if store.selectedTab == .radar {
         RadarLayerRail(radarState: radarState) {
           showDisplayOptions = true
         }
         .padding(.trailing, DesignTokens.Spacing.space12)
-        .padding(.bottom, 72)
+        .padding(
+          .bottom,
+          RadarMapChromeLayout.fieldOverlayBottomInset(controlPanelHeight: controlPanelHeight)
+        )
         .opacity(radarDataUnavailable ? 0.4 : 1)
         .allowsHitTesting(radarControlsInteractive)
         .accessibilityHidden(radarDataUnavailable)
@@ -279,7 +280,10 @@ struct RadarView: View {
           }
         }
         .padding(.leading, DesignTokens.Spacing.space12)
-        .padding(.bottom, WeatherStageSheet.tabBarClearance + controlPanelHeight + 8)
+        .padding(
+          .bottom,
+          RadarMapChromeLayout.fieldOverlayBottomInset(controlPanelHeight: controlPanelHeight)
+        )
         .allowsHitTesting(false)
       }
     }
@@ -291,7 +295,7 @@ struct RadarView: View {
         .accessibilityHidden(true)
     }
     .overlay(alignment: .bottom) {
-      // Keep the panel mounted so collapse/sheet @State survives declutter.
+      // Keep the panel mounted so sheet @State survives declutter.
       RadarControlPanel(
         radarState: radarState,
         opacity: $radarOpacity,

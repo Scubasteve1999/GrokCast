@@ -1,7 +1,7 @@
 import CoreLocation
 import SwiftUI
 
-/// Composes playback controls, timeline scrubber, mode toggle, and opacity for the Mapbox radar tab.
+/// Composes playback, timeline, Live/24-hr, Live Site|National, and opacity.
 struct RadarControlPanel: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
@@ -15,14 +15,6 @@ struct RadarControlPanel: View {
   @Binding var recenterUserCoordinate: CLLocationCoordinate2D?
 
   @State private var showExplainRadar = false
-  /// Collapsed shows only playback + scrubber; expanded adds mode/product chips.
-  @State private var isCollapsed = true
-  /// User-driven Advanced disclosure; SRV also forces it open.
-  @State private var advancedManuallyExpanded = false
-  /// Mirrors RadarTipStore so dismissing re-renders without touching UserDefaults on every pass.
-  @State private var dismissedTips: Set<RadarProduct> = Set(
-    RadarProduct.allCases.filter { RadarTipStore.isDismissed($0) }
-  )
 
   private var prefersFigmaHUD: Bool {
     horizontalSizeClass == .compact
@@ -31,6 +23,9 @@ struct RadarControlPanel: View {
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
       slimModeRow
+      if RadarLiveSourceChrome.showsToggle(showsFuture: radarState.showsFuture) {
+        liveSourceRow
+      }
       ViewThatFits(in: .horizontal) {
         compactPlaybackRow
         VStack(alignment: .leading, spacing: 4) {
@@ -60,6 +55,7 @@ struct RadarControlPanel: View {
       .fill(WeatherStageSheet.fill)
     }
     .animation(.easeInOut(duration: 0.25), value: radarState.isFutureMode)
+    .animation(.easeInOut(duration: 0.25), value: radarState.showsFuture)
     .animation(.easeInOut(duration: 0.25), value: radarState.isSwitchingMode)
     .sheet(isPresented: $showDisplayOptions) {
       RadarDisplayOptionsSheet(
@@ -219,30 +215,58 @@ struct RadarControlPanel: View {
     return labels[index]
   }
 
-  /// Grabber + chevron that collapses the panel down to just the playback
-  /// controls + scrubber, freeing the lower half of the map. Full-width tap
-  /// target so it's easy to hit.
-  private var collapseHandle: some View {
-    Button {
-      Haptic.impact(.light)
-      withAnimation(.easeInOut(duration: 0.25)) { isCollapsed.toggle() }
-    } label: {
-      ZStack {
-        Capsule()
-          .fill(DesignTokens.Palette.radarTextSecondary.opacity(0.4))
-          .frame(width: 36, height: 5)
-        HStack {
-          Spacer()
-          Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
-            .font(DesignTokens.Typography.micro())
-            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        }
+  /// Site Doppler | National on Live only. Storm winds stay in Layers.
+  private var liveSourceRow: some View {
+    let layout = dynamicTypeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+      : AnyLayout(HStackLayout(spacing: 6))
+    return layout {
+      ForEach(RadarLiveSourceChrome.liveProducts) { product in
+        liveSourceChip(product)
       }
-      .frame(maxWidth: .infinity, minHeight: 16)
-      .contentShape(Rectangle())
+      if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+    }
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel("Radar source")
+  }
+
+  private func liveSourceChip(_ product: RadarProduct) -> some View {
+    let selected = RadarLiveSourceChrome.isSelected(
+      product, current: radarState.selectedProduct)
+    let disabled = RadarLiveSourceChrome.isDisabled(
+      product, siteAvailable: radarState.siteProductsAvailable)
+    return Button {
+      Haptic.impact(.light)
+      Task { await radarState.setProduct(product) }
+    } label: {
+      Text(product.displayName)
+        .font(DesignTokens.Typography.caption())
+        .fontWeight(selected ? .semibold : .regular)
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(minHeight: DesignTokens.Layout.minHitTarget)
+        .background(
+          selected
+            ? DesignTokens.Palette.radarAccent.opacity(0.2)
+            : DesignTokens.Palette.radarTrack
+        )
+        .clipShape(Capsule())
+        .overlay(
+          Capsule()
+            .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
+            .opacity(selected ? 1 : 0)
+        )
+        .foregroundStyle(
+          selected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
+        )
     }
     .buttonStyle(.plain)
-    .accessibilityLabel(isCollapsed ? "Expand radar controls" : "Collapse radar controls")
+    .disabled(disabled)
+    .opacity(disabled ? 0.45 : 1)
+    .accessibilityLabel(product.displayName)
+    .accessibilityAddTraits(selected ? .isSelected : [])
   }
 
   private var canUseRadarFuture: Bool {
@@ -344,192 +368,6 @@ struct RadarControlPanel: View {
     case .secondary:
       EmptyView()
     }
-  }
-
-  /// Storm winds stay behind Advanced. Live Rain is nearest-site N0B, so that
-  /// chip lives on the main row — do not hide it just because it is a site product.
-  private var isAdvancedExpanded: Bool {
-    advancedManuallyExpanded || radarState.selectedProduct == .stormRelativeVelocity
-  }
-
-  private var advancedAvailable: Bool {
-    radarState.siteProductsAvailable && !radarState.showsFuture
-  }
-
-  private var productChips: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 6) {
-          productChip(.superResReflectivity)
-          productChip(.reflectivity)
-          if advancedAvailable {
-            advancedChip
-          }
-        }
-      }
-
-      if isAdvancedExpanded, advancedAvailable {
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 6) {
-            if let site = radarState.nearestSite {
-              siteBadge(site.id)
-            }
-            productChip(.stormRelativeVelocity)
-          }
-        }
-        .transition(.opacity.combined(with: .move(edge: .top)))
-      }
-
-      productTip
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .animation(.easeInOut(duration: 0.2), value: isAdvancedExpanded)
-    .animation(.easeInOut(duration: 0.2), value: advancedAvailable)
-    .onChange(of: radarState.showsFuture) { _, isFuture in
-      // Site products are live-only; don't leave an orphaned row open in forecast.
-      if isFuture { advancedManuallyExpanded = false }
-    }
-    .onChange(of: radarState.siteProductsAvailable) { _, available in
-      if !available { advancedManuallyExpanded = false }
-    }
-  }
-
-  private var advancedChip: some View {
-    chip(
-      "Advanced", systemImage: isAdvancedExpanded ? "chevron.down" : "chevron.right",
-      isSelected: isAdvancedExpanded
-    ) {
-      Haptic.impact(.light)
-      if radarState.selectedProduct == .stormRelativeVelocity {
-        // Collapsing while SRV is live would strand the selection in a hidden
-        // row. Return to default Live Rain (nearest-site N0B), not the mosaic.
-        advancedManuallyExpanded = false
-        Task { await radarState.setProduct(.defaultLive) }
-      } else {
-        advancedManuallyExpanded.toggle()
-      }
-    }
-    .accessibilityLabel("Advanced radar products")
-    .accessibilityValue(isAdvancedExpanded ? "Expanded" : "Collapsed")
-    .accessibilityHint(
-      isAdvancedExpanded ? "Collapses advanced products" : "Shows storm winds"
-    )
-  }
-
-  /// Non-interactive provenance label (the old chip was a no-op Button — a VoiceOver trap).
-  private func siteBadge(_ id: String) -> some View {
-    HStack(spacing: 4) {
-      Image(systemName: "wifi")
-        .font(DesignTokens.Typography.micro())
-      Text(id)
-        .font(DesignTokens.Typography.micro())
-    }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 4)
-    .background(DesignTokens.Palette.radarTrack)
-    .clipShape(Capsule())
-    .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-    .accessibilityLabel("Nearest radar site \(id)")
-  }
-
-  @ViewBuilder
-  private var productTip: some View {
-    let product = radarState.selectedProduct
-    if let tip = product.userTip, !dismissedTips.contains(product) {
-      HStack(alignment: .top, spacing: 6) {
-        Text(tip)
-          .font(DesignTokens.Typography.micro())
-          .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-          .fixedSize(horizontal: false, vertical: true)
-
-        Spacer(minLength: 0)
-
-        Button {
-          Haptic.impact(.light)
-          RadarTipStore.dismiss(product)
-          dismissedTips.insert(product)
-        } label: {
-          Image(systemName: "xmark")
-            .font(DesignTokens.Typography.micro())
-            .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Dismiss tip")
-      }
-      .transition(.opacity)
-    }
-  }
-
-  private func productChip(_ product: RadarProduct) -> some View {
-    chip(
-      product.displayName, systemImage: nil,
-      isSelected: radarState.selectedProduct == product
-    ) {
-      Haptic.impact(.light)
-      if product != .stormRelativeVelocity { advancedManuallyExpanded = false }
-      Task { await radarState.setProduct(product) }
-    }
-  }
-
-  private func chip(
-    _ title: String, systemImage: String?, isSelected: Bool, action: @escaping () -> Void
-  ) -> some View {
-    Button(action: action) {
-      HStack(spacing: 4) {
-        if let img = systemImage {
-          Image(systemName: img)
-            .font(DesignTokens.Typography.micro())
-        }
-        Text(title)
-          .font(DesignTokens.Typography.micro())
-      }
-      .padding(.horizontal, 10)
-      .padding(.vertical, 4)
-      .background(
-        isSelected ? DesignTokens.Palette.radarAccent.opacity(0.2) : DesignTokens.Palette.radarTrack
-      )
-      .clipShape(Capsule())
-      .overlay(
-        Capsule()
-          .stroke(DesignTokens.Palette.radarAccent, lineWidth: 1)
-          .opacity(isSelected ? 1 : 0)
-      )
-      .foregroundStyle(
-        isSelected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
-      )
-    }
-    .buttonStyle(.plain)
-    .accessibilityLabel(title)
-    .accessibilityAddTraits(isSelected ? .isSelected : [])
-  }
-
-  /// Real active tile source for the current mode (replaces the old hardcoded badge).
-  private var sourceBadgeText: String {
-    if !radarState.showsFuture, radarState.selectedProduct.isSiteProduct,
-      let site = radarState.nearestSite
-    {
-      return "NWS \(site.id)"
-    }
-    let provider =
-      radarState.showsFuture
-      ? radarState.activeForecastProvider
-      : radarState.activeLiveProvider
-    switch provider {
-    case .iem, .mrms: return "National radar"
-    case .xweather: return "Xweather"
-    case .rainViewer: return "RainViewer"
-    case .openWeatherMap: return "OpenWeatherMap"
-    case .none: return "No source"
-    }
-  }
-
-  /// Freshness of the newest live radar frame; nil until frames load.
-  private var updatedText: String? {
-    guard let latest = radarState.timeline.live.last?.timestamp else { return nil }
-    let minutes = Int(-latest.timeIntervalSinceNow / 60)
-    if minutes < 1 { return "Updated just now" }
-    if minutes < 60 { return "Updated \(minutes) min. ago" }
-    return "Updated \(minutes / 60)h ago"
   }
 }
 

@@ -193,6 +193,29 @@ enum RadarChromeVisibility {
   }
 }
 
+/// Compact Site | National control on the Live dock only. Storm winds stay in Layers.
+enum RadarLiveSourceChrome {
+  static let liveProducts: [RadarProduct] = [.superResReflectivity, .reflectivity]
+
+  static func showsToggle(showsFuture: Bool) -> Bool {
+    !showsFuture
+  }
+
+  /// Site Doppler chip also reads selected for Storm winds — that product is
+  /// still a site scan, not National.
+  static func isSelected(_ product: RadarProduct, current: RadarProduct) -> Bool {
+    switch product {
+    case .superResReflectivity: current.isSiteProduct
+    case .reflectivity: current == .reflectivity
+    case .stormRelativeVelocity: false
+    }
+  }
+
+  static func isDisabled(_ product: RadarProduct, siteAvailable: Bool) -> Bool {
+    product == .superResReflectivity && !siteAvailable
+  }
+}
+
 /// Presentation-only Future chip. Entitlement / paywall stay in `RadarState`.
 enum RadarFutureChipPresentation {
   static func showsProLock(canUseYearlyExtras: Bool) -> Bool {

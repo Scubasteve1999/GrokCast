@@ -304,4 +304,19 @@ final class ChaseRadarHUDTests: XCTestCase {
     let explicit = RadarTopChromeLayout.budget(containerWidth: 393, isAccessibilitySize: false)
     XCTAssertEqual(fallback, explicit)
   }
+
+  func testFullModeKeepsLookingAtIdentityIncludingAccessibility() {
+    XCTAssertTrue(ChaseRadarHUDLogic.showsLookingAtIdentity(isDecluttered: false))
+    XCTAssertFalse(ChaseRadarHUDLogic.showsLookingAtIdentity(isDecluttered: true))
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtLine(
+        product: .superResReflectivity, showsFuture: false, siteID: "NQA"),
+      "Site Doppler"
+    )
+    XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtSiteSecondary(
+        product: .superResReflectivity, showsFuture: false, siteID: "NQA"),
+      "NQA"
+    )
+  }
 }

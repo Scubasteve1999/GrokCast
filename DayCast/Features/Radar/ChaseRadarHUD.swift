@@ -147,6 +147,12 @@ enum ChaseRadarHUDLogic {
     return siteID
   }
 
+  /// Full chase strip keeps product / site identity at every Dynamic Type size,
+  /// including accessibility XL. Map-only keeps SCAN + official alerts only.
+  static func showsLookingAtIdentity(isDecluttered: Bool) -> Bool {
+    !isDecluttered
+  }
+
   /// One plain-language weather line. Not SPC outlook. Nil in 24-hr or when data is missing.
   static func takeaway(
     showsFuture: Bool,
@@ -234,7 +240,6 @@ enum RadarTopChromeLayout {
 /// Compact strip: SCAN age, looking-at product, site id, nearest NWS alert.
 /// City lives on the location chip. SPC Day 1 / outlook lives on Alerts and Today.
 struct ChaseRadarHUD: View {
-  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   var radarState: RadarState
   let mapCenter: CLLocationCoordinate2D
   let alerts: [NWSAlert]
@@ -293,7 +298,7 @@ struct ChaseRadarHUD: View {
         .foregroundStyle(scanAgeColor(at: now))
         .fixedSize(horizontal: false, vertical: true)
 
-      if !dynamicTypeSize.isAccessibilitySize {
+      if ChaseRadarHUDLogic.showsLookingAtIdentity(isDecluttered: false) {
         Text(
           ChaseRadarHUDLogic.lookingAtLine(
             product: radarState.selectedProduct,
@@ -303,6 +308,7 @@ struct ChaseRadarHUD: View {
         )
         .font(.caption)
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+        .fixedSize(horizontal: false, vertical: true)
 
         if let siteID = ChaseRadarHUDLogic.lookingAtSiteSecondary(
           product: radarState.selectedProduct,
@@ -312,6 +318,7 @@ struct ChaseRadarHUD: View {
           Text(siteID)
             .font(.caption.monospaced())
             .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
 
         if let takeaway, !takeaway.isEmpty, radarState.siteProductAdvisory == nil {
