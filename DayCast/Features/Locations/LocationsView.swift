@@ -14,7 +14,7 @@ struct LocationsView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-  @Environment(\.editMode) private var editMode
+  @State private var editMode: EditMode = .inactive
 
   @State private var searchText = ""
   @State private var searchResults: [CitySearchResult] = []
@@ -59,6 +59,7 @@ struct LocationsView: View {
             .disabled(listedSaved.isEmpty)
         }
       }
+      .environment(\.editMode, $editMode)
     }
   }
 
@@ -233,7 +234,7 @@ struct LocationsView: View {
             if index > 0 { SettingsDivider() }
             LocationsSwipeDeleteRow(
               deleteAccessibilityID: DayCastAccessibility.Locations.deleteSaved(loc.name),
-              isEditing: editMode?.wrappedValue.isEditing == true,
+              isEditing: editMode.isEditing,
               onDelete: { store.removeLocation(loc) }
             ) {
               LocationRow(
