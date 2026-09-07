@@ -103,7 +103,7 @@ struct NowFeedCard: View {
       .buttonStyle(.plain)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(accessibilitySummary(asOf: asOf, rainLine: rainLine))
-      .accessibilityHint("Shows Now details including DayCast score")
+      .accessibilityHint("Shows Now details including DayCast Score")
       .accessibilityAddTraits(.isButton)
     }
   }
@@ -206,9 +206,7 @@ struct NowDetailView: View {
       if let aqi = weather.airQualityIndex {
         TacticalCard(label: "AQI", value: "\(aqi)", icon: "aqi.medium")
       }
-      if let pollen = weather.pollenLevel {
-        TacticalCard(label: "Pollen", value: pollen, icon: "leaf")
-      }
+      // Pollen stays off this grid — not a Today / Now face tile.
     }
   }
 }

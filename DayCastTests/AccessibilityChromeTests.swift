@@ -106,6 +106,44 @@ final class AccessibilityChromeTests: XCTestCase {
     XCTAssertEqual(WidgetAppGroup.identifier, "group.com.scubasteve1999.DayCast")
   }
 
+  func testPhotoUnavailableCopyIsProUnavailableNotBYOK() {
+    let copy = SkyCheckDeskCopy.photoUnavailableExplanation
+    XCTAssertEqual(copy, "Sky Check isn't available right now. Try again later.")
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Add your own"))
+  }
+
+  func testSkyCheckLockBodyOmitsTodaysTakeSalesCopy() {
+    let copy = GrokAPIKeyEmptyStateView.bodyCopy
+    XCTAssertTrue(copy.localizedCaseInsensitiveContains("Pro"))
+    XCTAssertTrue(copy.localizedCaseInsensitiveContains("Sky Check"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Today's Take"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("key"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+  }
+
+  func testASOTodayHasNoTakeBlockAndWidgetsOmitWatch() throws {
+    XCTAssertEqual(AppStoreScreenshotCopy.widgetsHomeTitle, "Home Screen")
+    XCTAssertEqual(AppStoreScreenshotCopy.widgetsLockTitle, "Lock Screen")
+    XCTAssertEqual(AppStoreScreenshotCopy.widgetSurfaces, ["Home Screen", "Lock Screen"])
+    for surface in AppStoreScreenshotCopy.widgetSurfaces {
+      XCTAssertFalse(surface.localizedCaseInsensitiveContains("Watch"), surface)
+      XCTAssertFalse(surface.localizedCaseInsensitiveContains("Take"), surface)
+    }
+
+    let aso = try chromeSource("DayCast/Features/Marketing/AppStoreScreenshotViews.swift")
+    XCTAssertFalse(aso.contains("TODAY'S TAKE"))
+    XCTAssertFalse(aso.contains("APPLE WATCH"))
+    XCTAssertFalse(aso.localizedCaseInsensitiveContains("applewatch"))
+  }
+
+  func testNowDetailsGridOmitsPollenTile() throws {
+    let source = try chromeSource("DayCast/Features/Today/Feed/Cards/NowFeedCard.swift")
+    XCTAssertFalse(source.contains("TacticalCard(label: \"Pollen\""))
+    XCTAssertFalse(source.contains("icon: \"leaf\""))
+  }
+
   func testSnapshotStillWritesLegacyGrokWireKeys() throws {
     let data = try JSONEncoder().encode(WidgetWeatherSnapshot.preview)
     let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -200,6 +238,14 @@ final class AccessibilityChromeTests: XCTestCase {
       XCTAssertFalse(line.localizedCaseInsensitiveContains("score"), line)
       XCTAssertFalse(line.localizedCaseInsensitiveContains("sparkles"), line)
     }
+  }
+
+  private func chromeSource(_ relativePath: String) throws -> String {
+    let url = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+      .appendingPathComponent(relativePath)
+    return try String(contentsOf: url, encoding: .utf8)
   }
 
   private func glanceSnapshot(low: Double, high: Double) -> WidgetWeatherSnapshot {
