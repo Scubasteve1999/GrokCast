@@ -37,6 +37,28 @@ final class TodayFirstViewportTests: XCTestCase {
     )
   }
 
+  func testCalmEnsembleLineDoesNotBlowYourNewsPeek() {
+    XCTAssertEqual(TodayGlanceLayout.honestyStripEnsembleLineHeight, 16)
+    XCTAssertEqual(TodayGlanceLayout.honestyStripEnsembleHeight, 36)
+    XCTAssertLessThan(
+      TodayGlanceLayout.honestyStripEnsembleHeight,
+      TodayGlanceLayout.alertChipMinHeight
+    )
+    XCTAssertLessThanOrEqual(
+      TodayGlanceLayout.oliveBranchCalmEnsembleStackHeight,
+      TodayGlanceLayout.visibleFeedHeightIPhone16
+    )
+    XCTAssertGreaterThanOrEqual(
+      TodayGlanceLayout.oliveBranchCalmEnsembleYourNewsPeek,
+      TodayGlanceLayout.yourNewsCardPeekHeight,
+      "Ensemble second line must leave a Your News card in the first viewport"
+    )
+    XCTAssertGreaterThan(
+      TodayGlanceLayout.oliveBranchCalmEnsembleYourNewsPeek,
+      TodayGlanceLayout.oliveBranchYourNewsPeek
+    )
+  }
+
   func testOutlookRadarPlateIsTallerThanThePostageStamp() {
     XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
     XCTAssertEqual(RadarPreviewSource.outlookPlateHeight, 168)

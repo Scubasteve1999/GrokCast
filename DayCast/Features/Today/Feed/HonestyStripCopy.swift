@@ -7,8 +7,15 @@ enum HonestyStripCopy {
     let wfoLabel: String
     let headline: String?
     let snippet: String?
+    /// Agree / hidden ensemble leaves this nil. Disagree is one range sentence.
+    let ensembleSentence: String?
 
     var isExpanded: Bool { headline != nil }
+
+    /// Ensemble disagree wins over AFD on the second line. One sentence, not a card.
+    var secondLine: String? { ensembleSentence ?? snippet }
+
+    var showsEnsembleLine: Bool { ensembleSentence != nil }
 
     /// Calm: `nws memphis`. Watch/warning: `nws memphis · severe thunderstorm watch until 9pm`.
     var primaryLine: String {
@@ -21,7 +28,7 @@ enum HonestyStripCopy {
     var accessibilityLabel: String {
       var parts = [spokenOffice(from: wfoLabel)]
       if let headline { parts.append(headline) }
-      if let snippet { parts.append(snippet) }
+      if let secondLine { parts.append(secondLine) }
       parts.append("DayCast is not an official wireless emergency alert.")
       return parts.joined(separator: ". ")
     }
@@ -71,6 +78,22 @@ enum HonestyStripCopy {
     return "until \(weekday) \(time)"
   }
 
+  /// Hour-only clock for ensemble ranges. Minutes only when not :00 — never MinuteCast.
+  static func compactHour(_ date: Date, timeZone: TimeZone) -> String {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = timeZone
+    return compactClock(date, calendar: calendar)
+  }
+
+  static func hourParts(_ date: Date, timeZone: TimeZone) -> (hour: Int, period: String) {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = timeZone
+    let hour = calendar.component(.hour, from: date)
+    let hour12 = hour % 12 == 0 ? 12 : hour % 12
+    let period = hour < 12 ? "am" : "pm"
+    return (hour12, period)
+  }
+
   /// First fresh AFD key-message card. Skip when calm or the rail has no AFD.
   /// HWO is not fetched today — do not invent a second text-product pipeline.
   static func afdSnippet(from items: [LocalBriefingItem], maxCharacters: Int = 88) -> String? {
@@ -92,10 +115,12 @@ enum HonestyStripCopy {
     cwa: String?,
     alerts: [NWSAlert],
     briefingItems: [LocalBriefingItem],
+    ensemble: EnsembleAgreement.Verdict? = nil,
     now: Date = Date(),
     timeZone: TimeZone = .current
   ) -> Content? {
     guard let wfo = wfoLabel(officeName: officeName, cwa: cwa) else { return nil }
+    let ensembleSentence = EnsembleAgreementCopy.sentence(for: ensemble, timeZone: timeZone)
     if let alert = watchWarning(from: alerts),
       let headline = headline(
         event: alert.event,
@@ -107,10 +132,16 @@ enum HonestyStripCopy {
       return Content(
         wfoLabel: wfo,
         headline: headline,
-        snippet: afdSnippet(from: briefingItems)
+        snippet: afdSnippet(from: briefingItems),
+        ensembleSentence: ensembleSentence
       )
     }
-    return Content(wfoLabel: wfo, headline: nil, snippet: nil)
+    return Content(
+      wfoLabel: wfo,
+      headline: nil,
+      snippet: nil,
+      ensembleSentence: ensembleSentence
+    )
   }
 
   /// Standalone chrome only when the Alerts chip is absent — story-day peek has ~4pt slack.

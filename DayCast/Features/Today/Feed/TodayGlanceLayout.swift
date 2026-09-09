@@ -21,6 +21,11 @@ enum TodayGlanceLayout {
   static let alertChipMinHeight: CGFloat = 56
   /// Calm WFO caption only. Severe copy folds into the 56pt Alerts chip.
   static let honestyStripCalmHeight: CGFloat = 20
+  /// Second caption when ensemble disagrees. Still shorter than the alert chip.
+  static let honestyStripEnsembleLineHeight: CGFloat = 16
+  static var honestyStripEnsembleHeight: CGFloat {
+    honestyStripCalmHeight + honestyStripEnsembleLineHeight
+  }
   static let radarHeaderHeight: CGFloat = 22
   static let radarInnerSpacing: CGFloat = DesignTokens.Spacing.space8
   static var radarMapHeight: CGFloat { RadarPreviewSource.outlookPlateHeight }
@@ -79,5 +84,22 @@ enum TodayGlanceLayout {
 
   static var oliveBranchCalmYourNewsPeek: CGFloat {
     visibleFeedHeightIPhone16 - oliveBranchCalmStackHeight
+  }
+
+  /// Calm + ensemble second line. Must still leave a Your News card on iPhone 16.
+  static var oliveBranchCalmEnsembleStackHeight: CGFloat {
+    nowBudgetHeight
+      + feedSpacing
+      + honestyStripEnsembleHeight
+      + heroBottomPadding
+      + sheetTopPadding
+      + hourlyCardHeight
+      + sheetSectionSpacing
+      + radarCardHeight
+      + sheetSectionSpacing
+  }
+
+  static var oliveBranchCalmEnsembleYourNewsPeek: CGFloat {
+    visibleFeedHeightIPhone16 - oliveBranchCalmEnsembleStackHeight
   }
 }

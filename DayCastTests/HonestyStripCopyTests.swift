@@ -224,6 +224,100 @@ final class HonestyStripCopyTests: XCTestCase {
     XCTAssertEqual(rows, [.item(.now), .honestyStrip, .item(.hourly)])
   }
 
+  func testEnsembleDisagreeBecomesSecondLineAndWinsOverAFD() {
+    let expires = date(year: 2026, month: 9, day: 9, hour: 21, minute: 0)
+    let times = (0..<6).map { date(year: 2026, month: 9, day: 9, hour: 15 + $0) }
+    let verdict = EnsembleAgreement.evaluate(
+      times: times,
+      members: [
+        wetAt(1, length: 6),
+        wetAt(2, length: 6),
+        wetAt(4, length: 6),
+        wetAt(4, length: 6),
+      ],
+      stormByMember: [
+        [false, true, false, false, false, false],
+        [false, false, false, false, false, false],
+        [false, false, false, false, true, false],
+        [false, false, false, false, false, false],
+      ],
+      now: now
+    )
+    let content = HonestyStripCopy.content(
+      officeName: "Memphis, TN",
+      cwa: "MEG",
+      alerts: [watch(expires: expires)],
+      briefingItems: [afdItem()],
+      ensemble: verdict,
+      now: now,
+      timeZone: chicago
+    )
+    XCTAssertEqual(
+      content?.primaryLine,
+      "nws memphis · severe thunderstorm watch until 9pm"
+    )
+    XCTAssertEqual(
+      content?.secondLine,
+      "models disagree — storm may start 4–7pm"
+    )
+    XCTAssertTrue(content?.showsEnsembleLine == true)
+    XCTAssertEqual(
+      AlertsFeedCard.chipUntil(for: watch(expires: expires), honesty: content),
+      "models disagree — storm may start 4–7pm"
+    )
+  }
+
+  func testEnsembleAgreeKeepsAFDOnSevereAndOmitsCalmSecondLine() {
+    let expires = date(year: 2026, month: 9, day: 9, hour: 21, minute: 0)
+    let times = (0..<6).map { date(year: 2026, month: 9, day: 9, hour: 15 + $0) }
+    let agree = EnsembleAgreement.evaluate(
+      times: times,
+      members: Array(repeating: Array(repeating: 0.0, count: 6), count: 6),
+      now: now
+    )
+    let severe = HonestyStripCopy.content(
+      officeName: "Memphis, TN",
+      cwa: "MEG",
+      alerts: [watch(expires: expires)],
+      briefingItems: [afdItem()],
+      ensemble: agree,
+      now: now,
+      timeZone: chicago
+    )
+    XCTAssertNil(severe?.ensembleSentence)
+    XCTAssertEqual(
+      severe?.secondLine,
+      "Scattered storms after 4pm. Hail possible in the strongest cells."
+    )
+
+    let calm = HonestyStripCopy.content(
+      officeName: "Memphis, TN",
+      cwa: "MEG",
+      alerts: [],
+      briefingItems: [afdItem()],
+      ensemble: agree,
+      now: now,
+      timeZone: chicago
+    )
+    XCTAssertNil(calm?.secondLine)
+    XCTAssertEqual(calm?.primaryLine, "nws memphis")
+  }
+
+  func testMissingEnsembleLeavesMVP1Strip() {
+    let content = HonestyStripCopy.content(
+      officeName: "Memphis, TN",
+      cwa: "MEG",
+      alerts: [],
+      briefingItems: [],
+      ensemble: nil,
+      now: now,
+      timeZone: chicago
+    )
+    XCTAssertEqual(content?.primaryLine, "nws memphis")
+    XCTAssertNil(content?.secondLine)
+    XCTAssertFalse(content?.showsEnsembleLine == true)
+  }
+
   func testAssemblerOmitsStripOnStoryDay() {
     let rows = FeedAssembler.rows(
       items: [.now, .alerts, .hourly],
@@ -290,6 +384,12 @@ final class HonestyStripCopyTests: XCTestCase {
       officeID: "MEG",
       imageURL: nil
     )
+  }
+
+  private func wetAt(_ index: Int, length: Int) -> [Double] {
+    var series = Array(repeating: 0.0, count: length)
+    series[index] = 0.05
+    return series
   }
 
   private func newsItem() -> LocalBriefingItem {

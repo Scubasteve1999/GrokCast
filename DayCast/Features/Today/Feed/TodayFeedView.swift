@@ -6,6 +6,7 @@ struct TodayFeedView: View {
   @Environment(ShortTermPrecipStore.self) private var shortTermStore
   @Environment(FireStore.self) private var fireStore
   @Environment(LocalBriefingStore.self) private var briefingStore
+  @Environment(EnsembleAgreementStore.self) private var ensembleStore
 
   let weather: DayCastWeather
 
@@ -90,11 +91,16 @@ struct TodayFeedView: View {
   private var honestyContent: HonestyStripCopy.Content? {
     guard let office = briefingStore.officeOfRecord(for: store.currentLocation?.id.uuidString)
     else { return nil }
+    let ensemble = EnsembleAgreement.evaluate(
+      snapshot: ensembleStore.snapshot(for: store.currentLocation?.id.uuidString),
+      hours: weather.hourly
+    )
     return HonestyStripCopy.content(
       officeName: office.officeName,
       cwa: office.cwa,
       alerts: store.displayableGroupedAlerts,
       briefingItems: hasBriefingForCurrentLocation ? briefingStore.items : [],
+      ensemble: ensemble,
       timeZone: weather.locationTimeZone
     )
   }

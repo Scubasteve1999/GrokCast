@@ -1353,6 +1353,10 @@ final class WeatherStore {
       guard self.requestSelection == selection else { return }
       await ShortTermPrecipStore.shared.refresh(for: loc, force: force)
     }
+    Task {
+      guard self.requestSelection == selection else { return }
+      await EnsembleAgreementStore.shared.refresh(for: loc, force: force)
+    }
     // Fire data is independent — never await on the weather/alerts path.
     Task {
       guard self.requestSelection == selection else { return }
