@@ -211,6 +211,7 @@ struct MainTabView: View {
     .environment(SevereWeatherStore.shared)
     .environment(LocalBriefingStore.shared)
     .environment(ShortTermPrecipStore.shared)
+    .environment(EnsembleAgreementStore.shared)
     .environment(FireStore.shared)
     .environment(LightningStore.shared)
     .environment(GrokBriefSafety.shared)

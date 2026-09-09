@@ -102,7 +102,7 @@ struct AlertsFeedCard: View {
   }
 
   static func chipUntil(for alert: NWSAlert, honesty: HonestyStripCopy.Content? = nil) -> String {
-    if let snippet = honesty?.snippet, alert.isWatch || alert.isWarning {
+    if let snippet = honesty?.secondLine, alert.isWatch || alert.isWarning {
       return snippet
     }
     let until = AlertsActiveCopy.untilLine(expires: alert.expires, areaDesc: nil)
