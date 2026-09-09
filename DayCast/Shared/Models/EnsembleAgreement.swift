@@ -230,6 +230,9 @@ enum EnsembleAgreementCopy {
 
     if verdict.alreadyWet {
       let through = HonestyStripCopy.compactHour(range.upperBound, timeZone: timeZone)
+      if verdict.wetFraction <= EnsembleAgreement.Thresholds.splitWetFraction {
+        return "models \(verb) — \(noun) may miss or linger through \(through)"
+      }
       return "models \(verb) — \(noun) timing still spread through \(through)"
     }
 

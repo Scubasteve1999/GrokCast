@@ -134,6 +134,23 @@ final class EnsembleAgreementTests: XCTestCase {
     )
   }
 
+  func testAlreadyWetSplitSaysMayMissOrLinger() {
+    let times = hourlyTimes(from: 15, count: 6)
+    let members = [
+      wetAt(0, length: 6),
+      wetAt(3, length: 6),
+      dry(6),
+      dry(6),
+    ]
+    let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: now)
+    XCTAssertEqual(verdict?.state, .strongDisagree)
+    XCTAssertEqual(verdict?.alreadyWet, true)
+    XCTAssertEqual(
+      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
+      "models disagree — rain may miss or linger through 6pm"
+    )
+  }
+
   func testAlreadyWetUsesThroughNotStart() {
     let times = hourlyTimes(from: 15, count: 6)
     let members = Array(repeating: wetAt(0, length: 6), count: 4).enumerated().map { index, series in
