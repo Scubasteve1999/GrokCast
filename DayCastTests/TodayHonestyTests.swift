@@ -111,6 +111,28 @@ final class TodayHonestyTests: XCTestCase {
       [.item(.now)])
   }
 
+  func testCalmHonestyStripSitsAfterNow() {
+    XCTAssertEqual(
+      FeedAssembler.rows(
+        items: [.now, .hourly],
+        weatherError: nil,
+        showsStandaloneHonestyStrip: true
+      ),
+      [.item(.now), .honestyStrip, .item(.hourly)]
+    )
+  }
+
+  func testStoryDayKeepsHonestyOffTheRowList() {
+    let rows = FeedAssembler.rows(
+      items: FeedItem.defaultOrder,
+      weatherError: nil,
+      showsStandaloneHonestyStrip: false
+    )
+    XCTAssertEqual(rows.first, .item(.now))
+    XCTAssertEqual(rows.dropFirst().first, .item(.alerts))
+    XCTAssertFalse(rows.contains(.honestyStrip))
+  }
+
   private func hrrrContext(fetchedAt: Date) -> ShortTermPrecipContext {
     ShortTermPrecipContext(
       locationID: "loc-olive",

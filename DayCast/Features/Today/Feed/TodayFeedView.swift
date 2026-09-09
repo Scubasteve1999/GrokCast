@@ -87,8 +87,31 @@ struct TodayFeedView: View {
     return shortTermStore.context
   }
 
+  private var honestyContent: HonestyStripCopy.Content? {
+    guard let office = briefingStore.officeOfRecord(for: store.currentLocation?.id.uuidString)
+    else { return nil }
+    return HonestyStripCopy.content(
+      officeName: office.officeName,
+      cwa: office.cwa,
+      alerts: store.displayableGroupedAlerts,
+      briefingItems: hasBriefingForCurrentLocation ? briefingStore.items : [],
+      timeZone: weather.locationTimeZone
+    )
+  }
+
+  private var showsStandaloneHonestyStrip: Bool {
+    HonestyStripCopy.showsStandaloneStrip(
+      hasWFO: honestyContent != nil,
+      showAlertsSlot: snapshot.showAlertsSlot
+    )
+  }
+
   private var feedRows: [TodayFeedRow] {
-    FeedAssembler.rows(items: feedItems, weatherError: store.weatherError)
+    FeedAssembler.rows(
+      items: feedItems,
+      weatherError: store.weatherError,
+      showsStandaloneHonestyStrip: showsStandaloneHonestyStrip
+    )
   }
 
   private var currentMinutecast: MinutecastSummary {
@@ -106,7 +129,7 @@ struct TodayFeedView: View {
   private var heroRows: [TodayFeedRow] {
     feedRows.filter { row in
       switch row {
-      case .errorBanner, .item(.now), .item(.alerts): return true
+      case .errorBanner, .honestyStrip, .item(.now), .item(.alerts): return true
       default: return false
       }
     }
@@ -115,7 +138,7 @@ struct TodayFeedView: View {
   private var sheetRows: [TodayFeedRow] {
     feedRows.filter { row in
       switch row {
-      case .errorBanner, .item(.now), .item(.alerts): return false
+      case .errorBanner, .honestyStrip, .item(.now), .item(.alerts): return false
       default: return true
       }
     }
@@ -131,6 +154,10 @@ struct TodayFeedView: View {
               case .errorBanner:
                 if let error = store.weatherError, !error.isEmpty {
                   errorBanner(error)
+                }
+              case .honestyStrip:
+                if let honestyContent {
+                  HonestyStrip(content: honestyContent, sitsOnPhoto: true)
                 }
               case .item(let item):
                 feedCard(for: item, plated: false)
@@ -227,7 +254,8 @@ struct TodayFeedView: View {
     case .alerts:
       AlertsFeedCard(
         alerts: store.displayableGroupedAlerts,
-        sitsOnPhoto: true
+        sitsOnPhoto: true,
+        honesty: honestyContent
       ) { alert in
         Analytics.track(.feedCardTap, parameters: ["card": item.analyticsName])
         selectedAlert = alert
