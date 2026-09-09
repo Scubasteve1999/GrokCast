@@ -136,6 +136,14 @@ final class EnsembleAgreementTests: XCTestCase {
 
   func testUpcomingHourIsNotAlreadyWetAfterHalfPast() {
     let halfPast = date(year: 2026, month: 9, day: 9, hour: 15, minute: 45)
+    let firstWet = date(year: 2026, month: 9, day: 9, hour: 16, minute: 0)
+    let lookbackAhead = halfPast.addingTimeInterval(
+      Double(EnsembleAgreement.Thresholds.lookbackMinutes) * 60
+    )
+    // 16:00 is inside now+30m, but that must not count as already raining.
+    XCTAssertTrue(firstWet <= lookbackAhead)
+    XCTAssertFalse(firstWet <= halfPast)
+
     let times = hourlyTimes(from: 15, count: 8)
     let members = [
       wetAt(1, length: 8),
@@ -145,14 +153,18 @@ final class EnsembleAgreementTests: XCTestCase {
     ]
     let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: halfPast)
     XCTAssertEqual(verdict?.alreadyWet, false)
-    XCTAssertEqual(
-      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
-      "models disagree — rain may miss or start around 4pm"
-    )
+    XCTAssertEqual(verdict?.startRange?.lowerBound, firstWet)
+    let sentence = EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago)
+    XCTAssertEqual(sentence, "models disagree — rain may miss or start around 4pm")
+    XCTAssertFalse(sentence?.contains("linger") == true)
+    XCTAssertFalse(sentence?.contains("through") == true)
   }
 
   func testCurrentHourStaysAlreadyWetAfterHalfPast() {
     let halfPast = date(year: 2026, month: 9, day: 9, hour: 15, minute: 45)
+    let firstWet = date(year: 2026, month: 9, day: 9, hour: 15, minute: 0)
+    XCTAssertTrue(firstWet <= halfPast)
+
     let times = hourlyTimes(from: 15, count: 6)
     let members = [
       wetAt(0, length: 6),
@@ -163,9 +175,27 @@ final class EnsembleAgreementTests: XCTestCase {
     let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: halfPast)
     XCTAssertEqual(verdict?.alreadyWet, true)
     XCTAssertEqual(verdict?.wetCount, 2)
+    XCTAssertEqual(verdict?.startRange?.lowerBound, firstWet)
     XCTAssertEqual(
       EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
       "models disagree — rain may miss or linger through 6pm"
+    )
+  }
+
+  func testFirstWetExactlyNowIsAlreadyWet() {
+    let onTheHour = date(year: 2026, month: 9, day: 9, hour: 16, minute: 0)
+    let times = hourlyTimes(from: 16, count: 6)
+    let members = [
+      wetAt(0, length: 6),
+      wetAt(3, length: 6),
+      dry(6),
+      dry(6),
+    ]
+    let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: onTheHour)
+    XCTAssertEqual(verdict?.alreadyWet, true)
+    XCTAssertEqual(
+      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
+      "models disagree — rain may miss or linger through 7pm"
     )
   }
 
