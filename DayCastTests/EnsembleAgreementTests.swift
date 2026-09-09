@@ -134,6 +134,58 @@ final class EnsembleAgreementTests: XCTestCase {
     )
   }
 
+  func testUpcomingHourIsNotAlreadyWetAfterHalfPast() {
+    let halfPast = date(year: 2026, month: 9, day: 9, hour: 15, minute: 45)
+    let times = hourlyTimes(from: 15, count: 8)
+    let members = [
+      wetAt(1, length: 8),
+      wetAt(1, length: 8),
+      dry(8),
+      dry(8),
+    ]
+    let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: halfPast)
+    XCTAssertEqual(verdict?.alreadyWet, false)
+    XCTAssertEqual(
+      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
+      "models disagree — rain may miss or start around 4pm"
+    )
+  }
+
+  func testCurrentHourStaysAlreadyWetAfterHalfPast() {
+    let halfPast = date(year: 2026, month: 9, day: 9, hour: 15, minute: 45)
+    let times = hourlyTimes(from: 15, count: 6)
+    let members = [
+      wetAt(0, length: 6),
+      wetAt(3, length: 6),
+      dry(6),
+      dry(6),
+    ]
+    let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: halfPast)
+    XCTAssertEqual(verdict?.alreadyWet, true)
+    XCTAssertEqual(verdict?.wetCount, 2)
+    XCTAssertEqual(
+      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
+      "models disagree — rain may miss or linger through 6pm"
+    )
+  }
+
+  func testSplitSpreadSaysMayMissOrStart() {
+    let times = hourlyTimes(from: 15, count: 8)
+    let members = [
+      wetAt(1, length: 8),
+      wetAt(3, length: 8),
+      dry(8),
+      dry(8),
+    ]
+    let verdict = EnsembleAgreement.evaluate(times: times, members: members, now: now)
+    XCTAssertEqual(verdict?.state, .strongDisagree)
+    XCTAssertEqual(verdict?.alreadyWet, false)
+    XCTAssertEqual(
+      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
+      "models disagree — rain may miss or start 4–6pm"
+    )
+  }
+
   func testAlreadyWetSplitSaysMayMissOrLinger() {
     let times = hourlyTimes(from: 15, count: 6)
     let members = [
@@ -260,4 +312,12 @@ final class EnsembleAgreementTests: XCTestCase {
     series[index] = 0.05
     return series
   }
+}
+
+private func date(year: Int, month: Int, day: Int, hour: Int, minute: Int = 0) -> Date {
+  var calendar = Calendar(identifier: .gregorian)
+  calendar.timeZone = TimeZone(identifier: "America/Chicago")!
+  return calendar.date(
+    from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
+  )!
 }

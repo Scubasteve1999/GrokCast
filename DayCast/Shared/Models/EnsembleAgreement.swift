@@ -70,7 +70,7 @@ enum EnsembleAgreement {
     let usable = members.filter { $0.count == times.count }
     guard usable.count >= Thresholds.minMembers, !times.isEmpty else { return nil }
 
-    let windowStart = now.addingTimeInterval(-Double(Thresholds.lookbackMinutes) * 60)
+    let windowStart = scoringWindowStart(now: now, slotTimes: times)
     let windowEnd = now.addingTimeInterval(Double(windowHours) * 3600)
 
     var starts: [Date] = []
@@ -122,9 +122,8 @@ enum EnsembleAgreement {
     }
 
     let startRange = range(from: starts)
-    let alreadyWet = starts.contains {
-      $0 <= now.addingTimeInterval(Double(Thresholds.lookbackMinutes) * 60)
-    }
+    // First-wet hour has already begun — never the upcoming slot.
+    let alreadyWet = starts.contains { $0 <= now }
 
     if fraction <= Thresholds.splitWetFraction {
       return Verdict(
@@ -163,7 +162,7 @@ enum EnsembleAgreement {
     now: Date = Date(),
     windowHours: Int = Thresholds.windowHours
   ) -> Bool {
-    let windowStart = now.addingTimeInterval(-Double(Thresholds.lookbackMinutes) * 60)
+    let windowStart = scoringWindowStart(now: now, slotTimes: hours.map(\.time))
     let windowEnd = now.addingTimeInterval(Double(windowHours) * 3600)
     return hours.contains { hour in
       hour.time >= windowStart && hour.time < windowEnd && isWetHour(hour)
@@ -195,6 +194,16 @@ enum EnsembleAgreement {
       if amount >= Thresholds.wetInches { return index }
     }
     return nil
+  }
+
+  /// Lookback plus the hourly slot that has already started, so :31–:59
+  /// does not drop the current hour or promote the next one.
+  private static func scoringWindowStart(now: Date, slotTimes: [Date]) -> Date {
+    let lookbackStart = now.addingTimeInterval(-Double(Thresholds.lookbackMinutes) * 60)
+    guard let currentSlot = slotTimes.filter({ $0 <= now }).max() else {
+      return lookbackStart
+    }
+    return min(lookbackStart, currentSlot)
   }
 
   private static func range(from starts: [Date]) -> ClosedRange<Date>? {
@@ -245,6 +254,9 @@ enum EnsembleAgreementCopy {
     }
 
     let span = hourRange(range.lowerBound, range.upperBound, timeZone: timeZone)
+    if verdict.wetFraction <= EnsembleAgreement.Thresholds.splitWetFraction {
+      return "models \(verb) — \(noun) may miss or start \(span)"
+    }
     return "models \(verb) — \(noun) may start \(span)"
   }
 
