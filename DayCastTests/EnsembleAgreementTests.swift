@@ -169,6 +169,32 @@ final class EnsembleAgreementTests: XCTestCase {
     )
   }
 
+  func testLowFractionCurrentHourIsAlreadyWetAfterHalfPast() {
+    let halfPast = date(year: 2026, month: 9, day: 9, hour: 15, minute: 45)
+    let times = hourlyTimes(from: 15, count: 6)
+    let members = [
+      wetAt(0, length: 6),
+      dry(6),
+      dry(6),
+      dry(6),
+      dry(6),
+      dry(6),
+    ]
+    let verdict = EnsembleAgreement.evaluate(
+      times: times,
+      members: members,
+      primaryIsWetInWindow: true,
+      now: halfPast
+    )
+    XCTAssertEqual(verdict?.state, .softDisagree)
+    XCTAssertEqual(verdict?.alreadyWet, true)
+    XCTAssertEqual(verdict?.wetCount, 1)
+    XCTAssertEqual(
+      EnsembleAgreementCopy.sentence(for: verdict, timeZone: chicago),
+      "models differ — rain may miss or linger through 3pm"
+    )
+  }
+
   func testSplitSpreadSaysMayMissOrStart() {
     let times = hourlyTimes(from: 15, count: 8)
     let members = [

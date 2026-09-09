@@ -99,6 +99,8 @@ enum EnsembleAgreement {
 
     let wetCount = starts.count
     let fraction = Double(wetCount) / Double(usable.count)
+    // First-wet hour has already begun — never the upcoming slot.
+    let alreadyWet = starts.contains { $0 <= now }
 
     if fraction < Thresholds.hideWetFraction {
       if primaryIsWetInWindow {
@@ -108,7 +110,7 @@ enum EnsembleAgreement {
           wetCount: wetCount,
           startRange: range(from: starts),
           isStorm: storm,
-          alreadyWet: false
+          alreadyWet: alreadyWet
         )
       }
       return Verdict(
@@ -117,13 +119,11 @@ enum EnsembleAgreement {
         wetCount: wetCount,
         startRange: range(from: starts),
         isStorm: storm,
-        alreadyWet: false
+        alreadyWet: alreadyWet
       )
     }
 
     let startRange = range(from: starts)
-    // First-wet hour has already begun — never the upcoming slot.
-    let alreadyWet = starts.contains { $0 <= now }
 
     if fraction <= Thresholds.splitWetFraction {
       return Verdict(
