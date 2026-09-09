@@ -12,6 +12,10 @@ final class LocalBriefingStore {
   private(set) var locationID: String?
   private(set) var lastRefresh: Date?
   private(set) var isRefreshing = false
+  /// County Warning Area from `/points` (`MEG`, `TBW`, …). Nil outside NWS coverage.
+  private(set) var cwa: String?
+  /// `api.weather.gov/offices/{cwa}` display name. Nil until fetch / cache.
+  private(set) var officeName: String?
 
   /// Same ~20 min window as `SevereWeatherStore`.
   private let cacheTTL: TimeInterval = 20 * 60
@@ -61,6 +65,8 @@ final class LocalBriefingStore {
       guard let cwa else {
         items = LocalBriefingParser.mergingNews(newsItems, nws: [])
         locationID = locationKey
+        self.cwa = nil
+        officeName = nil
         lastRefresh = Date()
         cachedLocationID = locationKey
         return
@@ -131,6 +137,8 @@ final class LocalBriefingStore {
       )
       items = LocalBriefingParser.mergingNews(newsItems, nws: nwsItems)
       locationID = locationKey
+      self.cwa = cwa
+      self.officeName = officeName
       lastRefresh = Date()
       cachedLocationID = locationKey
     } catch is CancellationError {
@@ -140,10 +148,19 @@ final class LocalBriefingStore {
       if locationID != locationKey {
         items = []
         locationID = locationKey
+        cwa = nil
+        officeName = nil
       }
       lastRefresh = Date()
       cachedLocationID = locationKey
     }
+  }
+
+  /// Office of record for the location the store last settled. Mismatch → nil.
+  func officeOfRecord(for locationID: String?) -> (cwa: String, officeName: String?)? {
+    guard let locationID, self.locationID == locationID else { return nil }
+    guard let cwa, !cwa.isEmpty else { return nil }
+    return (cwa, officeName)
   }
 
   private func officeName(for cwa: String) async -> String? {

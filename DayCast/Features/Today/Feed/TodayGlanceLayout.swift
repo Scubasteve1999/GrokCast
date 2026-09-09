@@ -19,6 +19,8 @@ enum TodayGlanceLayout {
   static let nowBudgetHeight: CGFloat = 160
   static var nowHeroMaxHeight: CGFloat { nowBudgetHeight }
   static let alertChipMinHeight: CGFloat = 56
+  /// Calm WFO caption only. Severe copy folds into the 56pt Alerts chip.
+  static let honestyStripCalmHeight: CGFloat = 20
   static let radarHeaderHeight: CGFloat = 22
   static let radarInnerSpacing: CGFloat = DesignTokens.Spacing.space8
   static var radarMapHeight: CGFloat { RadarPreviewSource.outlookPlateHeight }
@@ -60,5 +62,22 @@ enum TodayGlanceLayout {
 
   static var oliveBranchYourNewsPeek: CGFloat {
     visibleFeedHeightIPhone16 - oliveBranchStoryStackHeight
+  }
+
+  /// Calm first viewport: WFO strip instead of the 56pt alert chip.
+  static var oliveBranchCalmStackHeight: CGFloat {
+    nowBudgetHeight
+      + feedSpacing
+      + honestyStripCalmHeight
+      + heroBottomPadding
+      + sheetTopPadding
+      + hourlyCardHeight
+      + sheetSectionSpacing
+      + radarCardHeight
+      + sheetSectionSpacing
+  }
+
+  static var oliveBranchCalmYourNewsPeek: CGFloat {
+    visibleFeedHeightIPhone16 - oliveBranchCalmStackHeight
   }
 }

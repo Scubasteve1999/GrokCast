@@ -15,12 +15,22 @@ enum FeedAssembler {
   }
 
   /// Error/retry chrome plus cards. Banner sits above Now so a storm user sees it without scrolling.
-  static func rows(items: [FeedItem], weatherError: String?) -> [TodayFeedRow] {
+  /// Standalone honesty strip is calm-only (WFO). Watch/warning copy lives on the Alerts chip.
+  static func rows(
+    items: [FeedItem],
+    weatherError: String?,
+    showsStandaloneHonestyStrip: Bool = false
+  ) -> [TodayFeedRow] {
     var rows: [TodayFeedRow] = []
     if let weatherError, !weatherError.isEmpty {
       rows.append(.errorBanner)
     }
-    rows.append(contentsOf: items.map(TodayFeedRow.item))
+    for item in items {
+      rows.append(.item(item))
+      if item == .now, showsStandaloneHonestyStrip {
+        rows.append(.honestyStrip)
+      }
+    }
     return rows
   }
 
