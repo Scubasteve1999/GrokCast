@@ -42,6 +42,7 @@ TF / App Store bump; Memphis geo-lock; Alerts rewrite; HWO; WeatherKit swap; pai
 | Agree | Most members wet and first-wet spread ≤ 60 min — **omit sentence** |
 | Soft | Spread 61–179 min, or primary wet / ensemble mostly dry |
 | Strong | Spread ≥ 180 min (`4–7pm`), or wet/dry split 20–80% |
+| Already wet + split | `may miss or linger through {hour}` |
 | Placement | Calm: second caption on the 36pt strip. Severe: chip line 2, ensemble over AFD |
 | Density | Calm+ensemble peek still `> ` story-day peek; no extra card |
 | Fail | Transport / decode / stale (>45 min) → MVP1 strip |
