@@ -99,7 +99,8 @@ enum EnsembleAgreement {
 
     let wetCount = starts.count
     let fraction = Double(wetCount) / Double(usable.count)
-    // First-wet hour has already begun — never the upcoming slot.
+    // First-wet at or before now. lookbackMinutes widens windowStart only —
+    // never this predicate into the future (15:45 must not treat 16:00 as already raining).
     let alreadyWet = starts.contains { $0 <= now }
 
     if fraction < Thresholds.hideWetFraction {
