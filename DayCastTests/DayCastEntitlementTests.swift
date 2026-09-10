@@ -211,6 +211,10 @@ final class DayCastEntitlementTests: XCTestCase {
       CitySearch.selection(candidate: denver, saved: saved, canAdd: canAdd),
       .paywall
     )
+    XCTAssertEqual(
+      CitySearch.selectionDecision(candidate: denver, saved: saved, canAdd: canAdd),
+      .paywall
+    )
   }
 
   func testLocationsCopyNamesNearMePlusOneSavedCity() {

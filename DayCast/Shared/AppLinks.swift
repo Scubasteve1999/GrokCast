@@ -46,6 +46,9 @@ enum DayCastAccessibility {
     static let health = "daycast.today.health"
     static let precip = "daycast.today.precip"
     static let yourNews = "daycast.today.yourNews"
+    static let addCity = "daycast.today.addCity"
+    static let addCitySearch = "daycast.today.addCity.search"
+    static let addCitySearchField = "daycast.today.addCity.searchField"
   }
 
   enum Radar {

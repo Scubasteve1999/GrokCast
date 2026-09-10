@@ -185,6 +185,7 @@ final class CitySearchTests: XCTestCase {
     )
     XCTAssertEqual(DayCastAccessibility.Today.temperature, "daycast.today.temperature")
     XCTAssertEqual(DayCastAccessibility.Today.updatedAt, "daycast.today.updatedAt")
+    XCTAssertEqual(DayCastAccessibility.Today.addCity, "daycast.today.addCity")
   }
 
   func testChipBarEmptyStripDoesNotCatchTaps() {

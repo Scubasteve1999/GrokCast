@@ -47,6 +47,8 @@ final class AccessibilityChromeTests: XCTestCase {
       LocationChipBar.reservedHeight,
       DesignTokens.Layout.minHitTarget
     )
+    XCTAssertTrue(LocationChipBar.usesTrailingAddCityControl)
+    XCTAssertFalse(LocationChipBar.usesPermanentPromoRow)
   }
 
   func testLocationAlertDotUsesWarningColorUnlessTheAlertIsAWarning() {
