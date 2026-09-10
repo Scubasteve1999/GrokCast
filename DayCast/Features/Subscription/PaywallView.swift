@@ -12,11 +12,17 @@ struct PaywallView: View {
   @Bindable var subscription: SubscriptionManager
 
   var feature: PaywallFeature
+  var source: PaywallSource?
 
   @State private var selectedProductID: String = DayCastProProducts.yearly
 
-  init(feature: PaywallFeature, subscription: SubscriptionManager) {
+  init(
+    feature: PaywallFeature,
+    source: PaywallSource? = nil,
+    subscription: SubscriptionManager
+  ) {
     self.feature = feature
+    self.source = source
     self.subscription = subscription
   }
 
@@ -41,7 +47,10 @@ struct PaywallView: View {
         }
       }
       .onAppear {
-        Analytics.track(.paywallView, parameters: ["feature": feature.analyticsName])
+        Analytics.track(
+          .paywallView,
+          parameters: PaywallAnalytics.viewParameters(feature: feature, source: source)
+        )
       }
       .task {
         if subscription.products.isEmpty {
@@ -376,6 +385,27 @@ enum PaywallFeature: Equatable {
     case .morningBrief: "morning_brief"
     case .severeAlerts: "severe_alerts"
     }
+  }
+}
+
+/// Where the locations (or other) paywall was opened from.
+enum PaywallSource: String, Equatable, Sendable {
+  case todayChip = "today_chip"
+  case locations = "locations"
+
+  var analyticsName: String { rawValue }
+}
+
+enum PaywallAnalytics {
+  static func viewParameters(
+    feature: PaywallFeature,
+    source: PaywallSource? = nil
+  ) -> [String: String] {
+    var parameters = ["feature": feature.analyticsName]
+    if let source {
+      parameters["source"] = source.analyticsName
+    }
+    return parameters
   }
 }
 

@@ -175,7 +175,7 @@ struct LocationsView: View {
           Button {
             selectSearchResult(item)
           } label: {
-            SearchResultRow(result: item)
+            CitySearchResultRow(result: item)
               .padding(.horizontal, DesignTokens.Spacing.space16)
               .padding(.vertical, DesignTokens.Spacing.space12)
           }
@@ -342,7 +342,7 @@ struct LocationsView: View {
         .foregroundStyle(DesignTokens.Palette.textTertiary)
         .accessibilityIdentifier(DayCastAccessibility.Locations.freeLimitChip)
       Button(LocationsCopy.saveUnlimitedCTA) {
-        PaywallCoordinator.shared.present(.locations)
+        PaywallCoordinator.shared.present(.locations, source: .locations)
       }
       .font(DesignTokens.Typography.caption().weight(.semibold))
       .foregroundStyle(DesignTokens.Palette.accent)
@@ -377,7 +377,7 @@ struct LocationsView: View {
           Button {
             selectSearchResult(item)
           } label: {
-            SearchResultRow(result: item)
+            CitySearchResultRow(result: item)
           }
           .buttonStyle(.plain)
           .accessibilityIdentifier(DayCastAccessibility.Locations.result(item.name))
@@ -444,39 +444,15 @@ struct LocationsView: View {
   }
 
   private func selectSearchResult(_ item: CitySearchResult) {
-    let candidate = SavedLocation(
-      name: item.name,
-      latitude: item.latitude,
-      longitude: item.longitude
-    )
-    let decision = CitySearch.selection(
-      candidate: candidate,
-      saved: store.savedLocations,
-      canAdd: EntitlementChecker.canAddLocation(
-        locations: store.savedLocations,
-        subscription: subscription
-      )
-    )
-    switch decision {
-    case .selectExisting(let existing):
-      store.selectLocation(existing)
-    case .add:
-      guard store.addLocation(candidate) else {
-        PaywallCoordinator.shared.present(.locations)
-        return
+    let selection = LocationSearchFlow.apply(
+      result: item,
+      store: store,
+      isPro: subscription.isPro,
+      presentPaywall: {
+        PaywallCoordinator.shared.present(.locations, source: .locations)
       }
-      store.selectLocation(candidate)
-    case .replace(let current):
-      store.removeLocation(current)
-      guard store.addLocation(candidate) else {
-        PaywallCoordinator.shared.present(.locations)
-        return
-      }
-      store.selectLocation(candidate)
-    case .paywall:
-      PaywallCoordinator.shared.present(.locations)
-      return
-    }
+    )
+    if case .paywall = selection { return }
     searchText = ""
     searchResults = []
     searchError = nil
@@ -524,34 +500,6 @@ struct LocationsView: View {
       alert: WidgetDataStore.loadAlertSummary(for: location.id),
       unit: store.temperatureUnit
     )
-  }
-}
-
-private struct SearchResultRow: View {
-  let result: CitySearchResult
-
-  var body: some View {
-    HStack {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(result.name)
-          .font(DesignTokens.Typography.headline())
-          .foregroundStyle(DesignTokens.Palette.textPrimary)
-        if let subtitle = result.subtitle {
-          Text(subtitle)
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textSecondary)
-            .lineLimit(2)
-        }
-      }
-      Spacer()
-      Image(systemName: "plus.circle")
-        .foregroundStyle(DesignTokens.Palette.accent)
-        .accessibilityHidden(true)
-    }
-    .contentShape(Rectangle())
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("Add \(result.name)")
-    .accessibilityAddTraits(.isButton)
   }
 }
 

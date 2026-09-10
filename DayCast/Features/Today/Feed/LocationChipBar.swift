@@ -4,6 +4,9 @@ import SwiftUI
 struct LocationChipBar: View {
   @Environment(WeatherStore.self) private var store
 
+  @State private var showAddCity = false
+  @State private var pendingLocationsPaywall = false
+
   var body: some View {
     // Explicit fill (not `.background`) so the plate composites above the
     // scrolling feed. Overlay Color backgrounds lose that fight on iOS 26.
@@ -54,6 +57,8 @@ struct LocationChipBar: View {
           .accessibilityIdentifier(Self.accessibilityIdentifier(for: location, selected: selected))
           .contentShape(Capsule())
         }
+
+        addCityButton
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.vertical, DesignTokens.Spacing.space4)
@@ -74,10 +79,46 @@ struct LocationChipBar: View {
         .accessibilityHidden(true)
     }
     .contentShape(Rectangle())
+    .sheet(isPresented: $showAddCity, onDismiss: presentPendingLocationsPaywall) {
+      AddCitySearchSheet {
+        pendingLocationsPaywall = true
+        showAddCity = false
+      }
+      .presentationDetents([.medium, .large])
+      .presentationDragIndicator(.visible)
+    }
+  }
+
+  private var addCityButton: some View {
+    Button {
+      Haptic.selection()
+      Analytics.track(.feedCardTap, parameters: Self.addCityTapParameters)
+      showAddCity = true
+    } label: {
+      Image(systemName: "plus")
+        .font(DesignTokens.Typography.subsection())
+        .foregroundStyle(DesignTokens.Palette.textSecondary)
+        .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
+        .background(
+          Capsule()
+            .fill(Color.white.opacity(0.08))
+        )
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Self.addCityAccessibilityLabel)
+    .accessibilityHint("Searches for a city to add")
+    .accessibilityAddTraits(.isButton)
+    .accessibilityIdentifier(DayCastAccessibility.Today.addCity)
   }
 
   private func isSelected(_ location: SavedLocation) -> Bool {
     store.currentLocation?.id == location.id
+  }
+
+  private func presentPendingLocationsPaywall() {
+    guard pendingLocationsPaywall else { return }
+    pendingLocationsPaywall = false
+    PaywallCoordinator.shared.present(.locations, source: .todayChip)
   }
 
   static func chipTitle(for location: SavedLocation) -> String {
@@ -94,6 +135,15 @@ struct LocationChipBar: View {
   /// Overlay is only the plated strip. Hits below the plate still reach the
   /// feed (Live Radar). The plate itself is opaque chrome and catches taps.
   static let emptyStripPassesHitsThrough = true
+
+  /// Trailing `+` on the same row. Not a second banner under the chips.
+  static let usesTrailingAddCityControl = true
+  static let usesPermanentPromoRow = false
+  static let addCityAccessibilityLabel = "Add city"
+  static let addCityAnalyticsCard = "today_add_city"
+  static var addCityTapParameters: [String: String] {
+    ["card": addCityAnalyticsCard]
+  }
 
   /// First-layout stand-in until the overlay reports its measured height.
   static let reservedHeight: CGFloat = 52

@@ -8,11 +8,14 @@ final class PaywallCoordinator {
 
   var isPresented = false
   var feature: PaywallFeature = .grokAI
+  /// Discriminates `paywall_view` sources (`today_chip` vs `locations`).
+  var source: PaywallSource?
 
   private init() {}
 
-  func present(_ feature: PaywallFeature = .grokAI) {
+  func present(_ feature: PaywallFeature = .grokAI, source: PaywallSource? = nil) {
     self.feature = feature
+    self.source = source
     isPresented = true
   }
 
@@ -31,6 +34,7 @@ struct PaywallPresentationModifier: ViewModifier {
       .sheet(isPresented: $coordinator.isPresented) {
         PaywallView(
           feature: coordinator.feature,
+          source: coordinator.source,
           subscription: SubscriptionManager.shared
         )
       }

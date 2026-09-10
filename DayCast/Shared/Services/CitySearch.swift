@@ -220,12 +220,23 @@ enum CitySearch {
     return String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
   }
 
-  /// What Locations should do after the user taps a city.
+  /// What Locations and Today should do after the user taps a city.
   /// Free is Near Me (GPS) + one named city. `canAdd` must use named count
   /// (`EntitlementChecker.namedSavedCount`), not raw array length.
   /// Replace the single named city only when that named city is the only
   /// saved entry. GPS is never replaced. GPS + one named already fills the
   /// free allotment — another named city is Pro.
+  ///
+  /// Product briefs call this `selectionDecision`. Same function — not a
+  /// second gate. Prefer this name at new call sites.
+  static func selectionDecision(
+    candidate: SavedLocation,
+    saved: [SavedLocation],
+    canAdd: Bool
+  ) -> LocationSearchSelection {
+    selection(candidate: candidate, saved: saved, canAdd: canAdd)
+  }
+
   static func selection(
     candidate: SavedLocation,
     saved: [SavedLocation],
