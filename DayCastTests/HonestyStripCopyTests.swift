@@ -9,32 +9,48 @@ final class HonestyStripCopyTests: XCTestCase {
   func testMemphisHomeDefaultReadsLikeNWSMemphis() {
     XCTAssertEqual(
       HonestyStripCopy.wfoLabel(officeName: "Memphis, TN", cwa: "MEG"),
-      "nws memphis"
+      "NWS Memphis"
     )
     XCTAssertEqual(
       HonestyStripCopy.wfoLabel(officeName: "NWS Memphis, TN", cwa: "MEG"),
-      "nws memphis"
+      "NWS Memphis"
     )
   }
 
   func testAnyWFOUsesTheSameShape() {
     XCTAssertEqual(
       HonestyStripCopy.wfoLabel(officeName: "Tampa Bay Area, FL", cwa: "TBW"),
-      "nws tampa bay area"
+      "NWS Tampa Bay Area"
     )
     XCTAssertEqual(
       HonestyStripCopy.wfoLabel(officeName: "New York, NY", cwa: "OKX"),
-      "nws new york"
+      "NWS New York"
     )
     XCTAssertEqual(
       HonestyStripCopy.wfoLabel(officeName: "Miami, FL", cwa: "MFL"),
-      "nws miami"
+      "NWS Miami"
     )
   }
 
   func testMissingOfficeNameFallsBackToCWA() {
-    XCTAssertEqual(HonestyStripCopy.wfoLabel(officeName: nil, cwa: "MEG"), "nws meg")
-    XCTAssertEqual(HonestyStripCopy.wfoLabel(officeName: "  ", cwa: "OKX"), "nws okx")
+    XCTAssertEqual(HonestyStripCopy.wfoLabel(officeName: nil, cwa: "MEG"), "NWS MEG")
+    XCTAssertEqual(HonestyStripCopy.wfoLabel(officeName: "  ", cwa: "OKX"), "NWS OKX")
+    XCTAssertEqual(HonestyStripCopy.wfoLabel(officeName: nil, cwa: "meg"), "NWS MEG")
+  }
+
+  func testWFOLabelTitleCasesOddSourceCasing() {
+    XCTAssertEqual(
+      HonestyStripCopy.wfoLabel(officeName: "nws memphis, tn", cwa: "MEG"),
+      "NWS Memphis"
+    )
+    XCTAssertEqual(
+      HonestyStripCopy.wfoLabel(officeName: "MEMPHIS, TN", cwa: "MEG"),
+      "NWS Memphis"
+    )
+    XCTAssertEqual(
+      HonestyStripCopy.wfoLabel(officeName: "chicago/romeoville, IL", cwa: "LOT"),
+      "NWS Chicago/Romeoville"
+    )
   }
 
   func testNoOfficeMeansNoStrip() {
@@ -52,11 +68,14 @@ final class HonestyStripCopyTests: XCTestCase {
       now: now,
       timeZone: chicago
     )
-    XCTAssertEqual(content?.wfoLabel, "nws memphis")
+    XCTAssertEqual(content?.wfoLabel, "NWS Memphis")
     XCTAssertNil(content?.headline)
     XCTAssertNil(content?.snippet)
-    XCTAssertEqual(content?.primaryLine, "nws memphis")
+    XCTAssertEqual(content?.primaryLine, "NWS Memphis")
     XCTAssertFalse(content?.isExpanded == true)
+    XCTAssertTrue(
+      content?.accessibilityLabel.hasPrefix("National Weather Service Memphis") == true
+    )
   }
 
   func testWatchExpandsWithUntilTime() {
@@ -71,7 +90,7 @@ final class HonestyStripCopyTests: XCTestCase {
     )
     XCTAssertEqual(
       content?.primaryLine,
-      "nws memphis · severe thunderstorm watch until 9pm"
+      "NWS Memphis · severe thunderstorm watch until 9pm"
     )
     XCTAssertTrue(content?.isExpanded == true)
     XCTAssertNil(content?.snippet)
@@ -89,7 +108,7 @@ final class HonestyStripCopyTests: XCTestCase {
     )
     XCTAssertEqual(
       content?.primaryLine,
-      "nws tampa bay area · tornado warning until 9:30pm"
+      "NWS Tampa Bay Area · tornado warning until 9:30pm"
     )
   }
 
@@ -190,7 +209,7 @@ final class HonestyStripCopyTests: XCTestCase {
     )
     XCTAssertEqual(
       AlertsFeedCard.chipTitle(for: watch(expires: expires), honesty: honesty),
-      "nws memphis · severe thunderstorm watch until 9pm"
+      "NWS Memphis · severe thunderstorm watch until 9pm"
     )
     XCTAssertEqual(
       AlertsFeedCard.chipUntil(for: watch(expires: expires), honesty: honesty),
@@ -211,7 +230,7 @@ final class HonestyStripCopyTests: XCTestCase {
     XCTAssertEqual(AlertsFeedCard.chipTitle(for: advisory(), honesty: honesty), "Heat Advisory")
     XCTAssertTrue(
       AlertsFeedCard.chipUntil(for: advisory(), honesty: honesty)
-        .hasPrefix("nws memphis · ")
+        .hasPrefix("NWS Memphis · ")
     )
   }
 
@@ -254,7 +273,7 @@ final class HonestyStripCopyTests: XCTestCase {
     )
     XCTAssertEqual(
       content?.primaryLine,
-      "nws memphis · severe thunderstorm watch until 9pm"
+      "NWS Memphis · severe thunderstorm watch until 9pm"
     )
     XCTAssertEqual(
       content?.secondLine,
@@ -300,7 +319,7 @@ final class HonestyStripCopyTests: XCTestCase {
       timeZone: chicago
     )
     XCTAssertNil(calm?.secondLine)
-    XCTAssertEqual(calm?.primaryLine, "nws memphis")
+    XCTAssertEqual(calm?.primaryLine, "NWS Memphis")
   }
 
   func testMissingEnsembleLeavesMVP1Strip() {
@@ -313,7 +332,7 @@ final class HonestyStripCopyTests: XCTestCase {
       now: now,
       timeZone: chicago
     )
-    XCTAssertEqual(content?.primaryLine, "nws memphis")
+    XCTAssertEqual(content?.primaryLine, "NWS Memphis")
     XCTAssertNil(content?.secondLine)
     XCTAssertFalse(content?.showsEnsembleLine == true)
   }
