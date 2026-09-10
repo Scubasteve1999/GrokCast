@@ -17,7 +17,7 @@ enum HonestyStripCopy {
 
     var showsEnsembleLine: Bool { ensembleSentence != nil }
 
-    /// Calm: `nws memphis`. Watch/warning: `nws memphis · severe thunderstorm watch until 9pm`.
+    /// Calm: `NWS Memphis`. Watch/warning: `NWS Memphis · severe thunderstorm watch until 9pm`.
     var primaryLine: String {
       if let headline {
         return "\(wfoLabel) · \(headline)"
@@ -34,8 +34,8 @@ enum HonestyStripCopy {
     }
   }
 
-  /// `Memphis, TN` / CWA `MEG` → `nws memphis`. Missing name → `nws meg`.
-  /// Same shape for any WFO (TBW → `nws tampa bay area`). Nil when we have no office.
+  /// `Memphis, TN` / CWA `MEG` → `NWS Memphis`. Missing name → `NWS MEG`.
+  /// Same shape for any WFO (TBW → `NWS Tampa Bay Area`). Nil when we have no office.
   static func wfoLabel(officeName: String?, cwa: String?) -> String? {
     let trimmedCWA = cwa?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     let source = LocalBriefingParser.sourceName(
@@ -44,7 +44,7 @@ enum HonestyStripCopy {
     )
     let trimmed = source.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty, trimmed.uppercased() != "NWS" else { return nil }
-    return trimmed.lowercased()
+    return displayOffice(from: trimmed)
   }
 
   /// Product + until. Lowercase, no MinuteCast clock, no "most accurate".
@@ -160,12 +160,49 @@ enum HonestyStripCopy {
     return "\(hour12):\(String(format: "%02d", minute))\(period)"
   }
 
+  /// `NWS Memphis` / `nws memphis` → `NWS Memphis`. Short CWA tokens stay uppercase.
+  private static func displayOffice(from source: String) -> String {
+    let remainder: Substring
+    if source.lowercased().hasPrefix("nws ") {
+      remainder = source.dropFirst(4)
+    } else {
+      remainder = source[source.startIndex...]
+    }
+    let office = String(remainder).trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !office.isEmpty else { return "NWS" }
+    return "NWS \(titleCasedOffice(office))"
+  }
+
+  private static func titleCasedOffice(_ office: String) -> String {
+    if office.count <= 4, !office.isEmpty, office.allSatisfy(\.isLetter) {
+      return office.uppercased()
+    }
+    var result = ""
+    var capitalizeNext = true
+    for character in office {
+      if character.isLetter {
+        if capitalizeNext {
+          result.append(contentsOf: character.uppercased())
+          capitalizeNext = false
+        } else {
+          result.append(contentsOf: character.lowercased())
+        }
+      } else {
+        result.append(character)
+        capitalizeNext = character.isWhitespace || character == "/" || character == "-"
+      }
+    }
+    return result
+  }
+
+  /// Title-case `NWS Memphis` still speaks as “National Weather Service Memphis”.
   private static func spokenOffice(from wfoLabel: String) -> String {
     let trimmed = wfoLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-    if trimmed.lowercased().hasPrefix("nws ") {
+    let lower = trimmed.lowercased()
+    if lower.hasPrefix("nws ") {
       return "National Weather Service \(trimmed.dropFirst(4))"
     }
-    if trimmed.lowercased() == "nws" {
+    if lower == "nws" {
       return "National Weather Service"
     }
     return "National Weather Service \(trimmed)"
