@@ -2,7 +2,7 @@
 
 Native SwiftUI iOS weather app (iOS 18+): Open-Meteo primary + NWS hybrid (US alerts/observations) + xAI Grok for AI weather features. App Store name is **DayCast**; codebase/Xcode scheme is **DayCast**.
 
-Deeper background: `AGENTS.md` (full project rules — source of truth), `DesignSystem.md` (color/typography/spacing tokens — follow it for all UI work), `.grok/skills/daycast/SKILL.md` (detailed feature history), `docs/Agent-Handoff-Claude-Cursor.md` (Claude Code ↔ Cursor handoff).
+Deeper background: `AGENTS.md` (full project rules — source of truth), `DesignSystem.md` (color/typography/spacing tokens — follow it for all UI work), `.grok/skills/daycast/SKILL.md` (current-truth product checklist), `docs/Agent-Handoff-Claude-Cursor.md` (Claude Code ↔ Cursor handoff).
 
 **Always work from the app repo root**:
 

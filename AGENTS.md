@@ -196,11 +196,13 @@ DayCast/
 
 - `CLAUDE.md` — short agent bootstrap (build + hard rules)
 - `DesignSystem.md` — color/typography/spacing tokens
-- `.grok/skills/daycast/SKILL.md` — feature history and radar/Grok patterns
-- `docs/` — handoffs, App Store notes, roadmaps
+- `.grok/skills/daycast/SKILL.md` — current-truth product checklist (IA, chrome, do-not-recreate)
+- `server/grok-proxy/README.md` — hosted Pro Grok proxy (live worker; ignore any leftover Pro-Setup notes)
+- `docs/` — handoffs, App Store notes
+- GitHub Actions `ci.yml` is a simulator compile check only — it does not run `xcodebuild test`
 
 ---
 
-**Last updated:** 2026-08-02
+**Last updated:** 2026-09-05
 
 Update this file when architecture, commands, or team practices change.

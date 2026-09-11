@@ -95,9 +95,9 @@ DayCast/Config/OpenWeatherMapKeys.swift
 # binary and is not a server secret. Committing it removes the fragile
 # GOOGLE_SERVICE_INFO_PLIST_BASE64 Xcode Cloud env var (ASC paste/mask bugs).
 
-# Do NOT ignore our safe public configuration file
+# Do NOT ignore the secrets-free public configuration file
 !GrokAPIConfiguration.swift
-!Shared/Configuration/GrokAPIConfiguration.swift
+!DayCast/Shared/Configuration/GrokAPIConfiguration.swift
 
 # Allow example templates (safe to commit with placeholders)
 !GrokConfig.swift.example
@@ -105,8 +105,6 @@ DayCast/Config/OpenWeatherMapKeys.swift
 !DayCast/Config/Secrets.swift.example
 !DayCast/Config/DeveloperAPIKey.swift.example
 !DayCast/Config/OpenWeatherMapKeys.swift.example
-!GrokAPIConfiguration.swift.example
-!Shared/Configuration/GrokAPIConfiguration.swift.example
 
 # Any file that might accidentally contain an API key
 *api-key*

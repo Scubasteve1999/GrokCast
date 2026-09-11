@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p public-site
           cp docs/index.html docs/privacy.html docs/terms.html docs/support.html public-site/
-          # Do not publish the rest of docs/ (agent handoffs, ROADMAP, Pro-Setup, ASC notes).
+          # Do not publish the rest of docs/ (agent handoffs, ASC notes).
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

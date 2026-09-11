@@ -1,16 +1,6 @@
 # Claude Code ↔ Cursor handoff
 
-Tactical workflow for running both agents on DayCast without stepping on each other.
-Written 2026-07-31 after a session where the two defaults collided.
-
-## The one conflict you must know about
-
-`.cursor/rules/git-workflow.mdc` tells Cursor: **land finished work on `main` by default.**
-
-Claude Code's built-in default is the opposite: **if you're on the default branch, branch first,**
-then ask before merging. Neither is wrong, but unreconciled they cost a round trip on every commit.
-
-**Resolution — state the landing intent in the prompt, every time:**
+Keep both agents from colliding on DayCast. State landing intent in the prompt every time.
 
 | You want | Say this |
 |---|---|
@@ -18,131 +8,51 @@ then ask before merging. Neither is wrong, but unreconciled they cost a round tr
 | Branch + PR | "branch and open a PR" |
 | Branch, don't merge | "branch, don't merge yet" |
 
-Claude Code will branch and ask if you say nothing. Cursor will merge to `main` if you say nothing.
-That asymmetry is the thing to remember.
+Claude Code branches and asks if you say nothing. Cursor merges to `main` if you say nothing.
 
 ## Division of labor
 
-Play to what each is actually good at here, not to preference.
+**Cursor** — fast multi-file edits against a known plan.
 
-**Cursor**
-- Fast multi-file edits where you already know the change.
-- Anything driven from an existing plan — it holds plan context well.
-- Bugbot runs automatically on PRs (returned NEUTRAL on #5, so treat it as a low-signal baseline,
-  not a safety net).
+**Claude Code** — plan review against real call sites; device install, signing, `devicectl`, CI triage via `gh`.
 
-**Claude Code**
-- Reviewing a plan *before* it's built — it reads actual call sites and finds cross-file coupling
-  (e.g. a UI rename that silently degrades an LLM prompt three files away).
-- Anything touching the device: build, sign, `devicectl` install, CI triage via `gh`.
-- Git surgery and CI/workflow debugging.
-
-**Neither**
-- Verifying UI on a physical iPhone. Only you can tap it. Claude Code can install to the device
-  (`xcrun devicectl device install app`) but cannot see or drive it.
+**Neither** — verifying UI on a physical iPhone. Only Stephen can tap it.
 
 ## Handoff protocol
 
 Whoever finishes leaves the repo in this state:
 
-1. **Working tree clean.** `git status --short` empty. No stray temp edits — this session left a
-   `padding(.bottom, 260)` experiment in `RadarView.swift` that had to be caught by hand.
+1. **Working tree clean.** `git status --short` empty. No stray temp edits.
 2. **Say where the work lives.** Branch name, and whether `main` contains it.
-3. **Name what's unverified.** Not "done" — "done except tip dismissal across relaunch."
+3. **Name what's unverified.** Not "done" — "done except X."
 4. **CI green, or say why not.** `gh run list --branch main --limit 1`.
 
 Starting agent reads: `git log --oneline -5`, `git status`, then this file.
 
-## Verification split
+## Verification
 
 | Layer | Who | Notes |
 |---|---|---|
-| Compiles | either | `xcodebuild ... -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'` |
-| Logic / state | either | Read the code; Radar state machine is subtle — see `RadarState.setProduct` |
-| **Radar control panel taps** | **device only** | Synthetic taps do not reach the panel in the Simulator. This is a Simulator artifact, not a bug — pre-existing untouched controls fail the same way. Do not chase it. |
+| Compiles | either | `xcodebuild` … `iPhone 17 Pro Max` (see `AGENTS.md`) |
+| Logic / state | either | Read the code |
+| Radar control panel taps | device only | Synthetic taps do not reach the panel in Simulator |
 | Chase HUD / tab bar taps | simulator OK | These do receive synthetic taps |
 | On-device | you | Install, then tap it yourself |
 
 ## Repo rules both agents must respect
 
-- **Secrets:** `DayCast/Config/DeveloperAPIKey.swift` and `OpenWeatherMapKeys.swift` are gitignored.
-  When you add a property to the real file, **add it to the `.example` template in the same commit.**
-  CI builds from the templates, so drift breaks CI *and* every fresh clone. This broke on 2026-07-31.
-- **`~/Projects/GrokCast` is the working tree** (Xcode project/scheme/App Store name are DayCast;
-  `GrokCast` is the historical bundle-id name — see `AGENTS.md`). The old `~/Desktop/DayCast` was
-  deleted on 2026-07-31: no commits, no remote, just a stale `fastlane/` subset, so commits made there
-  vanished silently. **Correction, 2026-09-04:** this doc previously pointed at `~/Documents/DayCast`,
-  which does not exist. `~/Documents/GrokCast` is an iCloud-synced mirror of this repo — confirmed
-  2026-09-04 that git operations there hang indefinitely. Don't work from it.
+- **Secrets:** `DayCast/Config/DeveloperAPIKey.swift` and `OpenWeatherMapKeys.swift` are gitignored. When you add a property to the real file, add it to the `.example` template in the same commit. CI builds from the templates.
+- **`~/Projects/GrokCast` is the working tree.** `~/Documents/GrokCast` is an iCloud-synced mirror — git operations there hang. Do not work from Desktop leftovers.
 - `xcodegen generate` after touching `project.yml` or adding/removing files.
-- Simulators installed: iPhone 17 Pro Max / 17 / 17e / Air. There is no "iPhone 17 Pro".
+- Simulators: iPhone 17 Pro Max / 17 Pro / 17 / 17e / Air. Commands and hard rules: `AGENTS.md`. Product IA: `.grok/skills/daycast/SKILL.md`.
+- Hosted Pro Grok proxy: `server/grok-proxy/README.md`.
 
 ## CI is the shared gate
 
-`.github/workflows/ci.yml` runs on PRs to `main` and pushes to `main`/`develop`. It stubs the
-gitignored key files from `*.example` before XcodeGen, then builds for the simulator.
-
-It was red for three commits before 2026-07-31 and nobody noticed. Check it after any push:
+`.github/workflows/ci.yml` runs on PRs to `main` and pushes to `main`/`develop`. It stubs gitignored key files from `*.example` before XcodeGen, then **compiles** for the simulator. It does not run `xcodebuild test`.
 
 ```bash
 gh run list --branch main --limit 3
 ```
 
 If CI is red, that is the handoff — fix it before starting new work.
-
-## Current handoff: Radar cache-race + crash-risk fixes (2026-09-04)
-
-Claude Code ran a strict, multi-pass review of `DayCast/Features/Radar` — no branch, this is review
-output against `main` (HEAD `2e69a42`, CI green, working tree clean). 15 verified correctness bugs, none
-fixed yet. Per the division of labor above (Claude Code reviews the plan, Cursor executes fast
-multi-file edits against it), this is Cursor's to pick up.
-
-**Root cause behind about half the list:** several radar caches are unsynchronized global singletons —
-`Level3N0BSweepStore`, `Level3PolarMeshCache`, `Level3PolarGPUCache`, and the static probe caches in
-`XweatherRadarService` / `OpenWeatherMapRadarService` — written from multiple uncoordinated call paths
-(several triggers inside `RadarState`, plus the Today tab's own independent `RadarLoader`) with no
-generation token or actor isolation. `IEMRadarService.cachedSites` already solved this exact hazard with
-`@MainActor` isolation and a comment explaining why; that fix was never carried to its siblings.
-
-### Fix order
-
-1. **Cache races — one fix pattern, apply at each site:**
-   - `Services/Level3N0BService.swift:29` `loadSiteFramesNear` — mutates shared caches on the first
-     successful fetch with no check that it's still the latest request.
-   - `Services/IEMRadarService.swift:147` — a Level III N0B miss calls `removeAll()` on the shared
-     caches globally instead of scoping the clear to the failing site.
-   - `Services/XweatherRadarService.swift:19` — `probeCache` / `lastProbeFailure` /
-     `preferredLiveLayer` are unsynchronized static vars, mutated concurrently from both the Radar tab
-     and the Today tab's disposable `RadarLoader`.
-   - `Services/OpenWeatherMapRadarService.swift:11` — same pattern, plus one `lastProbeFailure` shared
-     between live-context and forecast-context probes, so failures can misattribute their reason.
-   - `Level3PolarGateMesh.swift:260` — the Today-tab radar teaser and the Radar tab's play loop share
-     one 28-entry LRU with no per-consumer reservation; the teaser can evict a frame the play loop
-     still needs.
-
-2. **Crash risks — one-line bounds checks:**
-   - `Level3N0BDecoder.swift:198` — a radial header read happens before the function's own bounds
-     guard runs; a truncated payload traps instead of returning `nil`.
-   - `Level3PolarMetalHost.swift:296` — force-unwraps a Mapbox-supplied pixel format inside a function
-     whose `catch` exists specifically to avoid this (the documented raster fallback).
-   - `Level3PolarMetalHost.swift:824` — force-subscripts a 16-element array from Mapbox on every frame.
-
-3. **State-correctness bugs:**
-   - `RadarState.swift:541` `setProduct` — the National branch is missing the "still selected" guard
-     the site-product branch already has, so a fast National→Site Doppler tap can lose the second tap.
-   - `RadarPreferences.swift:75` — two one-time basemap migrations cascade; the second reads back what
-     the first just wrote, sweeping Hybrid/Satellite users into Dark unintentionally.
-   - `Level3N0BDecoder.swift:236` — the polar azimuth gap-fill doesn't wrap past due north, so a gap
-     straddling 0°/360° paints a misaligned wedge.
-   - `RadarState.swift:977` `performDefaultRadarLoad` — a redundant site refresh can silently drop a
-     correctly-loaded Site Doppler view back to National on a transient network blip.
-   - `RadarView.swift:130` — two `.task(id:)` modifiers both call `handleLiveOpen`, doubling network
-     probes and camera requests on a single tab open.
-
-4. **Minor:** `Level3PolarMetalHost.swift:108` — the detached mesh-build task has no `[weak self]` and
-   no cancellation check, unlike its sibling fade-pump task; teardown mid-build keeps unnecessary GPU
-   work running.
-
-**Verification:** logic here is readable/testable by either agent, but this touches the live Metal
-render path and the radar control panel — the existing "Radar control panel taps: device only" caveat
-above applies, so a device pass matters more than usual before calling this done.
