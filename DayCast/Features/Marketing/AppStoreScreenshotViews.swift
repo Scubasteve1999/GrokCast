@@ -6,6 +6,13 @@ enum AppStoreScreenshotViews {
   static let captureScale: CGFloat = 3.29
 }
 
+/// ASO chrome. Today has no Take card. Widgets advertise iPhone surfaces only.
+enum AppStoreScreenshotCopy {
+  static let widgetsHomeTitle = "Home Screen"
+  static let widgetsLockTitle = "Lock Screen"
+  static let widgetSurfaces = [widgetsHomeTitle, widgetsLockTitle]
+}
+
 struct AppStoreScreenshotToday: View {
   var body: some View {
     ZStack {
@@ -37,16 +44,6 @@ struct AppStoreScreenshotToday: View {
           score: DayCastScore(value: 84, label: "Go Outside", subtitle: "Great conditions", icon: "figure.walk"),
           locationName: "Olive Branch"
         )
-
-        VStack(alignment: .leading, spacing: 8) {
-          Label("TODAY'S TAKE", systemImage: "sparkles")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.accent)
-          Text("Clear morning, comfortable afternoon — sunscreen after lunch if you're outside long.")
-            .font(DesignTokens.Typography.headline())
-        }
-        .padding(20)
-        .glassCardStyle(strokeTint: DesignTokens.Palette.accent.opacity(0.35))
 
         Spacer(minLength: 0)
       }
@@ -171,7 +168,7 @@ struct AppStoreScreenshotWidgets: View {
           .frame(maxWidth: .infinity, alignment: .leading)
 
         VStack(alignment: .leading, spacing: 12) {
-          Label("HOME SCREEN", systemImage: "square.grid.2x2")
+          Label(AppStoreScreenshotCopy.widgetsHomeTitle, systemImage: "square.grid.2x2")
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accent)
           Text("Small, Medium, and Large widgets with live temperature, daily forecast, and AI insights.")
@@ -181,20 +178,10 @@ struct AppStoreScreenshotWidgets: View {
         .glassCardStyle()
 
         VStack(alignment: .leading, spacing: 12) {
-          Label("LOCK SCREEN", systemImage: "lock.rectangle.stack.fill")
+          Label(AppStoreScreenshotCopy.widgetsLockTitle, systemImage: "lock.rectangle.stack.fill")
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentCool)
           Text("Circular gauge, rectangular forecast, and inline conditions — always visible at a glance.")
-            .font(DesignTokens.Typography.body())
-        }
-        .padding(16)
-        .glassCardStyle()
-
-        VStack(alignment: .leading, spacing: 12) {
-          Label("APPLE WATCH", systemImage: "applewatch")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.accentWarm)
-          Text("Temperature range gauge, AI brief, and DayCast Score right on your wrist.")
             .font(DesignTokens.Typography.body())
         }
         .padding(16)

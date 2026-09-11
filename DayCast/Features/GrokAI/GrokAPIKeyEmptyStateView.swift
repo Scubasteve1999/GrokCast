@@ -6,7 +6,7 @@ struct GrokAPIKeyEmptyStateView: View {
   static let lockTitle = "Sky Check"
   static let lockGlyph = "cloud.sun"
   static let bodyCopy =
-    "Weather, live radar, and alerts are free. DayCast Pro unlocks AI chat, Today's Take, Explain Radar, and Sky Check."
+    "Weather, live radar, and alerts are free. DayCast Pro unlocks AI chat, Explain Radar, and Sky Check."
 
   @Bindable var store: WeatherStore
   @Bindable var subscription: SubscriptionManager

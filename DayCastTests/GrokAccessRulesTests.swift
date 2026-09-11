@@ -67,6 +67,7 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertTrue(copy.localizedCaseInsensitiveContains("free"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("xAI key"))
     XCTAssertFalse(copy.localizedCaseInsensitiveContains("Settings"))
+    XCTAssertFalse(copy.localizedCaseInsensitiveContains("Today's Take"))
     XCTAssertEqual(GrokAPIKeyEmptyStateView.lockTitle, "Sky Check")
     XCTAssertEqual(GrokAPIKeyEmptyStateView.lockGlyph, "cloud.sun")
     XCTAssertFalse(GrokAPIKeyEmptyStateView.lockGlyph.contains("sparkles"))
@@ -173,8 +174,13 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertFalse(gate.allowsPicker)
     XCTAssertTrue(gate.isCTADisabled)
     XCTAssertEqual(SkyCheckDeskCopy.photoUnavailableCTA, "Photo check unavailable")
-    XCTAssertTrue(
+    XCTAssertEqual(
+      SkyCheckDeskCopy.photoUnavailableExplanation,
+      "Sky Check isn't available right now. Try again later.")
+    XCTAssertFalse(
       SkyCheckDeskCopy.photoUnavailableExplanation.localizedCaseInsensitiveContains("Settings"))
+    XCTAssertFalse(
+      SkyCheckDeskCopy.photoUnavailableExplanation.localizedCaseInsensitiveContains("key"))
     XCTAssertFalse(SkyCheckDeskCopy.photoUnavailableExplanation.isEmpty)
   }
 }
