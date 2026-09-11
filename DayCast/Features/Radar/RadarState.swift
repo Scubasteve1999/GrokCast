@@ -243,33 +243,39 @@ final class RadarState {
       return RadarStatusFooter(text: "Checking forecast tiles…", style: .loading)
     }
     if pickerShowsFuture, let message = futureUnavailableMessage {
-      return RadarStatusFooter(text: message, style: .warning)
+      return RadarStatusFooter(
+        text: RadarStatusFooterCopy.availability(message, preferForecast: true),
+        style: .warning
+      )
     }
     if !hasFutureFrames && pickerShowsFuture {
       return RadarStatusFooter(text: "Forecast radar unavailable", style: .error)
     }
     if showsFuture, let provider = activeForecastProvider {
       return RadarStatusFooter(
-        text: provider.forecastFooterLabel,
+        text: RadarStatusFooterCopy.forecast(for: provider),
         style: provider == .openWeatherMap ? .warning : .secondary
       )
     }
-    // Outranks the provider label — a failed product tap needs an explanation more
-    // than the user needs to know which mosaic is on screen.
+    // Outranks the skill label — a failed product tap needs an explanation more
+    // than the user needs to know which product is on screen.
     if !showsFuture, let message = siteProductUnavailableMessage {
       return RadarStatusFooter(text: message, style: .warning)
     }
     if !showsFuture, selectedProduct.isSiteProduct, let note = siteProductAdvisory {
       return RadarStatusFooter(text: note, style: .warning)
     }
-    if let provider = activeLiveProvider {
+    if activeLiveProvider != nil {
       return RadarStatusFooter(
-        text: provider.liveFooterLabel,
+        text: RadarStatusFooterCopy.live(isSiteProduct: selectedProduct.isSiteProduct),
         style: .secondary
       )
     }
     if let message = liveUnavailableMessage {
-      return RadarStatusFooter(text: message, style: .error)
+      return RadarStatusFooter(
+        text: RadarStatusFooterCopy.availability(message, preferForecast: false),
+        style: .error
+      )
     }
     return RadarStatusFooter(
       text: "Radar unavailable — check connection and try again",

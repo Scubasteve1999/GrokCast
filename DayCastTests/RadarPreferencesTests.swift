@@ -243,8 +243,9 @@ final class RadarPreferencesTests: XCTestCase {
   }
 
   func testControlSheetStaysUpWhenMapOnlyIsPersisted() {
-    XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: false))
-    XCTAssertTrue(RadarChromeVisibility.showsControlSheet(mapOnly: true))
+    // Map-only slims Chase HUD identity, not the Live / 24-hr sheet.
+    XCTAssertTrue(ChaseRadarHUDLogic.showsLookingAtIdentity(isDecluttered: false))
+    XCTAssertFalse(ChaseRadarHUDLogic.showsLookingAtIdentity(isDecluttered: true))
   }
 
   func testLayersSwitchesHaveSpokenNames() {
