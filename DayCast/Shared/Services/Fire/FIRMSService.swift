@@ -28,6 +28,7 @@ enum FIRMSService {
 
     let bounds = GeographicBounds.square(around: center, halfSpanDegrees: defaultHalfSpanDegrees)
     var merged: [String: FireHotspot] = [:]
+    var successfulSourceCount = 0
 
     for source in sources {
       let urlString =
@@ -37,7 +38,10 @@ enum FIRMSService {
       let (data, response): (Data, URLResponse)
       do {
         (data, response) = try await session.data(from: url)
+      } catch is CancellationError {
+        throw CancellationError()
       } catch {
+        try Task.checkCancellation()
         continue
       }
 
@@ -46,6 +50,8 @@ enum FIRMSService {
           throw FIRMSServiceError.quotaExceeded
         }
         guard (200..<300).contains(http.statusCode) else { continue }
+      } else {
+        continue
       }
 
       let text = String(data: data, encoding: .utf8) ?? ""
@@ -59,8 +65,10 @@ enum FIRMSService {
       for hotspot in FIRMSCSVParser.parse(csv: text, satellite: source) {
         merged[hotspot.id] = hotspot
       }
+      successfulSourceCount += 1
     }
 
+    guard successfulSourceCount > 0 else { throw FIRMSServiceError.badResponse }
     return Array(merged.values)
   }
 }

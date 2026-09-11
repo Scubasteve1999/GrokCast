@@ -4,7 +4,12 @@ import Foundation
 @Observable
 final class OpenMeteoService {
   var isLoading = false
-  var error: String?
+  private(set) var error: String?
+  private let session: URLSession
+
+  init(session: URLSession = .shared) {
+    self.session = session
+  }
 
   /// Centralized helper for turning Open-Meteo (and similar future service) errors
   /// into calm, actionable user-facing strings. Mirrors/enhances the prior store logic
@@ -42,6 +47,7 @@ final class OpenMeteoService {
   {
     isLoading = true
     error = nil
+    defer { isLoading = false }
 
     let url = URL(string: "https://api.open-meteo.com/v1/forecast")!
     var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
@@ -78,23 +84,33 @@ final class OpenMeteoService {
     // Air remains optional/non-fatal ("best effort") as before; both networks now overlap.
     // Capture the URL before the concurrent lets (avoids "captured var in concurrently-executing code").
     let forecastURL = components.url!
-    async let forecastTask = URLSession.shared.data(from: forecastURL)
+    async let forecastTask = session.data(from: forecastURL)
     async let airOpt: AirQualityResponse? = try? await fetchAirQuality(for: location)
 
     // Await the throwing primary separately (with try) and the best-effort air without;
     // the two async lets run their underlying work concurrently.
-    let (data, response) = try await forecastTask
-    let air = await airOpt
+    let data: Data
+    let response: URLResponse
+    let air: AirQualityResponse?
+    do {
+      (data, response) = try await forecastTask
+      air = await airOpt
+    } catch {
+      self.error = Self.userFriendlyMessage(for: error)
+      throw error
+    }
 
     // Do not attempt JSON decode on error responses (e.g. 502 returns HTML error page).
     // This prevents "data corrupted / not valid JSON" parsing errors on server issues.
     if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
       _ = String(data: data, encoding: .utf8) ?? "<non-text body>"
       // OPEN-METEO BAD HTTP STATUS (logs removed for release)
-      throw URLError(
+      let serviceError = URLError(
         .badServerResponse,
         userInfo: [NSLocalizedDescriptionKey: "Weather service returned HTTP \(http.statusCode)"]
       )
+      error = Self.userFriendlyMessage(for: serviceError)
+      throw serviceError
     }
 
     let decoded: OpenMeteoResponse
@@ -102,6 +118,7 @@ final class OpenMeteoService {
       decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
     } catch {
       // OPEN-METEO DECODE ERROR (logs removed)
+      self.error = Self.userFriendlyMessage(for: error)
       throw error
     }
 
@@ -114,7 +131,6 @@ final class OpenMeteoService {
     )
     weather.temperatureUnitRawValue = units.rawValue
 
-    isLoading = false
     return weather
   }
 
@@ -131,7 +147,7 @@ final class OpenMeteoService {
       URLQueryItem(name: "timezone", value: "auto"),
     ]
 
-    let (data, response) = try await URLSession.shared.data(from: components.url!)
+    let (data, response) = try await session.data(from: components.url!)
 
     if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
       throw URLError(

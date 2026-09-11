@@ -15,6 +15,11 @@ final class OpenWeatherMapService {
 
   private static let maxRetries = 2
   private static let retryBaseDelay: TimeInterval = 1.5
+  private let session: URLSession
+
+  init(session: URLSession = .shared) {
+    self.session = session
+  }
 
   static func userFriendlyMessage(for error: Error) -> String {
     if let serviceError = error as? ServiceError {
@@ -47,9 +52,15 @@ final class OpenWeatherMapService {
     error = nil
     defer { isLoading = false }
 
-    if let oneCall = try? await fetchHybridOneCall(for: location) {
+    do {
+      let oneCall = try await fetchHybridOneCall(for: location)
       lastDataSource = .oneCall4
       return oneCall
+    } catch is CancellationError {
+      throw CancellationError()
+    } catch {
+      try Task.checkCancellation()
+      // One Call is optional; legacy remains the supported fallback for provider failures.
     }
 
     lastDataSource = .legacy25
@@ -175,7 +186,7 @@ final class OpenWeatherMapService {
     var attempt = 0
     while true {
       do {
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         try validateHTTP(response: response, data: data)
         return try JSONDecoder().decode(T.self, from: data)
       } catch let serviceError as ServiceError where serviceError.isRateLimited && attempt < Self.maxRetries {
@@ -190,7 +201,9 @@ final class OpenWeatherMapService {
   }
 
   private func validateHTTP(response: URLResponse, data: Data) throws {
-    guard let http = response as? HTTPURLResponse else { return }
+    guard let http = response as? HTTPURLResponse else {
+      throw ServiceError.invalidResponse
+    }
 
     if http.statusCode == 429 {
       throw ServiceError.rateLimited
@@ -249,6 +262,7 @@ final class OpenWeatherMapService {
 extension OpenWeatherMapService {
   enum ServiceError: Error {
     case badURL
+    case invalidResponse
     case emptyResponse
     case rateLimited
     case oneCallSubscriptionRequired(String)
@@ -263,6 +277,8 @@ extension OpenWeatherMapService {
       switch self {
       case .badURL:
         return "OpenWeatherMap request URL is invalid."
+      case .invalidResponse:
+        return "OpenWeatherMap returned an invalid network response."
       case .emptyResponse:
         return "OpenWeatherMap returned no weather data."
       case .rateLimited:

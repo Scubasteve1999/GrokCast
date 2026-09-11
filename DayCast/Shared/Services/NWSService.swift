@@ -10,6 +10,11 @@ final class NWSService {
   private let baseURL = "https://api.weather.gov"
   private let userAgent =
     "DayCast/1.0.2 (stephenmoorecm1357@gmail.com)"
+  private let session: URLSession
+
+  init(session: URLSession = .shared) {
+    self.session = session
+  }
 
   /// Fetches currently active NWS alerts for a point (lat,lon).
   /// Returns [] on success with no alerts (common for non-US or quiet US areas).
@@ -32,7 +37,7 @@ final class NWSService {
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     request.timeoutInterval = timeout
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await session.data(for: request)
     try Task.checkCancellation()
 
     guard let http = response as? HTTPURLResponse else {
@@ -127,7 +132,7 @@ final class NWSService {
     stationsReq.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     stationsReq.timeoutInterval = 15
 
-    let (stationsData, stationsResp) = try await URLSession.shared.data(for: stationsReq)
+    let (stationsData, stationsResp) = try await session.data(for: stationsReq)
     guard let stationsHTTP = stationsResp as? HTTPURLResponse,
       (200...299).contains(stationsHTTP.statusCode)
     else {
@@ -155,7 +160,7 @@ final class NWSService {
     obsRequest.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     obsRequest.timeoutInterval = 15
 
-    let (obsData, obsHTTPResponse) = try await URLSession.shared.data(for: obsRequest)
+    let (obsData, obsHTTPResponse) = try await session.data(for: obsRequest)
     guard let obsHTTP = obsHTTPResponse as? HTTPURLResponse,
       (200...299).contains(obsHTTP.statusCode)
     else {
@@ -303,7 +308,7 @@ final class NWSService {
     var request = URLRequest(url: url)
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
     request.timeoutInterval = timeout
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await session.data(for: request)
     try Task.checkCancellation()
     guard let http = response as? HTTPURLResponse else {
       throw NWSServiceError.networkError

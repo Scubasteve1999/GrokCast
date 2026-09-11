@@ -39,10 +39,10 @@ final class KeychainService {
   }
 
   func save(_ key: String) throws {
-    try saveAPIKey(key, for: .xai)
+    try save(key, for: .xai)
   }
 
-  func saveAPIKey(_ key: String, for type: APIKeyType) throws {
+  func save(_ key: String, for type: APIKeyType) throws {
     guard let data = key.data(using: .utf8) else { throw KeychainError.encodingError }
 
     // Delete existing first (upsert pattern)
@@ -66,7 +66,7 @@ final class KeychainService {
     return try load(for: .xai)
   }
 
-  private func load(for type: APIKeyType) throws -> String {
+  func load(for type: APIKeyType) throws -> String {
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,

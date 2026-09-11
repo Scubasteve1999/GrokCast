@@ -1,4 +1,3 @@
-import Combine
 import CoreLocation
 import Foundation
 import UIKit
@@ -16,7 +15,7 @@ final class LocationService: NSObject {
   /// Invoked for location updates delivered by Significant Location Changes monitoring
   /// (background/suspended/terminated relaunch cases, when no explicit requestLocation continuation is active).
   /// Set by WeatherStore to keep the "Current Location" entry and weather fresh.
-  public var significantLocationHandler: ((CLLocation) -> Void)?
+  var significantLocationHandler: ((CLLocation) -> Void)?
 
   private let manager = CLLocationManager()
   private var continuation: CheckedContinuation<CLLocation, Error>?
@@ -32,11 +31,6 @@ final class LocationService: NSObject {
   }
 
   @MainActor
-  func requestAuthorization() {
-    manager.requestWhenInUseAuthorization()
-  }
-
-  @MainActor
   func requestAlwaysAuthorization() {
     manager.requestAlwaysAuthorization()
   }
@@ -46,7 +40,7 @@ final class LocationService: NSObject {
   /// - denied/restricted → publishes error for UI recovery.
   /// - already authorized → ensures Significant Location Changes when Always is available.
   @MainActor
-  public func requestLocationPermission() {
+  func requestLocationPermission() {
     error = nil
     if authorizationStatus == .denied || authorizationStatus == .restricted {
       error = CLError(.denied)
@@ -61,7 +55,7 @@ final class LocationService: NSObject {
     }
   }
 
-  public func requestLocation() async throws -> CLLocation {
+  func requestLocation() async throws -> CLLocation {
     if authorizationStatus == .denied || authorizationStatus == .restricted {
       throw CLError(.denied)
     }
@@ -101,7 +95,7 @@ final class LocationService: NSObject {
     #endif
   }
 
-  public func reverseGeocode(_ location: CLLocation) async -> String? {
+  func reverseGeocode(_ location: CLLocation) async -> String? {
     let geocoder = CLGeocoder()
     do {
       let placemarks = try await geocoder.reverseGeocodeLocation(location)
@@ -120,14 +114,14 @@ final class LocationService: NSObject {
     return "Current Location"
   }
 
-  public func openSettings() {
+  func openSettings() {
     if let url = URL(string: UIApplication.openSettingsURLString) {
       UIApplication.shared.open(url)
     }
   }
 
   @MainActor
-  public func startSignificantLocationChanges() {
+  func startSignificantLocationChanges() {
     let enabled =
       UserDefaults.standard.object(forKey: "daycast_significant_location_updates_enabled") as? Bool
       ?? true
@@ -165,7 +159,7 @@ final class LocationService: NSObject {
   }
 
   @MainActor
-  public func stopSignificantLocationChanges() {
+  func stopSignificantLocationChanges() {
     if isMonitoringSignificantChanges {
       manager.stopMonitoringSignificantLocationChanges()
       isMonitoringSignificantChanges = false
