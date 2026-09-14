@@ -158,7 +158,7 @@ final class ForecastEraNoticeTests: XCTestCase {
     XCTAssertNotEqual(TodayFeedRow.forecastEraNotice, .honestyStrip)
   }
 
-  func testStoryDayPlacesNoticeAfterYourNews() {
+  func testStoryDayPlacesNoticeAfterYourNews() throws {
     let rows = FeedAssembler.rows(
       items: [.now, .alerts, .hourly, .radar, .yourNews],
       weatherError: nil,
