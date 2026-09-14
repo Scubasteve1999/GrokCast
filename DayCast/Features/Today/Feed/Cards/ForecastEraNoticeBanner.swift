@@ -38,7 +38,10 @@ struct ForecastEraNoticeBanner: View {
         Image(systemName: "xmark")
           .font(DesignTokens.Typography.caption())
           .foregroundStyle(secondaryColor)
-          .frame(width: 28, height: 28)
+          .frame(
+            width: TodayGlanceLayout.forecastEraNoticeHeight,
+            height: TodayGlanceLayout.forecastEraNoticeHeight
+          )
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)

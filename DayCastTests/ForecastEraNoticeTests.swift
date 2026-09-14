@@ -220,6 +220,14 @@ final class ForecastEraNoticeTests: XCTestCase {
       XCTAssertTrue(ForecastEraNotice.shouldShowBanner(now: before, defaults: suite))
       XCTAssertTrue(ForecastEraNotice.shouldOfferExplainer(now: before, defaults: suite))
     }
+
+    func testDebugForceShowOverridesDismiss() {
+      ForecastEraNotice.dismiss(defaults: suite)
+      suite.set(true, forKey: ForecastEraNotice.forceShowKey)
+      XCTAssertTrue(
+        ForecastEraNotice.shouldShowBanner(now: ForecastEraNotice.cutoverUTC, defaults: suite)
+      )
+    }
   #endif
 
   private func utc(_ string: String) -> Date {

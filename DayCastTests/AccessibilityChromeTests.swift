@@ -105,6 +105,15 @@ final class AccessibilityChromeTests: XCTestCase {
     XCTAssertEqual(
       DayCastAccessibility.Today.forecastEraNoticeDismiss,
       "daycast.today.forecastEraNotice.dismiss")
+    XCTAssertEqual(
+      DayCastAccessibility.Today.forecastEraNoticeCard,
+      "daycast.today.forecastEraNotice.card")
+    XCTAssertEqual(
+      DayCastAccessibility.Today.forecastEraNoticeSCN48,
+      "daycast.today.forecastEraNotice.scn48")
+    XCTAssertEqual(
+      DayCastAccessibility.Today.forecastEraNoticeSCN47,
+      "daycast.today.forecastEraNotice.scn47")
     XCTAssertEqual(DayCastAccessibility.Settings.proEntry, "daycast.settings.pro")
     XCTAssertEqual(DayCastAccessibility.Settings.activePlan, "daycast.settings.pro.plan")
     XCTAssertEqual(DayCastAccessibility.Settings.activeUnlocks, "daycast.settings.pro.unlocks")
