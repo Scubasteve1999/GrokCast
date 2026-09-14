@@ -106,8 +106,8 @@ enum HonestyStripCopy {
   }
 
   /// Watch/warning only. Advisories keep the official chip but do not expand this strip.
-  static func watchWarning(from alerts: [NWSAlert]) -> NWSAlert? {
-    AlertsFeedCard.glanceChips(from: alerts).first { $0.isWatch || $0.isWarning }
+  static func watchWarning(from alerts: [NWSAlert], now: Date = Date()) -> NWSAlert? {
+    AlertsFeedCard.glanceChips(from: alerts, now: now).first { $0.isWatch || $0.isWarning }
   }
 
   static func content(
@@ -121,7 +121,7 @@ enum HonestyStripCopy {
   ) -> Content? {
     guard let wfo = wfoLabel(officeName: officeName, cwa: cwa) else { return nil }
     let ensembleSentence = EnsembleAgreementCopy.sentence(for: ensemble, timeZone: timeZone)
-    if let alert = watchWarning(from: alerts),
+    if let alert = watchWarning(from: alerts, now: now),
       let headline = headline(
         event: alert.event,
         expires: alert.expires,

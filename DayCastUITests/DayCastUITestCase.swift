@@ -173,4 +173,25 @@ class DayCastUITestCase: XCTestCase {
       timeout: timeout
     ) == .completed
   }
+
+  /// HIG is 44pt. UIKit can report `43.999…` for a 44pt SwiftUI frame on 3×.
+  func assertMinHitTarget(
+    _ element: XCUIElement,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let slop = 1.0 / 3.0
+    XCTAssertGreaterThanOrEqual(
+      element.frame.width, 44 - slop,
+      "\(element) width \(element.frame.width)",
+      file: file,
+      line: line
+    )
+    XCTAssertGreaterThanOrEqual(
+      element.frame.height, 44 - slop,
+      "\(element) height \(element.frame.height)",
+      file: file,
+      line: line
+    )
+  }
 }

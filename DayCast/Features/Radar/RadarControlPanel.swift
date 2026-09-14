@@ -112,10 +112,14 @@ struct RadarControlPanel: View {
       }
       .padding(.horizontal, 10)
       .padding(.vertical, 4)
-      .background(DesignTokens.Palette.radarTrack)
-      .clipShape(Capsule())
+      .background(
+        Capsule().fill(DesignTokens.Palette.radarTrack)
+      )
       .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
-      .frame(minWidth: DesignTokens.Layout.minHitTarget, minHeight: DesignTokens.Layout.minHitTarget)
+      .frame(
+        minWidth: DesignTokens.Layout.minHitTarget,
+        minHeight: DesignTokens.Layout.minHitTarget
+      )
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -171,8 +175,8 @@ struct RadarControlPanel: View {
         .background(DesignTokens.Palette.radarTrack)
         .clipShape(Capsule())
         .frame(
-          minWidth: DesignTokens.Layout.minHitTarget,
-          minHeight: DesignTokens.Layout.minHitTarget
+          width: DesignTokens.Layout.minHitTarget,
+          height: DesignTokens.Layout.minHitTarget
         )
         .contentShape(Rectangle())
     }
@@ -261,6 +265,7 @@ struct RadarControlPanel: View {
         .foregroundStyle(
           selected ? DesignTokens.Palette.radarAccent : DesignTokens.Palette.radarTextSecondary
         )
+        .contentShape(Capsule())
     }
     .buttonStyle(.plain)
     .disabled(disabled)
@@ -326,8 +331,8 @@ struct RadarControlPanel: View {
       .foregroundStyle(
         selected ? DesignTokens.Palette.bgPrimary : DesignTokens.Palette.textSecondary
       )
-      .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
       .padding(.vertical, 8)
+      .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
       .background(
         RoundedRectangle(cornerRadius: 10, style: .continuous)
           .fill(

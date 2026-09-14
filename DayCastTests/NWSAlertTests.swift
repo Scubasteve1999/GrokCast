@@ -206,6 +206,14 @@ final class NWSAlertTests: XCTestCase {
     XCTAssertFalse(makeAlert(expires: future).isExpired)
   }
 
+  func testIsExpiredAtUsesProvidedNowNotWallClock() {
+    let expires = Date(timeIntervalSinceNow: -3_600)
+    let alert = makeAlert(expires: expires)
+    XCTAssertTrue(alert.isExpired)
+    XCTAssertFalse(alert.isExpired(at: expires.addingTimeInterval(-60)))
+    XCTAssertTrue(alert.isExpired(at: expires.addingTimeInterval(60)))
+  }
+
   // MARK: - AlertsLoadState
 
   func testAlertsLoadStatePendingUntilThisCityIsAttempted() {

@@ -75,8 +75,8 @@ struct AlertsFeedCard: View {
   /// Today is one official chip. Outlook / MD / extra products stay on Alerts.
   static let maxGlanceChips = 1
 
-  static func glanceChips(from alerts: [NWSAlert]) -> [NWSAlert] {
-    let live = NWSAlertGrouping.representatives(from: alerts).filter { !$0.isExpired }
+  static func glanceChips(from alerts: [NWSAlert], now: Date = Date()) -> [NWSAlert] {
+    let live = NWSAlertGrouping.representatives(from: alerts).filter { !$0.isExpired(at: now) }
     return Array(live.sorted(by: Self.isMoreSevere).prefix(maxGlanceChips))
   }
 

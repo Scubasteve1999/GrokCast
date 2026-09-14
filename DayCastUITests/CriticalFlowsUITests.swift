@@ -55,8 +55,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(timeline.waitForExistence(timeout: 30), "Radar timeline missing")
     XCTAssertNotNil(timeline.value)
     for control in [live, recenter, layers] {
-      XCTAssertGreaterThanOrEqual(control.frame.width, 44)
-      XCTAssertGreaterThanOrEqual(control.frame.height, 44)
+      assertMinHitTarget(control)
       XCTAssertTrue(control.isHittable)
     }
   }

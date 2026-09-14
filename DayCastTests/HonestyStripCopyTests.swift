@@ -78,6 +78,25 @@ final class HonestyStripCopyTests: XCTestCase {
     )
   }
 
+  func testWatchStillExpandsWhenWallClockIsAfterFrozenNow() {
+    let expires = date(year: 2026, month: 9, day: 9, hour: 21, minute: 0)
+    let wallClock = date(year: 2026, month: 9, day: 14, hour: 12)
+    XCTAssertTrue(watch(expires: expires).isExpired(at: wallClock))
+    let content = HonestyStripCopy.content(
+      officeName: "Memphis, TN",
+      cwa: "MEG",
+      alerts: [watch(expires: expires)],
+      briefingItems: [],
+      now: now,
+      timeZone: chicago
+    )
+    XCTAssertEqual(
+      content?.primaryLine,
+      "NWS Memphis · severe thunderstorm watch until 9pm"
+    )
+    XCTAssertTrue(content?.isExpanded == true)
+  }
+
   func testWatchExpandsWithUntilTime() {
     let expires = date(year: 2026, month: 9, day: 9, hour: 21, minute: 0)
     let content = HonestyStripCopy.content(
@@ -192,9 +211,12 @@ final class HonestyStripCopyTests: XCTestCase {
 
   func testWatchWarningUsesGlancePriority() {
     let expires = date(year: 2026, month: 9, day: 9, hour: 21, minute: 0)
-    let picked = HonestyStripCopy.watchWarning(from: [advisory(), watch(expires: expires)])
+    let picked = HonestyStripCopy.watchWarning(
+      from: [advisory(), watch(expires: expires)],
+      now: now
+    )
     XCTAssertEqual(picked?.event, "Severe Thunderstorm Watch")
-    XCTAssertNil(HonestyStripCopy.watchWarning(from: [advisory()]))
+    XCTAssertNil(HonestyStripCopy.watchWarning(from: [advisory()], now: now))
   }
 
   func testAlertChipFoldsHonestyOnWatch() {

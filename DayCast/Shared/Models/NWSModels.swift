@@ -135,9 +135,13 @@ struct NWSAlert: Identifiable, Codable, Equatable, Hashable {
     isWarning || isLifeThreatening
   }
 
-  var isExpired: Bool {
+  /// Wall-clock expiry. Honesty copy and glance chips pass a frozen `now` so
+  /// “until 9pm” and live-vs-expired stay on the same clock.
+  var isExpired: Bool { isExpired(at: Date()) }
+
+  func isExpired(at now: Date) -> Bool {
     guard let expires else { return false }
-    return expires < Date()
+    return expires < now
   }
 
   var isLifeThreatening: Bool {
