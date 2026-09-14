@@ -26,6 +26,9 @@ enum TodayGlanceLayout {
   static var honestyStripEnsembleHeight: CGFloat {
     honestyStripCalmHeight + honestyStripEnsembleLineHeight
   }
+  /// Seasonal SCN 26-48 caption. Not baked into `oliveBranch*` stacks: calm sits
+  /// it under the WFO strip; story day places it after Your News.
+  static let forecastEraNoticeHeight: CGFloat = 20
   static let radarHeaderHeight: CGFloat = 22
   static let radarInnerSpacing: CGFloat = DesignTokens.Spacing.space8
   static var radarMapHeight: CGFloat { RadarPreviewSource.outlookPlateHeight }

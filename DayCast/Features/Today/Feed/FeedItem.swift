@@ -30,16 +30,19 @@ enum FeedItem: String, CaseIterable, Identifiable, Sendable {
   var analyticsName: String { rawValue }
 }
 
-/// Today scrolling rows. Error banner and honesty strip are chrome, not `FeedItem`s.
+/// Today scrolling rows. Error banner, honesty strip, and the seasonal
+/// forecast-era notice are chrome, not `FeedItem`s.
 enum TodayFeedRow: Equatable, Identifiable {
   case errorBanner
   case honestyStrip
+  case forecastEraNotice
   case item(FeedItem)
 
   var id: String {
     switch self {
     case .errorBanner: "errorBanner"
     case .honestyStrip: "honestyStrip"
+    case .forecastEraNotice: "forecastEraNotice"
     case .item(let item): item.id
     }
   }

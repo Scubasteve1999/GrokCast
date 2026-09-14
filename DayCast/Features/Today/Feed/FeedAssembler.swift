@@ -16,10 +16,12 @@ enum FeedAssembler {
 
   /// Error/retry chrome plus cards. Banner sits above Now so a storm user sees it without scrolling.
   /// Standalone honesty strip is calm-only (WFO). Watch/warning copy lives on the Alerts chip.
+  /// Forecast-era notice is a separate seasonal caption — not the WFO second line.
   static func rows(
     items: [FeedItem],
     weatherError: String?,
-    showsStandaloneHonestyStrip: Bool = false
+    showsStandaloneHonestyStrip: Bool = false,
+    showsForecastEraNotice: Bool = false
   ) -> [TodayFeedRow] {
     var rows: [TodayFeedRow] = []
     if let weatherError, !weatherError.isEmpty {
@@ -31,7 +33,32 @@ enum FeedAssembler {
         rows.append(.honestyStrip)
       }
     }
+    if showsForecastEraNotice {
+      insertForecastEraNotice(into: &rows)
+    }
     return rows
+  }
+
+  /// Calm: directly under the WFO strip (hero, 20pt). Story day: after Your News
+  /// so the iPhone 16 first viewport still peeks a news card.
+  static func insertForecastEraNotice(into rows: inout [TodayFeedRow]) {
+    if let idx = rows.firstIndex(of: .honestyStrip) {
+      rows.insert(.forecastEraNotice, at: idx + 1)
+      return
+    }
+    if let idx = rows.firstIndex(of: .item(.yourNews)) {
+      rows.insert(.forecastEraNotice, at: idx + 1)
+      return
+    }
+    if let idx = rows.firstIndex(of: .item(.alerts)) {
+      rows.insert(.forecastEraNotice, at: idx + 1)
+      return
+    }
+    if let idx = rows.firstIndex(of: .item(.now)) {
+      rows.insert(.forecastEraNotice, at: idx + 1)
+      return
+    }
+    rows.append(.forecastEraNotice)
   }
 
   static func shouldShow(_ item: FeedItem, in snapshot: FeedSnapshot) -> Bool {
