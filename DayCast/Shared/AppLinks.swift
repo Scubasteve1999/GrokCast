@@ -12,6 +12,16 @@ enum AppLinks {
   static let openMeteo = URL(string: "https://open-meteo.com/")!
   static let appStore = AppReviewPrompt.appStoreURL
   static let writeReview = AppReviewPrompt.writeReviewURL
+  /// NWS SCN 26-48 — RRFS + REFS implementation (Oct 14, 2026, 1200 UTC).
+  static let nwsSCN2648 = URL(
+    string:
+      "https://www.weather.gov/media/notification/pdf_2026/scn26-048_Updated_RRFS_and_REFS_Implementation_aad.pdf"
+  )!
+  /// NWS SCN 26-47 — retire NAM, SREF, HREF, HiresW, NAM MOS.
+  static let nwsSCN2647 = URL(
+    string:
+      "https://www.weather.gov/media/notification/pdf_2026/SCN26-47_Updated_Retire_NAM_SREF_HREF_HiresW_NAM_MOS.aab.pdf"
+  )!
 }
 
 /// Stable accessibility identifiers for XCUITest and VoiceOver.
@@ -43,6 +53,11 @@ enum DayCastAccessibility {
     static let statusPill = "daycast.today.statusPill"
     static let alertsSlot = "daycast.today.alertsSlot"
     static let honestyStrip = "daycast.today.honestyStrip"
+    static let forecastEraNotice = "daycast.today.forecastEraNotice"
+    static let forecastEraNoticeDismiss = "daycast.today.forecastEraNotice.dismiss"
+    static let forecastEraNoticeCard = "daycast.today.forecastEraNotice.card"
+    static let forecastEraNoticeSCN48 = "daycast.today.forecastEraNotice.scn48"
+    static let forecastEraNoticeSCN47 = "daycast.today.forecastEraNotice.scn47"
     static let health = "daycast.today.health"
     static let precip = "daycast.today.precip"
     static let yourNews = "daycast.today.yourNews"
@@ -74,6 +89,7 @@ enum DayCastAccessibility {
     static let proEntry = "daycast.settings.pro"
     static let activePlan = "daycast.settings.pro.plan"
     static let activeUnlocks = "daycast.settings.pro.unlocks"
+    static let forecastEraNotice = "daycast.settings.forecastEraNotice"
   }
 
   enum Alerts {

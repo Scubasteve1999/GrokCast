@@ -14,6 +14,9 @@ struct TodayFeedView: View {
   @State private var showNowDetail = false
   @State private var showAirQualityDetail = false
   @State private var showFireDetail = false
+  @State private var showForecastEraNotice = false
+  @AppStorage(ForecastEraNotice.dismissedIdKey) private var forecastEraDismissedId = ""
+  @AppStorage(ForecastEraNotice.forceShowKey) private var forceForecastEraNotice = false
   @State private var chipBarHeight: CGFloat = LocationChipBar.reservedHeight
 
   private var fireWeatherAlerts: [NWSAlert] {
@@ -112,11 +115,18 @@ struct TodayFeedView: View {
     )
   }
 
+  private var showsForecastEraNotice: Bool {
+    _ = forecastEraDismissedId
+    _ = forceForecastEraNotice
+    return ForecastEraNotice.shouldShowBanner()
+  }
+
   private var feedRows: [TodayFeedRow] {
     FeedAssembler.rows(
       items: feedItems,
       weatherError: store.weatherError,
-      showsStandaloneHonestyStrip: showsStandaloneHonestyStrip
+      showsStandaloneHonestyStrip: showsStandaloneHonestyStrip,
+      showsForecastEraNotice: showsForecastEraNotice
     )
   }
 
@@ -133,20 +143,26 @@ struct TodayFeedView: View {
   }
 
   private var heroRows: [TodayFeedRow] {
-    feedRows.filter { row in
-      switch row {
-      case .errorBanner, .honestyStrip, .item(.now), .item(.alerts): return true
-      default: return false
-      }
+    var rows: [TodayFeedRow] = []
+    for row in feedRows {
+      guard isHeroChrome(row) else { break }
+      rows.append(row)
     }
+    return rows
   }
 
   private var sheetRows: [TodayFeedRow] {
-    feedRows.filter { row in
-      switch row {
-      case .errorBanner, .honestyStrip, .item(.now), .item(.alerts): return false
-      default: return true
-      }
+    Array(feedRows.dropFirst(heroRows.count))
+  }
+
+  /// Photo-stage chrome, including a calm-day forecast-era caption after the WFO strip.
+  /// A notice placed after Your News is not hero — the prefix walk stops at hourly.
+  private func isHeroChrome(_ row: TodayFeedRow) -> Bool {
+    switch row {
+    case .errorBanner, .honestyStrip, .forecastEraNotice, .item(.now), .item(.alerts):
+      return true
+    default:
+      return false
     }
   }
 
@@ -165,6 +181,8 @@ struct TodayFeedView: View {
                 if let honestyContent {
                   HonestyStrip(content: honestyContent, sitsOnPhoto: true)
                 }
+              case .forecastEraNotice:
+                forecastEraNoticeBanner(sitsOnPhoto: true)
               case .item(let item):
                 feedCard(for: item, plated: false)
               }
@@ -177,8 +195,13 @@ struct TodayFeedView: View {
           if !sheetRows.isEmpty {
             VStack(spacing: TodayGlanceLayout.sheetSectionSpacing) {
               ForEach(sheetRows) { row in
-                if case .item(let item) = row {
+                switch row {
+                case .forecastEraNotice:
+                  forecastEraNoticeBanner(sitsOnPhoto: false)
+                case .item(let item):
                   feedCard(for: item, plated: false)
+                default:
+                  EmptyView()
                 }
               }
             }
@@ -234,6 +257,9 @@ struct TodayFeedView: View {
         fireWeatherAlerts: fireWeatherAlerts,
         radiusMiles: store.fireProximityRadiusMiles
       )
+    }
+    .sheet(isPresented: $showForecastEraNotice) {
+      ForecastEraNoticeCard()
     }
   }
 
@@ -320,6 +346,15 @@ struct TodayFeedView: View {
           plated: plated
         )
       }
+    }
+  }
+
+  private func forecastEraNoticeBanner(sitsOnPhoto: Bool) -> some View {
+    ForecastEraNoticeBanner(sitsOnPhoto: sitsOnPhoto) {
+      showForecastEraNotice = true
+    } onDismiss: {
+      ForecastEraNotice.dismiss()
+      forecastEraDismissedId = ForecastEraNotice.id
     }
   }
 

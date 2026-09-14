@@ -64,6 +64,7 @@ targetTemplates:
       - sdk: SwiftData.framework
       - sdk: ActivityKit.framework
       - sdk: AppIntents.framework
+      - sdk: SafariServices.framework
       - sdk: libbz2.tbd
       - sdk: Metal.framework
 

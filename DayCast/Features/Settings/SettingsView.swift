@@ -32,6 +32,9 @@ struct SettingsView: View {
   @State private var connectionTestSuccess = false
   @State private var showTemperatureUnits = false
   @State private var showBriefTimePicker = false
+  @State private var showForecastEraNotice = false
+  @AppStorage(ForecastEraNotice.dismissedIdKey) private var forecastEraDismissedId = ""
+  @AppStorage(ForecastEraNotice.forceShowKey) private var forceForecastEraNotice = false
 
   private var hasKey: Bool {
     store.grokConfig.hasValidDeveloperKey
@@ -55,6 +58,9 @@ struct SettingsView: View {
           if newPhase == .active {
             Task { await store.refreshAlertNotificationAuthorizationStatus() }
           }
+        }
+        .sheet(isPresented: $showForecastEraNotice) {
+          ForecastEraNoticeCard()
         }
     }
     .preferredColorScheme(.dark)
@@ -347,6 +353,15 @@ struct SettingsView: View {
       developerKeySection
       SettingsDivider()
       SettingsLinkRow(title: "Get xAI API key", icon: "link", url: AppLinks.xAIConsole)
+      #if DEBUG
+        SettingsDivider()
+        toggleRow(
+          title: "Force RRFS notice",
+          subtitle: "DEBUG. Ignore the October 2026 date window.",
+          icon: "hammer",
+          isOn: $forceForecastEraNotice
+        )
+      #endif
     }
   }
 
@@ -359,6 +374,17 @@ struct SettingsView: View {
       infoRow(
         title: "Build",
         value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
+      if offersForecastEraExplainer {
+        SettingsDivider()
+        Button {
+          Haptic.impact(.light)
+          showForecastEraNotice = true
+        } label: {
+          settingsChevronRow(title: ForecastEraNotice.Copy.cardTitle, icon: "building.columns")
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(DayCastAccessibility.Settings.forecastEraNotice)
+      }
       SettingsDivider()
       Button {
         Haptic.impact(.light)
@@ -384,6 +410,12 @@ struct SettingsView: View {
       }
       .buttonStyle(.plain)
     }
+  }
+
+  private var offersForecastEraExplainer: Bool {
+    _ = forecastEraDismissedId
+    _ = forceForecastEraNotice
+    return ForecastEraNotice.shouldOfferExplainer()
   }
 
   @ViewBuilder
