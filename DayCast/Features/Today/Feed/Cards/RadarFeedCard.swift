@@ -4,8 +4,8 @@ import SwiftUI
 /// One-glance Today teaser.
 /// Buried (calm / non-radar advisory): National radar. Never Site Doppler.
 /// Hoisted (wet / radar-relevant warning / next-hour): named WSR-88D + Site Doppler
-/// when a drawable sweep exists. No sweep + keys present → National MapsGL.
-/// Never mosaic. Never “Radar. Opens the Radar tab.”
+/// when a drawable sweep exists. No sweep → National MapsGL when keys exist,
+/// else Live’s National PNG tiles. Never “Radar. Opens the Radar tab.”
 enum RadarFeedCopy {
   static let opensRadarTab = "Opens the Radar tab."
   static let siteProductName = RadarProduct.superResReflectivity.displayName

@@ -63,6 +63,7 @@ final class CitySearchTests: XCTestCase {
       domain: MKErrorDomain, code: Int(MKError.Code.placemarkNotFound.rawValue))
     XCTAssertNil(CitySearch.errorMessage(for: notFound))
     XCTAssertNil(CitySearch.errorMessage(for: CancellationError()))
+    XCTAssertNil(CitySearch.errorMessage(for: URLError(.cancelled)))
   }
 
   func testNetworkFailureHasRetryCopy() {

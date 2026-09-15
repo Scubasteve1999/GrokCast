@@ -84,7 +84,7 @@ final class TodayFirstViewportTests: XCTestCase {
       hasSweep: false,
       mapsGLReady: false
     )
-    XCTAssertEqual(missingKeys, .unavailable)
+    XCTAssertEqual(missingKeys, .nationalTiles)
 
     let missingCoord = RadarPreviewPaint.display(
       paint: .nationalMapsGL,

@@ -948,6 +948,7 @@ final class WeatherStore {
     case success(DayCastWeather)
     case failure(Error)
     case timedOut
+    case cancelled
   }
 
   /// Caps slow Open-Meteo responses so cold launch doesn't sit on skeleton shimmer indefinitely.
@@ -961,9 +962,10 @@ final class WeatherStore {
           data = try await self.openMeteo.fetchForecast(for: location, units: units)
         }
         return .success(data)
-      } catch is CancellationError {
-        return .timedOut
       } catch {
+        if OpenMeteoService.isNonUserFacing(error) {
+          return .cancelled
+        }
         return .failure(error)
       }
     }
@@ -985,20 +987,30 @@ final class WeatherStore {
       }
 
       var fetchOutcome: WeatherFetchResult?
+      var sawTimeout = false
 
       for await value in group {
         switch value {
         case .success, .failure:
           fetchOutcome = value
           group.cancelAll()
+        case .cancelled:
+          // Timeout races cancel in-flight URLSession work. That is not a
+          // user-facing failure — keep a real success/failure if one landed.
+          // If the 8s deadline already fired, keep `.timedOut` (not cancelled).
+          if fetchOutcome == nil, !sawTimeout {
+            fetchOutcome = .cancelled
+          }
+          group.cancelAll()
         case .timedOut:
           // Hard deadline: stop waiting on a slow fetch, but still drain a
           // success/failure that may already be queued behind this timeout.
+          sawTimeout = true
           group.cancelAll()
         }
       }
 
-      return fetchOutcome ?? .timedOut
+      return fetchOutcome ?? (sawTimeout ? .timedOut : .cancelled)
     }
   }
 
@@ -1019,6 +1031,11 @@ final class WeatherStore {
         return .lastGood(lastGood, URLError(.timedOut))
       }
       return .failed(URLError(.timedOut))
+    case .cancelled:
+      if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location, units: units) {
+        return .lastGood(lastGood, URLError(.cancelled))
+      }
+      return .failed(URLError(.cancelled))
     case .failure(let error):
       if let lastGood = Self.lastGoodOpenMeteo(currentWeather, for: location, units: units) {
         return .lastGood(lastGood, error)
@@ -1079,16 +1096,12 @@ final class WeatherStore {
       }
       currentWeather = matching
       syncScoreSurfacesFromCurrentWeather()
-      weatherError =
-        isOffline
-        ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
-        : OpenMeteoService.userFriendlyMessage(for: error)
+      weatherError = OpenMeteoService.weatherBannerMessage(
+        for: error, isOffline: isOffline, hasLastGood: true)
     case .failed(let error):
       if displayedWeather == nil {
-        weatherError =
-          isOffline
-          ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
-          : OpenMeteoService.userFriendlyMessage(for: error)
+        weatherError = OpenMeteoService.weatherBannerMessage(
+          for: error, isOffline: isOffline, hasLastGood: false)
       }
     }
   }
@@ -1142,6 +1155,13 @@ final class WeatherStore {
 
       lastSignificantRefreshDate = Date()  // mark fresh so a near-term sig delivery doesn't re-fetch
     } catch {
+      if OpenMeteoService.isNonUserFacing(error) {
+        await fallbackToDefaultLocationWeather()
+        if currentWeather != nil {
+          weatherError = Self.gpsFallbackHonestyMessage
+        }
+        return
+      }
       let locError =
         isOffline
         ? "No internet connection. Check your Wi-Fi or cellular and tap RETRY."

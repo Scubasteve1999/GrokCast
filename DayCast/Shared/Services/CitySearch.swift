@@ -65,6 +65,7 @@ enum CitySearch {
   /// User-facing copy for a failed lookup. `nil` means treat it as an empty result.
   static func errorMessage(for error: Error) -> String? {
     if error is CancellationError { return nil }
+    if let urlError = error as? URLError, urlError.code == .cancelled { return nil }
 
     let nsError = error as NSError
     if nsError.domain == MKErrorDomain,
