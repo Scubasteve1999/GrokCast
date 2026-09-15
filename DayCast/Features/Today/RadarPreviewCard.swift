@@ -27,25 +27,26 @@ enum RadarPreviewPaint: Equatable {
 
   /// Inner Today map branch. Missing sweep/keys/coord never resolve to a blank hole.
   /// Prefer National MapsGL when a coordinate and keys exist; Live's National
-  /// tile family when MapsGL is missing; gray plate otherwise.
+  /// tile family when MapsGL is missing but Mapbox is present; gray plate otherwise.
   static func display(
     paint: RadarPreviewPaint,
     hasCoordinate: Bool,
     hasSweep: Bool,
-    mapsGLReady: Bool
+    mapsGLReady: Bool,
+    mapboxPresent: Bool
   ) -> RadarPreviewPaint {
     switch paint {
     case .siteDoppler:
       if hasCoordinate, hasSweep { return .siteDoppler }
-      if hasCoordinate, mapsGLReady { return .nationalMapsGL }
-      if hasCoordinate { return .nationalTiles }
+      if hasCoordinate, mapsGLReady, mapboxPresent { return .nationalMapsGL }
+      if hasCoordinate, mapboxPresent { return .nationalTiles }
       return .unavailable
     case .nationalMapsGL:
-      if hasCoordinate, mapsGLReady { return .nationalMapsGL }
-      if hasCoordinate { return .nationalTiles }
+      if hasCoordinate, mapsGLReady, mapboxPresent { return .nationalMapsGL }
+      if hasCoordinate, mapboxPresent { return .nationalTiles }
       return .unavailable
     case .nationalTiles:
-      if hasCoordinate { return .nationalTiles }
+      if hasCoordinate, mapboxPresent { return .nationalTiles }
       return .unavailable
     case .unavailable:
       return .unavailable
@@ -84,7 +85,8 @@ struct RadarPreviewCard: View {
       paint: paint,
       hasCoordinate: coordinate != nil,
       hasSweep: sweep != nil,
-      mapsGLReady: RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent)
+      mapsGLReady: RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent),
+      mapboxPresent: RadarPreviewSource.mapboxTokenPresent
     )
     Group {
       switch shown {
@@ -155,6 +157,7 @@ struct RadarPreviewCard: View {
     } else {
       frame = await loader.loadNewestNationalLiveFrame(coordinate: coordinate)
     }
+    guard !Task.isCancelled else { return }
     nationalFrame = frame
     nationalTilesFailed = frame == nil
   }

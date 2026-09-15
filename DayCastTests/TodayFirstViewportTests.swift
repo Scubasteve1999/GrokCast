@@ -74,7 +74,8 @@ final class TodayFirstViewportTests: XCTestCase {
       paint: .siteDoppler,
       hasCoordinate: true,
       hasSweep: false,
-      mapsGLReady: true
+      mapsGLReady: true,
+      mapboxPresent: true
     )
     XCTAssertEqual(missingSweep, .nationalMapsGL)
 
@@ -82,7 +83,8 @@ final class TodayFirstViewportTests: XCTestCase {
       paint: .siteDoppler,
       hasCoordinate: true,
       hasSweep: false,
-      mapsGLReady: false
+      mapsGLReady: false,
+      mapboxPresent: true
     )
     XCTAssertEqual(missingKeys, .nationalTiles)
 
@@ -90,15 +92,26 @@ final class TodayFirstViewportTests: XCTestCase {
       paint: .nationalMapsGL,
       hasCoordinate: false,
       hasSweep: false,
-      mapsGLReady: true
+      mapsGLReady: true,
+      mapboxPresent: true
     )
     XCTAssertEqual(missingCoord, .unavailable)
+
+    let missingMapbox = RadarPreviewPaint.display(
+      paint: .nationalMapsGL,
+      hasCoordinate: true,
+      hasSweep: false,
+      mapsGLReady: false,
+      mapboxPresent: false
+    )
+    XCTAssertEqual(missingMapbox, .unavailable)
 
     let explicitHole = RadarPreviewPaint.display(
       paint: .unavailable,
       hasCoordinate: false,
       hasSweep: false,
-      mapsGLReady: false
+      mapsGLReady: false,
+      mapboxPresent: false
     )
     XCTAssertEqual(explicitHole, .unavailable)
     XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, 168)

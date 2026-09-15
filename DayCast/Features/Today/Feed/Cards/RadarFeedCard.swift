@@ -264,7 +264,10 @@ struct RadarFeedCard: View {
 
   @ViewBuilder
   private var map: some View {
-    let shown = product == .future ? RadarPreviewPaint.nationalMapsGL : paint
+    let shown =
+      product == .future && paint != .unavailable
+      ? RadarPreviewPaint.nationalMapsGL
+      : paint
     RadarPreviewCard(
       paint: shown,
       sweep: shown == .siteDoppler ? sweep : nil,

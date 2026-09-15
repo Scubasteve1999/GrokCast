@@ -301,27 +301,50 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertGreaterThan(RadarPreviewSource.outlookPlateHeight, RadarPreviewSource.teaserHeight)
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: true),
+        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: true,
+        mapboxPresent: true),
       .nationalMapsGL
     )
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: false),
+        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: true),
       .nationalTiles
     )
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: false),
+        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: true),
       .nationalTiles
     )
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .nationalTiles, hasCoordinate: true, hasSweep: false, mapsGLReady: false),
+        paint: .nationalTiles, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: true),
       .nationalTiles
     )
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .nationalMapsGL, hasCoordinate: false, hasSweep: false, mapsGLReady: true),
+        paint: .nationalMapsGL, hasCoordinate: false, hasSweep: false, mapsGLReady: true,
+        mapboxPresent: true),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: true,
+        mapboxPresent: false),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: false),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalTiles, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: false),
       .unavailable
     )
   }
