@@ -2,15 +2,27 @@ import Foundation
 
 /// Production configuration for DayCast Pro hosted services.
 ///
-/// Secrets-free by design, like `GrokAPIConfiguration`: both values live in the
-/// gitignored `DeveloperAPIKey.swift` and are forwarded here so the rest of the
-/// app has one place to read them from.
+/// Secrets-free by design, like `GrokAPIConfiguration`. The live Grok proxy URL
+/// is committed here so Release / TestFlight are not hostage to gitignored
+/// `DeveloperAPIKey.swift`. That file remains an optional local override
+/// (simulator / staging). Shared secret still falls back to `"daycast-pro"`
+/// in `GrokProxyConfiguration` when the override is nil.
 ///
-/// While `grokProxyBaseURL` is nil, Pro cannot unlock AI and only users with
-/// their own Keychain xAI key can reach Grok. Setup: `server/grok-proxy/README.md`.
+/// Setup: `server/grok-proxy/README.md`, `DEPLOYMENT.md`.
 enum DayCastProConfig {
+  /// Live production worker, including the `/v1` suffix callers append to
+  /// (`chat/completions`, `images/generations`, `status`, `health`).
+  static let productionGrokProxyBaseURL =
+    "https://daycast-grok-proxy.stephendev.workers.dev/v1"
+
   /// The deployed worker, including the `/v1` suffix.
-  static let grokProxyBaseURL: String? = DeveloperAPIKey.grokProxyBaseURL
+  /// `DeveloperAPIKey.grokProxyBaseURL` overrides when set; otherwise production.
+  static let grokProxyBaseURL: String? = {
+    if let custom = DeveloperAPIKey.grokProxyBaseURL, !custom.isEmpty {
+      return custom
+    }
+    return productionGrokProxyBaseURL
+  }()
 
   /// Must match the worker's `PROXY_SECRET`.
   static let grokProxySharedSecret: String? = DeveloperAPIKey.grokProxySharedSecret

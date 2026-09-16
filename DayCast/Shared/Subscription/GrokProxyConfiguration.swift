@@ -4,15 +4,15 @@ import Foundation
 /// `server/grok-proxy`, so the xAI key never ships in the app.
 enum GrokProxyConfiguration {
   /// Base URL for the proxy, including the `/v1` suffix — callers append
-  /// `chat/completions` to it. `nil` until the worker is deployed, which leaves
-  /// Grok available only to users with their own Keychain key.
+  /// `chat/completions` to it. Uses the committed production worker when
+  /// `DeveloperAPIKey.grokProxyBaseURL` is nil so Pro AI claims stay true.
   static var baseURL: URL? {
-    guard let custom = DayCastProConfig.grokProxyBaseURL, !custom.isEmpty,
+    if let custom = DayCastProConfig.grokProxyBaseURL, !custom.isEmpty,
       let url = URL(string: custom)
-    else {
-      return nil
+    {
+      return url
     }
-    return url
+    return URL(string: DayCastProConfig.productionGrokProxyBaseURL)
   }
 
   static var isConfigured: Bool { baseURL != nil }

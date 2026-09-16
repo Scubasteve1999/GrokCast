@@ -15,18 +15,20 @@ Pro subscribers call this proxy instead of xAI directly. Your **xAI API key stay
    ```bash
    wrangler deploy
    ```
-4. Copy the worker URL into `DayCast/Config/DayCastProConfig.swift`:
+4. Production is already wired in `DayCastProConfig.productionGrokProxyBaseURL`:
    ```swift
-   static let grokProxyBaseURL: String? = "https://YOUR-WORKER.workers.dev/v1"
+   static let productionGrokProxyBaseURL =
+     "https://daycast-grok-proxy.stephendev.workers.dev/v1"
    ```
-   Leave this `nil` until the worker is live. While `nil`, Pro users with an embedded/Keychain xAI key call `api.x.ai` directly. Do **not** point at `grok-proxy.daycast.app` unless that hostname is deployed and DNS resolves.
+   Optional local override: `DeveloperAPIKey.grokProxyBaseURL` (simulator / staging).
+   Do **not** point at `grok-proxy.daycast.app` unless that hostname is deployed and DNS resolves.
 
 ## Local dev
 
 ```bash
 cd server/grok-proxy
 XAI_API_KEY=xai-... node worker.js
-# listens on :8787 — point DayCastProConfig to http://127.0.0.1:8787/v1 for simulator
+# listens on :8787 — set DeveloperAPIKey.grokProxyBaseURL to http://127.0.0.1:8787/v1 for simulator
 ```
 
 ## App Store Connect
@@ -52,7 +54,7 @@ Link `DayCast/Configuration/GrokProducts.storekit` in Xcode: **Product → Schem
 | Saved locations | 1 | Unlimited |
 | BYOK developer key | ✅ (advanced) | ✅ |
 
-> **Note:** Until `DayCastProConfig.grokProxyBaseURL` points at a live worker, Grok features require an xAI developer key even for Pro subscribers. Other Pro perks (radar FUTURE, Live Activity, unlimited locations) still unlock with Pro alone.
+> **Note:** Pro AI routes through the committed production worker. Other Pro perks (radar FUTURE, Live Activity, unlimited locations) still unlock with Pro alone. A Keychain xAI key remains a BYOK fallback.
 
 ## Security notes (v1)
 
