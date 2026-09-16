@@ -286,6 +286,44 @@ final class OpenMeteoMappingTests: XCTestCase {
     XCTAssertEqual(weather.hourly.count, HourlyGraphHours.fullLimit)
   }
 
+  func testCancelledErrorsAreNeverUserFacingCopy() {
+    let cancelled = URLError(.cancelled)
+    XCTAssertTrue(OpenMeteoService.isNonUserFacing(cancelled))
+    XCTAssertTrue(OpenMeteoService.isNonUserFacing(CancellationError()))
+    XCTAssertTrue(
+      OpenMeteoService.isNonUserFacing(
+        NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled)))
+    XCTAssertFalse(OpenMeteoService.isNonUserFacing(URLError(.timedOut)))
+    XCTAssertFalse(OpenMeteoService.isNonUserFacing(URLError(.notConnectedToInternet)))
+
+    for error: Error in [cancelled, CancellationError()] {
+      let message = OpenMeteoService.userFriendlyMessage(for: error)
+      XCTAssertFalse(message.localizedCaseInsensitiveContains("cancelled"), message)
+      XCTAssertTrue(message.isEmpty, message)
+    }
+  }
+
+  func testWeatherBannerOmitsCancelledWhenLastGoodExists() {
+    XCTAssertNil(
+      OpenMeteoService.weatherBannerMessage(
+        for: URLError(.cancelled), isOffline: false, hasLastGood: true))
+    XCTAssertNil(
+      OpenMeteoService.weatherBannerMessage(
+        for: CancellationError(), isOffline: false, hasLastGood: true))
+    XCTAssertEqual(
+      OpenMeteoService.weatherBannerMessage(
+        for: URLError(.cancelled), isOffline: false, hasLastGood: false),
+      OpenMeteoService.timedOutMessage)
+    XCTAssertEqual(
+      OpenMeteoService.weatherBannerMessage(
+        for: URLError(.timedOut), isOffline: false, hasLastGood: true),
+      OpenMeteoService.timedOutMessage)
+    XCTAssertFalse(
+      OpenMeteoService.weatherBannerMessage(
+        for: URLError(.cancelled), isOffline: false, hasLastGood: false)?
+        .localizedCaseInsensitiveContains("cancelled") == true)
+  }
+
   private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
     try JSONDecoder().decode(type, from: Data(json.utf8))
   }

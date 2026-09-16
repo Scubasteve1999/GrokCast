@@ -95,6 +95,37 @@ final class RadarLoader {
     return !outcome.frames.isEmpty && outcome.availability.hasFrames
   }
 
+  /// Newest Live National frame the Radar tab would paint (no Site Doppler).
+  func loadNewestNationalLiveFrame(
+    coordinate: CLLocationCoordinate2D
+  ) async -> RadarFrame? {
+    async let rainViewerLive = RainViewerRadarService.loadLiveFrames()
+    async let xweatherLiveOK = XweatherRadarService.mapsAuthConfigured
+      ? XweatherRadarService.probeAvailability()
+      : false
+    let outcome = await resolveLive(
+      site: nil,
+      coordinate: coordinate,
+      rainViewerLive: await rainViewerLive,
+      xweatherLiveOK: await xweatherLiveOK
+    )
+    guard outcome.availability.hasFrames else { return nil }
+    return Self.newestNationalTeaserFrame(from: outcome.frames)
+  }
+
+  /// Newest National forecast/nowcast frame for the Outlook Future pill.
+  func loadNewestNationalForecastFrame() async -> RadarFrame? {
+    let nowcast = await RainViewerRadarService.loadNowcastFrames()
+    let outcome = await resolveForecast(rainViewerNowcast: nowcast)
+    guard outcome.availability.hasFrames else { return nil }
+    return Self.newestNationalTeaserFrame(from: outcome.frames)
+  }
+
+  /// Teaser paints one still — newest last-frame, never Site Doppler.
+  nonisolated static func newestNationalTeaserFrame(from frames: [RadarFrame]) -> RadarFrame? {
+    frames.max { $0.timestamp < $1.timestamp }
+  }
+
   func refreshForecastAvailability(provider: RadarTileProvider) async -> RadarTileAvailability {
     switch provider {
     case .rainViewer:

@@ -226,6 +226,17 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     )
     XCTAssertEqual(
       RadarFeedCopy.headline(
+        conditionCode: 0,
+        siteID: nil,
+        ageLine: "SCAN —",
+        hoisted: false,
+        availability: .live,
+        paint: .nationalTiles
+      ),
+      "Local is clear · National radar"
+    )
+    XCTAssertEqual(
+      RadarFeedCopy.headline(
         conditionCode: 61,
         siteID: "NQA",
         ageLine: "SCAN 18m",
@@ -265,7 +276,12 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertEqual(
       RadarPreviewPaint.resolve(
         hoisted: true, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: false),
-      .unavailable
+      .nationalTiles
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.resolve(
+        hoisted: false, hasDrawableSweep: false, mapboxPresent: true, mapsGLKeysPresent: false),
+      .nationalTiles
     )
     XCTAssertEqual(
       RadarPreviewPaint.resolve(
@@ -285,14 +301,73 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
     XCTAssertGreaterThan(RadarPreviewSource.outlookPlateHeight, RadarPreviewSource.teaserHeight)
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: true),
+        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: true,
+        mapboxPresent: true),
       .nationalMapsGL
     )
     XCTAssertEqual(
       RadarPreviewPaint.display(
-        paint: .nationalMapsGL, hasCoordinate: false, hasSweep: false, mapsGLReady: true),
+        paint: .siteDoppler, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: true),
+      .nationalTiles
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: true),
+      .nationalTiles
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalTiles, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: true),
+      .nationalTiles
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: false, hasSweep: false, mapsGLReady: true,
+        mapboxPresent: true),
       .unavailable
     )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: true,
+        mapboxPresent: false),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalMapsGL, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: false),
+      .unavailable
+    )
+    XCTAssertEqual(
+      RadarPreviewPaint.display(
+        paint: .nationalTiles, hasCoordinate: true, hasSweep: false, mapsGLReady: false,
+        mapboxPresent: false),
+      .unavailable
+    )
+  }
+
+  func testNationalTeaserPicksNewestFrameNotSiteProduct() {
+    let older = RadarFrame(
+      provider: .rainViewer,
+      kind: .livePrecipitation,
+      tileEpoch: 1,
+      timestamp: Date(timeIntervalSince1970: 1_700_000_000),
+      tileURLTemplates: ["https://example.test/old/{z}/{x}/{y}.png"]
+    )
+    let newer = RadarFrame(
+      provider: .iem,
+      kind: .livePrecipitation,
+      tileEpoch: 2,
+      timestamp: Date(timeIntervalSince1970: 1_700_000_600),
+      tileURLTemplates: ["https://example.test/new/{z}/{x}/{y}.png"]
+    )
+    XCTAssertEqual(RadarLoader.newestNationalTeaserFrame(from: [older, newer])?.tileEpoch, 2)
+    XCTAssertEqual(RadarLoader.newestNationalTeaserFrame(from: [newer, older])?.tileEpoch, 2)
+    XCTAssertNil(RadarLoader.newestNationalTeaserFrame(from: []))
+    XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, RadarPreviewSource.outlookPlateHeight)
   }
 
   func testUserVisibleLabelsNeverSayMosaic() {

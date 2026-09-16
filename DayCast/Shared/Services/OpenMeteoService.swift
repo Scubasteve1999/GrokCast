@@ -11,16 +11,32 @@ final class OpenMeteoService {
     self.session = session
   }
 
+  /// Race losers (`URLSession` cancel / `CancellationError`) are not user-facing.
+  /// Last-good weather should stay on screen with no banner.
+  static func isNonUserFacing(_ error: Error) -> Bool {
+    if error is CancellationError { return true }
+    if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+    let nsError = error as NSError
+    return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
+  }
+
+  static let timedOutMessage = "The weather service timed out. Tap RETRY in a moment."
+
   /// Centralized helper for turning Open-Meteo (and similar future service) errors
   /// into calm, actionable user-facing strings. Mirrors/enhances the prior store logic
   /// but lives in the service for "future services" reuse (per task).
+  /// Never returns a string containing "cancelled". Cancellation itself is empty;
+  /// `weatherBannerMessage` decides timeout copy vs no banner.
   static func userFriendlyMessage(for error: Error) -> String {
+    if isNonUserFacing(error) {
+      return ""
+    }
     if let urlError = error as? URLError {
       switch urlError.code {
       case .badServerResponse:
         return "Weather service is temporarily unavailable (server error). Tap RETRY in a moment."
       case .timedOut:
-        return "The weather service timed out. Tap RETRY in a moment."
+        return timedOutMessage
       case .notConnectedToInternet, .networkConnectionLost:
         return "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
       case .secureConnectionFailed,
@@ -31,14 +47,46 @@ final class OpenMeteoService {
         return
           "Weather service connection failed (TLS/secure error). This is common in the iOS Simulator. Tap RETRY or try again in a moment."
       default:
-        return "Network error: \(urlError.localizedDescription)"
+        return sanitizedNetworkMessage(urlError.localizedDescription)
       }
     }
     if error is DecodingError {
       return
         "Weather data from the service was in an unexpected format (decode failed). Tap RETRY or try again in a moment."
     }
-    return error.localizedDescription
+    let description = error.localizedDescription
+    if description.localizedCaseInsensitiveContains("cancel") {
+      return timedOutMessage
+    }
+    return description
+  }
+
+  /// Last-good + cancellation → no banner. Cold fail + cancellation → timeout copy.
+  static func weatherBannerMessage(
+    for error: Error,
+    isOffline: Bool,
+    hasLastGood: Bool
+  ) -> String? {
+    if isNonUserFacing(error) {
+      if hasLastGood { return nil }
+      if isOffline {
+        return "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
+      }
+      return timedOutMessage
+    }
+    if isOffline {
+      return "No internet connection. Check your Wi-Fi or cellular and tap RETRY."
+    }
+    let message = userFriendlyMessage(for: error)
+    if message.localizedCaseInsensitiveContains("cancelled") { return nil }
+    return message
+  }
+
+  private static func sanitizedNetworkMessage(_ description: String) -> String {
+    if description.localizedCaseInsensitiveContains("cancel") {
+      return timedOutMessage
+    }
+    return "Network error: \(description)"
   }
 
   // Main forecast + current

@@ -5,9 +5,11 @@ import UIKit
 
 /// What the Today radar teaser is allowed to paint. Never a blank rectangle.
 /// Hoisted Site Doppler only when a sweep can draw. Otherwise National MapsGL
-/// when keys are present. `.unavailable` is missing-keys only.
+/// when keys are present. Without MapsGL keys, National PNG tiles (same family
+/// Live uses: MRMS / IEM / RainViewer / OWM). `.unavailable` is no Mapbox.
 enum RadarPreviewPaint: Equatable {
   case nationalMapsGL
+  case nationalTiles
   case siteDoppler
   case unavailable
 
@@ -19,24 +21,32 @@ enum RadarPreviewPaint: Equatable {
   ) -> RadarPreviewPaint {
     if hoisted, hasDrawableSweep, mapboxPresent { return .siteDoppler }
     if mapsGLKeysPresent, mapboxPresent { return .nationalMapsGL }
+    if mapboxPresent { return .nationalTiles }
     return .unavailable
   }
 
   /// Inner Today map branch. Missing sweep/keys/coord never resolve to a blank hole.
-  /// Prefer National MapsGL when a coordinate and keys exist; gray plate otherwise.
+  /// Prefer National MapsGL when a coordinate and keys exist; Live's National
+  /// tile family when MapsGL is missing but Mapbox is present; gray plate otherwise.
   static func display(
     paint: RadarPreviewPaint,
     hasCoordinate: Bool,
     hasSweep: Bool,
-    mapsGLReady: Bool
+    mapsGLReady: Bool,
+    mapboxPresent: Bool
   ) -> RadarPreviewPaint {
     switch paint {
     case .siteDoppler:
       if hasCoordinate, hasSweep { return .siteDoppler }
-      if hasCoordinate, mapsGLReady { return .nationalMapsGL }
+      if hasCoordinate, mapsGLReady, mapboxPresent { return .nationalMapsGL }
+      if hasCoordinate, mapboxPresent { return .nationalTiles }
       return .unavailable
     case .nationalMapsGL:
-      if hasCoordinate, mapsGLReady { return .nationalMapsGL }
+      if hasCoordinate, mapsGLReady, mapboxPresent { return .nationalMapsGL }
+      if hasCoordinate, mapboxPresent { return .nationalTiles }
+      return .unavailable
+    case .nationalTiles:
+      if hasCoordinate, mapboxPresent { return .nationalTiles }
       return .unavailable
     case .unavailable:
       return .unavailable
@@ -55,6 +65,9 @@ struct RadarPreviewCard: View {
   var showsFuture: Bool = false
   var onPolarFailed: (() -> Void)? = nil
 
+  @State private var nationalFrame: RadarFrame?
+  @State private var nationalTilesFailed = false
+
   private var coordinate: CLLocationCoordinate2D? {
     guard let loc = store.currentLocation else { return nil }
     return CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
@@ -72,32 +85,81 @@ struct RadarPreviewCard: View {
       paint: paint,
       hasCoordinate: coordinate != nil,
       hasSweep: sweep != nil,
-      mapsGLReady: RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent)
+      mapsGLReady: RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent),
+      mapboxPresent: RadarPreviewSource.mapboxTokenPresent
     )
-    switch shown {
-    case .siteDoppler:
-      if let coord = coordinate, let sweep {
-        framedMap {
-          RadarPreviewSiteMap(
-            center: coord,
-            sweep: sweep,
-            onPolarFailed: onPolarFailed
-          )
+    Group {
+      switch shown {
+      case .siteDoppler:
+        if let coord = coordinate, let sweep {
+          framedMap {
+            RadarPreviewSiteMap(
+              center: coord,
+              sweep: sweep,
+              onPolarFailed: onPolarFailed
+            )
+          }
+        } else {
+          RadarPreviewUnavailablePlate(height: height)
         }
-      } else {
+      case .nationalMapsGL:
+        if let coord = coordinate {
+          framedMap {
+            RadarPreviewMapboxMap(center: coord, showsFuture: showsFuture)
+          }
+        } else {
+          RadarPreviewUnavailablePlate(height: height)
+        }
+      case .nationalTiles:
+        nationalTilesPlate
+      case .unavailable:
         RadarPreviewUnavailablePlate(height: height)
       }
-    case .nationalMapsGL:
-      if let coord = coordinate {
-        framedMap {
-          RadarPreviewMapboxMap(center: coord, showsFuture: showsFuture)
-        }
-      } else {
+    }
+    .task(id: nationalLoadKey(shown)) {
+      await loadNationalTilesIfNeeded(shown)
+    }
+  }
+
+  @ViewBuilder
+  private var nationalTilesPlate: some View {
+    if let coord = coordinate {
+      if nationalTilesFailed {
         RadarPreviewUnavailablePlate(height: height)
+      } else {
+        framedMap {
+          RadarPreviewNationalTileMap(center: coord, frame: nationalFrame)
+        }
       }
-    case .unavailable:
+    } else {
       RadarPreviewUnavailablePlate(height: height)
     }
+  }
+
+  private func nationalLoadKey(_ shown: RadarPreviewPaint) -> String {
+    let lat = coordinate?.latitude ?? 0
+    let lon = coordinate?.longitude ?? 0
+    return "\(shown)-\(showsFuture)-\(lat)-\(lon)"
+  }
+
+  private func loadNationalTilesIfNeeded(_ shown: RadarPreviewPaint) async {
+    guard shown == .nationalTiles, let coordinate else {
+      nationalFrame = nil
+      nationalTilesFailed = false
+      return
+    }
+    nationalTilesFailed = false
+    nationalFrame = nil
+    let loader = RadarLoader()
+    let frame: RadarFrame?
+    if showsFuture {
+      frame = await loader.loadNewestNationalForecastFrame()
+    } else {
+      frame = await loader.loadNewestNationalLiveFrame(coordinate: coordinate)
+    }
+    guard !Task.isCancelled else { return }
+    nationalFrame = frame
+    nationalTilesFailed = frame == nil
   }
 
   private func framedMap<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -261,6 +323,133 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
       host.syncPreview(opacity: RadarPreviewSource.previewOpacity, future: showsFuture)
       host.attach(to: mapView)
+    }
+  }
+}
+
+/// Non-interactive Mapbox Dark + newest Live National PNG tiles (IEM / RainViewer / MRMS / OWM).
+/// Used when MapsGL keys are missing — same family Live National paints.
+private struct RadarPreviewNationalTileMap: UIViewRepresentable {
+  let center: CLLocationCoordinate2D
+  var frame: RadarFrame?
+
+  func makeUIView(context: Context) -> MapView {
+    if let token = DeveloperAPIKey.mapbox, !token.isEmpty {
+      MapboxOptions.accessToken = token
+    }
+    IEMN0BTileInterceptor.install()
+    let scale = max(1.0, Double(UIScreen.main.scale))
+    let options = MapInitOptions(
+      mapOptions: MapOptions(pixelRatio: CGFloat(scale)),
+      styleURI: RadarPreviewSource.previewBaseMap.styleURI
+    )
+    let mapView = MapView(
+      frame: CGRect(x: 0, y: 0, width: 400, height: RadarPreviewSource.outlookPlateHeight),
+      mapInitOptions: options
+    )
+    if mapView.contentScaleFactor.isNaN || mapView.contentScaleFactor <= 0 {
+      mapView.contentScaleFactor = scale
+    }
+    RadarPreviewSource.configureTeaser(mapView)
+    mapView.mapboxMap.setCamera(
+      to: CameraOptions(center: center, zoom: RadarPreviewSource.previewZoom)
+    )
+    try? mapView.mapboxMap.setProjection(StyleProjection(name: .mercator))
+    RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
+
+    let coordinator = context.coordinator
+    coordinator.pendingFrame = frame
+    mapView.mapboxMap.onStyleLoaded.observe { [weak mapView] _ in
+      guard let mapView else { return }
+      RadarPreviewSource.configureTeaser(mapView)
+      RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
+      coordinator.installRaster(on: mapView)
+    }.store(in: &coordinator.styleObservers)
+    if mapView.mapboxMap.isStyleLoaded {
+      coordinator.installRaster(on: mapView)
+    }
+    return mapView
+  }
+
+  func updateUIView(_ mapView: MapView, context: Context) {
+    let current = mapView.mapboxMap.cameraState.center
+    let moved =
+      abs(current.latitude - center.latitude) > 0.01
+      || abs(current.longitude - center.longitude) > 0.01
+    if moved {
+      mapView.mapboxMap.setCamera(
+        to: CameraOptions(center: center, zoom: RadarPreviewSource.previewZoom)
+      )
+    }
+    context.coordinator.pendingFrame = frame
+    if mapView.mapboxMap.isStyleLoaded {
+      context.coordinator.installRaster(on: mapView)
+    }
+  }
+
+  static func dismantleUIView(_ uiView: MapView, coordinator: Coordinator) {
+    coordinator.removeRaster(from: uiView)
+  }
+
+  func makeCoordinator() -> Coordinator { Coordinator() }
+
+  @MainActor
+  final class Coordinator {
+    static let sourceID = "teaser-national"
+    static let layerID = "teaser-national-layer"
+
+    var styleObservers = Set<AnyCancelable>()
+    var pendingFrame: RadarFrame?
+    var appliedTileKey: String?
+
+    func installRaster(on mapView: MapView) {
+      guard let frame = pendingFrame, !frame.tileURLTemplates.isEmpty else { return }
+      if appliedTileKey == frame.tileKey,
+        mapView.mapboxMap.sourceExists(withId: Self.sourceID)
+      {
+        return
+      }
+      removeRaster(from: mapView)
+      do {
+        var source = RasterSource(id: Self.sourceID)
+        source.tiles = frame.tileURLTemplates
+        source.tileSize = frame.provider == .xweather ? 512 : 256
+        source.minzoom = 0
+        source.maxzoom = MapsGLRadarPalette.displayMaxZoom(
+          provider: frame.provider, paintsPolarRadials: false)
+        source.prefetchZoomDelta = 1
+        try mapView.mapboxMap.addSource(source)
+
+        var layer = RasterLayer(id: Self.layerID, source: Self.sourceID)
+        layer.rasterFadeDuration = .constant(0)
+        layer.rasterEmissiveStrength = .constant(1)
+        layer.rasterOpacity = .constant(RadarPreviewSource.previewOpacity)
+        layer.rasterSaturation = .constant(0)
+        layer.rasterContrast = .constant(0)
+        layer.rasterBrightnessMin = .constant(0)
+        layer.rasterHueRotate = .constant(0)
+        let nearest = MapsGLRadarPalette.usesNearestResampling(
+          provider: frame.provider,
+          isFuture: frame.kind == .forecastPrecipitation,
+          cameraZoom: RadarPreviewSource.previewZoom
+        )
+        layer.rasterResampling = .constant(nearest ? .nearest : .linear)
+        let position = RadarBaseMapStyle.polarUnderlayLayerPosition(on: mapView)
+        try mapView.mapboxMap.addLayer(layer, layerPosition: position)
+        appliedTileKey = frame.tileKey
+      } catch {
+        radarLog("[Radar] Today National teaser tiles failed: \(error)")
+      }
+    }
+
+    func removeRaster(from mapView: MapView) {
+      if mapView.mapboxMap.layerExists(withId: Self.layerID) {
+        try? mapView.mapboxMap.removeLayer(withId: Self.layerID)
+      }
+      if mapView.mapboxMap.sourceExists(withId: Self.sourceID) {
+        try? mapView.mapboxMap.removeSource(withId: Self.sourceID)
+      }
+      appliedTileKey = nil
     }
   }
 }

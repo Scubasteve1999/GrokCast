@@ -170,6 +170,58 @@ extension WeatherStoreFallbackTests {
   }
 
   @MainActor
+  func testCancelledFetchKeepsLastGoodWithoutBanner() async {
+    let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { _, _ in
+      throw URLError(.cancelled)
+    }))
+    store.currentLocation = olive
+    store.currentWeather = taggedWeather(olive)
+    await store.refreshWeather()
+    XCTAssertEqual(store.currentWeather?.currentTemp, 72)
+    XCTAssertNil(store.weatherError)
+    XCTAssertFalse(store.isLoadingWeather)
+  }
+
+  @MainActor
+  func testCancellationErrorKeepsLastGoodWithoutBanner() async {
+    let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { _, _ in
+      throw CancellationError()
+    }))
+    store.currentLocation = olive
+    store.currentWeather = taggedWeather(olive)
+    await store.refreshWeather()
+    XCTAssertEqual(store.currentWeather?.currentTemp, 72)
+    XCTAssertNil(store.weatherError)
+  }
+
+  @MainActor
+  func testCancelledFetchWithoutWeatherDoesNotSayCancelled() async throws {
+    let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { _, _ in
+      throw URLError(.cancelled)
+    }))
+    store.currentLocation = olive
+    await store.refreshWeather()
+    XCTAssertNil(store.currentWeather)
+    let message = try XCTUnwrap(store.weatherError)
+    XCTAssertFalse(message.localizedCaseInsensitiveContains("cancelled"), message)
+    XCTAssertEqual(message, OpenMeteoService.timedOutMessage)
+    XCTAssertFalse(store.isLoadingWeather)
+  }
+
+  @MainActor
+  func testTimeoutOnLastGoodStillShowsRetryBanner() async {
+    let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { _, _ in
+      throw URLError(.timedOut)
+    }))
+    store.currentLocation = olive
+    store.currentWeather = taggedWeather(olive)
+    await store.refreshWeather()
+    XCTAssertEqual(store.currentWeather?.currentTemp, 72)
+    XCTAssertEqual(store.weatherError, OpenMeteoService.timedOutMessage)
+    XCTAssertFalse(store.weatherError?.localizedCaseInsensitiveContains("cancelled") == true)
+  }
+
+  @MainActor
   func testChangingUnitsAwayAndBackRejectsOriginalInFlightRequest() async {
     let gate = PendingWeatherValue<DayCastWeather>()
     let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { _, units in
