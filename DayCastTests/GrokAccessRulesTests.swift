@@ -177,4 +177,52 @@ final class GrokAccessRulesTests: XCTestCase {
       SkyCheckDeskCopy.photoUnavailableExplanation.localizedCaseInsensitiveContains("Settings"))
     XCTAssertFalse(SkyCheckDeskCopy.photoUnavailableExplanation.isEmpty)
   }
+
+  // MARK: - Production proxy honesty
+
+  func testCommittedProductionProxyURLIncludesV1() {
+    XCTAssertEqual(
+      DayCastProConfig.productionGrokProxyBaseURL,
+      "https://daycast-grok-proxy.stephendev.workers.dev/v1")
+    XCTAssertTrue(DayCastProConfig.productionGrokProxyBaseURL.hasSuffix("/v1"))
+  }
+
+  func testProxyIsConfiguredWhenDeveloperOverrideIsNil() {
+    if DeveloperAPIKey.grokProxyBaseURL == nil {
+      XCTAssertEqual(
+        DayCastProConfig.grokProxyBaseURL,
+        DayCastProConfig.productionGrokProxyBaseURL)
+      XCTAssertEqual(
+        GrokProxyConfiguration.baseURL?.absoluteString,
+        DayCastProConfig.productionGrokProxyBaseURL)
+      XCTAssertEqual(
+        GrokProxyConfiguration.baseURL?.path, "/v1")
+    }
+    XCTAssertTrue(GrokProxyConfiguration.isConfigured)
+    XCTAssertNotNil(GrokProxyConfiguration.baseURL)
+  }
+
+  func testSharedSecretFallsBackToDaycastPro() {
+    if DeveloperAPIKey.grokProxySharedSecret == nil {
+      XCTAssertEqual(GrokProxyConfiguration.sharedSecret, "daycast-pro")
+    } else {
+      XCTAssertEqual(
+        GrokProxyConfiguration.sharedSecret,
+        DeveloperAPIKey.grokProxySharedSecret)
+    }
+  }
+
+  @MainActor
+  func testPaywallCanUnlockGrokViaProWithWiredProxy() {
+    XCTAssertTrue(PaywallCoordinator.shared.canUnlockGrokViaPro)
+  }
+
+  func testProAIClaimsStayOnPaywallAndSkyCheck() {
+    XCTAssertTrue(PaywallFeature.grokAI.subheadline.contains("Sky Check"))
+    XCTAssertTrue(PaywallFeature.grokAI.subheadline.contains("Explain Radar"))
+    XCTAssertTrue(PaywallView.skyCheckRowDetail.contains("Explain Radar"))
+    XCTAssertTrue(GrokAPIKeyEmptyStateView.bodyCopy.contains("Explain Radar"))
+    XCTAssertTrue(GrokAPIKeyEmptyStateView.bodyCopy.contains("Sky Check"))
+    XCTAssertEqual(AlertsGrokSummaryCard.unlockCTATitle, "Unlock with Pro")
+  }
 }

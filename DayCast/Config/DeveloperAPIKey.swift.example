@@ -45,9 +45,9 @@ enum DeveloperAPIKey {
     return "\(id)_\(secret)"
   }
 
-  /// Hosted Grok proxy for Pro subscribers — see `server/grok-proxy/README.md`.
+  /// Optional local override for the hosted Grok proxy.
   /// Include the `/v1` suffix: `"https://<worker>.workers.dev/v1"`.
-  /// While nil, Pro cannot unlock AI and only a Keychain key reaches Grok.
+  /// Nil uses the committed production URL in `DayCastProConfig`.
   static let grokProxyBaseURL: String? = nil
 
   /// Must match the worker's `PROXY_SECRET`. This ships inside the binary, so it
