@@ -225,4 +225,14 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertTrue(GrokAPIKeyEmptyStateView.bodyCopy.contains("Sky Check"))
     XCTAssertEqual(AlertsGrokSummaryCard.unlockCTATitle, "Unlock with Pro")
   }
+
+  func testAppBundleVersionIs1012Build168() {
+    let bundle = Bundle.main
+    XCTAssertEqual(
+      bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+      "1.0.12")
+    XCTAssertEqual(
+      bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+      "168")
+  }
 }
