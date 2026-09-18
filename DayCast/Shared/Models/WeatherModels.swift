@@ -10,7 +10,7 @@ struct ChatMessage: Identifiable, Equatable {
   let imageData: Data?
   let isStormSpotterAnalysis: Bool
   let originalNotes: String?
-  let generatedImageURL: URL?  // for Grok image generation results shown in chat
+  let generatedImageURL: URL?  // legacy Imagine rows; display-only, never generated now
 
   /// Sky Check assistant card: analysis markdown vs glance. One persisted flag.
   var usesSkyCheckAnalysisCard: Bool { isStormSpotterAnalysis }

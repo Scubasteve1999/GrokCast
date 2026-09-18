@@ -39,6 +39,9 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertEqual(GrokAPIKeyEmptyStateView.lockTitle, "Sky Check")
     XCTAssertEqual(GrokAPIKeyEmptyStateView.lockGlyph, "cloud.sun")
     XCTAssertFalse(GrokAPIKeyEmptyStateView.lockGlyph.localizedCaseInsensitiveContains("sparkles"))
+    XCTAssertEqual(GrokAPIKeyEmptyStateView.unlockCTATitle, "Unlock with Pro")
+    XCTAssertFalse(GrokAPIKeyEmptyStateView.unlockCTATitle.localizedCaseInsensitiveContains("key"))
+    XCTAssertFalse(GrokAPIKeyEmptyStateView.bodyCopy.localizedCaseInsensitiveContains("own key"))
 
     let share = ShareableBriefText.stormSpotterReport(
       locationName: "Southaven, MS", observerNotes: nil, analysis: "Shelf cloud.")
@@ -566,23 +569,6 @@ final class StormSpotterHonestyTests: XCTestCase {
     XCTAssertTrue(prompt.contains("Headline 5"), prompt)
     XCTAssertFalse(prompt.contains("Headline 6"), prompt)
     XCTAssertFalse(prompt.contains("Flood Warning 6"), prompt)
-  }
-
-  @MainActor
-  func testImageGenerationDetectorDoesNotStealSkyPhotoWeatherQuestions() {
-    XCTAssertFalse(
-      GrokAIViewModel.isImageGenerationRequest(
-        "What's the picture of the sky going to look like this afternoon?"))
-    XCTAssertFalse(
-      GrokAIViewModel.isImageGenerationRequest("Can you check this photo of the sky?"))
-    XCTAssertFalse(
-      GrokAIViewModel.isImageGenerationRequest("Analyze this sky photo for me."))
-    for prompt in SkyCheckDeskCopy.prompts {
-      XCTAssertFalse(
-        GrokAIViewModel.isImageGenerationRequest(prompt.body),
-        "Chip must stay in askGrok chat, not Imagine: \(prompt.title)")
-      XCTAssertFalse(prompt.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-    }
   }
 
   func testMoreUnlockedSubtitleIsWeatherQuestionsFirst() {

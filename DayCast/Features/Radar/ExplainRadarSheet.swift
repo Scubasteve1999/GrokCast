@@ -109,7 +109,7 @@ struct ExplainRadarSheet: View {
           contextCard
 
           if !store.canUseGrok {
-            GrokAPIKeyEmptyStateView(store: store, subscription: SubscriptionManager.shared)
+            GrokAPIKeyEmptyStateView(subscription: SubscriptionManager.shared)
           } else if isLoading {
             HStack(spacing: 10) {
               ProgressView()

@@ -42,19 +42,6 @@ final class SkyCheckBusyLockTests: XCTestCase {
     XCTAssertEqual(viewModel.errorMessage, SkyCheckDeskCopy.alreadyAnswering)
   }
 
-  func testAnalyzeStormPhotoRefusesWhileGeneratingImage() async {
-    let viewModel = makeViewModel()
-    viewModel.isGeneratingImage = true
-
-    await viewModel.analyzeStormPhoto(imageData: jpeg, userNotes: nil)
-
-    XCTAssertNil(viewModel.lastStormImageData)
-    XCTAssertTrue(viewModel.stormAnalysisText.isEmpty)
-    XCTAssertTrue(viewModel.isGeneratingImage)
-    XCTAssertFalse(viewModel.isStreaming)
-    XCTAssertEqual(viewModel.errorMessage, SkyCheckDeskCopy.alreadyAnswering)
-  }
-
   func testAskGrokStillRefusesWhileStreaming() async {
     let viewModel = makeViewModel()
     viewModel.isStreaming = true
