@@ -31,7 +31,7 @@ struct DayCastScoreCard: View {
 
   private var figmaLayout: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
-      Text("DayCast score")
+      Text("DayCast Score")
         .font(DesignTokens.Typography.caption())
         .tracking(DesignTokens.Typography.cardLabelTracking)
         .foregroundStyle(DesignTokens.Palette.textTertiary)
@@ -59,7 +59,7 @@ struct DayCastScoreCard: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .cardStyle()
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("DayCast score \(score.value). \(score.label). \(score.subtitle)")
+    .accessibilityLabel("DayCast Score \(score.value). \(score.label). \(score.subtitle)")
   }
 
   private var ringLayout: some View {
@@ -105,7 +105,7 @@ struct DayCastScoreCard: View {
     .padding(DesignTokens.Spacing.space16)
     .cardStyle()
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("DayCast score \(score.value). \(score.label). \(score.subtitle)")
+    .accessibilityLabel("DayCast Score \(score.value). \(score.label). \(score.subtitle)")
   }
 }
 
