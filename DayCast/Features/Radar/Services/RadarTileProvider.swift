@@ -18,6 +18,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   static let preferredLive: RadarTileProvider = .xweather
   static let preferredForecast: RadarTileProvider = .xweather
 
+  /// Log / DEBUG only. User chrome uses `liveFooterLabel` / product `displayName`.
   var displayName: String {
     switch self {
     case .rainViewer: "RainViewer"
@@ -29,6 +30,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   }
 
   /// Compact HUD label for the active mosaic/provider (not nearest-site ID).
+  /// Log / DEBUG only — do not put this on user chrome.
   var hudSourceLabel: String {
     switch self {
     case .rainViewer: "RAINVIEWER"
@@ -39,25 +41,15 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     }
   }
 
+  /// User-visible live footer. National tile backends share one skill name;
+  /// Site Doppler is product chrome in `RadarStatusFooterCopy`.
   var liveFooterLabel: String {
-    switch self {
-    case .rainViewer: "Live radar · RainViewer"
-    case .xweather: "Live radar · Xweather"
-    case .openWeatherMap: "Radar · OpenWeatherMap"
-    case .iem: "Live radar · National radar"
-    case .mrms: "Live radar · National radar"
-    }
+    RadarChromeCopy.liveFooterNational
   }
 
+  /// User-visible 24-hr footer. Never names RainViewer / Xweather / OpenWeatherMap.
   var forecastFooterLabel: String {
-    switch self {
-    case .rainViewer: "Forecast radar · RainViewer"
-    case .xweather: "Forecast radar · Xweather"
-    case .openWeatherMap:
-      "Forecast radar · OpenWeatherMap"
-    case .iem: "Forecast radar · NWS NEXRAD"
-    case .mrms: "Forecast radar · National radar"
-    }
+    RadarChromeCopy.forecastFooter
   }
 
   /// Max zoom supported by this provider's raster tiles in Mapbox.

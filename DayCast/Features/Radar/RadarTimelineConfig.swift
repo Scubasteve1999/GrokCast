@@ -12,19 +12,4 @@ enum RadarTimelineConfig {
   static let forecastStepDescription = "+1h"
 
   static let modeSwitchDelay: Duration = .milliseconds(250)
-
-  static var forecastProbeOffset: String {
-    "+\(forecastIntervalMinutes)minutes"
-  }
-
-  /// Mid-range forecast probe offset (hourly native resolution validation).
-  static var forecastProbeMidOffset: String {
-    "+60minutes"
-  }
-
-  /// Last timeline offset derived from frame count and interval (e.g. +660minutes).
-  static var forecastProbeMaxOffset: String {
-    let minutes = (forecastMaxFrames - 1) * forecastIntervalMinutes
-    return "+\(minutes)minutes"
-  }
 }
