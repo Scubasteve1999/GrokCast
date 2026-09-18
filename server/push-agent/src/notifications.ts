@@ -11,9 +11,9 @@ const DEEP_LINK_TODAY = "daycast://today";
 const DEEP_LINK_ALERTS = "daycast://alerts";
 
 // Mirrors the categoryIdentifier constants the app registers.
-const CATEGORY_SEVERE = "GROKCAST_SEVERE_ALERT";
-const CATEGORY_CRITICAL = "GROKCAST_CRITICAL_ALERT";
-const CATEGORY_MORNING_BRIEF = "GROKCAST_MORNING_BRIEF";
+const CATEGORY_SEVERE = "DAYCAST_SEVERE_ALERT";
+const CATEGORY_CRITICAL = "DAYCAST_CRITICAL_ALERT";
+const CATEGORY_MORNING_BRIEF = "DAYCAST_MORNING_BRIEF";
 
 export interface APNsAlertPayload {
   aps: {

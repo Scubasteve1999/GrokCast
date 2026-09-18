@@ -333,7 +333,7 @@ export class DeviceAgent extends Agent<Env, DeviceState> {
         aps: {
           alert: { title: input.title, subtitle: input.subtitle, body: input.body },
           sound: this.state.soundsEnabled ? "default" : undefined,
-          category: "GROKCAST_SEVERE_ALERT",
+          category: "DAYCAST_SEVERE_ALERT",
           "thread-id": "daycast-messages",
         },
         deepLink: input.deepLink ?? "daycast://today",
