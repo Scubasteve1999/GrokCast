@@ -35,6 +35,7 @@ struct SettingsView: View {
   @State private var showForecastEraNotice = false
   @AppStorage(ForecastEraNotice.dismissedIdKey) private var forecastEraDismissedId = ""
   @AppStorage(ForecastEraNotice.forceShowKey) private var forceForecastEraNotice = false
+  @AppStorage(RefsAgreementConfiguration.forceKey) private var forceRefsAgreement = false
 
   private var hasKey: Bool {
     store.grokConfig.hasValidDeveloperKey
@@ -360,6 +361,13 @@ struct SettingsView: View {
           subtitle: "DEBUG. Ignore the October 2026 date window.",
           icon: "hammer",
           isOn: $forceForecastEraNotice
+        )
+        SettingsDivider()
+        toggleRow(
+          title: "Force REFS agreement",
+          subtitle: "DEBUG. Sample timing window. Not a live extract.",
+          icon: "clock",
+          isOn: $forceRefsAgreement
         )
       #endif
     }

@@ -53,6 +53,7 @@ enum DayCastAccessibility {
     static let statusPill = "daycast.today.statusPill"
     static let alertsSlot = "daycast.today.alertsSlot"
     static let honestyStrip = "daycast.today.honestyStrip"
+    static let refsAgreement = "daycast.today.refsAgreement"
     static let forecastEraNotice = "daycast.today.forecastEraNotice"
     static let forecastEraNoticeDismiss = "daycast.today.forecastEraNotice.dismiss"
     static let forecastEraNoticeCard = "daycast.today.forecastEraNotice.card"

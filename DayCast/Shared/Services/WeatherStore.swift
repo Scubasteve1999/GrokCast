@@ -1055,6 +1055,18 @@ final class WeatherStore {
   }
 
   @MainActor
+  private func kickRefsAgreement(
+    for location: SavedLocation,
+    timeZone: TimeZone,
+    selection: RequestSelection
+  ) {
+    Task {
+      guard self.requestSelection == selection else { return }
+      await RefsAgreementStore.shared.refresh(for: location, timeZone: timeZone)
+    }
+  }
+
+  @MainActor
   func refreshWeather() async {
     guard let loc = currentLocation else { return }
     let selection = requestSelection
@@ -1083,6 +1095,7 @@ final class WeatherStore {
       }
       currentWeather = matching
       syncScoreSurfacesFromCurrentWeather()
+      kickRefsAgreement(for: loc, timeZone: matching.locationTimeZone, selection: selection)
       if loadPersistedState, rainAlertsEnabled {
         Task {
           guard self.requestSelection == selection else { return }
@@ -1096,6 +1109,7 @@ final class WeatherStore {
       }
       currentWeather = matching
       syncScoreSurfacesFromCurrentWeather()
+      kickRefsAgreement(for: loc, timeZone: matching.locationTimeZone, selection: selection)
       weatherError = OpenMeteoService.weatherBannerMessage(
         for: error, isOffline: isOffline, hasLastGood: true)
     case .failed(let error):

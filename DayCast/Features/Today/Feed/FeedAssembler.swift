@@ -21,7 +21,8 @@ enum FeedAssembler {
     items: [FeedItem],
     weatherError: String?,
     showsStandaloneHonestyStrip: Bool = false,
-    showsForecastEraNotice: Bool = false
+    showsForecastEraNotice: Bool = false,
+    showsRefsAgreement: Bool = false
   ) -> [TodayFeedRow] {
     var rows: [TodayFeedRow] = []
     if let weatherError, !weatherError.isEmpty {
@@ -36,7 +37,16 @@ enum FeedAssembler {
     if showsForecastEraNotice {
       insertForecastEraNotice(into: &rows)
     }
+    if showsRefsAgreement {
+      insertRefsAgreement(into: &rows)
+    }
     return rows
+  }
+
+  /// Directly under the hourly curve, above the Outlook plate. Absent when hourly is hidden.
+  static func insertRefsAgreement(into rows: inout [TodayFeedRow]) {
+    guard let idx = rows.firstIndex(of: .item(.hourly)) else { return }
+    rows.insert(.refsAgreement, at: idx + 1)
   }
 
   /// Calm: directly under the WFO strip (hero, 20pt). Story day: after Your News

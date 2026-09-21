@@ -212,6 +212,7 @@ struct MainTabView: View {
     .environment(LocalBriefingStore.shared)
     .environment(ShortTermPrecipStore.shared)
     .environment(EnsembleAgreementStore.shared)
+    .environment(RefsAgreementStore.shared)
     .environment(FireStore.shared)
     .environment(LightningStore.shared)
     .environment(GrokBriefSafety.shared)

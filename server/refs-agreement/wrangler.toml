@@ -1,0 +1,6 @@
+name = "daycast-refs-agreement"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# No secrets. The worker reads public NOAA GRIB on AWS and returns one point.
+# After deploy, set RefsAgreementConfiguration.productionBaseURL in the app.

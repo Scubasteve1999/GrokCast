@@ -36,6 +36,8 @@ enum TodayFeedRow: Equatable, Identifiable {
   case errorBanner
   case honestyStrip
   case forecastEraNotice
+  /// REFS timing window. Not the WFO strip and not the forecast-era notice.
+  case refsAgreement
   case item(FeedItem)
 
   var id: String {
@@ -43,6 +45,7 @@ enum TodayFeedRow: Equatable, Identifiable {
     case .errorBanner: "errorBanner"
     case .honestyStrip: "honestyStrip"
     case .forecastEraNotice: "forecastEraNotice"
+    case .refsAgreement: "refsAgreement"
     case .item(let item): item.id
     }
   }
