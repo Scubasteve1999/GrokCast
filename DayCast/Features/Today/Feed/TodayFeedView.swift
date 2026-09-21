@@ -7,6 +7,7 @@ struct TodayFeedView: View {
   @Environment(FireStore.self) private var fireStore
   @Environment(LocalBriefingStore.self) private var briefingStore
   @Environment(EnsembleAgreementStore.self) private var ensembleStore
+  @Environment(RefsAgreementStore.self) private var refsStore
 
   let weather: DayCastWeather
 
@@ -17,6 +18,7 @@ struct TodayFeedView: View {
   @State private var showForecastEraNotice = false
   @AppStorage(ForecastEraNotice.dismissedIdKey) private var forecastEraDismissedId = ""
   @AppStorage(ForecastEraNotice.forceShowKey) private var forceForecastEraNotice = false
+  @AppStorage(RefsAgreementConfiguration.forceKey) private var forceRefsAgreement = false
   @State private var chipBarHeight: CGFloat = LocationChipBar.reservedHeight
 
   private var fireWeatherAlerts: [NWSAlert] {
@@ -121,12 +123,18 @@ struct TodayFeedView: View {
     return ForecastEraNotice.shouldShowBanner()
   }
 
+  private var refsPayload: RefsAgreementPayload? {
+    _ = forceRefsAgreement
+    return refsStore.payload(for: store.currentLocation?.id.uuidString)
+  }
+
   private var feedRows: [TodayFeedRow] {
     FeedAssembler.rows(
       items: feedItems,
       weatherError: store.weatherError,
       showsStandaloneHonestyStrip: showsStandaloneHonestyStrip,
-      showsForecastEraNotice: showsForecastEraNotice
+      showsForecastEraNotice: showsForecastEraNotice,
+      showsRefsAgreement: refsPayload != nil
     )
   }
 
@@ -183,6 +191,10 @@ struct TodayFeedView: View {
                 }
               case .forecastEraNotice:
                 forecastEraNoticeBanner(sitsOnPhoto: true)
+              case .refsAgreement:
+                if let refsPayload {
+                  RefsAgreementChip(payload: refsPayload, timeZone: weather.locationTimeZone)
+                }
               case .item(let item):
                 feedCard(for: item, plated: false)
               }
@@ -198,6 +210,10 @@ struct TodayFeedView: View {
                 switch row {
                 case .forecastEraNotice:
                   forecastEraNoticeBanner(sitsOnPhoto: false)
+                case .refsAgreement:
+                  if let refsPayload {
+                    RefsAgreementChip(payload: refsPayload, timeZone: weather.locationTimeZone)
+                  }
                 case .item(let item):
                   feedCard(for: item, plated: false)
                 default:
@@ -235,6 +251,9 @@ struct TodayFeedView: View {
     .onPreferenceChange(ChipBarHeightKey.self) { chipBarHeight = $0 }
     .refreshable {
       await refreshAll()
+    }
+    .task(id: refsRefreshKey) {
+      await refreshRefsAgreement(force: false)
     }
     .navigationDestination(item: $selectedAlert) { alert in
       AlertDetailView(alert: alert)
@@ -378,7 +397,23 @@ struct TodayFeedView: View {
     .accessibilityIdentifier(DayCastAccessibility.Today.errorBanner)
   }
 
+  private var refsRefreshKey: String {
+    let location = store.currentLocation?.id.uuidString ?? ""
+    let zone = weather.timezoneIdentifier ?? ""
+    return "\(location)|\(zone)|\(forceRefsAgreement)"
+  }
+
+  private func refreshRefsAgreement(force: Bool) async {
+    guard let location = store.currentLocation else { return }
+    await refsStore.refresh(
+      for: location,
+      timeZone: weather.locationTimeZone,
+      force: force
+    )
+  }
+
   private func refreshAll() async {
     await store.refreshWeather()
+    await refreshRefsAgreement(force: true)
   }
 }
