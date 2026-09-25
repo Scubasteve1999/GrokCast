@@ -2,11 +2,12 @@ import Foundation
 import SwiftData
 
 /// Lightweight SwiftData persistence model for Grok AI chat messages.
-/// Persists role + content + timestamp + generated image URLs (for Grok AI image gen results).
-/// Sky Check photo turns persist a small JPEG `thumbnailData` only — never the
-/// camera/library original. Legacy rows with nil thumb load as text.
-/// `isStormSpotterAnalysis` is the explicit glance-vs-analysis flag (assistant
-/// analysis rows have no thumb — do not infer from `thumbnailData`).
+/// Persists role + content + timestamp + generated image URLs (legacy Imagine
+/// rows, display-only). Sky Check photo turns persist a small JPEG
+/// `thumbnailData` only — never the camera/library original. Legacy rows with
+/// nil thumb load as text. `isStormSpotterAnalysis` is the explicit
+/// glance-vs-analysis flag (assistant analysis rows have no thumb — do not
+/// infer from `thumbnailData`).
 @Model
 final class ChatMessageEntity {
   var id: UUID

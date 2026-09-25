@@ -36,8 +36,8 @@ enum GrokPrompts {
     - Use standard meteorological terminology without becoming overly academic.
     """
 
-  /// Shared current-conditions block for Imagine and Storm Spotter vision.
-  /// Chat uses `chatCurrentConditionsBlock` so vision/Imagine stay lean.
+  /// Shared current-conditions block for Storm Spotter vision.
+  /// Chat uses `chatCurrentConditionsBlock` so vision stays lean.
   static func currentConditionsBlock(
     weather: DayCastWeather,
     locationName: String,
