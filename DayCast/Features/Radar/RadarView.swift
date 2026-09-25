@@ -306,18 +306,9 @@ struct RadarView: View {
       )
       .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { controlPanelHeight = $0 }
       .padding(.bottom, WeatherStageSheet.tabBarClearance)
-      .opacity(
-        RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered) && radarControlsInteractive
-          ? 1 : (radarDataUnavailable ? 0.35 : 0)
-      )
-      .allowsHitTesting(
-        RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered)
-          && radarControlsInteractive
-      )
-      .accessibilityHidden(
-        !RadarChromeVisibility.showsControlSheet(mapOnly: chaseDecluttered)
-          || radarDataUnavailable
-      )
+      .opacity(radarControlsInteractive ? 1 : (radarDataUnavailable ? 0.35 : 0))
+      .allowsHitTesting(radarControlsInteractive)
+      .accessibilityHidden(radarDataUnavailable)
     }
     .overlay {
       if radarDataUnavailable {

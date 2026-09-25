@@ -168,6 +168,12 @@ enum RadarChromeCopy {
   static let unavailableHint = "Check connection and try again"
   static let unavailableRetry = "Retry"
 
+  /// User-visible status footer. Skill names only — never RainViewer / Xweather / OWM.
+  static let liveFooterNational = "Live radar · National radar"
+  static let liveFooterSite = "Live radar · Site Doppler"
+  static let liveFooterGeneric = "Live radar"
+  static let forecastFooter = "Forecast radar"
+
   static func controlsInteractive(
     hasContent: Bool,
     isLoading: Bool,
@@ -185,11 +191,31 @@ enum RadarChromeCopy {
   }
 }
 
-/// After the one-sheet chrome, Map-only must never hide Live / 24-hr / Layers.
-enum RadarChromeVisibility {
-  static func showsControlSheet(mapOnly: Bool) -> Bool {
-    _ = mapOnly
-    return true
+/// User-visible status footer. Product skill names — never a tile vendor.
+enum RadarStatusFooterCopy {
+  private static let vendorTokens = [
+    "RainViewer", "Xweather", "OpenWeatherMap", "OWM", "MRMS",
+  ]
+
+  static func live(isSiteProduct: Bool) -> String {
+    isSiteProduct ? RadarChromeCopy.liveFooterSite : RadarChromeCopy.liveFooterNational
+  }
+
+  static func forecast(for provider: RadarTileProvider) -> String {
+    provider.forecastFooterLabel
+  }
+
+  /// Availability copy can still name a backend in `radarLog`. The footer cannot.
+  static func availability(_ message: String, preferForecast: Bool) -> String {
+    let leaked = vendorTokens.contains { message.localizedCaseInsensitiveContains($0) }
+    guard leaked else { return message }
+    let forecastish =
+      preferForecast
+      || message.localizedCaseInsensitiveContains("forecast")
+      || message.localizedCaseInsensitiveContains("future")
+    return forecastish
+      ? "Forecast radar unavailable"
+      : "Radar unavailable — check connection and try again"
   }
 }
 
