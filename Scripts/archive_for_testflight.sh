@@ -107,8 +107,8 @@ set -e
 
 if [[ "$ARCHIVE_STATUS" -ne 0 ]]; then
   echo ""
-  echo "❌ Archive failed (often Watch App Group provisioning on first archive)."
-  echo "   See docs/App-Store-Connect.md → TestFlight upload → Prerequisites"
+  echo "❌ Archive failed (often App Group provisioning)."
+  echo "   App Group: group.com.scubasteve1999.DayCast — see AGENTS.md (Archive / TestFlight)"
   echo "   Log: build/archive.log"
   exit "$ARCHIVE_STATUS"
 fi
@@ -126,4 +126,4 @@ echo "  1. Open Xcode → Window → Organizer → Archives"
 echo "  2. Select DayCast $MARKETING ($NEW_BUILD) → Distribute App → App Store Connect → Upload"
 echo "  3. In App Store Connect → TestFlight → add testers and run device QA"
 echo ""
-echo "See docs/App-Store-Connect.md and docs/TestFlight-Radar-Widget-Validation-Checklist.md"
+echo "See AGENTS.md (archive / TestFlight) and docs/App-Review-Notes.md"
