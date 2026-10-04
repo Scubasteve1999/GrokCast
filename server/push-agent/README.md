@@ -7,8 +7,9 @@ It exists because the on-device notification services can only fire when iOS cho
 to wake the app. `AlertNotificationService` posts a great tornado warning — but only
 if the app happened to refresh. This worker polls with the app closed and pushes.
 
-Separate from [`../grok-proxy`](../grok-proxy) on purpose: that worker is
-dependency-free plain JS on KV, this one needs Durable Objects and the Agents SDK.
+Separate from [`../grok-proxy`](../grok-proxy) on purpose: that worker meters
+quotas with SQLite Durable Objects (`QUOTAS`) — see [`../grok-proxy/README.md`](../grok-proxy/README.md) —
+this one needs Durable Objects and the Agents SDK.
 Keeping them apart means the AI proxy's blast radius does not grow.
 
 ## Model: one Durable Object per device
@@ -32,9 +33,11 @@ That buys three things:
 | `POST /v1/push/send` | Operator-authored message | — |
 | `POST /v1/push/refresh` | Silent `content-available` wake | `PushNotificationService.didReceiveRemoteNotification` |
 
-Titles, subtitles, 300/220-char truncation, thread ids, categories, and deep links are
-reproduced from the Swift services in `src/notifications.ts`, so a server push and a
-local one look identical and coalesce in Notification Center instead of stacking.
+Titles, subtitles, 300/220-char truncation, thread ids, categories
+(`DAYCAST_SEVERE_ALERT` / `DAYCAST_CRITICAL_ALERT` / `DAYCAST_MORNING_BRIEF`), and deep
+links are reproduced from the Swift services in `src/notifications.ts`, so a server
+push and a local one look identical and coalesce in Notification Center instead of
+stacking.
 
 **Keep the two in sync.** `src/nws.ts` duplicates `NWSAlert.isSevereEvent`,
 `.isWarning`, `.isLifeThreatening`, and `.expiresRelativeText`. If the Swift

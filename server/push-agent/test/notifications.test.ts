@@ -58,7 +58,7 @@ test("life-threatening alerts get the warning prefix and the critical category",
   );
 
   assert.equal(payload.aps.alert.title, "⚠️ Tornado Warning");
-  assert.equal(payload.aps.category, "GROKCAST_CRITICAL_ALERT");
+  assert.equal(payload.aps.category, "DAYCAST_CRITICAL_ALERT");
   assert.equal(payload.aps["thread-id"], "daycast-severe-alerts");
   assert.equal(payload.aps["interruption-level"], "time-sensitive");
   assert.equal(payload.deepLink, "daycast://alerts");
@@ -73,7 +73,7 @@ test("ordinary severe alerts keep an unprefixed title and the standard category"
   );
 
   assert.equal(payload.aps.alert.title, "Severe Thunderstorm Warning");
-  assert.equal(payload.aps.category, "GROKCAST_SEVERE_ALERT");
+  assert.equal(payload.aps.category, "DAYCAST_SEVERE_ALERT");
 });
 
 test("sound is omitted when the device reports sounds disabled", () => {
@@ -103,6 +103,7 @@ test("morningBriefSubtitle degrades cleanly as fields drop out", () => {
 test("the morning brief falls back to the app's copy when there is no brief text", () => {
   const payload = buildMorningBriefPayload({ hour: 7, soundsEnabled: true });
   assert.equal(payload.aps.alert.body, "Open DayCast for today's weather and AI take.");
+  assert.equal(payload.aps.category, "DAYCAST_MORNING_BRIEF");
   assert.equal(payload.aps["thread-id"], "daycast-morning-brief");
   assert.equal(payload.deepLink, "daycast://today");
 });
