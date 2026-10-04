@@ -51,7 +51,6 @@ private struct GrokAIViewContent: View {
                 headerSection
                 if !weatherStore.canUseGrok {
                   GrokAPIKeyEmptyStateView(
-                    store: weatherStore,
                     subscription: SubscriptionManager.shared
                   )
                 }
@@ -100,20 +99,6 @@ private struct GrokAIViewContent: View {
                   streamingResponse(viewModel: viewModel)
                 }
 
-                if viewModel.isGeneratingImage {
-                  responseCard {
-                    HStack(spacing: 12) {
-                      ProgressView()
-                        .tint(.white)
-                      Text("Generating image…")
-                        .font(DesignTokens.Typography.caption())
-                        .foregroundStyle(DesignTokens.Palette.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                  }
-                  .id("generating-image")
-                }
-
                 if let imageData = viewModel.lastStormImageData,
                   !viewModel.stormAnalysisMode,
                   !viewModel.stormAnalysisText.isEmpty
@@ -145,7 +130,7 @@ private struct GrokAIViewContent: View {
                   GrokErrorView(
                     message: error,
                     retryAction: {
-                      guard !(viewModel.isStreaming || viewModel.isGeneratingImage) else { return }
+                      guard !viewModel.isStreaming else { return }
                       Task {
                         if viewModel.lastStormImageData != nil {
                           await viewModel.retryStormAnalysis()
@@ -188,9 +173,6 @@ private struct GrokAIViewContent: View {
             }
             .onChange(of: viewModel.isStreaming) {
               if viewModel.isStreaming { scrollToBottom(proxy: proxy) }
-            }
-            .onChange(of: viewModel.isGeneratingImage) {
-              if viewModel.isGeneratingImage { scrollToBottom(proxy: proxy) }
             }
             .onChange(of: isInputFocused) {
               scrollToBottom(proxy: proxy)
@@ -293,7 +275,7 @@ private struct GrokAIViewContent: View {
     }
     .sheet(isPresented: $showImagePreview) {
       if let url = previewImageURL {
-        imagePreviewSheet(url: url, caption: previewCaption, viewModel: viewModel)
+        imagePreviewSheet(url: url, caption: previewCaption)
       }
     }
   }
@@ -551,14 +533,12 @@ private struct GrokAIViewContent: View {
   private var aiActionsDisabled: Bool {
     !weatherStore.canUseGrok
       || weatherStore.grokAIViewModel.isStreaming
-      || weatherStore.grokAIViewModel.isGeneratingImage
   }
 
   /// Photo CTA may still open the paywall when Grok is locked but Pro can unlock it.
   private var photoCTADisabled: Bool {
     photoCTAGate.isCTADisabled
       || weatherStore.grokAIViewModel.isStreaming
-      || weatherStore.grokAIViewModel.isGeneratingImage
   }
 
   private func compactPromptRow(viewModel: GrokAIViewModel) -> some View {
@@ -655,24 +635,12 @@ private struct GrokAIViewContent: View {
             }
           }
           .fontWeight(.semibold)
-          .disabled(viewModel.isStreaming || viewModel.isGeneratingImage)
+          .disabled(viewModel.isStreaming)
         }
       }
     }
     .presentationDetents([.medium])
     .preferredColorScheme(.dark)
-  }
-
-  private func responseCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-    content()
-      .padding(16)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(Color.white.opacity(0.06))
-      .overlay(
-        RoundedRectangle(cornerRadius: 14)
-          .stroke(Color.white.opacity(0.1), lineWidth: 1)
-      )
-      .clipShape(RoundedRectangle(cornerRadius: 14))
   }
 
   @ViewBuilder
@@ -724,6 +692,7 @@ private struct GrokAIViewContent: View {
             .foregroundStyle(DesignTokens.Palette.textTertiary)
         }
       } else if let url = message.generatedImageURL {
+        // Legacy Imagine rows only — no generate / regenerate.
         VStack(alignment: .leading, spacing: 6) {
           Text(message.content)
             .font(DesignTokens.Typography.body())
@@ -852,8 +821,7 @@ private struct GrokAIViewContent: View {
 
   private func imagePreviewSheet(
     url: URL,
-    caption: String? = nil,
-    viewModel: GrokAIViewModel
+    caption: String? = nil
   ) -> some View {
     NavigationStack {
       ScrollView {
@@ -887,25 +855,11 @@ private struct GrokAIViewContent: View {
               .padding(.horizontal)
           }
 
-          VStack(spacing: DesignTokens.Spacing.space12) {
-            ShareLink(item: url) {
-              Label("Share Image", systemImage: "square.and.arrow.up")
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-
-            Button {
-              showImagePreview = false
-              Task {
-                await viewModel.generateWeatherImage(description: caption)
-              }
-            } label: {
-              Label("Regenerate", systemImage: "arrow.clockwise")
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(viewModel.isGeneratingImage)
+          ShareLink(item: url) {
+            Label("Share Image", systemImage: "square.and.arrow.up")
+              .frame(maxWidth: .infinity)
           }
+          .buttonStyle(.bordered)
           .padding(.horizontal)
         }
         .padding(.vertical)

@@ -12,8 +12,6 @@ struct GrokAPIConfiguration {
   let baseURL: URL
   let defaultModel: String
   let chatEndpoint: String
-  let imageGenerationEndpoint: String
-  let imageModel: String
 
   /// Secure key provider. Never stores the key itself.
   private let keychain: KeychainService
@@ -29,11 +27,7 @@ struct GrokAPIConfiguration {
     self.baseURL = URL(string: "https://api.x.ai/v1")!
     self.defaultModel = "grok-3-mini"
     self.chatEndpoint = "chat/completions"
-    self.imageGenerationEndpoint = "images/generations"
-    self.imageModel = "grok-imagine-image-quality"
   }
-
-  static let imageModelName = "grok-imagine-image-quality"
 
   // MARK: - Secure Key Access
 
@@ -111,10 +105,6 @@ struct GrokAPIConfiguration {
 
   var chatURL: URL {
     baseURL.appendingPathComponent(chatEndpoint)
-  }
-
-  var imageGenerationURL: URL {
-    baseURL.appendingPathComponent(imageGenerationEndpoint)
   }
 
   func authHeader() throws -> String {

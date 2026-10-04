@@ -38,7 +38,7 @@ enum SkyCheckDeskCopy {
   static let emptyReply =
     "Sky Check returned an empty reply. Check your connection and try again."
 
-  /// One in-flight generation. Photo check vs chat/Imagine.
+  /// One in-flight generation. Photo check vs chat.
   static func generationBusyMessage(isCheckingSky: Bool) -> String {
     isCheckingSky ? alreadyChecking : alreadyAnswering
   }

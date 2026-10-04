@@ -106,6 +106,25 @@ final class BriefingThreadTests: XCTestCase {
     XCTAssertFalse(preFlag.toChatMessage().usesSkyCheckAnalysisCard)
   }
 
+  func testLegacyGeneratedImageURLRoundTripsDisplayOnly() throws {
+    let store = GrokAIConversationStore(inMemory: true)
+    let olive = UUID()
+    let url = URL(string: "https://example.com/legacy-imagine.jpg")!
+    let message = ChatMessage(
+      role: .assistant,
+      content: "Here's a generated visualization based on the current conditions:",
+      generatedImageURL: url
+    )
+
+    try store.saveHistory([message], for: olive)
+
+    let loaded = try store.loadHistory(for: olive)
+    XCTAssertEqual(loaded.count, 1)
+    XCTAssertEqual(loaded[0].generatedImageURL, url)
+    XCTAssertEqual(loaded[0].content, message.content)
+    XCTAssertNil(loaded[0].imageData)
+  }
+
   func testPhotoAnalysisFlagRoundTripsForAnalysisCardPath() throws {
     let store = GrokAIConversationStore(inMemory: true)
     let olive = UUID()

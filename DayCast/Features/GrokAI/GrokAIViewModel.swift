@@ -12,7 +12,6 @@ final class GrokAIViewModel {
   var errorMessage: String?
   var stormAnalysisMode: Bool = false
   var stormThumbnailData: Data?
-  var isGeneratingImage: Bool = false
 
   private let weatherStore: WeatherStore
   private let conversationStore: GrokAIConversationStore
@@ -59,7 +58,7 @@ final class GrokAIViewModel {
     if let boundLocationID {
       persistCurrentHistory(for: boundLocationID)
     }
-    if isStreaming || isGeneratingImage {
+    if isStreaming {
       stopGeneration()
     }
     responseText = ""
@@ -84,9 +83,8 @@ final class GrokAIViewModel {
   /// (tab switch, timeout, or cancel) without finishing the generation task.
   func recoverFromStaleActionStateIfNeeded() {
     guard generationTask == nil else { return }
-    if isStreaming || isGeneratingImage {
+    if isStreaming {
       isStreaming = false
-      isGeneratingImage = false
       stormAnalysisMode = false
     }
   }
@@ -98,16 +96,13 @@ final class GrokAIViewModel {
     guard !question.trimmingCharacters(in: .whitespaces).isEmpty else { return }
 
     // Prevent overlapping generations from rapid taps
-    guard !isStreaming && !isGeneratingImage else { return }
+    guard !isStreaming else { return }
 
     // Early key guard — stay on AI tab with a clear CTA (no error banner / tab bounce).
     if !weatherStore.canUseGrok {
       handleMissingDeveloperKey()
       return
     }
-
-    // Imagine is off Sky Check and Today. Never steal weather / sky-photo
-    // questions into image generation.
 
     // Show thinking immediately so actions feel responsive during weather prefetch.
     generationTask?.cancel()
@@ -173,7 +168,7 @@ final class GrokAIViewModel {
     await historyLoadTask?.value
 
     // Same lock as askGrok — one in-flight generation. Do not cancel-and-restart.
-    guard !isStreaming && !isGeneratingImage else {
+    guard !isStreaming else {
       if generationTask == nil {
         errorMessage = SkyCheckDeskCopy.generationBusyMessage(
           isCheckingSky: stormAnalysisMode)
@@ -340,7 +335,6 @@ final class GrokAIViewModel {
     stormAnalysisMode = false
     lastStormImageData = nil
     lastStormNotes = nil
-    isGeneratingImage = false
     conversationHistory.removeAll()  // start fresh conversation for this city
 
     if let boundLocationID {
@@ -493,104 +487,6 @@ final class GrokAIViewModel {
     )
   }
 
-  /// Imagine is off Sky Check and Today. Weather / sky-photo questions stay in chat.
-  static func isImageGenerationRequest(_ text: String) -> Bool {
-    let lower = text.lowercased()
-    if looksLikeSkyPhotoOrWeatherQuestion(lower) { return false }
-    return lower.contains("imagine")
-      || lower.contains("draw")
-      || lower.contains("visualize")
-      || lower.contains("generate a scene")
-      || lower.contains("show me the weather as")
-      || (lower.contains("generate") && (lower.contains("image") || lower.contains("picture")))
-  }
-
-  private static func looksLikeSkyPhotoOrWeatherQuestion(_ lower: String) -> Bool {
-    let analysisSignals = [
-      "picture of the sky", "photo of the sky", "picture of the clouds",
-      "photo of the clouds", "sky photo", "sky picture", "check this sky",
-      "analyze this", "analyse this", "what's in this photo", "whats in this photo",
-      "this photo", "this picture", "look at this",
-    ]
-    if analysisSignals.contains(where: lower.contains) { return true }
-    let mentionsMedia =
-      lower.contains("picture") || lower.contains("photo") || lower.contains("image")
-    let mentionsWeather =
-      lower.contains("sky") || lower.contains("cloud") || lower.contains("storm")
-      || lower.contains("weather") || lower.contains("radar") || lower.contains("outlook")
-      || lower.contains("warning") || lower.contains("watch")
-    return mentionsMedia && mentionsWeather
-  }
-
-  private func buildImagePrompt(userDescription: String?) -> String {
-    guard let current = weatherStore.currentWeather else {
-      let base =
-        userDescription?.isEmpty == false ? userDescription! : "A beautiful cinematic weather scene"
-      return "\(base), photorealistic, high detail, atmospheric lighting, no text or logos"
-    }
-
-    let unit = weatherStore.temperatureUnit
-    let location = current.location.name
-    let base = userDescription?.isEmpty == false ? "\(userDescription!). " : ""
-    let timeOfDay =
-      (current.symbolName.contains("sun") || current.symbolName.contains("day"))
-      ? "daytime" : "evening or night"
-
-    return """
-      \(base)Create a highly detailed, cinematic weather visualization for \(location) right now.
-      Conditions: \(current.conditionText), \(unit.format(current.currentTemp)) (feels like \(unit.format(current.feelsLike))), wind \(unit.formatWind(current.windSpeed)), humidity \(current.humidity)%.
-      Today's range \(unit.formatShort(current.high)) / \(unit.formatShort(current.low)). \(timeOfDay) lighting.
-      Photorealistic or atmospheric digital art style, dramatic natural light, rich colors, 
-      moody and immersive, no text, no logos, no people unless they naturally enhance the scene.
-      """
-  }
-
-  func generateWeatherImage(description: String? = nil) async {
-    syncThread(to: weatherStore.currentLocation?.id)
-    await historyLoadTask?.value
-    guard !isStreaming && !isGeneratingImage else { return }
-
-    guard weatherStore.canUseGrok else {
-      handleMissingDeveloperKey()
-      return
-    }
-
-    await ensureWeatherContext()
-
-    generationTask?.cancel()
-    stormAnalysisMode = false
-    isGeneratingImage = true
-    responseText = ""
-    errorMessage = nil
-
-    let userContent =
-      description?.trimmingCharacters(in: .whitespaces).isEmpty == false
-      ? description!
-      : "Generate an image of the current weather"
-    let userMsg = ChatMessage.user(userContent)
-    conversationHistory.append(userMsg)
-    conversationHistory = trimHistory(conversationHistory)
-    persistCurrentHistory()
-
-    do {
-      let prompt = buildImagePrompt(userDescription: description)
-      let url = try await GrokAPIService.generateImage(prompt: prompt)
-
-      let assistantMsg = ChatMessage(
-        role: .assistant,
-        content: "Here's a generated visualization based on the current conditions:",
-        generatedImageURL: url
-      )
-      conversationHistory.append(assistantMsg)
-      conversationHistory = trimHistory(conversationHistory)
-      persistCurrentHistory()
-    } catch {
-      errorMessage = "Image generation failed: \(error.localizedDescription)"
-    }
-
-    isGeneratingImage = false
-  }
-
   private func trimHistory(_ history: [ChatMessage]) -> [ChatMessage] {
     var trimmed = history
     let maxTokens = 2048  // conservative rough budget (leaves room for system + generation)
@@ -660,13 +556,13 @@ final class GrokAIViewModel {
   }
 
   func fetchWeatherBrief() async throws -> String {
-    guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
+    guard !isStreaming else { throw StructuredFetchError.busy }
     await ensureWeatherContext()
     return try await GrokBriefGenerator.generate(for: weatherStore, feature: .todaysTake)
   }
 
   func fetchRadarExplanation(context: RadarExplainContext) async throws -> String {
-    guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
+    guard !isStreaming else { throw StructuredFetchError.busy }
 
     if RadarExplainCopy.shouldUseLocalExplanation(context) {
       return RadarExplainCopy.localExplanation(for: context)
@@ -690,7 +586,7 @@ final class GrokAIViewModel {
   }
 
   func fetchAlertsPlainEnglishSummary(alerts: [NWSAlert]) async throws -> String {
-    guard !isStreaming && !isGeneratingImage else { throw StructuredFetchError.busy }
+    guard !isStreaming else { throw StructuredFetchError.busy }
     guard !alerts.isEmpty else { return "No active alerts to summarize." }
 
     let location = weatherStore.currentLocation?.name ?? "your area"
