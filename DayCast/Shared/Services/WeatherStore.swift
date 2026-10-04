@@ -1068,6 +1068,7 @@ final class WeatherStore {
 
   @MainActor
   func refreshWeather() async {
+    Task { await ForecastEraNotice.refreshRemote() }
     guard let loc = currentLocation else { return }
     let selection = requestSelection
     let requestID = UUID()

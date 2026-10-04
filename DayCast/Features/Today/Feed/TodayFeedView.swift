@@ -18,6 +18,7 @@ struct TodayFeedView: View {
   @State private var showForecastEraNotice = false
   @AppStorage(ForecastEraNotice.dismissedIdKey) private var forecastEraDismissedId = ""
   @AppStorage(ForecastEraNotice.forceShowKey) private var forceForecastEraNotice = false
+  @AppStorage(ForecastEraNotice.cachedJSONKey) private var forecastEraCachedJSON = ""
   @AppStorage(RefsAgreementConfiguration.forceKey) private var forceRefsAgreement = false
   @State private var chipBarHeight: CGFloat = LocationChipBar.reservedHeight
 
@@ -120,6 +121,7 @@ struct TodayFeedView: View {
   private var showsForecastEraNotice: Bool {
     _ = forecastEraDismissedId
     _ = forceForecastEraNotice
+    _ = forecastEraCachedJSON
     return ForecastEraNotice.shouldShowBanner()
   }
 

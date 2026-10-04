@@ -24,7 +24,10 @@ struct DayCastApp: App {
           .environment(subscriptionManager)
           .paywallSheet()
           .tint(.accentColor)
-          .task { await subscriptionManager.start() }
+          .task {
+            await subscriptionManager.start()
+            await ForecastEraNotice.refreshRemote()
+          }
       }
       #else
       MainTabView()
@@ -40,7 +43,10 @@ struct DayCastApp: App {
         .environment(subscriptionManager)
         .paywallSheet()
         .tint(.accentColor)
-        .task { await subscriptionManager.start() }
+        .task {
+          await subscriptionManager.start()
+          await ForecastEraNotice.refreshRemote()
+        }
       #endif
     }
   }

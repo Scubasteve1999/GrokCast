@@ -35,6 +35,7 @@ struct SettingsView: View {
   @State private var showForecastEraNotice = false
   @AppStorage(ForecastEraNotice.dismissedIdKey) private var forecastEraDismissedId = ""
   @AppStorage(ForecastEraNotice.forceShowKey) private var forceForecastEraNotice = false
+  @AppStorage(ForecastEraNotice.cachedJSONKey) private var forecastEraCachedJSON = ""
   @AppStorage(RefsAgreementConfiguration.forceKey) private var forceRefsAgreement = false
 
   private var hasKey: Bool {
@@ -423,6 +424,7 @@ struct SettingsView: View {
   private var offersForecastEraExplainer: Bool {
     _ = forecastEraDismissedId
     _ = forceForecastEraNotice
+    _ = forecastEraCachedJSON
     return ForecastEraNotice.shouldOfferExplainer()
   }
 
