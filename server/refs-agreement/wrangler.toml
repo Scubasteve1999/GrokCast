@@ -4,3 +4,7 @@ compatibility_date = "2026-08-01"
 
 # No secrets. The worker reads public NOAA GRIB on AWS and returns one point.
 # After deploy, set RefsAgreementConfiguration.productionBaseURL in the app.
+
+[[kv_namespaces]]
+binding = "ERA_NOTICE"
+id = "f933bbc339e84c5eb0fcfcb0aa30a0fd"

@@ -13,6 +13,7 @@ The 1-hour light-precip field is the `eas` message `APCP … prob >0.254 … pro
 ## Endpoints
 
 - `GET /health`
+- `GET /era-notice` — RRFS/REFS banner dates. `Cache-Control: public, max-age=900`.
 - `GET /v1/agreement?lat=&lon=&tz=America/Chicago&hours=12`
 - `GET /v1/agreement?stub=1` — documented sample, `stub: true`, `parallel: true`. Not a live extract.
 
@@ -34,6 +35,18 @@ static let productionBaseURL = "https://daycast-refs-agreement.<account>.workers
 ```
 
 Until that string is set, the chip stays hidden. DEBUG → Settings → Developer → “Force REFS agreement” shows the sample sentence without a worker.
+
+## Era notice (slip-date)
+
+`GET /era-notice` is the Today banner / “What this means” dates. The worker reads KV `ERA_NOTICE` key `current`. A miss or invalid payload returns the app’s baked-in October 14 defaults.
+
+Move the date without an app release (from this directory, after `npx wrangler deploy`):
+
+```bash
+npx wrangler kv key put --binding=ERA_NOTICE current '{"id":"scn-26-48-2026-10-15","cutoverUTC":"2026-10-15T12:00:00Z","windowStartUTC":"2026-10-07T12:00:00Z","windowEndUTC":"2026-10-28T12:00:00Z","status":"slipped","updatedAt":"2026-10-13T18:00:00Z"}'
+```
+
+`status` is `scheduled`, `slipped`, or `done`. A new `id` re-shows a dismissed banner. Phones pick up a change within about 15 minutes.
 
 ## Tests
 

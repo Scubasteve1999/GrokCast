@@ -2,10 +2,12 @@
  * DayCast REFS agreement worker.
  * GET /v1/agreement?lat=&lon=&tz=&hours=
  * GET /v1/agreement?stub=1   documented sample, parallel:true, not a live extract
+ * GET /era-notice            RRFS/REFS banner dates (KV ERA_NOTICE / current)
  * GET /health
  */
 
 import { classify, stubPayload } from "./agreement.js";
+import { readEraNotice } from "./era-notice.js";
 import { domainFor } from "./grid.js";
 import {
   findHrrrCycle,
@@ -34,7 +36,7 @@ function hoursParam(url) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -46,6 +48,9 @@ export default {
       });
     }
     if (url.pathname === "/health") return json({ ok: true, product: "refs-agreement" });
+    if (url.pathname === "/era-notice") {
+      return json(await readEraNotice(env), 200, 900);
+    }
     if (url.pathname !== "/v1/agreement") return json({ error: "not_found" }, 404);
 
     if (url.searchParams.get("stub") === "1") {

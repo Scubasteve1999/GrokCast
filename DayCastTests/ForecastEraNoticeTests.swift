@@ -14,6 +14,7 @@ final class ForecastEraNoticeTests: XCTestCase {
   }
 
   override func tearDown() {
+    ForecastEraNotice.dataLoader = ForecastEraNotice.liveLoad
     ForecastEraNotice.store = .standard
     suite.removePersistentDomain(forName: Self.suiteName)
     suite = nil
@@ -80,6 +81,7 @@ final class ForecastEraNoticeTests: XCTestCase {
   }
 
   func testNationwideNotMemphisGated() {
+    XCTAssertEqual(ForecastEraNotice.fallbackId, "scn-26-48-2026-10-14")
     XCTAssertEqual(ForecastEraNotice.id, "scn-26-48-2026-10-14")
     XCTAssertTrue(
       ForecastEraNotice.Copy.memphisSample.hasPrefix("NWS Memphis"),
@@ -212,6 +214,118 @@ final class ForecastEraNoticeTests: XCTestCase {
     )
   }
 
+  func testRemoteSlipShowsNewDateAndReshowsBanner() async {
+    suite.set(ForecastEraNotice.fallbackId, forKey: ForecastEraNotice.dismissedIdKey)
+    ForecastEraNotice.dataLoader = { Data(Self.slippedJSON.utf8) }
+
+    let config = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:00:00Z"),
+      defaults: suite,
+      force: true
+    )
+    XCTAssertEqual(config.id, "scn-26-48-2026-10-15")
+    XCTAssertEqual(config.status, .slipped)
+    XCTAssertEqual(config.cutoverUTC, utc("2026-10-15T12:00:00Z"))
+    XCTAssertEqual(ForecastEraNotice.effective(defaults: suite).id, "scn-26-48-2026-10-15")
+
+    let now = utc("2026-10-15T12:00:00Z")
+    XCTAssertTrue(ForecastEraNotice.shouldShowBanner(now: now, defaults: suite))
+    let opener = ForecastEraNotice.Copy.opener(
+      for: config,
+      locale: Locale(identifier: "en_US")
+    )
+    XCTAssertTrue(opener.contains("October 15, 2026"))
+    XCTAssertTrue(opener.hasPrefix("NWS moved the switch"))
+
+    ForecastEraNotice.dismiss(defaults: suite)
+    XCTAssertEqual(
+      suite.string(forKey: ForecastEraNotice.dismissedIdKey),
+      "scn-26-48-2026-10-15"
+    )
+    XCTAssertFalse(ForecastEraNotice.shouldShowBanner(now: now, defaults: suite))
+  }
+
+  func testBadJSONFallsBackToConstants() async {
+    ForecastEraNotice.dataLoader = { Data("{".utf8) }
+    let config = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:00:00Z"),
+      defaults: suite,
+      force: true
+    )
+    XCTAssertEqual(config, ForecastEraNotice.fallback)
+    XCTAssertEqual(ForecastEraNotice.effective(defaults: suite).id, ForecastEraNotice.fallbackId)
+    XCTAssertNil(suite.string(forKey: ForecastEraNotice.cachedJSONKey))
+  }
+
+  func testOutOfBoundsDatesFallBackToConstants() async {
+    ForecastEraNotice.dataLoader = { Data(Self.outOfBoundsJSON.utf8) }
+    let config = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:00:00Z"),
+      defaults: suite,
+      force: true
+    )
+    XCTAssertEqual(config, ForecastEraNotice.fallback)
+    XCTAssertEqual(ForecastEraNotice.effective(defaults: suite).cutoverUTC, ForecastEraNotice.cutoverUTC)
+  }
+
+  func testOfflineUsesCache() async {
+    ForecastEraNotice.dataLoader = { Data(Self.slippedJSON.utf8) }
+    _ = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:00:00Z"),
+      defaults: suite,
+      force: true
+    )
+    ForecastEraNotice.dataLoader = { nil }
+    let config = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:20:00Z"),
+      defaults: suite,
+      force: true
+    )
+    XCTAssertEqual(config.id, "scn-26-48-2026-10-15")
+    XCTAssertEqual(config.cutoverUTC, utc("2026-10-15T12:00:00Z"))
+    XCTAssertEqual(ForecastEraNotice.effective(defaults: suite).status, .slipped)
+  }
+
+  func testScheduledOpenerKeepsCurrentSentence() {
+    let opener = ForecastEraNotice.Copy.opener(
+      for: ForecastEraNotice.fallback,
+      locale: Locale(identifier: "en_US")
+    )
+    XCTAssertEqual(
+      opener,
+      "On or around October 14, 2026, NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
+    )
+  }
+
+  func testDoneOpenerUsesPastTense() {
+    var config = ForecastEraNotice.fallback
+    config.status = .done
+    let opener = ForecastEraNotice.Copy.opener(for: config, locale: Locale(identifier: "en_US"))
+    XCTAssertTrue(opener.hasPrefix("On October 14, 2026, NCEP replaced"))
+  }
+
+  func testRefreshThrottlesWithinFifteenMinutes() async {
+    let loads = LoadCounter()
+    ForecastEraNotice.dataLoader = {
+      loads.value += 1
+      return Data(Self.slippedJSON.utf8)
+    }
+    _ = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:00:00Z"),
+      defaults: suite
+    )
+    _ = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:14:00Z"),
+      defaults: suite
+    )
+    XCTAssertEqual(loads.value, 1)
+    _ = await ForecastEraNotice.refreshRemote(
+      now: utc("2026-10-10T12:15:00Z"),
+      defaults: suite
+    )
+    XCTAssertEqual(loads.value, 2)
+  }
+
   #if DEBUG
     func testDebugForceShowIgnoresDateWindow() {
       let before = utc("2026-09-14T12:00:00Z")
@@ -229,6 +343,32 @@ final class ForecastEraNoticeTests: XCTestCase {
       )
     }
   #endif
+
+  private final class LoadCounter: @unchecked Sendable {
+    var value = 0
+  }
+
+  private static let slippedJSON = """
+    {
+      "id": "scn-26-48-2026-10-15",
+      "cutoverUTC": "2026-10-15T12:00:00Z",
+      "windowStartUTC": "2026-10-07T12:00:00Z",
+      "windowEndUTC": "2026-10-28T12:00:00Z",
+      "status": "slipped",
+      "updatedAt": "2026-10-13T18:00:00Z"
+    }
+    """
+
+  private static let outOfBoundsJSON = """
+    {
+      "id": "scn-26-48-2025-10-14",
+      "cutoverUTC": "2025-10-14T12:00:00Z",
+      "windowStartUTC": "2025-10-07T12:00:00Z",
+      "windowEndUTC": "2025-10-28T12:00:00Z",
+      "status": "scheduled",
+      "updatedAt": "2026-10-03T00:00:00Z"
+    }
+    """
 
   private func utc(_ string: String) -> Date {
     let formatter = ISO8601DateFormatter()

@@ -1637,6 +1637,7 @@
 				};
 			};
 			buildConfigurationList = 1C25E3388B4FB80C1C5C2A59 /* Build configuration list for PBXProject "DayCast" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -1652,14 +1653,13 @@
 				32DDF20F42CA4658FE387AE1 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 1960533972BC32FE30A93C9C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				97EA306E75923D675995D852 /* DayCast */,
-				B682B66A0EBC6A4B4722A7E3 /* DayCastWidgets */,
 				0FFFA1CD71D7ACD0FDDD8445 /* DayCastTests */,
 				251F5BC97FBF9ECF09B83BA4 /* DayCastUITests */,
+				B682B66A0EBC6A4B4722A7E3 /* DayCastWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -2130,7 +2130,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 169;
+				CURRENT_PROJECT_VERSION = 170;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2143,7 +2143,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 1.0.13;
+				MARKETING_VERSION = 1.0.14;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2188,7 +2188,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 169;
+				CURRENT_PROJECT_VERSION = 170;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -2207,7 +2207,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MARKETING_VERSION = 1.0.13;
+				MARKETING_VERSION = 1.0.14;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
