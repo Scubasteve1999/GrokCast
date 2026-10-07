@@ -353,6 +353,32 @@ final class NWSAlertTests: XCTestCase {
     XCTAssertThrowsError(try NWSService.alerts(from: Data(#"["features"]"#.utf8)))
   }
 
+  // MARK: - /observations/latest decoding
+
+  func testNullObservationValuesDecodeAsNil() throws {
+    // NWS sends `"value": null` for sensors with no reading this cycle.
+    let json = """
+      {
+        "properties": {
+          "station": "https://api.weather.gov/stations/KOLV",
+          "timestamp": "2026-10-07T21:53:00+00:00",
+          "temperature": { "unitCode": "wmoUnit:degC", "value": null, "qualityControl": "Z" },
+          "windSpeed": { "unitCode": "wmoUnit:km_h-1", "value": 18, "qualityControl": "V" },
+          "windDirection": null
+        }
+      }
+      """.data(using: .utf8)!
+
+    let decoded = try JSONDecoder().decode(NWSObservationResponse.self, from: json)
+    let props = decoded.properties
+
+    XCTAssertEqual(props.timestamp, "2026-10-07T21:53:00+00:00")
+    XCTAssertNil(props.temperature?.value)
+    XCTAssertEqual(props.temperature?.unitCode, "wmoUnit:degC")
+    XCTAssertEqual(props.windSpeed?.value, 18)
+    XCTAssertNil(props.windDirection)
+  }
+
   override func tearDown() {
     UserDefaults.standard.removeObject(forKey: AlertHistoryStore.historyKey)
     UserDefaults.standard.removeObject(forKey: AlertHistoryStore.historyByLocationKey)
