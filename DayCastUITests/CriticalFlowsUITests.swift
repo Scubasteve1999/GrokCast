@@ -66,11 +66,12 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(waitForTabBar())
     openTab(.radar)
 
-    let layers = app.buttons["Layers"]
+    // Rail + control panel both expose a "Layers" button; either opens the sheet.
+    let layers = app.buttons["Layers"].firstMatch
     XCTAssertTrue(layers.waitForExistence(timeout: 15), "Layers missing")
     layers.tap()
 
-    let national = app.buttons["National radar"]
+    let national = app.buttons["National radar"].firstMatch
     XCTAssertTrue(national.waitForExistence(timeout: 8), "National radar product missing")
     national.tap()
 
@@ -86,7 +87,7 @@ final class CriticalFlowsUITests: DayCastUITestCase {
 
     XCTAssertTrue(layers.waitForExistence(timeout: 6))
     layers.tap()
-    let siteDoppler = app.buttons["Site Doppler"]
+    let siteDoppler = app.buttons["Site Doppler"].firstMatch
     XCTAssertTrue(siteDoppler.waitForExistence(timeout: 8), "Site Doppler product missing")
     siteDoppler.tap()
     if done.waitForExistence(timeout: 4) { done.tap() }
