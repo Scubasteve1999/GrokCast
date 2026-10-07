@@ -88,4 +88,36 @@ final class ShareAttributionTests: XCTestCase {
     XCTAssertTrue(storm.contains("DayCast Sky Check"))
     XCTAssertTrue(storm.contains("#DayCastSkyCheck"))
   }
+
+  // MARK: - Review prompt gating
+
+  func testReviewPromptNeverFiresUnderUITestingOrScreenshots() {
+    for argument in ["-UITesting", "-MarketingScreenshot"] {
+      XCTAssertFalse(
+        AppReviewPrompt.shouldPrompt(
+          sessions: 10, lastVersionPrompted: nil, currentVersion: "1.2",
+          requestedThisLaunch: false, arguments: ["DayCast", argument]),
+        "\(argument) must suppress the prompt")
+    }
+  }
+
+  func testReviewPromptNeedsSessionsNewVersionAndOncePerLaunch() {
+    func prompt(
+      sessions: Int = 4, last: String? = nil, version: String = "1.2", requested: Bool = false
+    ) -> Bool {
+      AppReviewPrompt.shouldPrompt(
+        sessions: sessions, lastVersionPrompted: last, currentVersion: version,
+        requestedThisLaunch: requested, arguments: ["DayCast"])
+    }
+    XCTAssertTrue(prompt())
+    XCTAssertFalse(prompt(sessions: 3))
+    XCTAssertFalse(prompt(last: "1.2"))
+    XCTAssertTrue(prompt(last: "1.1"))
+    XCTAssertFalse(prompt(requested: true))
+  }
+
+  func testReviewPromptPositiveActionThresholds() {
+    XCTAssertEqual(AppReviewPrompt.hourlyInspectionThreshold, 3)
+    XCTAssertEqual(AppReviewPrompt.radarDwellSeconds, 30)
+  }
 }

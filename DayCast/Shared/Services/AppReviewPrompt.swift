@@ -35,44 +35,79 @@ enum AppReviewPrompt {
     defaults.set(defaults.integer(forKey: sessionsKey) + 1, forKey: sessionsKey)
   }
 
+  /// Hourly-curve hours a user scrubbed through this launch.
+  @MainActor private static var inspectedHourIndexes = Set<Int>()
+  /// Distinct hours scrubbed before the curve counts as a positive action.
+  static let hourlyInspectionThreshold = 3
+  /// Continuous seconds on Radar before it counts as a positive action.
+  static let radarDwellSeconds = 30
+
+  /// Set by `AppReviewPromptModifier` so positive actions anywhere in the app can ask.
+  @MainActor static var requestReviewAction: RequestReviewAction?
+
+  /// The user scrubbed the hourly curve to `index`. Three distinct hours is engagement.
   @MainActor
-  static func considerRequestingReview(_ requestReview: RequestReviewAction) {
-    guard !isMarketingScreenshotLaunch else { return }
-    guard !requestedReviewThisLaunch else { return }
-    guard shouldRequestReview else { return }
+  static func recordHourInspected(index: Int) {
+    inspectedHourIndexes.insert(index)
+    guard inspectedHourIndexes.count >= hourlyInspectionThreshold else { return }
+    considerRequestingReview()
+  }
+
+  /// The user stayed on Radar for `radarDwellSeconds`.
+  @MainActor
+  static func recordRadarDwell() {
+    considerRequestingReview()
+  }
+
+  @MainActor
+  static func considerRequestingReview() {
+    guard let requestReview = requestReviewAction else { return }
+    guard
+      shouldPrompt(
+        sessions: UserDefaults.standard.integer(forKey: sessionsKey),
+        lastVersionPrompted: UserDefaults.standard.string(forKey: lastVersionKey),
+        currentVersion: currentMarketingVersion,
+        requestedThisLaunch: requestedReviewThisLaunch,
+        arguments: ProcessInfo.processInfo.arguments)
+    else { return }
 
     requestedReviewThisLaunch = true
-    let version = currentMarketingVersion
-    UserDefaults.standard.set(version, forKey: lastVersionKey)
+    UserDefaults.standard.set(currentMarketingVersion, forKey: lastVersionKey)
+    requestReview()
+  }
 
-    Task { @MainActor in
-      try? await Task.sleep(for: .seconds(2))
-      requestReview()
-    }
+  /// Pure gate. Never prompts under UI tests or marketing screenshots.
+  static func shouldPrompt(
+    sessions: Int,
+    lastVersionPrompted: String?,
+    currentVersion: String,
+    requestedThisLaunch: Bool,
+    arguments: [String]
+  ) -> Bool {
+    guard !arguments.contains(PostHogAnalytics.uiTestLaunchArgument) else { return false }
+    guard !arguments.contains(marketingScreenshotArgument) else { return false }
+    guard !requestedThisLaunch else { return false }
+    guard sessions >= minimumSessions else { return false }
+    return lastVersionPrompted != currentVersion
   }
 
   static func openWriteReview() {
     UIApplication.shared.open(writeReviewURL)
   }
 
-  private static var shouldRequestReview: Bool {
-    let defaults = UserDefaults.standard
-    let sessions = defaults.integer(forKey: sessionsKey)
-    guard sessions >= minimumSessions else { return false }
-    let last = defaults.string(forKey: lastVersionKey)
-    return last != currentMarketingVersion
-  }
-
   private static var currentMarketingVersion: String {
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
   }
 
+  private static let marketingScreenshotArgument = "-MarketingScreenshot"
+
   private static var isMarketingScreenshotLaunch: Bool {
-    ProcessInfo.processInfo.arguments.contains("-MarketingScreenshot")
+    ProcessInfo.processInfo.arguments.contains(marketingScreenshotArgument)
   }
 }
 
-/// Records engagement and optionally asks StoreKit to show the review dialog.
+/// Records sessions and hands StoreKit's review action to `AppReviewPrompt`. It never asks
+/// on its own: the prompt waits for a positive action (see `recordHourInspected`).
 struct AppReviewPromptModifier: ViewModifier {
   @Environment(\.requestReview) private var requestReview
   @Environment(WeatherStore.self) private var store
@@ -83,19 +118,16 @@ struct AppReviewPromptModifier: ViewModifier {
       .onChange(of: store.currentWeather?.fetchedAt) { _, fetchedAt in
         guard fetchedAt != nil else { return }
         AppReviewPrompt.recordMeaningfulSessionIfNeeded()
-        guard scenePhase == .active else { return }
-        AppReviewPrompt.considerRequestingReview(requestReview)
       }
       .onChange(of: scenePhase) { _, phase in
         guard phase == .active, store.currentWeather != nil else { return }
         AppReviewPrompt.recordMeaningfulSessionIfNeeded()
-        AppReviewPrompt.considerRequestingReview(requestReview)
       }
       .task {
+        AppReviewPrompt.requestReviewAction = requestReview
         // Cover cold start when weather was already cached before the modifier attached.
         guard store.currentWeather != nil, scenePhase == .active else { return }
         AppReviewPrompt.recordMeaningfulSessionIfNeeded()
-        AppReviewPrompt.considerRequestingReview(requestReview)
       }
   }
 }

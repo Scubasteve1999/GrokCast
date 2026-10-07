@@ -426,7 +426,10 @@ struct HourlyGraphView: View {
     }
     .frame(height: metrics.height)
     .onAppear { reportInspectedHour() }
-    .onChange(of: selectedIndex) { _, _ in reportInspectedHour() }
+    .onChange(of: selectedIndex) { _, index in
+      AppReviewPrompt.recordHourInspected(index: index)
+      reportInspectedHour()
+    }
   }
 
   private func reportInspectedHour() {

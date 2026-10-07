@@ -93,6 +93,13 @@ struct RadarView: View {
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
       .preferredColorScheme(.dark)
+      .task(id: store.selectedTab == .radar) {
+        // Cancelled when the user leaves Radar, so only unbroken time counts.
+        guard store.selectedTab == .radar else { return }
+        try? await Task.sleep(for: .seconds(AppReviewPrompt.radarDwellSeconds))
+        guard !Task.isCancelled else { return }
+        AppReviewPrompt.recordRadarDwell()
+      }
       .task {
         await store.refreshAlerts()
         fireStore.refresh(around: selectedMapCenter)
