@@ -117,6 +117,46 @@ final class TonightOutlookTests: XCTestCase {
     XCTAssertTrue(result.sentence.hasPrefix("Clear tonight"))
   }
 
+  func testTonightLineUsesHoursThatStartAfterNow() {
+    // First hour is 11 PM, three hours after `now`. Nothing assumes hourly[0] is "now".
+    let laterHours = Array(oliveBranchHours(precipChance: 1, weatherCode: 0).dropFirst(3))
+    let result = TonightOutlook.make(
+      weather: oliveBranchWeather(hourly: laterHours),
+      briefingItems: [],
+      unit: .fahrenheit,
+      now: oliveBranchEvening
+    )
+    XCTAssertEqual(result.period, .tonight)
+    XCTAssertTrue(result.sentence.hasPrefix("Clear tonight"), result.sentence)
+    XCTAssertTrue(result.sentence.contains("73°"), result.sentence)
+  }
+
+  func testTonightLineFallsBackWhenNoHourIsInTonightsWindow() {
+    let tomorrowAfternoon = oliveBranchHours(precipChance: 80, weatherCode: 61).map { hour in
+      HourlyForecast(
+        time: hour.time.addingTimeInterval(20 * 3600),
+        temp: hour.temp,
+        precipChance: hour.precipChance,
+        weatherCode: hour.weatherCode,
+        symbolName: hour.symbolName,
+        rain: hour.rain,
+        showers: nil,
+        snowfall: nil,
+        isDay: true,
+        feelsLike: hour.feelsLike
+      )
+    }
+    let result = TonightOutlook.make(
+      weather: oliveBranchWeather(hourly: tomorrowAfternoon),
+      briefingItems: [],
+      unit: .fahrenheit,
+      now: oliveBranchEvening
+    )
+    XCTAssertEqual(result.period, .tonight)
+    // Tomorrow's rain must not be reported as tonight's.
+    XCTAssertFalse(result.sentence.localizedCaseInsensitiveContains("rain"), result.sentence)
+  }
+
   func testWetNowDoesNotSayQuietTonightWhenHourlyLooksDry() {
     let weather = oliveBranchWeather()
     let result = TonightOutlook.make(
