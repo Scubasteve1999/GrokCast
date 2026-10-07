@@ -73,9 +73,14 @@ struct GrokAPIConfiguration {
     return nil
   }
 
+  /// Format check only. A well-formed key powers AI requests — never entitlements.
   var hasValidDeveloperKey: Bool {
-    guard let key = developerAPIKey, !key.isEmpty else { return false }
-    return key.hasPrefix("xai-") && key.count > 20
+    guard let key = developerAPIKey else { return false }
+    return Self.isWellFormedDeveloperKey(key)
+  }
+
+  static func isWellFormedDeveloperKey(_ key: String) -> Bool {
+    key.hasPrefix("xai-") && key.count > 20
   }
 
   /// True when the active key is the compiled-in DEBUG embed, not a Keychain paste.

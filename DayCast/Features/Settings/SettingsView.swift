@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
-/// Settings IA — fewer section headers, paywall card first, developer last.
+/// Settings IA — fewer section headers, paywall card first, developer last (DEBUG only).
 enum SettingsChrome {
   static let pro = "DayCast Pro"
   static let weather = "Weather"
@@ -12,9 +12,15 @@ enum SettingsChrome {
   static let app = "App"
   static let developer = "Developer"
 
-  static let sectionTitles = [
-    pro, weather, notifications, features, privacySupport, app, developer,
-  ]
+  #if DEBUG
+    static let sectionTitles = [
+      pro, weather, notifications, features, privacySupport, app, developer,
+    ]
+  #else
+    static let sectionTitles = [
+      pro, weather, notifications, features, privacySupport, app,
+    ]
+  #endif
 }
 
 struct SettingsView: View {
@@ -78,7 +84,10 @@ struct SettingsView: View {
         settingsSection(SettingsChrome.features, card: featuresCard)
         settingsSection(SettingsChrome.privacySupport, card: privacySupportCard)
         settingsSection(SettingsChrome.app, card: appCard)
-        settingsSection(SettingsChrome.developer, card: developerCard)
+        #if DEBUG
+          // Personal xAI key entry is a developer tool — never ships in Release.
+          settingsSection(SettingsChrome.developer, card: developerCard)
+        #endif
       }
       .padding(.horizontal, DesignTokens.Spacing.space20)
       .padding(.top, DesignTokens.Spacing.space16)
@@ -350,12 +359,12 @@ struct SettingsView: View {
     }
   }
 
-  private var developerCard: some View {
-    SettingsGroupCard {
-      developerKeySection
-      SettingsDivider()
-      SettingsLinkRow(title: "Get xAI API key", icon: "link", url: AppLinks.xAIConsole)
-      #if DEBUG
+  #if DEBUG
+    private var developerCard: some View {
+      SettingsGroupCard {
+        developerKeySection
+        SettingsDivider()
+        SettingsLinkRow(title: "Get xAI API key", icon: "link", url: AppLinks.xAIConsole)
         SettingsDivider()
         toggleRow(
           title: "Force RRFS notice",
@@ -370,9 +379,9 @@ struct SettingsView: View {
           icon: "clock",
           isOn: $forceRefsAgreement
         )
-      #endif
+      }
     }
-  }
+  #endif
 
   private var appCard: some View {
     SettingsGroupCard {
@@ -428,123 +437,125 @@ struct SettingsView: View {
     return ForecastEraNotice.shouldOfferExplainer()
   }
 
-  @ViewBuilder
-  private var developerKeySection: some View {
-    VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
-      Button {
-        if !isEditingKey {
-          apiKeyInput = ""
-          isEditingKey = true
-          connectionTestResult = nil
-        }
-      } label: {
-        HStack(spacing: DesignTokens.Spacing.space12) {
-          Image(systemName: "key.fill")
-            .font(DesignTokens.Typography.symbol(16))
-            .foregroundStyle(DesignTokens.Palette.accent)
-            .frame(width: 24)
-          VStack(alignment: .leading, spacing: 2) {
-            Text("xAI API key")
-              .font(DesignTokens.Typography.subsection())
-              .foregroundStyle(DesignTokens.Palette.textPrimary)
-            Text(developerKeySubtitle)
-              .font(DesignTokens.Typography.caption())
-              .foregroundStyle(DesignTokens.Palette.textSecondary)
-          }
-          Spacer()
-          Image(systemName: "chevron.right")
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(DesignTokens.Palette.textTertiary)
-        }
-        .padding(.horizontal, DesignTokens.Spacing.space16)
-        .padding(.vertical, DesignTokens.Spacing.space8)
-        .frame(minHeight: DesignTokens.Layout.minHitTarget)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-
-      if isEditingKey {
-        SettingsDivider()
-        VStack(alignment: .leading, spacing: 8) {
-          SecureField("xai-XXXXXXXXXXXXXXXXXXXXXXXX", text: $apiKeyInput)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .font(DesignTokens.Typography.monoBody())
-            .padding(10)
-            .background(
-              DesignTokens.Palette.cardElevated,
-              in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
-            )
-          HStack {
-            Button("Cancel") {
-              isEditingKey = false
-              apiKeyInput = ""
-            }
-            .buttonStyle(.bordered)
-            Spacer()
-            Button("Save Securely") {
-              saveDeveloperKey()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!isValidDeveloperKeyFormat(apiKeyInput))
-          }
-        }
-        .padding(.horizontal, DesignTokens.Spacing.space16)
-        .padding(.bottom, DesignTokens.Spacing.space12)
-      } else if hasKey {
-        SettingsDivider()
+  #if DEBUG
+    @ViewBuilder
+    private var developerKeySection: some View {
+      VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
         Button {
-          testGrokConnection()
+          if !isEditingKey {
+            apiKeyInput = ""
+            isEditingKey = true
+            connectionTestResult = nil
+          }
         } label: {
-          HStack {
-            if isTestingConnection {
-              ProgressView().scaleEffect(0.8)
-              Text("Testing API connection…")
-            } else {
-              Label("Test API connection", systemImage: "network")
+          HStack(spacing: DesignTokens.Spacing.space12) {
+            Image(systemName: "key.fill")
+              .font(DesignTokens.Typography.symbol(16))
+              .foregroundStyle(DesignTokens.Palette.accent)
+              .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+              Text("xAI API key")
+                .font(DesignTokens.Typography.subsection())
+                .foregroundStyle(DesignTokens.Palette.textPrimary)
+              Text(developerKeySubtitle)
+                .font(DesignTokens.Typography.caption())
+                .foregroundStyle(DesignTokens.Palette.textSecondary)
             }
             Spacer()
+            Image(systemName: "chevron.right")
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(DesignTokens.Palette.textTertiary)
           }
           .padding(.horizontal, DesignTokens.Spacing.space16)
-          .padding(.vertical, DesignTokens.Spacing.space12)
+          .padding(.vertical, DesignTokens.Spacing.space8)
+          .frame(minHeight: DesignTokens.Layout.minHitTarget)
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(isTestingConnection)
 
-        if let result = connectionTestResult {
-          Text(result)
-            .font(DesignTokens.Typography.caption())
-            .foregroundStyle(
-              connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
-            .padding(.horizontal, DesignTokens.Spacing.space16)
-            .padding(.bottom, DesignTokens.Spacing.space8)
-        }
-
-        if !store.grokConfig.isUsingEmbeddedDeveloperKey {
-          Button("Clear Key") {
-            store.clearXAIApiKey()
-            connectionTestResult = nil
-            Haptic.notification(.success)
+        if isEditingKey {
+          SettingsDivider()
+          VStack(alignment: .leading, spacing: 8) {
+            SecureField("xai-XXXXXXXXXXXXXXXXXXXXXXXX", text: $apiKeyInput)
+              .textInputAutocapitalization(.never)
+              .autocorrectionDisabled()
+              .font(DesignTokens.Typography.monoBody())
+              .padding(10)
+              .background(
+                DesignTokens.Palette.cardElevated,
+                in: RoundedRectangle(cornerRadius: DesignTokens.Radius.small)
+              )
+            HStack {
+              Button("Cancel") {
+                isEditingKey = false
+                apiKeyInput = ""
+              }
+              .buttonStyle(.bordered)
+              Spacer()
+              Button("Save Securely") {
+                saveDeveloperKey()
+              }
+              .buttonStyle(.borderedProminent)
+              .disabled(!isValidDeveloperKeyFormat(apiKeyInput))
+            }
           }
-          .font(DesignTokens.Typography.caption())
-          .foregroundStyle(DesignTokens.Palette.danger)
           .padding(.horizontal, DesignTokens.Spacing.space16)
           .padding(.bottom, DesignTokens.Spacing.space12)
+        } else if hasKey {
+          SettingsDivider()
+          Button {
+            testGrokConnection()
+          } label: {
+            HStack {
+              if isTestingConnection {
+                ProgressView().scaleEffect(0.8)
+                Text("Testing API connection…")
+              } else {
+                Label("Test API connection", systemImage: "network")
+              }
+              Spacer()
+            }
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.vertical, DesignTokens.Spacing.space12)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .disabled(isTestingConnection)
+
+          if let result = connectionTestResult {
+            Text(result)
+              .font(DesignTokens.Typography.caption())
+              .foregroundStyle(
+                connectionTestSuccess ? DesignTokens.Palette.success : DesignTokens.Palette.danger)
+              .padding(.horizontal, DesignTokens.Spacing.space16)
+              .padding(.bottom, DesignTokens.Spacing.space8)
+          }
+
+          if !store.grokConfig.isUsingEmbeddedDeveloperKey {
+            Button("Clear Key") {
+              store.clearXAIApiKey()
+              connectionTestResult = nil
+              Haptic.notification(.success)
+            }
+            .font(DesignTokens.Typography.caption())
+            .foregroundStyle(DesignTokens.Palette.danger)
+            .padding(.horizontal, DesignTokens.Spacing.space16)
+            .padding(.bottom, DesignTokens.Spacing.space12)
+          }
         }
       }
     }
-  }
 
-  private var developerKeySubtitle: String {
-    if store.grokConfig.isUsingEmbeddedDeveloperKey {
-      return "Embedded · Debug"
+    private var developerKeySubtitle: String {
+      if store.grokConfig.isUsingEmbeddedDeveloperKey {
+        return "Embedded · Debug"
+      }
+      if hasKey {
+        return "Configured · Secure"
+      }
+      return "Not configured"
     }
-    if hasKey {
-      return "Configured · Secure"
-    }
-    return "Not configured"
-  }
+  #endif
 
   private var hourPickerRow: some View {
     Button {
@@ -757,49 +768,51 @@ struct SettingsView: View {
     }
   }
 
-  private func saveDeveloperKey() {
-    let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard isValidDeveloperKeyFormat(trimmed) else { return }
-    store.saveXAIApiKey(trimmed)
-    isEditingKey = false
-    apiKeyInput = ""
-    connectionTestResult = nil
-    Haptic.notification(.success)
-    showSaveConfirmation = true
-  }
+  #if DEBUG
+    private func saveDeveloperKey() {
+      let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard isValidDeveloperKeyFormat(trimmed) else { return }
+      store.saveXAIApiKey(trimmed)
+      isEditingKey = false
+      apiKeyInput = ""
+      connectionTestResult = nil
+      Haptic.notification(.success)
+      showSaveConfirmation = true
+    }
 
-  private func testGrokConnection() {
-    guard hasKey else { return }
-    isTestingConnection = true
-    connectionTestResult = nil
+    private func testGrokConnection() {
+      guard hasKey else { return }
+      isTestingConnection = true
+      connectionTestResult = nil
 
-    Task {
-      do {
-        let response = try await GrokAPIService.complete(
-          messages: [
-            GrokAPIMessage(
-              role: "user", content: "Reply with exactly: 'DayCast connection OK'")
-          ],
-          feature: .connectionTest,
-          maxTokens: 32)
-        isTestingConnection = false
-        connectionTestSuccess = response.lowercased().contains("ok")
-        connectionTestResult =
-          connectionTestSuccess
-          ? "Connection successful • API responded correctly"
-          : "Unexpected response: \(response)"
-      } catch {
-        isTestingConnection = false
-        connectionTestSuccess = false
-        connectionTestResult = "Connection failed: \(error.localizedDescription)"
+      Task {
+        do {
+          let response = try await GrokAPIService.complete(
+            messages: [
+              GrokAPIMessage(
+                role: "user", content: "Reply with exactly: 'DayCast connection OK'")
+            ],
+            feature: .connectionTest,
+            maxTokens: 32)
+          isTestingConnection = false
+          connectionTestSuccess = response.lowercased().contains("ok")
+          connectionTestResult =
+            connectionTestSuccess
+            ? "Connection successful • API responded correctly"
+            : "Unexpected response: \(response)"
+        } catch {
+          isTestingConnection = false
+          connectionTestSuccess = false
+          connectionTestResult = "Connection failed: \(error.localizedDescription)"
+        }
       }
     }
-  }
 
-  private func isValidDeveloperKeyFormat(_ key: String) -> Bool {
-    let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.hasPrefix("xai-") && trimmed.count > 25
-  }
+    private func isValidDeveloperKeyFormat(_ key: String) -> Bool {
+      let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+      return trimmed.hasPrefix("xai-") && trimmed.count > 25
+    }
+  #endif
 }
 
 /// System switch with an explicit VoiceOver name and On/Off value.

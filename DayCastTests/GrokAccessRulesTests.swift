@@ -128,15 +128,15 @@ final class GrokAccessRulesTests: XCTestCase {
 
   // MARK: - Widget + morning brief
 
-  func testWidgetBriefIsYearlyOrDeveloperKey() {
-    // Monthly Pro is not enough. Developer key is full access.
+  func testWidgetBriefRequiresYearlyEvenWithDeveloperKey() {
+    // Monthly Pro is not enough. A developer key only powers the AI text.
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
         isYearly: false, isPro: true, proxyConfigured: true, hasDeveloperKey: false))
     XCTAssertTrue(
       GrokAccessRules.canUseWidgetGrokBrief(
         isYearly: true, isPro: true, proxyConfigured: true, hasDeveloperKey: false))
-    XCTAssertTrue(
+    XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
         isYearly: false, isPro: false, proxyConfigured: false, hasDeveloperKey: true))
   }

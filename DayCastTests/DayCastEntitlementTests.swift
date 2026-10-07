@@ -44,17 +44,61 @@ final class DayCastEntitlementTests: XCTestCase {
 
   func testMonthlyDoesNotUnlockYearlyExtras() {
     XCTAssertFalse(
-      DayCastEntitlements.canUseYearlyExtras(isYearly: false, hasDeveloperKey: false))
+      DayCastEntitlements.canUseYearlyExtras(isYearly: false))
   }
 
   func testYearlyUnlocksYearlyExtras() {
     XCTAssertTrue(
-      DayCastEntitlements.canUseYearlyExtras(isYearly: true, hasDeveloperKey: false))
+      DayCastEntitlements.canUseYearlyExtras(isYearly: true))
   }
 
-  func testDeveloperKeyUnlocksYearlyExtrasWithoutAPaidProduct() {
+  // MARK: - Personal xAI key powers AI only
+
+  /// Passes the same format check Settings and `hasValidDeveloperKey` use.
+  private let fakePersonalKey = "xai-" + String(repeating: "x", count: 30)
+
+  func testFakePersonalKeyIsWellFormed() {
+    XCTAssertTrue(GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey))
+    XCTAssertFalse(GrokAPIConfiguration.isWellFormedDeveloperKey("xai-short"))
+  }
+
+  func testPersonalKeyGrantsFreeUserNoYearlyFeatures() {
+    let hasKey = GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey)
+    // Future radar, Live Activity, and widgets are purchase-only.
+    XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: false))
+    XCTAssertFalse(WidgetDataStore.canRenderWeather(isYearlySubscriber: false))
+    XCTAssertFalse(
+      GrokAccessRules.canUseWidgetGrokBrief(
+        isYearly: false, isPro: false, proxyConfigured: false, hasDeveloperKey: hasKey))
     XCTAssertTrue(
-      DayCastEntitlements.canUseYearlyExtras(isYearly: false, hasDeveloperKey: true))
+      RadarFutureChipPresentation.showsProLock(
+        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(isYearly: false)))
+  }
+
+  func testPersonalKeyGrantsMonthlyUserNoYearlyFeatures() {
+    let hasKey = GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey)
+    XCTAssertFalse(
+      GrokAccessRules.canUseWidgetGrokBrief(
+        isYearly: false, isPro: true, proxyConfigured: true, hasDeveloperKey: hasKey))
+    XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: false))
+  }
+
+  func testPersonalKeyGrantsNoMonthlyFeaturesBeyondAI() {
+    let hasKey = GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey)
+    XCTAssertTrue(
+      GrokAccessRules.canUseGrokAI(isPro: false, proxyConfigured: false, hasDeveloperKey: hasKey),
+      "a personal key may power AI requests")
+    let gps = SavedLocation(name: "Near Me", latitude: 34.96, longitude: -89.83, isCurrent: true)
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    XCTAssertFalse(
+      EntitlementChecker.canAddLocation(locations: [gps, seattle], isPro: false),
+      "extra saved places stay Pro-only")
+  }
+
+  func testYearlyWithPersonalKeyStillGetsWidgetBrief() {
+    XCTAssertTrue(
+      GrokAccessRules.canUseWidgetGrokBrief(
+        isYearly: true, isPro: true, proxyConfigured: false, hasDeveloperKey: true))
   }
 
   func testMonthlyUnlocksAIButNotWidgetBrief() {
@@ -83,11 +127,11 @@ final class DayCastEntitlementTests: XCTestCase {
       ))
   }
 
-  func testDeveloperKeyUnlocksAIAndWidgetBrief() {
+  func testDeveloperKeyUnlocksAIButNotWidgetBrief() {
     XCTAssertTrue(
       GrokAccessRules.canUseGrokAI(
         isPro: false, proxyConfigured: false, hasDeveloperKey: true))
-    XCTAssertTrue(
+    XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
         isYearly: false,
         isPro: false,
@@ -233,7 +277,7 @@ final class DayCastEntitlementTests: XCTestCase {
       GrokAccessRules.canUseGrokAI(
         isPro: false, proxyConfigured: true, hasDeveloperKey: false))
     XCTAssertFalse(
-      DayCastEntitlements.canUseYearlyExtras(isYearly: false, hasDeveloperKey: false))
+      DayCastEntitlements.canUseYearlyExtras(isYearly: false))
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
         isYearly: false,

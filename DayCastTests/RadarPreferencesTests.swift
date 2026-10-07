@@ -433,16 +433,10 @@ final class RadarPreferencesTests: XCTestCase {
   func testFutureChipShowsProLockBeforeTapWhenYearlyExtrasAreOff() {
     XCTAssertTrue(
       RadarFutureChipPresentation.showsProLock(
-        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(
-          isYearly: false, hasDeveloperKey: false)))
+        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(isYearly: false)))
     XCTAssertFalse(
       RadarFutureChipPresentation.showsProLock(
-        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(
-          isYearly: true, hasDeveloperKey: false)))
-    XCTAssertFalse(
-      RadarFutureChipPresentation.showsProLock(
-        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(
-          isYearly: false, hasDeveloperKey: true)))
+        canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(isYearly: true)))
     XCTAssertEqual(
       RadarFutureChipPresentation.title(showsProLock: true),
       "24-hr · Pro")
