@@ -124,12 +124,17 @@ final class WeatherStore {
   /// When false on a true first launch (with .notDetermined), Today shows the welcome + explanation sheet.
   var hasRequestedLocationPermission: Bool = false
 
-  private let significantLocationUpdatesEnabledKey = "daycast_significant_location_updates_enabled"
-  private var _significantLocationUpdatesEnabled = true
+  nonisolated static let significantLocationUpdatesEnabledKey =
+    "daycast_significant_location_updates_enabled"
+  private var significantLocationUpdatesEnabledKey: String {
+    Self.significantLocationUpdatesEnabledKey
+  }
+  private var _significantLocationUpdatesEnabled = false
 
-  /// User-controlled preference for Significant Location Changes (background low-power updates).
-  /// Default true so the feature activates for users who have granted Always authorization.
-  /// Controlled by toggle in Settings; when true + Always auth, monitoring is active.
+  /// Travel weather. Off until the user turns it on, so a fresh install never sees the
+  /// Always-location prompt. Turning it on is what asks for Always (see
+  /// `LocationService.startSignificantLocationChanges`).
+  /// Existing installs keep whatever was stored, including the old seeded `true`.
   var significantLocationUpdatesEnabled: Bool {
     get { _significantLocationUpdatesEnabled }
     set {
@@ -574,15 +579,8 @@ final class WeatherStore {
       }
     }
 
-    // Load significant location updates pref. Default true so the feature is active for users
-    // who have granted Always (the toggle in Settings gives explicit control to turn it off).
-    if UserDefaults.standard.object(forKey: significantLocationUpdatesEnabledKey) == nil {
-      _significantLocationUpdatesEnabled = true
-      UserDefaults.standard.set(true, forKey: significantLocationUpdatesEnabledKey)
-    } else {
-      _significantLocationUpdatesEnabled = UserDefaults.standard.bool(
-        forKey: significantLocationUpdatesEnabledKey)
-    }
+    // Travel weather defaults off. Nothing is written until the user flips the toggle.
+    _significantLocationUpdatesEnabled = Self.persistedSignificantLocationUpdatesEnabled()
 
     // Wire handler so significant updates (background) can keep the Current Location entry
     // and weather reasonably fresh.
@@ -1698,13 +1696,39 @@ final class WeatherStore {
     return CFAbsoluteTimeGetCurrent() - taskStart >= backgroundAlertBudgetSeconds
   }
 
-  /// Requests notification permission (if needed) then schedules BG refresh for alerts, rain, fire, and/or Live Activity.
+  /// Schedules BG refresh for alerts, rain, fire, and/or Live Activity. Does not ask for
+  /// notification permission: that waits for a moment that shows its value
+  /// (`offerAlertNotificationPermissionOnce`, or a Settings toggle).
   @MainActor
   func scheduleBackgroundAlertRefreshIfEnabled() async {
-    if alertNotificationsEnabled || rainAlertsEnabled || fireProximityNotificationsEnabled {
-      await requestAlertNotificationPermissionIfNeeded()
-    }
     BackgroundAlertRefreshService.scheduleAlertRefreshTask()
+  }
+
+  nonisolated static let notificationPromptOfferedKey = "daycast_notification_prompt_offered"
+
+  /// True once, the first time it is asked. Marks the offer as used.
+  nonisolated static func claimNotificationPromptOffer(
+    defaults: UserDefaults = .standard
+  ) -> Bool {
+    guard !defaults.bool(forKey: notificationPromptOfferedKey) else { return false }
+    defaults.set(true, forKey: notificationPromptOfferedKey)
+    return true
+  }
+
+  /// Travel weather preference with the fresh-install default of off.
+  nonisolated static func persistedSignificantLocationUpdatesEnabled(
+    defaults: UserDefaults = .standard
+  ) -> Bool {
+    defaults.object(forKey: significantLocationUpdatesEnabledKey) as? Bool ?? false
+  }
+
+  /// Ask for notifications the first time the user opens an alert, when the value is clear.
+  @MainActor
+  func offerAlertNotificationPermissionOnce() async {
+    guard alertNotificationsEnabled || rainAlertsEnabled || fireProximityNotificationsEnabled
+    else { return }
+    guard Self.claimNotificationPromptOffer() else { return }
+    await requestAlertNotificationPermissionIfNeeded()
   }
 
   @MainActor

@@ -122,9 +122,7 @@ final class LocationService: NSObject {
 
   @MainActor
   func startSignificantLocationChanges() {
-    let enabled =
-      UserDefaults.standard.object(forKey: "daycast_significant_location_updates_enabled") as? Bool
-      ?? true
+    let enabled = WeatherStore.persistedSignificantLocationUpdatesEnabled()
 
     guard enabled else { return }
     guard !isMonitoringSignificantChanges else { return }

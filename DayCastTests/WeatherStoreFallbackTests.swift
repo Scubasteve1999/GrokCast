@@ -24,6 +24,34 @@ final class WeatherStoreFallbackTests: XCTestCase {
     XCTAssertNil(WeatherStore.lastGoodOpenMeteo(nil, for: olive))
   }
 
+  // MARK: - First-launch permissions
+
+  private func isolatedDefaults() -> UserDefaults {
+    let name = "WeatherStoreFallbackTests.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: name)!
+    addTeardownBlock { defaults.removePersistentDomain(forName: name) }
+    return defaults
+  }
+
+  func testTravelWeatherIsOffOnAFreshInstallAndHonorsAStoredChoice() {
+    let defaults = isolatedDefaults()
+    XCTAssertFalse(
+      WeatherStore.persistedSignificantLocationUpdatesEnabled(defaults: defaults),
+      "A fresh install must not trigger the Always location prompt")
+
+    defaults.set(true, forKey: WeatherStore.significantLocationUpdatesEnabledKey)
+    XCTAssertTrue(WeatherStore.persistedSignificantLocationUpdatesEnabled(defaults: defaults))
+    defaults.set(false, forKey: WeatherStore.significantLocationUpdatesEnabledKey)
+    XCTAssertFalse(WeatherStore.persistedSignificantLocationUpdatesEnabled(defaults: defaults))
+  }
+
+  func testNotificationPromptIsOfferedOnlyOnce() {
+    let defaults = isolatedDefaults()
+    XCTAssertTrue(WeatherStore.claimNotificationPromptOffer(defaults: defaults))
+    XCTAssertFalse(WeatherStore.claimNotificationPromptOffer(defaults: defaults))
+    XCTAssertFalse(WeatherStore.claimNotificationPromptOffer(defaults: defaults))
+  }
+
   func testDisplayedWeatherHidesOtherCityNumbers() {
     let weather = makeWeather(location: olive)
     XCTAssertNil(WeatherStore.weatherMatchingSelection(weather, location: seattle))

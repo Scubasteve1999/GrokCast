@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AlertDetailView: View {
+  @Environment(WeatherStore.self) private var store
   let alert: NWSAlert
 
   var body: some View {
@@ -19,6 +20,7 @@ struct AlertDetailView: View {
     }
     .readableContentWidth(ReadableContentWidth.wide)
     .navigationTitle(alert.event)
+    .task { await store.offerAlertNotificationPermissionOnce() }
     .navigationBarTitleDisplayMode(.inline)
     .background(Color.black.ignoresSafeArea())
   }
