@@ -304,6 +304,30 @@ final class ForecastEraNoticeTests: XCTestCase {
     XCTAssertTrue(opener.hasPrefix("On October 14, 2026, NCEP replaced"))
   }
 
+  func testRetiringStayingLineShowsForEveryStatus() async {
+    let expected =
+      "Retiring that day: NAM, HREF, SREF, and HiresW (except Guam). Staying: RAP, HRRR, and HiresW Guam."
+    XCTAssertEqual(ForecastEraNotice.Copy.retiringStaying, expected)
+
+    for status in ["scheduled", "slipped", "done"] {
+      let json = Self.slippedJSON.replacingOccurrences(of: "\"slipped\"", with: "\"\(status)\"")
+      ForecastEraNotice.dataLoader = { Data(json.utf8) }
+      let config = await ForecastEraNotice.refreshRemote(
+        now: utc("2026-10-10T12:00:00Z"),
+        defaults: suite,
+        force: true
+      )
+      XCTAssertEqual(config.status.rawValue, status)
+      XCTAssertEqual(ForecastEraNotice.Copy.paragraphs[1], expected, status)
+      XCTAssertTrue(ForecastEraNotice.Copy.paragraphs.contains(expected), status)
+    }
+
+    let joined = ForecastEraNotice.Copy.visibleStrings.joined(separator: " ").lowercased()
+    XCTAssertFalse(joined.contains("hrrr is"))
+    XCTAssertFalse(joined.contains("all hiresw"))
+    XCTAssertFalse(joined.contains("october 6"))
+  }
+
   func testRefreshThrottlesWithinFifteenMinutes() async {
     let loads = LoadCounter()
     ForecastEraNotice.dataLoader = {

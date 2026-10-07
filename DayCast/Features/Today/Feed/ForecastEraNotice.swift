@@ -195,6 +195,8 @@ enum ForecastEraNotice {
       }
     }
 
+    static let retiringStaying =
+      "Retiring that day: NAM, HREF, SREF, and HiresW (except Guam). Staying: RAP, HRRR, and HiresW Guam."
     static let timingRisk =
       "If NWS calls a Critical Weather Day or significant weather, the cutover may slip to the next suitable weekday."
     static let behavior =
@@ -211,7 +213,7 @@ enum ForecastEraNotice {
     static let memphisSample =
       "NWS Memphis · office discussion may shift with the upstream model change"
 
-    static var paragraphs: [String] { [opener, timingRisk, behavior, notOfficial, cite] }
+    static var paragraphs: [String] { [opener, retiringStaying, timingRisk, behavior, notOfficial, cite] }
 
     static var visibleStrings: [String] {
       [banner, cardTitle] + paragraphs + [scn48LinkTitle, scn47LinkTitle, dismiss, memphisSample]
