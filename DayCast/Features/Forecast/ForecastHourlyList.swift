@@ -80,7 +80,7 @@ struct ForecastHourlyList: View {
           .monospacedDigit()
 
         Image(systemName: hour.symbolName)
-          .font(DesignTokens.Typography.symbol(18))
+          .scaledSystemFont(18, weight: .semibold, relativeTo: .title3, maxScale: 1.6)
           .symbolRenderingMode(.hierarchical)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .frame(width: 22)

@@ -61,7 +61,7 @@ struct GrokInputBar: View {
 
       Button(action: send) {
         Image(systemName: "arrow.up.circle.fill")
-          .font(DesignTokens.Typography.studioTitle())
+          .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
           .symbolRenderingMode(.palette)
           .foregroundStyle(
             isSendDisabled ? DesignTokens.Palette.textTertiary : DesignTokens.Palette.bgPrimary,

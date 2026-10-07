@@ -105,7 +105,7 @@ struct TripPlannerView: View {
         if let avgScore = result.averageScore {
           VStack(spacing: 2) {
             Text("\(avgScore)")
-              .font(DesignTokens.Typography.studioTitle())
+              .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
               .foregroundStyle(DesignTokens.Palette.accent)
             Text("Avg Score")
               .font(DesignTokens.Typography.micro())

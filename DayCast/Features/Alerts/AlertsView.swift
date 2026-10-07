@@ -173,7 +173,7 @@ struct AlertsView: View {
           if honesty.showsActiveNow {
             VStack(alignment: .leading, spacing: DesignTokens.Layout.sectionSpacing) {
               Text("Active Now")
-                .font(DesignTokens.Typography.studioTitle())
+                .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
                 .foregroundStyle(DesignTokens.Palette.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isHeader)
@@ -203,7 +203,7 @@ struct AlertsView: View {
           if !historicalAlerts.isEmpty {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
               Text("Recent")
-                .font(DesignTokens.Typography.studioTitle())
+                .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
                 .foregroundStyle(DesignTokens.Palette.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isHeader)
@@ -252,12 +252,11 @@ struct AlertsView: View {
 
       VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
         Text(alert.usesWarningEmphasis ? alert.event.uppercased() : alert.event)
-          .font(
-            alert.usesWarningEmphasis
-              ? DesignTokens.Typography.studioTitle()
-              : (isActive
-                ? DesignTokens.Typography.headline() : DesignTokens.Typography.subsection())
-          )
+          .scaledSystemFont(
+            alert.usesWarningEmphasis ? 24 : (isActive ? 17 : 15),
+            weight: .semibold,
+            relativeTo: alert.usesWarningEmphasis ? .title2 : (isActive ? .headline : .subheadline),
+            maxScale: 1.6)
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .multilineTextAlignment(.leading)
           .frame(maxWidth: .infinity, alignment: .leading)

@@ -24,7 +24,7 @@ struct DailyFeedCard: View {
       } label: {
         HStack {
           Text("This Week")
-            .font(DesignTokens.Typography.studioTitle())
+            .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Spacer(minLength: 4)
           Image(systemName: "chevron.right")

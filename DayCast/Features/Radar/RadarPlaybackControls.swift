@@ -14,7 +14,7 @@ struct RadarPlaybackControls: View {
         toggleAnimation()
       } label: {
         Image(systemName: radarState.isAnimating ? "pause.fill" : "play.fill")
-          .font(DesignTokens.Typography.studioTitle())
+          .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
           .foregroundStyle(DesignTokens.Palette.radarAccent)
           .frame(width: DesignTokens.Layout.minHitTarget, height: DesignTokens.Layout.minHitTarget)
           .contentShape(Rectangle())

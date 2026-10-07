@@ -11,6 +11,9 @@ struct WeekDayChipStrip: View {
   var periodHigh: Double?
   var onSelect: (DailyForecast) -> Void
 
+  /// 56pt at Large. Grows with Dynamic Type; the strip scrolls horizontally.
+  @ScaledMetric(relativeTo: .footnote) private var chipWidth: CGFloat = 56
+
   var body: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(alignment: .top, spacing: DesignTokens.Spacing.space8) {
@@ -35,13 +38,14 @@ struct WeekDayChipStrip: View {
           .fontWeight(selected ? .semibold : .regular)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .lineLimit(1)
+          .minimumScaleFactor(0.8)
         Text(DailyOutlook.dayNumber(date: day.date, timeZone: timeZone))
           .font(DesignTokens.Typography.callout())
           .fontWeight(.semibold)
           .foregroundStyle(DesignTokens.Palette.textPrimary)
           .monospacedDigit()
         Image(systemName: condition.rowSymbolName(precipChance: day.precipChance))
-          .font(DesignTokens.Typography.symbol(18))
+          .scaledSystemFont(18, weight: .semibold, relativeTo: .title3, maxScale: 1.6)
           .symbolRenderingMode(.hierarchical)
           .foregroundStyle(DesignTokens.Palette.textSecondary)
           .frame(height: 22)
@@ -72,7 +76,7 @@ struct WeekDayChipStrip: View {
             .font(DesignTokens.Typography.caption())
         }
       }
-      .frame(width: 56)
+      .frame(width: chipWidth)
       .padding(.vertical, DesignTokens.Spacing.space8)
       .background(
         RoundedRectangle(cornerRadius: DesignTokens.Radius.small, style: .continuous)

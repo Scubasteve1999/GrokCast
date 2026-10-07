@@ -8,6 +8,9 @@ class DayCastUITestCase: XCTestCase {
   /// UI tests run as Pro by default (DEBUG override). Return true to test the free-user path.
   var launchesAsFreeUser: Bool { false }
 
+  /// Dynamic Type override for the launch, e.g. "UICTContentSizeCategoryXXXL". Nil keeps Large.
+  var preferredContentSizeCategory: String? { nil }
+
   override func setUpWithError() throws {
     continueAfterFailure = false
     app = XCUIApplication()
@@ -17,6 +20,9 @@ class DayCastUITestCase: XCTestCase {
       "-AppleLocale", "en_US",
     ]
     if launchesAsFreeUser { app.launchArguments += ["-UITestingFreeUser"] }
+    if let category = preferredContentSizeCategory {
+      app.launchArguments += ["-UIPreferredContentSizeCategoryName", category]
+    }
     app.launch()
     grantLocationPermissionIfPrompted()
     completeOnboardingIfNeeded()

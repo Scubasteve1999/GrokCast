@@ -24,6 +24,9 @@ struct NowFeedCard: View {
     self.onTap = onTap
   }
 
+  /// 160pt at Large. Grows with Dynamic Type so the larger lines are not clipped.
+  @ScaledMetric(relativeTo: .body) private var heroHeight = TodayGlanceLayout.nowBudgetHeight
+
   var body: some View {
     TimelineView(.everyMinute) { context in
       let now = context.date
@@ -35,7 +38,9 @@ struct NowFeedCard: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.space8) {
           HStack(alignment: .top, spacing: DesignTokens.Spacing.space12) {
             Text(store.formatTemperatureShort(weather.currentTemp))
-              .font(DesignTokens.Typography.todayTemp())
+              .scaledSystemFont(
+                DesignTokens.Layout.todayTempSize, weight: .semibold, relativeTo: .largeTitle,
+                maxScale: 1.3)
               .foregroundStyle(Color.white)
               .monospacedDigit()
               .lineLimit(1)
@@ -47,7 +52,7 @@ struct NowFeedCard: View {
 
             VStack(spacing: DesignTokens.Spacing.space4) {
               Image(systemName: face.symbolName)
-                .font(.system(size: 56, weight: .regular))
+                .scaledSystemFont(56, relativeTo: .largeTitle, maxScale: 1.3)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Color.white)
                 .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
@@ -92,8 +97,8 @@ struct NowFeedCard: View {
         }
         .frame(
           maxWidth: .infinity,
-          minHeight: TodayGlanceLayout.nowBudgetHeight,
-          maxHeight: TodayGlanceLayout.nowHeroMaxHeight,
+          minHeight: heroHeight,
+          maxHeight: heroHeight,
           alignment: .topLeading
         )
         .clipped()

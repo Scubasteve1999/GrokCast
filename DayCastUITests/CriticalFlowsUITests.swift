@@ -380,3 +380,28 @@ final class FreeUserPaywallUITests: DayCastUITestCase {
     XCTAssertTrue(paywallSignal, "Paywall sheet did not present expected content")
   }
 }
+
+
+/// Dense Today at the largest non-accessibility Dynamic Type size (XXXL).
+final class TodayDynamicTypeUITests: DayCastUITestCase {
+  override var preferredContentSizeCategory: String? { "UICTContentSizeCategoryXXXL" }
+
+  func testTodayNowCardScalesAndStaysUnclippedAtXXXL() throws {
+    XCTAssertTrue(waitForTabBar())
+
+    let temperature = app.staticTexts["daycast.today.temperature"].firstMatch
+    XCTAssertTrue(temperature.waitForExistence(timeout: 30), "Temperature missing at XXXL")
+    // The 88pt hero is ~105pt tall at Large (capped at 1.3x); it must grow with the setting.
+    XCTAssertGreaterThan(temperature.frame.height, 108, "Hero temperature did not scale")
+
+    // The last line of the Now card was clipped by a fixed 160pt frame before it scaled.
+    let updated = app.staticTexts["daycast.today.updatedAt"].firstMatch
+    XCTAssertTrue(updated.waitForExistence(timeout: 10), "Updated line missing at XXXL")
+    XCTAssertTrue(updated.isHittable, "Updated line is clipped or covered at XXXL")
+
+    let window = app.windows.firstMatch.frame
+    XCTAssertLessThanOrEqual(updated.frame.maxY, window.maxY)
+    XCTAssertFalse(
+      temperature.frame.intersects(updated.frame), "Temperature overlaps the updated line")
+  }
+}

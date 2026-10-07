@@ -14,7 +14,7 @@ struct HealthFeedCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Text(ConditionsCopy.title)
-        .font(DesignTokens.Typography.studioTitle())
+        .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
         .accessibilityAddTraits(.isHeader)
 

@@ -83,7 +83,7 @@ struct LargeWeatherWidgetView: View {
           .font(DesignTokens.Typography.widgetTemp(38))
           .foregroundStyle(style.primaryText)
         Image(systemName: snapshot.symbolName)
-          .font(DesignTokens.Typography.studioTitle())
+          .font(DesignTokens.Typography.widgetTitle())
           .symbolRenderingMode(.multicolor)
       }
 

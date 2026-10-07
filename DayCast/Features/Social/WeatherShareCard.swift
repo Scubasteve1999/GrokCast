@@ -39,7 +39,7 @@ struct WeatherShareCard: View {
     VStack(spacing: 16) {
       HStack(alignment: .firstTextBaseline, spacing: 12) {
         Image(systemName: weather.symbolName)
-          .font(DesignTokens.Typography.compactTemp())
+          .scaledSystemFont(44, weight: .semibold, relativeTo: .largeTitle, maxScale: 1.3)
           .symbolRenderingMode(.multicolor)
 
         Text(unit.format(weather.currentTemp))

@@ -75,7 +75,7 @@ struct DayCastScoreCard: View {
           .frame(width: 72, height: 72)
         VStack(spacing: 0) {
           Text("\(score.value)")
-            .font(DesignTokens.Typography.studioTitle())
+            .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
           Text("Score")
             .font(DesignTokens.Typography.micro())

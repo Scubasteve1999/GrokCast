@@ -74,37 +74,65 @@ enum DesignTokens {
     static let cardLabelTracking: CGFloat = 0
     static let tightTracking: CGFloat = 0
 
-    /// Hero temperature — TWC-scale display number on the sky.
+    // Tokens map to text styles whose default (Large) sizes equal the old fixed sizes,
+    // so the look is unchanged at Large and scales with the Dynamic Type setting.
+    // Sizes with no text-style match use `View.scaledSystemFont` at the call site.
+
+    /// Hero temperature for App Store screenshots only (fixed). In-app temps scale via
+    /// `View.scaledSystemFont`.
     static func displayTemp() -> Font {
       .system(size: 96, weight: .semibold)
-    }
-
-    /// Today first-glance temp. Large enough to read; short enough that Your News peeks.
-    static func todayTemp() -> Font {
-      .system(size: Layout.todayTempSize, weight: .semibold)
     }
 
     /// Back-compat for call sites still using the old name.
     static func heroTemperature() -> Font { displayTemp() }
 
-    /// Compact temperature (sheets, More hub). Hero stays `displayTemp()`.
-    static func compactTemp() -> Font { .system(size: 44, weight: .semibold) }
-    /// Home-screen widget temperature (rounded, compact).
+    /// Home-screen widget temperature (rounded, compact). Widgets own their sizing.
     static func widgetTemp(_ size: CGFloat = 36) -> Font {
       .system(size: size, weight: .semibold, design: .rounded)
     }
 
-    static func title() -> Font { .system(size: 28, weight: .semibold) }
-    static func studioTitle() -> Font { .system(size: 24, weight: .semibold) }
-    static func headline() -> Font { .system(size: 17, weight: .semibold) }
-    static func body() -> Font { .system(size: 17, weight: .regular) }
-    static func monoBody() -> Font { .system(size: 17, weight: .regular, design: .monospaced) }
-    static func callout() -> Font { .system(size: 15, weight: .regular) }
-    static func subsection() -> Font { .system(size: 15, weight: .semibold) }
-    static func caption() -> Font { .system(size: 13, weight: .regular) }
-    static func metric() -> Font { .system(size: 20, weight: .medium) }
-    static func micro() -> Font { .system(size: 12, weight: .regular) }
-    static func symbol(_ size: CGFloat = 13) -> Font { .system(size: size, weight: .semibold) }
+    /// Widget titles. Widgets own their sizing, so this stays fixed.
+    static func widgetTitle() -> Font { .system(size: 24, weight: .semibold) }
+
+    /// 28pt at Large.
+    static func title() -> Font { .system(.title, weight: .semibold) }
+    /// 17pt at Large.
+    static func headline() -> Font { .system(.headline, weight: .semibold) }
+    /// 17pt at Large.
+    static func body() -> Font { .system(.body, weight: .regular) }
+    /// 17pt at Large.
+    static func monoBody() -> Font { .system(.body, design: .monospaced, weight: .regular) }
+    /// 15pt at Large.
+    static func callout() -> Font { .system(.subheadline, weight: .regular) }
+    /// 15pt at Large.
+    static func subsection() -> Font { .system(.subheadline, weight: .semibold) }
+    /// 13pt at Large.
+    static func caption() -> Font { .system(.footnote, weight: .regular) }
+    /// 20pt at Large.
+    static func metric() -> Font { .system(.title3, weight: .medium) }
+    /// 12pt at Large.
+    static func micro() -> Font { .system(.caption, weight: .regular) }
+
+    /// SF Symbol sizing. Snaps to the text style that is that size at Large; sizes with
+    /// no style (18, 48) use `View.scaledSystemFont` instead.
+    static func symbol(_ size: CGFloat = 13) -> Font {
+      .system(symbolTextStyle(for: size), weight: .semibold)
+    }
+
+    static func symbolTextStyle(for size: CGFloat) -> Font.TextStyle {
+      switch size {
+      case ..<12.5: .caption2
+      case ..<13.5: .footnote
+      case ..<15.5: .subheadline
+      case ..<16.5: .callout
+      case ..<18.5: .body
+      case ..<21: .title3
+      case ..<25: .title2
+      case ..<30: .title
+      default: .largeTitle
+      }
+    }
   }
 
   enum Layout {
@@ -279,5 +307,46 @@ extension Color {
     }
 
     self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
+  }
+}
+
+
+/// A fixed point size at the default Large setting that still follows Dynamic Type.
+/// `@ScaledMetric` scales `size`; `maxScale` stops display numerals growing without bound.
+struct ScaledSystemFont: ViewModifier {
+  @ScaledMetric private var size: CGFloat
+  private let base: CGFloat
+  private let weight: Font.Weight
+  private let design: Font.Design
+  private let maxScale: CGFloat
+
+  init(
+    size: CGFloat, weight: Font.Weight, design: Font.Design, relativeTo: Font.TextStyle,
+    maxScale: CGFloat
+  ) {
+    _size = ScaledMetric(wrappedValue: size, relativeTo: relativeTo)
+    base = size
+    self.weight = weight
+    self.design = design
+    self.maxScale = maxScale
+  }
+
+  func body(content: Content) -> some View {
+    content.font(.system(size: min(size, base * maxScale), weight: weight, design: design))
+  }
+}
+
+extension View {
+  /// `size` is the point size at Large. Scales with Dynamic Type, capped at `maxScale`×.
+  func scaledSystemFont(
+    _ size: CGFloat,
+    weight: Font.Weight = .regular,
+    design: Font.Design = .default,
+    relativeTo textStyle: Font.TextStyle = .body,
+    maxScale: CGFloat = 2
+  ) -> some View {
+    modifier(
+      ScaledSystemFont(
+        size: size, weight: weight, design: design, relativeTo: textStyle, maxScale: maxScale))
   }
 }

@@ -47,7 +47,7 @@ struct SmallWeatherWidgetView: View {
       VStack(alignment: .leading, spacing: 6) {
         HStack(alignment: .center, spacing: 8) {
           Image(systemName: snapshot.symbolName)
-            .font(DesignTokens.Typography.studioTitle())
+            .font(DesignTokens.Typography.widgetTitle())
             .symbolRenderingMode(.multicolor)
             .foregroundStyle(style.primaryText)
 

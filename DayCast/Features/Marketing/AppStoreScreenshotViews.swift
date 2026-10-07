@@ -220,7 +220,7 @@ struct AppStoreScreenshotAlerts: View {
         VStack(alignment: .leading, spacing: 12) {
           HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-              .font(DesignTokens.Typography.studioTitle())
+              .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
               .foregroundStyle(DesignTokens.Palette.danger)
             VStack(alignment: .leading) {
               Text("TORNADO WARNING")

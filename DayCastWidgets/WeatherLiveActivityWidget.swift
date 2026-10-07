@@ -12,7 +12,7 @@ struct WeatherLiveActivityWidget: Widget {
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
           Image(systemName: context.state.symbolName)
-            .font(DesignTokens.Typography.studioTitle())
+            .font(DesignTokens.Typography.widgetTitle())
             .symbolRenderingMode(.multicolor)
             .foregroundStyle(accentColor(for: context.state))
         }
@@ -52,7 +52,7 @@ struct WeatherLiveActivityWidget: Widget {
     let state = context.state
     HStack(spacing: 12) {
       Image(systemName: state.symbolName)
-        .font(DesignTokens.Typography.studioTitle())
+        .font(DesignTokens.Typography.widgetTitle())
         .symbolRenderingMode(.multicolor)
         .foregroundStyle(accentColor(for: state))
       VStack(alignment: .leading, spacing: 2) {

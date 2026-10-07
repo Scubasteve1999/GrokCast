@@ -13,7 +13,9 @@ struct FigmaScreenTitle: View {
 
   var body: some View {
     Text(title)
-      .font(style == .screen ? DesignTokens.Typography.title() : DesignTokens.Typography.studioTitle())
+      .scaledSystemFont(
+        style == .screen ? 28 : 24, weight: .semibold,
+        relativeTo: style == .screen ? .title : .title2, maxScale: 1.6)
       .foregroundStyle(DesignTokens.Palette.textPrimary)
       .frame(maxWidth: .infinity, alignment: .leading)
   }
@@ -211,7 +213,7 @@ struct MoreHubSheet: View {
       if let w = store.displayedWeather {
         HStack(alignment: .bottom, spacing: DesignTokens.Spacing.space8) {
           Text(store.formatTemperatureShort(w.currentTemp))
-            .font(DesignTokens.Typography.compactTemp())
+            .scaledSystemFont(44, weight: .semibold, relativeTo: .largeTitle, maxScale: 1.3)
             .foregroundStyle(DesignTokens.Palette.textPrimary)
             .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
           Text(w.conditionText)

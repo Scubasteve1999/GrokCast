@@ -69,7 +69,7 @@ struct PaywallView: View {
   private var header: some View {
     VStack(alignment: .leading, spacing: DesignTokens.Spacing.space12) {
       Label(feature.headline, systemImage: feature.icon)
-        .font(DesignTokens.Typography.studioTitle())
+        .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
         .foregroundStyle(DesignTokens.Palette.textPrimary)
 
       Text(feature.subheadline)

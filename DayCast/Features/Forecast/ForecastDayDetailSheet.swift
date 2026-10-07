@@ -62,7 +62,7 @@ struct ForecastDayDetailSheet: View {
   private var headerBlock: some View {
     HStack(spacing: DesignTokens.Spacing.space16) {
       Image(systemName: condition.rowSymbolName(precipChance: forecast.precipChance))
-        .font(DesignTokens.Typography.compactTemp())
+        .scaledSystemFont(44, weight: .semibold, relativeTo: .largeTitle, maxScale: 1.3)
         .symbolRenderingMode(.multicolor)
         .accessibilityLabel(condition.displayText)
       VStack(alignment: .leading, spacing: 4) {
@@ -119,7 +119,7 @@ struct ForecastDayDetailSheet: View {
     detailCard(title: "UV Index") {
       if let uv = forecast.uvMax {
         Text("Max \(Int(round(uv)))")
-          .font(DesignTokens.Typography.studioTitle())
+          .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
           .monospacedDigit()
           .foregroundStyle(DesignTokens.Palette.textPrimary)
       }
@@ -164,7 +164,7 @@ struct ForecastDayDetailSheet: View {
         .font(DesignTokens.Typography.caption())
         .foregroundStyle(DesignTokens.Palette.textTertiary)
       Text(value)
-        .font(DesignTokens.Typography.studioTitle())
+        .scaledSystemFont(24, weight: .semibold, relativeTo: .title2, maxScale: 1.6)
         .monospacedDigit()
         .foregroundStyle(DesignTokens.Palette.textPrimary)
     }

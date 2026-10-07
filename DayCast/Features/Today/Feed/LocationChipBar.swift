@@ -25,6 +25,8 @@ struct LocationChipBar: View {
             Analytics.track(.feedCardTap, parameters: ["card": "location_chip"])
           } label: {
             Text(title)
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
               .font(
                 selected
                   ? DesignTokens.Typography.subsection() : DesignTokens.Typography.callout()

@@ -69,11 +69,9 @@ struct LocalBriefingSection: View {
 
   private var sectionTitle: some View {
     Text(YourNewsCopy.title)
-      .font(
-        sitsInSheet
-          ? DesignTokens.Typography.headline()
-          : DesignTokens.Typography.studioTitle()
-      )
+      .scaledSystemFont(
+        sitsInSheet ? 17 : 24, weight: .semibold,
+        relativeTo: sitsInSheet ? .headline : .title2, maxScale: 1.6)
       .foregroundStyle(DesignTokens.Palette.textPrimary)
       .accessibilityAddTraits(.isHeader)
   }

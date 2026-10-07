@@ -252,4 +252,16 @@ final class AccessibilityChromeTests: XCTestCase {
       detail: detail
     )
   }
+
+  func testSymbolSizesSnapToTheTextStyleThatMatchesAtLarge() {
+    typealias Typography = DesignTokens.Typography
+    XCTAssertEqual(Typography.symbolTextStyle(for: 12), .caption2)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 13), .footnote)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 15), .subheadline)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 16), .callout)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 17), .body)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 20), .title3)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 22), .title2)
+    XCTAssertEqual(Typography.symbolTextStyle(for: 28), .title)
+  }
 }
