@@ -263,12 +263,46 @@ enum AlertsLoadState: Equatable {
 
 struct NWSAlertsResponse: Decodable {
   let features: [NWSAlertFeature]
+
+  private enum CodingKeys: String, CodingKey {
+    case features
+  }
+
+  /// One malformed feature (null `event`, null `properties`) is skipped, not fatal:
+  /// a bad advisory must not drop the warning next to it. Same rule as push-agent `nws.ts`.
+  /// `"features": null` is no alerts. A non-object payload still throws.
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let lossy = try container.decodeIfPresent([LossyFeature].self, forKey: .features) ?? []
+    features = lossy.compactMap(\.feature)
+  }
+
+  private struct LossyFeature: Decodable {
+    let feature: NWSAlertFeature?
+
+    init(from decoder: Decoder) throws {
+      feature = try? NWSAlertFeature(from: decoder)
+    }
+  }
 }
 
 struct NWSAlertFeature: Decodable {
   let id: String?  // NWS-provided alert identifier (often a full URN/URL)
   let properties: NWSAlertProperties
   let geometry: NWSGeometry?  // for Radar map pins (rep point)
+
+  private enum CodingKeys: String, CodingKey {
+    case id
+    case properties
+    case geometry
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try? container.decodeIfPresent(String.self, forKey: .id)
+    properties = try container.decode(NWSAlertProperties.self, forKey: .properties)
+    geometry = try? container.decodeIfPresent(NWSGeometry.self, forKey: .geometry)
+  }
 }
 
 struct NWSAlertProperties: Decodable {
@@ -283,6 +317,45 @@ struct NWSAlertProperties: Decodable {
   let expires: String?
   let areaDesc: String?
   // Future: effective, onset, status, messageType, category, etc.
+
+  private enum CodingKeys: String, CodingKey {
+    case event
+    case severity
+    case urgency
+    case certainty
+    case headline
+    case description
+    case instruction
+    case sent
+    case expires
+    case areaDesc
+  }
+
+  /// `event` is the only required field. Optional fields that come back null or
+  /// mistyped decode as nil instead of failing the alert.
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    event = try container.decode(String.self, forKey: .event)
+    guard !event.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      throw DecodingError.dataCorruptedError(
+        forKey: .event, in: container, debugDescription: "Empty NWS alert event")
+    }
+    severity = Self.optionalString(container, .severity)
+    urgency = Self.optionalString(container, .urgency)
+    certainty = Self.optionalString(container, .certainty)
+    headline = Self.optionalString(container, .headline)
+    description = Self.optionalString(container, .description)
+    instruction = Self.optionalString(container, .instruction)
+    sent = Self.optionalString(container, .sent)
+    expires = Self.optionalString(container, .expires)
+    areaDesc = Self.optionalString(container, .areaDesc)
+  }
+
+  private static func optionalString(
+    _ container: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys
+  ) -> String? {
+    try? container.decodeIfPresent(String.self, forKey: key)
+  }
 }
 
 // MARK: - GeoJSON geometry (rep point for pins + rings for Live Radar warning boxes)

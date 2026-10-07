@@ -50,6 +50,12 @@ final class NWSService {
       throw NWSServiceError.httpError(http.statusCode, body)
     }
 
+    return try Self.alerts(from: data)
+  }
+
+  /// Decodes an `/alerts/active` body. Malformed features are skipped (see `NWSAlertsResponse`);
+  /// a payload that isn't an alerts object throws so callers keep last-known alerts.
+  static func alerts(from data: Data) throws -> [NWSAlert] {
     let decoder = JSONDecoder()
     // NWS alert timestamps are ISO-8601 (RFC3339).
     decoder.dateDecodingStrategy = .iso8601

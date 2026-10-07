@@ -267,6 +267,92 @@ final class NWSAlertTests: XCTestCase {
     XCTAssertNil(UserDefaults.standard.data(forKey: AlertHistoryStore.historyKey))
   }
 
+  // MARK: - /alerts/active decoding
+
+  func testAlertWithNullFieldsStillDecodes() throws {
+    let json = """
+      {
+        "features": [
+          {
+            "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.null-fields",
+            "geometry": null,
+            "properties": {
+              "event": "Tornado Warning",
+              "severity": null,
+              "urgency": null,
+              "certainty": null,
+              "headline": null,
+              "description": null,
+              "instruction": null,
+              "sent": null,
+              "expires": null,
+              "areaDesc": null
+            }
+          }
+        ]
+      }
+      """.data(using: .utf8)!
+
+    let alerts = try NWSService.alerts(from: json)
+
+    XCTAssertEqual(alerts.count, 1)
+    let alert = try XCTUnwrap(alerts.first)
+    XCTAssertEqual(alert.event, "Tornado Warning")
+    XCTAssertNil(alert.severity)
+    XCTAssertNil(alert.headline)
+    XCTAssertNil(alert.sent)
+    XCTAssertNil(alert.expires)
+    XCTAssertNil(alert.areaDesc)
+    XCTAssertNil(alert.latitude)
+    XCTAssertNil(alert.polygonCoordinates)
+  }
+
+  func testMalformedFeaturesAreSkippedNotFatal() throws {
+    let json = """
+      {
+        "features": [
+          { "id": "null-event", "properties": { "event": null, "severity": "Minor" } },
+          { "id": "empty-event", "properties": { "event": "  " } },
+          { "id": "null-properties", "properties": null },
+          {
+            "id": "mistyped-optionals",
+            "geometry": "not geojson",
+            "properties": { "event": "Flash Flood Warning", "severity": 3, "expires": false }
+          },
+          {
+            "id": "valid",
+            "properties": {
+              "event": "Severe Thunderstorm Warning",
+              "severity": "Severe",
+              "expires": "2026-10-07T23:45:00-05:00"
+            }
+          }
+        ]
+      }
+      """.data(using: .utf8)!
+
+    let alerts = try NWSService.alerts(from: json)
+
+    XCTAssertEqual(alerts.map(\.id), ["mistyped-optionals", "valid"])
+    XCTAssertEqual(alerts[0].event, "Flash Flood Warning")
+    XCTAssertNil(alerts[0].severity)
+    XCTAssertNil(alerts[0].expires)
+    XCTAssertNil(alerts[0].latitude)
+    XCTAssertEqual(alerts[1].severity, "Severe")
+    XCTAssertNotNil(alerts[1].expires)
+  }
+
+  func testNullFeaturesDecodesAsNoAlerts() throws {
+    let json = #"{ "features": null }"#.data(using: .utf8)!
+    XCTAssertEqual(try NWSService.alerts(from: json), [])
+  }
+
+  func testNonAlertPayloadStillThrowsSoLastKnownAlertsAreKept() {
+    // Callers treat a throw as a soft failure and keep last-known alerts.
+    XCTAssertThrowsError(try NWSService.alerts(from: Data("<html>503</html>".utf8)))
+    XCTAssertThrowsError(try NWSService.alerts(from: Data(#"["features"]"#.utf8)))
+  }
+
   override func tearDown() {
     UserDefaults.standard.removeObject(forKey: AlertHistoryStore.historyKey)
     UserDefaults.standard.removeObject(forKey: AlertHistoryStore.historyByLocationKey)
