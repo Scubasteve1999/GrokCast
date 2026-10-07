@@ -70,6 +70,7 @@ enum DayCastAccessibility {
   enum Radar {
     static let root = "daycast.radar.root"
     static let liveBadge = "daycast.radar.live"
+    static let hudLookingAt = "daycast.radar.hud.lookingAt"
     static let unavailableCard = "daycast.radar.unavailable"
     static let unavailableRetry = "daycast.radar.unavailableRetry"
   }

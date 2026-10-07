@@ -309,6 +309,7 @@ struct ChaseRadarHUD: View {
         .font(.caption)
         .foregroundStyle(DesignTokens.Palette.radarTextSecondary)
         .fixedSize(horizontal: false, vertical: true)
+        .accessibilityIdentifier(DayCastAccessibility.Radar.hudLookingAt)
 
         if let siteID = ChaseRadarHUDLogic.lookingAtSiteSecondary(
           product: radarState.selectedProduct,

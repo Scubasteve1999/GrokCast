@@ -178,6 +178,20 @@ class DayCastUITestCase: XCTestCase {
     ) == .completed
   }
 
+  /// Waits for `element`'s accessibility label to contain `text`. Observes the
+  /// live label, so a stale match from a previous state cannot satisfy it.
+  func waitForLabel(
+    of element: XCUIElement, containing text: String, timeout: TimeInterval = 30
+  ) -> Bool {
+    XCTWaiter.wait(
+      for: [
+        XCTNSPredicateExpectation(
+          predicate: NSPredicate(format: "label CONTAINS %@", text), object: element)
+      ],
+      timeout: timeout
+    ) == .completed
+  }
+
   /// HIG is 44pt. UIKit can report `43.999…` for a 44pt SwiftUI frame on 3×.
   func assertMinHitTarget(
     _ element: XCUIElement,

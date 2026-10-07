@@ -78,12 +78,15 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     let done = app.buttons["Done"]
     if done.waitForExistence(timeout: 4) { done.tap() }
 
-    let nationalHUD = app.staticTexts["National radar"]
+    // The HUD line is the only element with this identifier; wait on its label
+    // instead of any static text that happens to say "National radar".
+    let hud = app.staticTexts["daycast.radar.hud.lookingAt"].firstMatch
+    XCTAssertTrue(hud.waitForExistence(timeout: 30), "Radar HUD identity line missing")
     XCTAssertTrue(
-      nationalHUD.waitForExistence(timeout: 12),
-      "HUD did not switch to National radar"
+      waitForLabel(of: hud, containing: "National radar"),
+      "HUD did not switch to National radar (label: \(hud.label))"
     )
-    XCTAssertFalse(app.staticTexts["Mosaic"].waitForExistence(timeout: 1))
+    XCTAssertFalse(hud.label.contains("Mosaic"))
 
     XCTAssertTrue(layers.waitForExistence(timeout: 6))
     layers.tap()
@@ -91,10 +94,11 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     XCTAssertTrue(siteDoppler.waitForExistence(timeout: 8), "Site Doppler product missing")
     siteDoppler.tap()
     if done.waitForExistence(timeout: 4) { done.tap() }
-    XCTAssertFalse(
-      app.staticTexts["Mosaic"].waitForExistence(timeout: 3),
-      "Site Doppler HUD still says Mosaic"
+    XCTAssertTrue(
+      waitForLabel(of: hud, containing: "Site Doppler"),
+      "HUD did not switch to Site Doppler (label: \(hud.label))"
     )
+    XCTAssertFalse(hud.label.contains("Mosaic"), "Site Doppler HUD still says Mosaic")
   }
 
   // MARK: - 3. Sky Check entry from More
