@@ -135,6 +135,51 @@ final class YourNewsHeadlineTests: XCTestCase {
     XCTAssertEqual(item.displayTitle, "Storm chances return Monday.")
   }
 
+  func testLongHeadlineIsShortenedWithEllipsisAtWordBoundary() {
+    let long =
+      "Scattered showers and thunderstorms across the Mid-South through late Thursday evening and overnight"
+    let capped = YourNewsHeadline.cap(long)
+    XCTAssertTrue(capped.hasSuffix("\u{2026}"))
+    XCTAssertLessThanOrEqual(capped.count, YourNewsHeadline.maxCharacterCount)
+    let body = String(capped.dropLast())
+    XCTAssertTrue(long.hasPrefix(body), "cut must be a clean prefix, not mid-word")
+    let next = long[long.index(long.startIndex, offsetBy: body.count)]
+    XCTAssertEqual(next, " ")
+    XCTAssertFalse(body.hasSuffix(" "))
+  }
+
+  func testLongHeadlinePrefersClauseBoundaryAndDropsDanglingConnector() {
+    let clause =
+      "Heavy rain is likely across the northern Delta on Friday, with localized flooding possible by evening"
+    XCTAssertEqual(
+      YourNewsHeadline.cap(clause),
+      "Heavy rain is likely across the northern Delta on Friday\u{2026}")
+
+    let connector =
+      "Showers and storms spread across the Mid-South Thursday afternoon and into the"
+      + " overnight hours"
+    let capped = YourNewsHeadline.cap(connector)
+    let lastWord = capped.dropLast().split(separator: " ").last.map(String.init)?.lowercased()
+    XCTAssertFalse(["and", "into", "the", "of", "to"].contains(lastWord ?? ""))
+    XCTAssertLessThanOrEqual(capped.count, YourNewsHeadline.maxCharacterCount)
+  }
+
+  func testShortHeadlineIsNotTouched() {
+    XCTAssertEqual(YourNewsHeadline.cap("Storm chances return Monday."), "Storm chances return Monday.")
+    let exact = String(repeating: "a", count: YourNewsHeadline.maxCharacterCount)
+    XCTAssertEqual(YourNewsHeadline.cap(exact), exact)
+  }
+
+  func testDisplayTitleStaysWithinCapAndEndsInEllipsisWhenShortened() {
+    let item = megItem(
+      title:
+        "Gusty winds and scattered showers are expected across the Mid-South through late Thursday evening"
+    )
+    XCTAssertLessThanOrEqual(item.displayTitle.count, YourNewsHeadline.maxCharacterCount)
+    XCTAssertTrue(item.displayTitle.hasSuffix("\u{2026}"))
+    XCTAssertFalse(item.displayTitle.contains(".\u{2026}"))
+  }
+
   private func megItem(title: String, product: String = "AFD", imageURL: URL? = nil)
     -> LocalBriefingItem
   {

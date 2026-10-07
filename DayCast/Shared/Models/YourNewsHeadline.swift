@@ -113,13 +113,45 @@ enum YourNewsHeadline {
     return trimmed.isEmpty ? "NWS" : trimmed
   }
 
-  private static func cap(_ text: String) -> String {
+  private static let clauseBreaks: Set<Character> = [",", ";", ":", "\u{2014}", "\u{2013}"]
+  private static let minClauseLength = 40
+  private static let danglingWords: Set<String> = [
+    "a", "an", "and", "or", "but", "of", "the", "to", "in", "on", "at", "for", "with",
+    "by", "from", "as", "is", "are", "will", "into", "than", "then", "that",
+  ]
+
+  /// Shortens at a clause (preferred) or word boundary and marks the cut with "…".
+  /// The ellipsis counts toward `maxCharacterCount`.
+  static func cap(_ text: String) -> String {
     guard text.count > maxCharacterCount else { return text }
-    let prefix = String(text.prefix(maxCharacterCount))
-    if let space = prefix.lastIndex(of: " "), space > prefix.startIndex {
-      return collapse(String(prefix[..<space]))
+    let budget = maxCharacterCount - 1
+    let window = String(text.prefix(budget))
+    var cut = window
+
+    if let clause = window.lastIndex(where: { clauseBreaks.contains($0) }),
+      window.distance(from: window.startIndex, to: clause) >= minClauseLength
+    {
+      cut = String(window[..<clause])
+    } else {
+      let next = text[text.index(text.startIndex, offsetBy: budget)]
+      if !next.isWhitespace, let space = window.lastIndex(of: " "), space > window.startIndex {
+        cut = String(window[..<space])
+      }
     }
-    return collapse(prefix)
+
+    var words = collapse(cut).split(separator: " ").map(String.init)
+    while let last = words.last {
+      let bare = last.trimmingCharacters(in: .punctuationCharacters).lowercased()
+      if bare.isEmpty || danglingWords.contains(bare) {
+        words.removeLast()
+      } else {
+        break
+      }
+    }
+    guard !words.isEmpty else { return collapse(window) + "\u{2026}" }
+    let joined = words.joined(separator: " ")
+    return joined.trimmingCharacters(in: .punctuationCharacters.union(.whitespaces))
+      + "\u{2026}"
   }
 
   private static func collapse(_ string: String) -> String {
