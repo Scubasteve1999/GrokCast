@@ -1,5 +1,7 @@
 # Cutover hygiene checklist — RRFS/REFS go-live (Dig 5)
 
+**Status: Done (2026-10-06).** Shipped in `e4bb878`; pushed to `main`. Tests green: 928 unit, 9 UI (UI fixes in `aa5a1b3`, `8a3cb60`, `6006dec`).
+
 Repo: `~/Projects/GrokCast`. Cutover: Wed Oct 14, 2026, 1200 UTC (SCN 26-48 AAD). Same day NAM, SREF, HREF, HiresW (except Guam) retire; RAP and HRRR stay. Slip rule: if Oct 14 is a Critical Weather Day / Enhanced Caution, NWS moves to 1200 UTC on the next clear weekday.
 
 ## Found
