@@ -203,10 +203,56 @@ enum RadarPreviewSource {
   /// Today Outlook plate map. Taller than the 72pt stamp; pills overlay so
   /// Your News can still peek the header on iPhone 16.
   static let outlookPlateHeight: CGFloat = 168
-  /// Buried National teaser — same CONUS floor Live uses when local is dry.
-  static var previewZoom: Double { RadarLiveCameraPolicy.conusZoom }
+  /// National teaser frames the selected location at roughly a metro / region scale
+  /// (about 200 km across) instead of the whole country, so the dot and nearby rain read.
+  static let metroZoom: Double = 7.0
+  static var previewZoom: Double { metroZoom }
   /// Hoisted Site Doppler — same ~120 mi frame Live uses for wet local.
   static var siteZoom: Double { RadarLiveCameraPolicy.localZoom }
+
+  static let youAreHereSourceID = "teaser-you-are-here"
+  static let youAreHereHaloLayerID = "teaser-you-are-here-halo"
+  static let youAreHereDotLayerID = "teaser-you-are-here-dot"
+
+  static func youAreHereFeature(at coordinate: CLLocationCoordinate2D) -> Feature {
+    Feature(geometry: .point(Point(coordinate)))
+  }
+
+  /// Blue dot with a white ring at the selected location. Idempotent: creates the layers
+  /// once, then only moves the point and lifts the dot back above any rain painted later.
+  static func ensureYouAreHere(on mapView: MapView, at coordinate: CLLocationCoordinate2D) {
+    guard let map: MapboxMap = mapView.mapboxMap, map.isStyleLoaded else { return }
+    let data = GeoJSONSourceData.feature(youAreHereFeature(at: coordinate))
+    do {
+      if map.sourceExists(withId: youAreHereSourceID) {
+        map.updateGeoJSONSource(withId: youAreHereSourceID, data: data)
+      } else {
+        var source = GeoJSONSource(id: youAreHereSourceID)
+        source.data = data
+        try map.addSource(source)
+      }
+      if !map.layerExists(withId: youAreHereHaloLayerID) {
+        var halo = CircleLayer(id: youAreHereHaloLayerID, source: youAreHereSourceID)
+        halo.circleRadius = .constant(14)
+        halo.circleColor = .constant(StyleColor(UIColor(red: 0.25, green: 0.55, blue: 1, alpha: 1)))
+        halo.circleOpacity = .constant(0.28)
+        try map.addLayer(halo)
+      }
+      if !map.layerExists(withId: youAreHereDotLayerID) {
+        var dot = CircleLayer(id: youAreHereDotLayerID, source: youAreHereSourceID)
+        dot.circleRadius = .constant(6)
+        dot.circleColor = .constant(StyleColor(UIColor(red: 0.25, green: 0.55, blue: 1, alpha: 1)))
+        dot.circleStrokeWidth = .constant(2)
+        dot.circleStrokeColor = .constant(StyleColor(.white))
+        try map.addLayer(dot)
+      } else {
+        try map.moveLayer(withId: youAreHereHaloLayerID, to: .default)
+        try map.moveLayer(withId: youAreHereDotLayerID, to: .default)
+      }
+    } catch {
+      radarLog("[Radar] Today you-are-here dot failed: \(error)")
+    }
+  }
 
   static var mapboxTokenPresent: Bool {
     guard let token = DeveloperAPIKey.mapbox, !token.isEmpty else { return false }
@@ -268,6 +314,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
 
     let coordinator = context.coordinator
     coordinator.showsFuture = showsFuture
+    coordinator.center = center
     coordinator.host.onLayerStateChange = { [weak coordinator] in
       guard let coordinator else { return }
       coordinator.host.syncPreview(
@@ -287,6 +334,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
 
   func updateUIView(_ mapView: MapView, context: Context) {
     context.coordinator.showsFuture = showsFuture
+    context.coordinator.center = center
     let current = mapView.mapboxMap.cameraState.center
     let moved =
       abs(current.latitude - center.latitude) > 0.01
@@ -300,6 +348,7 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       opacity: RadarPreviewSource.previewOpacity,
       future: showsFuture
     )
+    RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
   }
 
   static func dismantleUIView(_ uiView: MapView, coordinator: Coordinator) {
@@ -318,11 +367,14 @@ private struct RadarPreviewMapboxMap: UIViewRepresentable {
       return host
     }()
 
+    var center = CLLocationCoordinate2D()
+
     func attachRain(to mapView: MapView) {
       RadarPreviewSource.configureTeaser(mapView)
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
       host.syncPreview(opacity: RadarPreviewSource.previewOpacity, future: showsFuture)
       host.attach(to: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }
   }
 }
@@ -364,9 +416,11 @@ private struct RadarPreviewNationalTileMap: UIViewRepresentable {
       RadarPreviewSource.configureTeaser(mapView)
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
       coordinator.installRaster(on: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }.store(in: &coordinator.styleObservers)
     if mapView.mapboxMap.isStyleLoaded {
       coordinator.installRaster(on: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }
     return mapView
   }
@@ -384,6 +438,7 @@ private struct RadarPreviewNationalTileMap: UIViewRepresentable {
     context.coordinator.pendingFrame = frame
     if mapView.mapboxMap.isStyleLoaded {
       context.coordinator.installRaster(on: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }
   }
 
@@ -489,10 +544,12 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
       RadarPreviewSource.configureTeaser(mapView)
       RadarPreviewSource.previewBaseMap.applyQuietWorkstation(to: mapView)
       coordinator.applySweep(sweep, on: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }.store(in: &coordinator.styleObservers)
     coordinator.onPolarFailed = onPolarFailed
     if mapView.mapboxMap.isStyleLoaded {
       coordinator.applySweep(sweep, on: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }
     return mapView
   }
@@ -510,6 +567,7 @@ private struct RadarPreviewSiteMap: UIViewRepresentable {
     }
     if mapView.mapboxMap.isStyleLoaded {
       context.coordinator.applySweep(sweep, on: mapView)
+      RadarPreviewSource.ensureYouAreHere(on: mapView, at: center)
     }
   }
 

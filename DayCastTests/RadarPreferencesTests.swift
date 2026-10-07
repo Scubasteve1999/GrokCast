@@ -1,3 +1,5 @@
+import CoreLocation
+import MapboxMaps
 import XCTest
 
 @testable import DayCast
@@ -64,9 +66,26 @@ final class RadarPreferencesTests: XCTestCase {
     }
   }
 
+  func testTodayRadarTeaserIsLocalWithAYouAreHereDot() {
+    XCTAssertGreaterThan(
+      RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom,
+      "The teaser must not show the whole country")
+    XCTAssertGreaterThanOrEqual(
+      RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.localZoom,
+      "The teaser is at least as close as Site Doppler")
+
+    let memphis = CLLocationCoordinate2D(latitude: 35.1495, longitude: -90.0490)
+    let feature = RadarPreviewSource.youAreHereFeature(at: memphis)
+    guard case .point(let point) = feature.geometry else {
+      return XCTFail("Dot must be a point feature")
+    }
+    XCTAssertEqual(point.coordinates.latitude, memphis.latitude, accuracy: 1e-9)
+    XCTAssertEqual(point.coordinates.longitude, memphis.longitude, accuracy: 1e-9)
+  }
+
   func testTodayRadarPreviewUsesMapsGLOnDark() {
     XCTAssertEqual(RadarPreviewSource.previewBaseMap, .dark)
-    XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
+    XCTAssertEqual(RadarPreviewSource.previewZoom, RadarPreviewSource.metroZoom)
     XCTAssertTrue(RadarPreviewSource.usesMapsGL(keysPresent: true))
     XCTAssertFalse(RadarPreviewSource.usesMapsGL(keysPresent: false))
     XCTAssertEqual(RadarPreviewSource.previewOpacity, RadarPreferences.radarOpacity)

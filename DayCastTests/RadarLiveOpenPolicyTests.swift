@@ -294,7 +294,7 @@ final class RadarLiveOpenPolicyTests: XCTestCase {
       .unavailable
     )
     XCTAssertEqual(RadarPreviewSource.siteZoom, RadarLiveCameraPolicy.localZoom)
-    XCTAssertEqual(RadarPreviewSource.previewZoom, RadarLiveCameraPolicy.conusZoom)
+    XCTAssertEqual(RadarPreviewSource.previewZoom, RadarPreviewSource.metroZoom)
     XCTAssertEqual(RadarPreviewSource.teaserHeight, 72)
     XCTAssertEqual(RadarPreviewSource.outlookPlateHeight, 168)
     XCTAssertEqual(RadarPreviewPaint.reservedPlateHeight, 168)
