@@ -166,6 +166,30 @@ enum ForecastEraNotice {
     }
   }
 
+  /// NCEP and the Mid-South audience think in Central time. "CT" is literal so it
+  /// reads the same through CST/CDT.
+  static let displayTimeZone = TimeZone(identifier: "America/Chicago") ?? .current
+
+  /// "Oct 14, 2026, 7 AM CT". Minutes only when non-zero. Follows the remote `cutoverUTC`.
+  static func formattedCutoverDateTime(_ date: Date, locale: Locale = .current) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.timeZone = displayTimeZone
+    let onTheHour = Calendar(identifier: .gregorian).dateComponents(in: displayTimeZone, from: date)
+      .minute == 0
+    formatter.dateFormat = onTheHour ? "MMM d, yyyy, h a" : "MMM d, yyyy, h:mm a"
+    return formatter.string(from: date) + " CT"
+  }
+
+  /// "Oct 14" (Central), for compact labels.
+  static func formattedCutoverShort(_ date: Date, locale: Locale = .current) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.timeZone = displayTimeZone
+    formatter.dateFormat = "MMM d"
+    return formatter.string(from: date)
+  }
+
   static func formattedCutover(_ date: Date, locale: Locale = .current) -> String {
     let formatter = DateFormatter()
     formatter.locale = locale
@@ -176,12 +200,29 @@ enum ForecastEraNotice {
   }
 
   enum Copy {
-    static let banner = "Upstream NWS short-range models are changing"
     static let cardTitle = "What this means"
+    static var settingsRowTitle: String { settingsRowTitle(for: ForecastEraNotice.effective()) }
+
+    static func settingsRowTitle(for config: EraNoticeConfig, locale: Locale = .current) -> String {
+      "NWS model change (\(ForecastEraNotice.formattedCutoverShort(config.cutoverUTC, locale: locale)))"
+    }
+
+    /// One line so the banner keeps its 20pt budget. Dated from the remote cutover.
+    static var banner: String { banner(for: ForecastEraNotice.effective()) }
+
+    static func banner(for config: EraNoticeConfig, locale: Locale = .current) -> String {
+      let date = ForecastEraNotice.formattedCutoverDateTime(config.cutoverUTC, locale: locale)
+      switch config.status {
+      case .scheduled: return "Upstream NWS models change \(date)"
+      case .slipped: return "Upstream NWS model change moved to \(date)"
+      case .done: return "Upstream NWS models changed \(date)"
+      }
+    }
+
     static var opener: String { opener(for: ForecastEraNotice.effective()) }
 
     static func opener(for config: EraNoticeConfig, locale: Locale = .current) -> String {
-      let date = ForecastEraNotice.formattedCutover(config.cutoverUTC, locale: locale)
+      let date = ForecastEraNotice.formattedCutoverDateTime(config.cutoverUTC, locale: locale)
       switch config.status {
       case .scheduled:
         return

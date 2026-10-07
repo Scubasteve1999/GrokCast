@@ -398,7 +398,8 @@ struct SettingsView: View {
           Haptic.impact(.light)
           showForecastEraNotice = true
         } label: {
-          settingsChevronRow(title: ForecastEraNotice.Copy.cardTitle, icon: "building.columns")
+          settingsChevronRow(
+            title: ForecastEraNotice.Copy.settingsRowTitle, icon: "building.columns")
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(DayCastAccessibility.Settings.forecastEraNotice)

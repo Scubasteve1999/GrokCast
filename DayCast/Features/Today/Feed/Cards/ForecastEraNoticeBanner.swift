@@ -17,7 +17,7 @@ struct ForecastEraNoticeBanner: View {
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(primaryColor)
             .lineLimit(1)
-            .minimumScaleFactor(0.85)
+            .minimumScaleFactor(0.75)
             .frame(maxWidth: .infinity, alignment: .leading)
           Image(systemName: "chevron.right")
             .font(DesignTokens.Typography.caption())
