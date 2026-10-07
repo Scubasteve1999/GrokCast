@@ -1,3 +1,4 @@
+import CoreLocation
 import XCTest
 
 @testable import DayCast
@@ -252,6 +253,109 @@ extension WeatherStoreFallbackTests {
     gate.finish(.success(taggedWeather(olive)))
     await first.value
     XCTAssertNil(store.currentWeather)
+  }
+
+  // MARK: - Near Me one-shot refresh
+
+  /// `applyNearMeFix` persists the moved pin; restore so later tests and UI runs
+  /// never inherit it.
+  private func preservingLocationDefaults(_ body: () async throws -> Void) async rethrows {
+    let key = WidgetDataStore.savedLocationsKey
+    let entryKey = "daycast_device_location_entry_id"
+    let standardBefore = UserDefaults.standard.data(forKey: key)
+    let groupBefore = WidgetAppGroup.userDefaults?.data(forKey: key)
+    let entryBefore = UserDefaults.standard.string(forKey: entryKey)
+    defer {
+      UserDefaults.standard.set(standardBefore, forKey: key)
+      WidgetAppGroup.userDefaults?.set(groupBefore, forKey: key)
+      UserDefaults.standard.set(entryBefore, forKey: entryKey)
+    }
+    try await body()
+  }
+
+  func testNearMeMovedMeaningfullyIgnoresJitter() {
+    let pin = SavedLocation(
+      name: "Near Me", latitude: olive.latitude, longitude: olive.longitude, isCurrent: true)
+    let jitter = CLLocation(latitude: olive.latitude + 0.00045, longitude: olive.longitude)  // ~50 m
+    let drive = CLLocation(latitude: olive.latitude + 0.045, longitude: olive.longitude)  // ~5 km
+    XCTAssertFalse(WeatherStore.nearMeMovedMeaningfully(from: pin, to: jitter))
+    XCTAssertTrue(WeatherStore.nearMeMovedMeaningfully(from: pin, to: drive))
+  }
+
+  @MainActor
+  func testNearMeFixThatMovedReloadsWeatherForTheNewLocation() async throws {
+    try await preservingLocationDefaults {
+      var fetched: [SavedLocation] = []
+      let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { location, _ in
+        fetched.append(location)
+        return self.taggedWeather(location)
+      }))
+      let pin = SavedLocation(
+        name: "Olive Branch, MS", latitude: olive.latitude, longitude: olive.longitude,
+        isCurrent: true)
+      store.savedLocations = [pin]
+      store.currentLocation = pin
+      store.currentWeather = taggedWeather(pin)
+      let before = Date()
+      let fix = CLLocation(latitude: olive.latitude + 0.045, longitude: olive.longitude)
+
+      let moved = await store.applyNearMeFix(fix, name: "Southaven, MS")
+
+      XCTAssertTrue(moved)
+      XCTAssertEqual(store.currentLocation?.latitude, fix.coordinate.latitude)
+      XCTAssertEqual(store.currentLocation?.name, "Southaven, MS")
+      XCTAssertEqual(fetched.map(\.latitude), [fix.coordinate.latitude])
+      // "Updated" reads `fetchedAt` from weather fetched at the fix, not the old pin.
+      let shown = try XCTUnwrap(store.displayedWeather)
+      XCTAssertEqual(shown.location.latitude, fix.coordinate.latitude)
+      XCTAssertGreaterThanOrEqual(shown.fetchedAt, before)
+      // The pin moved in place: no stray named city takes a free slot.
+      XCTAssertEqual(store.savedLocations.count, 1)
+      XCTAssertEqual(store.savedLocations.first?.id, pin.id)
+      XCTAssertEqual(EntitlementChecker.namedSavedCount(in: store.savedLocations), 0)
+    }
+  }
+
+  @MainActor
+  func testNearMeFixWithinThresholdDoesNotReload() async {
+    var fetchCount = 0
+    let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { location, _ in
+      fetchCount += 1
+      return self.taggedWeather(location)
+    }))
+    let pin = SavedLocation(
+      name: "Olive Branch, MS", latitude: olive.latitude, longitude: olive.longitude,
+      isCurrent: true)
+    store.savedLocations = [pin]
+    store.currentLocation = pin
+    let jitter = CLLocation(latitude: olive.latitude + 0.00045, longitude: olive.longitude)
+
+    let moved = await store.applyNearMeFix(jitter, name: "Somewhere")
+
+    XCTAssertFalse(moved)
+    XCTAssertEqual(fetchCount, 0)
+    XCTAssertEqual(store.currentLocation?.latitude, pin.latitude)
+    XCTAssertEqual(store.currentLocation?.name, "Olive Branch, MS")
+  }
+
+  @MainActor
+  func testNearMeRefreshSkipsWhenANamedCityIsSelected() async {
+    var fetchCount = 0
+    let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { location, _ in
+      fetchCount += 1
+      return self.taggedWeather(location)
+    }))
+    store.savedLocations = [seattle]
+    store.currentLocation = seattle
+    let farAway = CLLocation(latitude: olive.latitude, longitude: olive.longitude)
+
+    let refreshed = await store.refreshNearMeLocationIfNeeded()
+    let applied = await store.applyNearMeFix(farAway, name: "Olive Branch, MS")
+
+    XCTAssertFalse(refreshed)
+    XCTAssertFalse(applied)
+    XCTAssertEqual(fetchCount, 0)
+    XCTAssertEqual(store.currentLocation?.id, seattle.id)
   }
 
   @MainActor

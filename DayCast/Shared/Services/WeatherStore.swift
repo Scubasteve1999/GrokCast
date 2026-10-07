@@ -461,6 +461,12 @@ final class WeatherStore {
   /// Coalesces first-run auto GPS so Allow + .task cannot request location twice.
   private var deviceLocationAcquireTask: Task<Void, Never>?
 
+  /// Coalesces the launch / foreground Near Me one-shot fix.
+  private var nearMeRefreshTask: Task<Bool, Never>?
+
+  /// Near Me reloads weather only past this distance — same ~1 km as the 0.01° pin match.
+  nonisolated static let nearMeRefreshDistance: CLLocationDistance = 1_000
+
   /// Shared Grok AI view model — survives tab switches so in-flight streams and history persist.
   private var _grokAIViewModel: GrokAIViewModel?
   var grokAIViewModel: GrokAIViewModel {
@@ -497,7 +503,10 @@ final class WeatherStore {
       }
 
       if self.isLocationAuthorized {
-        if self.currentWeather == nil {
+        if await self.refreshNearMeLocationIfNeeded() {
+          // Near Me moved: weather already reloaded for the fresh fix, so
+          // "Updated" belongs to the location actually used.
+        } else if self.currentWeather == nil {
           await self.refreshWeather()
         } else {
           // Stale-while-revalidate: cached snapshot already on screen; refresh quietly.
@@ -869,6 +878,68 @@ final class WeatherStore {
         return
       }
       lastSignificantRefreshDate = now
+      await refreshWeather()
+    }
+  }
+
+  // MARK: - Near Me one-shot refresh (When In Use)
+
+  /// True when `fix` is far enough from the Near Me pin to reload weather.
+  nonisolated static func nearMeMovedMeaningfully(
+    from pin: SavedLocation, to fix: CLLocation
+  ) -> Bool {
+    let pinLocation = CLLocation(latitude: pin.latitude, longitude: pin.longitude)
+    return fix.distance(from: pinLocation) >= nearMeRefreshDistance
+  }
+
+  /// Launch and foreground: one-shot fix for Near Me with When In Use or Always.
+  /// Significant Location Changes need Always, so this is the When In Use path.
+  /// Never requests Always and never surfaces errors. Returns true when the pin
+  /// moved and weather was reloaded for the new fix.
+  @MainActor
+  @discardableResult
+  func refreshNearMeLocationIfNeeded() async -> Bool {
+    guard currentLocation?.isCurrent == true, isLocationAuthorized else { return false }
+    if let inFlight = nearMeRefreshTask { return await inFlight.value }
+
+    let task = Task<Bool, Never> { @MainActor in
+      defer { self.nearMeRefreshTask = nil }
+      // Simulator: `requestLocation()` returns the pinned Olive Branch, so this is a no-op.
+      guard let fix = try? await self.locationService.requestLocation(),
+        let pin = self.currentLocation, pin.isCurrent,
+        Self.nearMeMovedMeaningfully(from: pin, to: fix)
+      else { return false }
+      let name = await self.locationService.reverseGeocode(fix)
+      return await self.applyNearMeFix(fix, name: name)
+    }
+    nearMeRefreshTask = task
+    return await task.value
+  }
+
+  /// Moves the Near Me pin to `fix` and reloads weather there. False when Near Me
+  /// is not selected or `fix` is within `nearMeRefreshDistance` of the pin.
+  @MainActor
+  func applyNearMeFix(_ fix: CLLocation, name: String?) async -> Bool {
+    guard let pin = currentLocation, pin.isCurrent,
+      Self.nearMeMovedMeaningfully(from: pin, to: fix)
+    else { return false }
+    // Move this pin in place. Otherwise a promoted pin (e.g. first-run Olive Branch)
+    // would be demoted to a named city and take a free user's saved slot.
+    deviceLocationEntryID = pin.id
+    updateCurrentDeviceLocationEntry(using: fix, name: name ?? "Current Location")
+    currentLocation = savedLocations.first(where: { $0.isCurrent }) ?? currentLocation
+    await refreshWeather()
+    lastSignificantRefreshDate = Date()
+    return true
+  }
+
+  /// scenePhase `.active` after launch. Near Me gets a fresh fix; if it did not
+  /// move but weather is stale, refresh in place so "Updated" stays honest.
+  @MainActor
+  func handleSceneDidBecomeActive() async {
+    guard hasCompletedInitialLoad, currentLocation?.isCurrent == true else { return }
+    if await refreshNearMeLocationIfNeeded() { return }
+    if let fetchedAt = displayedWeather?.fetchedAt, WidgetRelativeTime.isStale(fetchedAt) {
       await refreshWeather()
     }
   }

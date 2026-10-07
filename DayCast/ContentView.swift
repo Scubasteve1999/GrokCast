@@ -3,6 +3,7 @@ import SwiftUI
 struct MainTabView: View {
   @Environment(WeatherStore.self) private var store
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @Environment(\.scenePhase) private var scenePhase
   @State private var suppressTabBar = false
   @State private var showMoreHub = false
   @State private var moreHubDetent: PresentationDetent = MoreHubPresentation.defaultDetent
@@ -46,6 +47,12 @@ struct MainTabView: View {
       .onChange(of: store.locationService.authorizationStatus) { _, _ in
         store.noteAuthorizationMayNeedDeviceLocation()
         Task { await store.handleLocationAuthorizationChange() }
+      }
+      .onChange(of: scenePhase) { _, newPhase in
+        // Not fired for the initial value — cold launch goes through `.task`.
+        if newPhase == .active {
+          Task { await store.handleSceneDidBecomeActive() }
+        }
       }
       .appReviewPrompting()
       .onAppear {
