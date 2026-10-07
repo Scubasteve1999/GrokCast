@@ -11,7 +11,7 @@ struct LocationChipBar: View {
     // Explicit fill (not `.background`) so the plate composites above the
     // scrolling feed. Overlay Color backgrounds lose that fight on iOS 26.
     ZStack(alignment: .bottom) {
-      Color.black.opacity(0.22)
+      Self.plate
 
       // No horizontal ScrollView: inset ScrollViews only publish the selected
       // chip to VoiceOver. A wrapping HStack keeps every visible city a button.
@@ -72,7 +72,7 @@ struct LocationChipBar: View {
     .frame(maxWidth: .infinity)
     .fixedSize(horizontal: false, vertical: true)
     .background(alignment: .top) {
-      Color.black.opacity(0.22)
+      Self.plate
         .frame(height: Self.navOverlap)
         .offset(y: -Self.navOverlap)
         .allowsHitTesting(false)
@@ -86,6 +86,15 @@ struct LocationChipBar: View {
       }
       .presentationDetents([.medium, .large])
       .presentationDragIndicator(.visible)
+    }
+  }
+
+  /// Blurs the feed (Your News, the radar LIVE badge) instead of letting it read
+  /// through a thin scrim as it scrolls underneath.
+  private static var plate: some View {
+    ZStack {
+      Rectangle().fill(.ultraThinMaterial)
+      Color.black.opacity(0.22)
     }
   }
 
