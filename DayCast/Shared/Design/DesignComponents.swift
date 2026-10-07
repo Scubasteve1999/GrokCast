@@ -232,6 +232,12 @@ struct MoreHubSheet: View {
     }
   }
 
+  /// Named cities only. The GPS Near Me pin is not a saved place.
+  static func savedPlacesSubtitle(for locations: [SavedLocation]) -> String {
+    let count = EntitlementChecker.namedSavedCount(in: locations)
+    return "\(count) saved place\(count == 1 ? "" : "s")"
+  }
+
   private func moreSubtitle(for tab: WeatherStore.Tab) -> String {
     switch tab {
     case .grok:
@@ -242,7 +248,7 @@ struct MoreHubSheet: View {
         )
       )
     case .locations:
-      "\(store.savedLocations.count) saved place\(store.savedLocations.count == 1 ? "" : "s")"
+      Self.savedPlacesSubtitle(for: store.savedLocations)
     case .settings: "Units, alerts, privacy"
     default: ""
     }

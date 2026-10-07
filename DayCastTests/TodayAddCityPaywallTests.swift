@@ -123,6 +123,47 @@ final class TodayAddCityPaywallTests: XCTestCase {
     XCTAssertEqual(store.currentLocation?.id, seattle.id)
   }
 
+  /// Regression: a free user's first named city must not replace Near Me.
+  /// After adding Seattle, GPS stays the Current row, Saved lists Seattle
+  /// (selected), and the More hub counts one saved place.
+  func testFreeUserAddingFirstCityKeepsNearMeAndListsTheCity() throws {
+    // `addLocation` persists; restore both stores so later tests and UI runs
+    // never see this fixture.
+    let key = WidgetDataStore.savedLocationsKey
+    let standardBefore = UserDefaults.standard.data(forKey: key)
+    let groupBefore = WidgetAppGroup.userDefaults?.data(forKey: key)
+    defer {
+      UserDefaults.standard.set(standardBefore, forKey: key)
+      WidgetAppGroup.userDefaults?.set(groupBefore, forKey: key)
+    }
+
+    let store = WeatherStore(loadPersistedState: false)
+    store.savedLocations = [gps]
+    store.currentLocation = gps
+    let result = try XCTUnwrap(
+      CitySearch.result(
+        name: "Seattle, WA", subtitle: nil, latitude: 47.6062, longitude: -122.3321)
+    )
+    var presented = false
+    let selection = LocationSearchFlow.apply(
+      result: result,
+      store: store,
+      isPro: false,
+      presentPaywall: { presented = true }
+    )
+
+    XCTAssertEqual(selection, .add)
+    XCTAssertFalse(presented)
+    XCTAssertEqual(store.currentLocation?.name, "Seattle, WA")
+    XCTAssertEqual(
+      store.savedLocations.first(where: \.isCurrent)?.id, gps.id,
+      "Near Me must survive adding a city")
+    let listed = CitySearch.listedSavedLocations(from: store.savedLocations)
+    XCTAssertEqual(listed.map(\.name), ["Seattle, WA"])
+    XCTAssertEqual(listed.first?.id, store.currentLocation?.id, "selected city gets the checkmark")
+    XCTAssertEqual(MoreHubSheet.savedPlacesSubtitle(for: store.savedLocations), "1 saved place")
+  }
+
   func testTodayChipPresentsLocationsPaywallWithTodayChipSource() {
     PaywallCoordinator.shared.present(.locations, source: .todayChip)
     XCTAssertTrue(PaywallCoordinator.shared.isPresented)

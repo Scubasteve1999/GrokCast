@@ -28,8 +28,12 @@ struct LocationsView: View {
 
   /// Observed on this view so Saved empty/list is not stuck on first paint.
   private var listedSaved: [SavedLocation] {
-    CitySearch.listedSavedLocations(
-      from: store.savedLocations, current: store.currentLocation)
+    CitySearch.listedSavedLocations(from: store.savedLocations)
+  }
+
+  /// GPS pin. Always the Current row — never whichever named city is selected.
+  private var nearMeLocation: SavedLocation? {
+    store.savedLocations.first(where: \.isCurrent)
   }
 
   private var prefersFigmaLayout: Bool {
@@ -191,17 +195,20 @@ struct LocationsView: View {
       FigmaSectionLabel(title: "Current location")
 
       SettingsGroupCard {
-        if let current = store.currentLocation {
+        if let gps = nearMeLocation {
           LocationRow(
-            location: current,
-            isSelected: true,
+            location: gps,
+            isSelected: store.currentLocation?.id == gps.id,
             layout: .figma,
-            weather: weatherSnapshot(for: current)
-          )
-            .padding(.horizontal, DesignTokens.Spacing.space16)
-        }
+            weather: weatherSnapshot(for: gps)
+          ) {
+            store.selectLocation(gps)
+          }
+          .padding(.horizontal, DesignTokens.Spacing.space16)
+          .accessibilityIdentifier(DayCastAccessibility.Locations.nearMeRow)
 
-        SettingsDivider()
+          SettingsDivider()
+        }
 
         Button {
           Task { await store.useCurrentDeviceLocation() }
@@ -235,6 +242,7 @@ struct LocationsView: View {
             .font(DesignTokens.Typography.callout())
             .foregroundStyle(DesignTokens.Palette.textSecondary)
             .padding(DesignTokens.Spacing.space16)
+            .accessibilityIdentifier(DayCastAccessibility.Locations.emptySaved)
         } else {
           ForEach(Array(listedSaved.enumerated()), id: \.element.id) { index, loc in
             if index > 0 { SettingsDivider() }
@@ -292,12 +300,15 @@ struct LocationsView: View {
 
   private var currentLocationSection: some View {
     Section("Current Location") {
-      if let current = store.currentLocation {
+      if let gps = nearMeLocation {
         LocationRow(
-          location: current,
-          isSelected: true,
-          weather: weatherSnapshot(for: current)
-        )
+          location: gps,
+          isSelected: store.currentLocation?.id == gps.id,
+          weather: weatherSnapshot(for: gps)
+        ) {
+          store.selectLocation(gps)
+        }
+        .accessibilityIdentifier(DayCastAccessibility.Locations.nearMeRow)
       }
       Button {
         Task { await store.useCurrentDeviceLocation() }
@@ -436,8 +447,7 @@ struct LocationsView: View {
   }
 
   private func deleteLocations(at offsets: IndexSet) {
-    let saved = CitySearch.listedSavedLocations(
-      from: store.savedLocations, current: store.currentLocation)
+    let saved = CitySearch.listedSavedLocations(from: store.savedLocations)
     for index in offsets {
       store.removeLocation(saved[index])
     }
@@ -576,6 +586,7 @@ struct LocationRow: View {
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Self.accessibilityLabel(for: location, weather: weather))
     .accessibilityAddTraits(onTap == nil ? [] : .isButton)
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
     .accessibilityHint(onTap == nil ? "" : "Shows weather for this city")
   }
 
@@ -650,9 +661,16 @@ struct LocationRow: View {
 
       weatherTrailing
 
-      Image(systemName: "chevron.right")
-        .font(DesignTokens.Typography.caption())
-        .foregroundStyle(DesignTokens.Palette.textTertiary)
+      if isSelected {
+        Image(systemName: "checkmark.circle.fill")
+          .font(DesignTokens.Typography.symbol(16))
+          .foregroundStyle(DesignTokens.Palette.accent)
+          .accessibilityHidden(true)
+      } else {
+        Image(systemName: "chevron.right")
+          .font(DesignTokens.Typography.caption())
+          .foregroundStyle(DesignTokens.Palette.textTertiary)
+      }
     }
     .padding(.vertical, DesignTokens.Spacing.space12)
     .contentShape(Rectangle())
@@ -669,11 +687,11 @@ struct LocationRow: View {
       }
       Spacer()
       weatherTrailing
-      if location.isCurrent {
-        Image(systemName: "mappin.circle.fill")
-          .foregroundStyle(DesignTokens.Palette.accent)
-      } else if isSelected {
+      if isSelected {
         Image(systemName: "checkmark.circle.fill")
+          .foregroundStyle(DesignTokens.Palette.accent)
+      } else if location.isCurrent {
+        Image(systemName: "mappin.circle.fill")
           .foregroundStyle(DesignTokens.Palette.accent)
       }
     }

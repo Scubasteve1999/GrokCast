@@ -108,6 +108,8 @@ enum DayCastAccessibility {
     static let chips = "daycast.locations.chips"
     static let freeLimitChip = "daycast.locations.freeLimit"
     static let saveUnlimitedCTA = "daycast.locations.saveUnlimited"
+    static let nearMeRow = "daycast.locations.nearMe"
+    static let emptySaved = "daycast.locations.emptySaved"
     static func result(_ name: String) -> String { "daycast.locations.result.\(name)" }
     static func chip(_ name: String) -> String { "daycast.locations.chip.\(name)" }
     static func savedRow(_ name: String) -> String { "daycast.locations.saved.\(name)" }

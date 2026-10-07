@@ -140,11 +140,11 @@ final class CitySearchTests: XCTestCase {
     )
   }
 
-  func testListedSavedOmitsTheSelectedCityByID() {
+  func testListedSavedKeepsTheSelectedCity() {
     let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
     let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
-    let listed = CitySearch.listedSavedLocations(from: [seattle, denver], current: seattle)
-    XCTAssertEqual(listed.map(\.id), [denver.id])
+    let listed = CitySearch.listedSavedLocations(from: [seattle, denver])
+    XCTAssertEqual(listed.map(\.id), [seattle.id, denver.id])
   }
 
   func testListedSavedOmitsANearDuplicateOfTheCurrentPin() {
@@ -153,15 +153,14 @@ final class CitySearchTests: XCTestCase {
     let savedSeattle = SavedLocation(
       name: "Seattle, WA", latitude: 47.61, longitude: -122.33, isCurrent: false)
     let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
-    let listed = CitySearch.listedSavedLocations(
-      from: [gps, savedSeattle, denver], current: gps)
+    let listed = CitySearch.listedSavedLocations(from: [gps, savedSeattle, denver])
     XCTAssertEqual(listed.map(\.id), [denver.id])
   }
 
-  func testListedSavedKeepsOtherCitiesWhenCurrentIsEmpty() {
+  func testListedSavedKeepsCitiesWhenThereIsNoGPSPin() {
     let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
     XCTAssertEqual(
-      CitySearch.listedSavedLocations(from: [seattle], current: nil).map(\.id),
+      CitySearch.listedSavedLocations(from: [seattle]).map(\.id),
       [seattle.id]
     )
   }
@@ -208,13 +207,25 @@ final class CitySearchTests: XCTestCase {
     )
   }
 
-  func testListedSavedIsEmptyOnlyWhenTheOnlyCityIsCurrent() {
+  /// Regression: a free user's one named city must stay in Saved after it is
+  /// selected, and Near Me must stay out of Saved (it is the Current row).
+  func testListedSavedShowsTheOnlyNamedCityWhileItIsSelected() {
+    let gps = SavedLocation(
+      name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295, isCurrent: true)
     let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
-    XCTAssertTrue(CitySearch.listedSavedLocations(from: [seattle], current: seattle).isEmpty)
-    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
     XCTAssertEqual(
-      CitySearch.listedSavedLocations(from: [seattle, denver], current: seattle).map(\.name),
-      ["Denver, CO"]
-    )
+      CitySearch.listedSavedLocations(from: [gps, seattle]).map(\.name), ["Seattle, WA"])
+    XCTAssertTrue(CitySearch.listedSavedLocations(from: [gps]).isEmpty)
+  }
+
+  func testMoreHubCountsOnlyNamedSavedPlaces() {
+    let gps = SavedLocation(
+      name: "Olive Branch, MS", latitude: 34.9618, longitude: -89.8295, isCurrent: true)
+    let seattle = SavedLocation(name: "Seattle, WA", latitude: 47.6062, longitude: -122.3321)
+    let denver = SavedLocation(name: "Denver, CO", latitude: 39.7392, longitude: -104.9903)
+    XCTAssertEqual(MoreHubSheet.savedPlacesSubtitle(for: [gps]), "0 saved places")
+    XCTAssertEqual(MoreHubSheet.savedPlacesSubtitle(for: [gps, seattle]), "1 saved place")
+    XCTAssertEqual(
+      MoreHubSheet.savedPlacesSubtitle(for: [gps, seattle, denver]), "2 saved places")
   }
 }
