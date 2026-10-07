@@ -1,7 +1,7 @@
 import CoreLocation
 import SwiftUI
 
-/// Composes playback, timeline, Live/24-hr, Live Site|National, and opacity.
+/// Composes playback, timeline, Live/12-hr, Live Site|National, and opacity.
 struct RadarControlPanel: View {
   @Environment(WeatherStore.self) private var store
   @Environment(SubscriptionManager.self) private var subscription
@@ -86,7 +86,7 @@ struct RadarControlPanel: View {
     }
   }
 
-  /// Live / 24-hr plus Layers. At accessibility sizes, Layers drops onto its own row.
+  /// Live / 12-hr plus Layers. At accessibility sizes, Layers drops onto its own row.
   private var slimModeRow: some View {
     let layout = dynamicTypeSize.isAccessibilitySize
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
@@ -274,12 +274,11 @@ struct RadarControlPanel: View {
     .accessibilityAddTraits(selected ? .isSelected : [])
   }
 
-  private var canUseRadarFuture: Bool {
-    EntitlementChecker.canUseRadarFuture(subscription: subscription)
-  }
-
-  private var showsFutureProLock: Bool {
-    RadarFutureChipPresentation.showsProLock(canUseYearlyExtras: canUseRadarFuture)
+  /// Monthly Pro sees "Yearly", not "Pro" — Future radar is a Yearly extra.
+  private var futureLock: RadarFutureLock {
+    RadarFutureLock.resolve(
+      isPro: subscription.isPro,
+      isYearly: EntitlementChecker.canUseRadarFuture(subscription: subscription))
   }
 
   private var liveForecastPicker: some View {
@@ -292,15 +291,14 @@ struct RadarControlPanel: View {
         radarState.setFutureMode(false)
       }
       modePill(
-        title: RadarFutureChipPresentation.title(showsProLock: showsFutureProLock),
+        title: RadarFutureChipPresentation.title(lock: futureLock),
         selected: radarState.showsFuture,
-        accessibility: RadarFutureChipPresentation.accessibilityLabel(
-          showsProLock: showsFutureProLock),
+        accessibility: RadarFutureChipPresentation.accessibilityLabel(lock: futureLock),
         disabled: RadarFutureChipPresentation.isDisabled(
-          showsProLock: showsFutureProLock,
+          showsProLock: futureLock.isLocked,
           hasFutureFrames: radarState.hasFutureFrames
         ),
-        showsProLock: showsFutureProLock
+        showsProLock: futureLock.isLocked
       ) {
         radarState.setFutureMode(true)
       }
@@ -492,7 +490,7 @@ private struct RadarDisplayOptionsSheet: View {
           Text("Playback")
         } footer: {
           Text(
-            "Map only keeps SCAN and hides the extra chase lines. Live, 24-hr, and Layers stay on.")
+            "Map only keeps SCAN and hides the extra chase lines. Live, 12-hr, and Layers stay on.")
         }
 
         Section {

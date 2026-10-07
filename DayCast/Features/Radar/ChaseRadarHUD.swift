@@ -30,7 +30,7 @@ enum ChaseRadarHUDLogic {
     futureFrameLabel: String,
     ageMinutes: Int?
   ) -> String {
-    if showsFuture { return "24-hr \(futureFrameLabel)" }
+    if showsFuture { return "\(RadarChromeCopy.futureChip) \(futureFrameLabel)" }
     guard let age = ageMinutes else { return "SCAN —" }
     if age < 0 { return "SCAN now" }
     if age == 0 { return "SCAN <1m" }
@@ -131,7 +131,7 @@ enum ChaseRadarHUDLogic {
     siteID: String? = nil
   ) -> String {
     _ = siteID
-    if showsFuture { return "24-hr · \(product.displayName)" }
+    if showsFuture { return "\(RadarChromeCopy.futureChip) · \(product.displayName)" }
     return product.displayName
   }
 
@@ -153,7 +153,7 @@ enum ChaseRadarHUDLogic {
     !isDecluttered
   }
 
-  /// One plain-language weather line. Not SPC outlook. Nil in 24-hr or when data is missing.
+  /// One plain-language weather line. Not SPC outlook. Nil in 12-hr or when data is missing.
   static func takeaway(
     showsFuture: Bool,
     minutecastMessage: String?,
@@ -257,7 +257,7 @@ struct ChaseRadarHUD: View {
         }
       }
 
-      // Map-only slims this strip to SCAN. The Live/24-hr sheet stays up.
+      // Map-only slims this strip to SCAN. The Live/12-hr sheet stays up.
     }
     .frame(maxWidth: .infinity, alignment: .trailing)
     .accessibilityElement(children: .contain)

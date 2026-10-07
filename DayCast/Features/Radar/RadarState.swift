@@ -111,7 +111,7 @@ final class RadarState {
   var showFireLayer: Bool = RadarPreferences.showFireLayer {
     didSet { RadarPreferences.showFireLayer = showFireLayer }
   }
-  /// Independent CG lightning overlay. Default ON for Live; hidden in 24-hr.
+  /// Independent CG lightning overlay. Default ON for Live; hidden in 12-hr.
   var showLightningLayer: Bool = RadarPreferences.showLightningLayer {
     didSet { RadarPreferences.showLightningLayer = showLightningLayer }
   }

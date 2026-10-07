@@ -424,7 +424,7 @@ final class RadarPreferencesTests: XCTestCase {
 
   func testRadarModeChipsAreNotNamedForecast() {
     XCTAssertEqual(RadarChromeCopy.liveChip, "Live")
-    XCTAssertEqual(RadarChromeCopy.futureChip, "24-hr")
+    XCTAssertEqual(RadarChromeCopy.futureChip, "12-hr")
     XCTAssertFalse(RadarChromeCopy.futureChip.localizedCaseInsensitiveContains("Forecast"))
     XCTAssertEqual(RadarChromeCopy.layers, "Layers")
     XCTAssertEqual(RadarChromeCopy.layersDisplayTitle, "Layers & display")
@@ -439,7 +439,7 @@ final class RadarPreferencesTests: XCTestCase {
         canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(isYearly: true)))
     XCTAssertEqual(
       RadarFutureChipPresentation.title(showsProLock: true),
-      "24-hr · Pro")
+      "12-hr · Pro")
     XCTAssertEqual(
       RadarFutureChipPresentation.title(showsProLock: false),
       RadarChromeCopy.futureChip)
@@ -448,7 +448,7 @@ final class RadarPreferencesTests: XCTestCase {
         .localizedCaseInsensitiveContains("Forecast"))
     XCTAssertEqual(
       RadarFutureChipPresentation.accessibilityLabel(showsProLock: true),
-      "24-hour radar, requires Pro")
+      "12-hour radar, requires Pro")
     XCTAssertEqual(
       RadarFutureChipPresentation.accessibilityLabel(showsProLock: false),
       RadarChromeCopy.futureAccessibility)
@@ -459,6 +459,37 @@ final class RadarPreferencesTests: XCTestCase {
       RadarFutureChipPresentation.isDisabled(showsProLock: false, hasFutureFrames: false))
     XCTAssertFalse(
       RadarFutureChipPresentation.isDisabled(showsProLock: false, hasFutureFrames: true))
+  }
+
+  func testFutureChipLabelMatchesTheTimelineHorizon() {
+    // Now through +11h at 1-hour steps is 12 frames — never "24-hr".
+    XCTAssertEqual(RadarTimelineConfig.forecastHorizonHours, 12)
+    XCTAssertEqual(
+      RadarChromeCopy.futureChip, "\(RadarTimelineConfig.forecastHorizonHours)-hr")
+    XCTAssertTrue(
+      RadarChromeCopy.futureAccessibility.hasPrefix(
+        "\(RadarTimelineConfig.forecastHorizonHours)-hour"))
+    for lock in [RadarFutureLock.none, .pro, .yearly] {
+      XCTAssertFalse(RadarFutureChipPresentation.title(lock: lock).contains("24"))
+      XCTAssertFalse(RadarFutureChipPresentation.accessibilityLabel(lock: lock).contains("24"))
+    }
+  }
+
+  func testFutureLockAsksMonthlyProForYearly() {
+    XCTAssertEqual(RadarFutureLock.resolve(isPro: false, isYearly: false), .pro)
+    XCTAssertEqual(RadarFutureLock.resolve(isPro: true, isYearly: false), .yearly)
+    XCTAssertEqual(RadarFutureLock.resolve(isPro: true, isYearly: true), .none)
+
+    let monthlyTitle = RadarFutureChipPresentation.title(lock: .yearly)
+    let monthlyVoiceOver = RadarFutureChipPresentation.accessibilityLabel(lock: .yearly)
+    XCTAssertEqual(monthlyTitle, "12-hr · Yearly")
+    XCTAssertEqual(monthlyVoiceOver, "12-hour radar, requires Yearly")
+    XCTAssertFalse(monthlyTitle.contains("Pro"))
+    XCTAssertFalse(monthlyVoiceOver.localizedCaseInsensitiveContains("requires Pro"))
+    XCTAssertTrue(RadarFutureLock.yearly.isLocked)
+    XCTAssertFalse(RadarFutureLock.none.isLocked)
+    XCTAssertEqual(
+      RadarFutureChipPresentation.title(lock: .none), RadarChromeCopy.futureChip)
   }
 
   func testDefaultBaseMapIsQuietMapboxDark() {

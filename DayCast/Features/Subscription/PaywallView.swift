@@ -92,7 +92,7 @@ struct PaywallView: View {
         "Track every place you care about"
       )
       paywallRow(
-        "Forecast radar (FUTURE)",
+        "12-hr forecast radar",
         "cloud.rain.fill",
         "12-hour outlook you can scrub on the Radar tab",
         yearly: true
@@ -351,7 +351,7 @@ enum PaywallFeature: Equatable {
     case .grokAI:
       "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat. Official weather, radar, and NWS stay free."
     case .radarFuture:
-      "Yearly unlocks 12-hour forecast radar so you can scrub ahead on the Radar tab."
+      "Yearly unlocks 12-hr forecast radar so you can scrub ahead on the Radar tab."
     case .locations:
       "Free includes Near Me + 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
     case .liveActivity:

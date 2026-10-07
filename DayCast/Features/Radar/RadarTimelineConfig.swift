@@ -10,6 +10,8 @@ enum RadarTimelineConfig {
   /// OpenWeatherMap weather maps 2.0 PR0 uses 1-hour forecast steps.
   static let forecastIntervalMinutes = 60
   static let forecastStepDescription = "+1h"
+  /// Hours the Future chip promises: 12 hourly frames, Now through +11h.
+  static var forecastHorizonHours: Int { forecastMaxFrames * forecastIntervalMinutes / 60 }
 
   static let modeSwitchDelay: Duration = .milliseconds(250)
 

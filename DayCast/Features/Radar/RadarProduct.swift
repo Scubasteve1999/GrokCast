@@ -144,17 +144,21 @@ enum RadarColorScheme: String, CaseIterable {
   }
 }
 
-/// Phone Radar chrome copy. Live/24-hr are product chips, not a Forecast mode.
+/// Phone Radar chrome copy. Live/12-hr are product chips, not a Forecast mode.
 enum RadarChromeCopy {
   static let liveChip = "Live"
-  static let futureChip = "24-hr"
-  /// Locked Future entry. Keep `futureChip` as "24-hr" for Yearly / dev key.
-  static let futureLockedChip = "24-hr · Pro"
+  /// Matches `RadarTimelineConfig.forecastHorizonHours` (Now through +11h).
+  static let futureChip = "12-hr"
+  /// Locked Future entry for free users. Yearly sees plain `futureChip`.
+  static let futureLockedChip = "12-hr · Pro"
+  /// Locked Future entry for Monthly Pro. Future radar is Yearly-only.
+  static let futureYearlyLockedChip = "12-hr · Yearly"
   static let layers = "Layers"
   static let layersDisplayTitle = "Layers & display"
   static let liveAccessibility = "Live radar"
-  static let futureAccessibility = "24-hour radar"
-  static let futureLockedAccessibility = "24-hour radar, requires Pro"
+  static let futureAccessibility = "12-hour radar"
+  static let futureLockedAccessibility = "12-hour radar, requires Pro"
+  static let futureYearlyLockedAccessibility = "12-hour radar, requires Yearly"
 
   static let autoResumeSwitch = "Auto-resume after scrub"
   static let mapOnlySwitch = "Map only"
@@ -185,7 +189,7 @@ enum RadarChromeCopy {
   }
 }
 
-/// After the one-sheet chrome, Map-only must never hide Live / 24-hr / Layers.
+/// After the one-sheet chrome, Map-only must never hide Live / 12-hr / Layers.
 enum RadarChromeVisibility {
   static func showsControlSheet(mapOnly: Bool) -> Bool {
     _ = mapOnly
@@ -216,6 +220,20 @@ enum RadarLiveSourceChrome {
   }
 }
 
+/// Which upgrade the Future chip asks for. Free needs Pro; Monthly Pro needs Yearly.
+enum RadarFutureLock: Equatable {
+  case none
+  case pro
+  case yearly
+
+  static func resolve(isPro: Bool, isYearly: Bool) -> Self {
+    if isYearly { return .none }
+    return isPro ? .yearly : .pro
+  }
+
+  var isLocked: Bool { self != .none }
+}
+
 /// Presentation-only Future chip. Entitlement / paywall stay in `RadarState`.
 enum RadarFutureChipPresentation {
   static func showsProLock(canUseYearlyExtras: Bool) -> Bool {
@@ -223,11 +241,27 @@ enum RadarFutureChipPresentation {
   }
 
   static func title(showsProLock: Bool) -> String {
-    showsProLock ? RadarChromeCopy.futureLockedChip : RadarChromeCopy.futureChip
+    title(lock: showsProLock ? .pro : .none)
+  }
+
+  static func title(lock: RadarFutureLock) -> String {
+    switch lock {
+    case .none: RadarChromeCopy.futureChip
+    case .pro: RadarChromeCopy.futureLockedChip
+    case .yearly: RadarChromeCopy.futureYearlyLockedChip
+    }
   }
 
   static func accessibilityLabel(showsProLock: Bool) -> String {
-    showsProLock ? RadarChromeCopy.futureLockedAccessibility : RadarChromeCopy.futureAccessibility
+    accessibilityLabel(lock: showsProLock ? .pro : .none)
+  }
+
+  static func accessibilityLabel(lock: RadarFutureLock) -> String {
+    switch lock {
+    case .none: RadarChromeCopy.futureAccessibility
+    case .pro: RadarChromeCopy.futureLockedAccessibility
+    case .yearly: RadarChromeCopy.futureYearlyLockedAccessibility
+    }
   }
 
   /// Locked users must still reach `.radarFuture`. Frame availability only

@@ -10,7 +10,7 @@ final class ChaseRadarHUDTests: XCTestCase {
       futureFrameLabel: "4:30 PM",
       ageMinutes: 99
     )
-    XCTAssertEqual(line, "24-hr 4:30 PM")
+    XCTAssertEqual(line, "12-hr 4:30 PM")
     XCTAssertFalse(line.contains("FUT"))
   }
 
@@ -121,7 +121,7 @@ final class ChaseRadarHUDTests: XCTestCase {
     )
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .reflectivity, showsFuture: true),
-      "24-hr · National radar"
+      "12-hr · National radar"
     )
     XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .stormRelativeVelocity, showsFuture: false),

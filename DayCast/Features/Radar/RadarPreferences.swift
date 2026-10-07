@@ -141,7 +141,7 @@ enum RadarPreferences {
     store.set(true, forKey: translucentDefaultMigratedKey)
   }
 
-  /// Map-only: slims the chase HUD to SCAN. Does not hide the Live/24-hr sheet.
+  /// Map-only: slims the chase HUD to SCAN. Does not hide the Live/12-hr sheet.
   static var chaseDecluttered: Bool {
     get { store.bool(forKey: chaseDeclutteredKey) }
     set { store.set(newValue, forKey: chaseDeclutteredKey) }

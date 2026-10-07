@@ -32,7 +32,7 @@ struct RadarView: View {
     radarState.selectedProduct.isSiteProduct && !radarState.showsFuture
   }
 
-  /// Lightning is Live-only observed CG. Hidden in 24-hr.
+  /// Lightning is Live-only observed CG. Hidden in 12-hr.
   private var showsLightningOverlay: Bool {
     radarState.showLightningLayer && !radarState.showsFuture
   }
@@ -507,7 +507,7 @@ struct RadarView: View {
     radarState.completeTransition()
   }
 
-  /// Restart lightning polls when tab, toggle, Live/24-hr, or city changes.
+  /// Restart lightning polls when tab, toggle, Live/12-hr, or city changes.
   private var lightningPollKey: String {
     let locationID = store.currentLocation?.id.uuidString ?? "olive"
     return "\(store.selectedTab == .radar)|\(showsLightningOverlay)|\(locationID)"
