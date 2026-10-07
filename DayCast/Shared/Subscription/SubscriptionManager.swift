@@ -20,12 +20,30 @@ final class SubscriptionManager {
 
   private var updatesTask: Task<Void, Never>?
 
+  #if DEBUG
+    /// UI tests launch with `-UITesting` and have no StoreKit purchase, so Pro-gated flows
+    /// (Sky Check) would stop at the paywall. Compiled out of Release; purchase, restore and
+    /// paywall behavior are untouched. Pure over `arguments` so a unit test can prove it is off
+    /// without the flag.
+    nonisolated static func usesUITestProOverride(
+      arguments: [String] = ProcessInfo.processInfo.arguments
+    ) -> Bool {
+      arguments.contains(PostHogAnalytics.uiTestLaunchArgument)
+    }
+  #endif
+
   private init() {
     // Split App Group flags: monthly keeps AI on cold launch; yearly extras
     // stay off until StoreKit confirms the yearly product (no monthly flash).
     let defaults = WidgetAppGroup.userDefaults
     isPro = defaults?.bool(forKey: WidgetDataStore.isProKey) ?? false
     isYearly = defaults?.bool(forKey: WidgetDataStore.isYearlyKey) ?? false
+    #if DEBUG
+      if Self.usesUITestProOverride() {
+        isPro = true
+        isYearly = true
+      }
+    #endif
   }
 
   func start() async {
@@ -78,6 +96,16 @@ final class SubscriptionManager {
         monthlyJWS = result.jwsRepresentation
       }
     }
+
+    #if DEBUG
+      // Keep the override over StoreKit's empty result, and never write it to the App Group
+      // (widgets would read a Pro flag no purchase backs).
+      if Self.usesUITestProOverride() {
+        isPro = true
+        isYearly = true
+        return
+      }
+    #endif
 
     let resolved = DayCastProProducts.resolvedEntitlement(productIDs: productIDs)
     isPro = resolved.isPro

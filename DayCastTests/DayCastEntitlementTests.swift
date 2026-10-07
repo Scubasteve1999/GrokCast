@@ -242,4 +242,20 @@ final class DayCastEntitlementTests: XCTestCase {
         hasDeveloperKey: false
       ))
   }
+
+  #if DEBUG
+    func testUITestProOverrideIsOffWithoutUITestingArgument() {
+      XCTAssertFalse(SubscriptionManager.usesUITestProOverride(arguments: []))
+      XCTAssertFalse(
+        SubscriptionManager.usesUITestProOverride(arguments: ["DayCast", "-AppleLocale", "en_US"]))
+      // The unit-test host is not launched with -UITesting, so the real process is off too.
+      XCTAssertFalse(SubscriptionManager.usesUITestProOverride())
+    }
+
+    func testUITestProOverrideTurnsOnOnlyWithUITestingArgument() {
+      XCTAssertTrue(
+        SubscriptionManager.usesUITestProOverride(
+          arguments: ["DayCast", PostHogAnalytics.uiTestLaunchArgument]))
+    }
+  #endif
 }
