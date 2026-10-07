@@ -257,5 +257,14 @@ final class DayCastEntitlementTests: XCTestCase {
         SubscriptionManager.usesUITestProOverride(
           arguments: ["DayCast", PostHogAnalytics.uiTestLaunchArgument]))
     }
+
+    func testUITestFreeUserArgumentOptsOutOfProOverride() {
+      XCTAssertFalse(
+        SubscriptionManager.usesUITestProOverride(
+          arguments: [
+            PostHogAnalytics.uiTestLaunchArgument,
+            SubscriptionManager.uiTestFreeUserLaunchArgument,
+          ]))
+    }
   #endif
 }

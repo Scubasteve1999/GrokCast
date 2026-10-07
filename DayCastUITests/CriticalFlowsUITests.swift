@@ -255,44 +255,6 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     )
   }
 
-  // MARK: - 5. Paywall presents from Settings
-
-  func testPaywallCanPresentFromSettings() throws {
-    XCTAssertTrue(waitForTabBar())
-    openMoreHubThen(.settings)
-
-    // Prefer the stable identifier; fall back to the label for older builds.
-    let candidates = [
-      app.buttons["daycast.settings.pro"],
-      app.buttons["View DayCast Pro"],
-      app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "DayCast Pro"))
-        .firstMatch,
-    ]
-
-    var opened = false
-    for element in candidates where element.waitForExistence(timeout: 4) {
-      if !element.isHittable {
-        app.scrollViews.firstMatch.swipeUp()
-      }
-      element.tap()
-      opened = true
-      break
-    }
-
-    XCTAssertTrue(opened, "Could not find DayCast Pro entry in Settings")
-
-    let paywallSignal =
-      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Forecast radar"))
-      .firstMatch
-      .waitForExistence(timeout: 6)
-      || app.buttons["Restore Purchases"].waitForExistence(timeout: 4)
-      || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Unlimited saved"))
-        .firstMatch
-        .waitForExistence(timeout: 4)
-
-    XCTAssertTrue(paywallSignal, "Paywall sheet did not present expected content")
-  }
-
   // MARK: - Helpers
 
   private func skyCheckChatField() -> XCUIElement {
@@ -371,5 +333,46 @@ final class CriticalFlowsUITests: DayCastUITestCase {
     if !app.wait(for: .runningForeground, timeout: 3) {
       app.activate()
     }
+  }
+}
+
+/// Runs as a free user (`-UITestingFreeUser`), so the paywall entry exists in Settings.
+final class FreeUserPaywallUITests: DayCastUITestCase {
+  override var launchesAsFreeUser: Bool { true }
+
+  func testPaywallCanPresentFromSettings() throws {
+    XCTAssertTrue(waitForTabBar())
+    openMoreHubThen(.settings)
+
+    // Prefer the stable identifier; fall back to the label for older builds.
+    let candidates = [
+      app.buttons["daycast.settings.pro"],
+      app.buttons["View DayCast Pro"],
+      app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "DayCast Pro"))
+        .firstMatch,
+    ]
+
+    var opened = false
+    for element in candidates where element.waitForExistence(timeout: 4) {
+      if !element.isHittable {
+        app.scrollViews.firstMatch.swipeUp()
+      }
+      element.tap()
+      opened = true
+      break
+    }
+
+    XCTAssertTrue(opened, "Could not find DayCast Pro entry in Settings")
+
+    let paywallSignal =
+      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Forecast radar"))
+      .firstMatch
+      .waitForExistence(timeout: 6)
+      || app.buttons["Restore Purchases"].waitForExistence(timeout: 4)
+      || app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Unlimited saved"))
+        .firstMatch
+        .waitForExistence(timeout: 4)
+
+    XCTAssertTrue(paywallSignal, "Paywall sheet did not present expected content")
   }
 }

@@ -25,10 +25,14 @@ final class SubscriptionManager {
     /// (Sky Check) would stop at the paywall. Compiled out of Release; purchase, restore and
     /// paywall behavior are untouched. Pure over `arguments` so a unit test can prove it is off
     /// without the flag.
+    nonisolated static let uiTestFreeUserLaunchArgument = "-UITestingFreeUser"
+
+    /// `-UITestingFreeUser` opts a test back out, so the free-user paywall path stays testable.
     nonisolated static func usesUITestProOverride(
       arguments: [String] = ProcessInfo.processInfo.arguments
     ) -> Bool {
       arguments.contains(PostHogAnalytics.uiTestLaunchArgument)
+        && !arguments.contains(uiTestFreeUserLaunchArgument)
     }
   #endif
 

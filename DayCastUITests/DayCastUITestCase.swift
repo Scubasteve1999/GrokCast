@@ -5,6 +5,9 @@ import XCTest
 class DayCastUITestCase: XCTestCase {
   var app: XCUIApplication!
 
+  /// UI tests run as Pro by default (DEBUG override). Return true to test the free-user path.
+  var launchesAsFreeUser: Bool { false }
+
   override func setUpWithError() throws {
     continueAfterFailure = false
     app = XCUIApplication()
@@ -13,6 +16,7 @@ class DayCastUITestCase: XCTestCase {
       "-AppleLanguages", "(en)",
       "-AppleLocale", "en_US",
     ]
+    if launchesAsFreeUser { app.launchArguments += ["-UITestingFreeUser"] }
     app.launch()
     grantLocationPermissionIfPrompted()
     completeOnboardingIfNeeded()
