@@ -100,14 +100,12 @@ struct PaywallView: View {
       paywallRow(
         "Home Screen widgets",
         "rectangle.3.group.fill",
-        "Score, Next 2 Hours, and the AI one-liner",
-        yearly: true
+        "Score, Next 2 Hours, and the AI one-liner"
       )
       paywallRow(
         "Live Activity",
         "lock.rectangle.stack.fill",
-        "Score and Next 2 Hours on the Lock Screen when DayCast refreshes",
-        yearly: true
+        "Score and Next 2 Hours on the Lock Screen when DayCast refreshes"
       )
 
       Text(
@@ -355,11 +353,11 @@ enum PaywallFeature: Equatable {
     case .locations:
       "Free includes Near Me + 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
     case .liveActivity:
-      "Yearly shows Score and Next 2 Hours on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
+      "DayCast Pro shows Score and Next 2 Hours on the Lock Screen. It updates when the app refreshes weather — not a continuous background push feed yet."
     case .morningBrief:
       "Schedule a local morning notification from your cached Today's Take. DayCast Pro includes the AI that writes it."
     case .severeAlerts:
-      "NWS warnings and watches with notifications are free for all users. Monthly adds AI and extra locations. Yearly adds Future radar, widgets, and Live Activity."
+      "NWS warnings and watches with notifications are free for all users. DayCast Pro adds AI, extra locations, widgets, and Live Activity. Yearly adds Future radar."
     }
   }
 

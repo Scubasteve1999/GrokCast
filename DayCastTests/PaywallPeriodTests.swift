@@ -20,7 +20,7 @@ final class PaywallPeriodTests: XCTestCase {
     XCTAssertEqual(PaywallPeriodCopy.subtitle(productID: id), PaywallPeriodCopy.monthlyInclusion)
     XCTAssertEqual(
       PaywallPeriodCopy.monthlyInclusion,
-      "AI and unlimited locations. Billed monthly."
+      "AI, locations, widgets, Live Activity. Billed monthly."
     )
     XCTAssertEqual(
       PaywallPeriodCopy.subscribeTitle(productID: id, displayPrice: "$2.99"),
@@ -51,8 +51,8 @@ final class PaywallPeriodTests: XCTestCase {
     XCTAssertFalse(monthly.contains(ascBlurb))
     XCTAssertFalse(yearly.contains(ascBlurb))
     XCTAssertFalse(monthly.localizedCaseInsensitiveContains("Future"))
-    XCTAssertFalse(monthly.localizedCaseInsensitiveContains("widget"))
-    XCTAssertFalse(monthly.localizedCaseInsensitiveContains("Live Activity"))
+    XCTAssertTrue(monthly.contains("widgets"))
+    XCTAssertTrue(monthly.contains("Live Activity"))
     XCTAssertTrue(yearly.contains("Future radar"))
     XCTAssertTrue(yearly.contains("widgets"))
     XCTAssertTrue(yearly.contains("Live Activity"))
@@ -85,10 +85,27 @@ final class PaywallPeriodTests: XCTestCase {
     )
   }
 
-  func testLiveActivityCopyNamesYearlyNotPro() {
-    XCTAssertEqual(PaywallPeriodCopy.liveActivityRequiresYearly, "Requires Yearly")
+  func testLiveActivityCopyNamesProNotYearly() {
+    XCTAssertEqual(PaywallPeriodCopy.liveActivityRequiresPro, "Requires Pro")
     XCTAssertFalse(
-      PaywallPeriodCopy.liveActivityRequiresYearly.localizedCaseInsensitiveContains("Pro"))
+      PaywallPeriodCopy.liveActivityRequiresPro.localizedCaseInsensitiveContains("Yearly"))
+    XCTAssertTrue(PaywallFeature.liveActivity.subheadline.hasPrefix("DayCast Pro shows"))
+    XCTAssertFalse(PaywallFeature.liveActivity.subheadline.contains("Yearly"))
+  }
+
+  func testPlanCopyKeepsOnlyFutureRadarYearlyExclusive() {
+    let pitch = PaywallPeriodCopy.generalProPitch
+    XCTAssertEqual(
+      pitch,
+      "Monthly and Yearly include AI, unlimited locations, widgets, and Live Activity. Yearly adds 12-hr Future radar."
+    )
+    let severe = PaywallFeature.severeAlerts.subheadline
+    XCTAssertTrue(severe.contains("DayCast Pro adds AI, extra locations, widgets, and Live Activity."))
+    XCTAssertTrue(severe.hasSuffix("Yearly adds Future radar."))
+    for copy in [pitch, severe] {
+      XCTAssertFalse(copy.contains("Yearly adds Future radar, widgets"), copy)
+    }
+    XCTAssertTrue(PaywallFeature.radarFuture.subheadline.hasPrefix("Yearly unlocks 12-hr"))
   }
 
   func testLocationsPaywallCopyNamesFreeLimitAndProUnlimited() {
@@ -132,15 +149,14 @@ final class PaywallPeriodTests: XCTestCase {
       PaywallPeriodCopy.activePlanUnlocks(isYearly: true),
       PaywallPeriodCopy.yearlyUnlocks
     )
-    XCTAssertEqual(PaywallPeriodCopy.monthlyUnlocks, "AI and unlimited locations")
+    XCTAssertEqual(PaywallPeriodCopy.monthlyUnlocks, "AI, locations, widgets, Live Activity")
     XCTAssertEqual(
       PaywallPeriodCopy.yearlyUnlocks,
       "AI, locations, Future radar, widgets, Live Activity"
     )
     XCTAssertFalse(PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("Future"))
-    XCTAssertFalse(PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("widget"))
-    XCTAssertFalse(
-      PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("Live Activity"))
+    XCTAssertTrue(PaywallPeriodCopy.monthlyUnlocks.contains("widgets"))
+    XCTAssertTrue(PaywallPeriodCopy.monthlyUnlocks.contains("Live Activity"))
     XCTAssertTrue(PaywallPeriodCopy.yearlyUnlocks.contains("Future radar"))
     XCTAssertTrue(PaywallPeriodCopy.yearlyUnlocks.contains("widgets"))
     XCTAssertTrue(PaywallPeriodCopy.yearlyUnlocks.contains("Live Activity"))

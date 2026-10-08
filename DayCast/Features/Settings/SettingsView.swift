@@ -294,7 +294,7 @@ struct SettingsView: View {
         title: "Live Activity",
         subtitle: EntitlementChecker.canUseLiveActivity(subscription: subscription)
           ? PaywallPeriodCopy.liveActivityActiveSubtitle
-          : PaywallPeriodCopy.liveActivityRequiresYearly,
+          : PaywallPeriodCopy.liveActivityRequiresPro,
         icon: "lock.rectangle.stack.fill",
         isOn: Binding(
           get: { store.liveActivityEnabled },
