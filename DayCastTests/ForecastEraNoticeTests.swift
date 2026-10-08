@@ -21,10 +21,12 @@ final class ForecastEraNoticeTests: XCTestCase {
     super.tearDown()
   }
 
-  func testCutoverIs14October2026At1200UTC() {
-    XCTAssertEqual(ForecastEraNotice.cutoverUTC, utc("2026-10-14T12:00:00Z"))
+  func testCutoverIs3November2026At1200UTC() {
+    // SCN 26-48 Updated (AAE) moved the cutover from Oct 14 to Nov 3.
+    XCTAssertEqual(ForecastEraNotice.cutoverUTC, utc("2026-11-03T12:00:00Z"))
     XCTAssertEqual(ForecastEraNotice.windowStartUTC, utc("2026-10-07T12:00:00Z"))
-    XCTAssertEqual(ForecastEraNotice.windowEndUTC, utc("2026-10-28T12:00:00Z"))
+    XCTAssertEqual(ForecastEraNotice.windowEndUTC, utc("2026-11-17T12:00:00Z"))
+    XCTAssertEqual(ForecastEraNotice.fallback.status, .slipped)
   }
 
   func testHiddenBeforeWindow() {
@@ -46,14 +48,14 @@ final class ForecastEraNoticeTests: XCTestCase {
   }
 
   func testHiddenAtWindowEnd() {
-    let now = utc("2026-10-28T12:00:00Z")
+    let now = utc("2026-11-17T12:00:00Z")
     XCTAssertFalse(ForecastEraNotice.isInWindow(now: now))
     XCTAssertFalse(ForecastEraNotice.shouldShowBanner(now: now, defaults: suite))
     XCTAssertFalse(ForecastEraNotice.shouldOfferExplainer(now: now, defaults: suite))
   }
 
   func testStillVisibleJustBeforeWindowEnd() {
-    let now = utc("2026-10-28T11:59:59Z")
+    let now = utc("2026-11-17T11:59:59Z")
     XCTAssertTrue(ForecastEraNotice.shouldShowBanner(now: now, defaults: suite))
   }
 
@@ -81,8 +83,8 @@ final class ForecastEraNoticeTests: XCTestCase {
   }
 
   func testNationwideNotMemphisGated() {
-    XCTAssertEqual(ForecastEraNotice.fallbackId, "scn-26-48-2026-10-14")
-    XCTAssertEqual(ForecastEraNotice.id, "scn-26-48-2026-10-14")
+    XCTAssertEqual(ForecastEraNotice.fallbackId, "rrfs-2026-11-03")
+    XCTAssertEqual(ForecastEraNotice.id, "rrfs-2026-11-03")
     XCTAssertTrue(
       ForecastEraNotice.Copy.memphisSample.hasPrefix("NWS Memphis"),
       "MEG is a sample string only"
@@ -96,7 +98,7 @@ final class ForecastEraNoticeTests: XCTestCase {
     let joined = ForecastEraNotice.Copy.visibleStrings.joined(separator: " ")
     XCTAssertEqual(
       ForecastEraNotice.Copy.banner(for: ForecastEraNotice.fallback, locale: Locale(identifier: "en_US")),
-      "Upstream NWS models change Oct 14, 2026, 7 AM CT")
+      "Upstream NWS model change moved to Nov 3, 2026, 6 AM CT")
     XCTAssertEqual(ForecastEraNotice.Copy.cardTitle, "What this means")
     XCTAssertTrue(ForecastEraNotice.Copy.opener.contains("RRFS"))
     XCTAssertTrue(ForecastEraNotice.Copy.opener.contains("REFS"))
@@ -139,11 +141,14 @@ final class ForecastEraNoticeTests: XCTestCase {
   func testOfficialPDFCitationsAreWeatherGov() {
     XCTAssertEqual(
       AppLinks.nwsSCN2648.absoluteString,
-      "https://www.weather.gov/media/notification/pdf_2026/scn26-048_Updated_RRFS_and_REFS_Implementation_aad.pdf"
+      "https://www.weather.gov/media/notification/pdf_2026/scn26-048_Updated_RRFS_and_REFS_Implementation_aae.pdf"
+    )
+    XCTAssertEqual(
+      AppLinks.nwsSCN2647.absoluteString,
+      "https://www.weather.gov/media/notification/pdf_2026/scn26-47_Updated_Retirement_of_NAM_SREF_HREF_HiresW_NAM_MOS_aac.pdf"
     )
     XCTAssertTrue(AppLinks.nwsSCN2648.host?.contains("weather.gov") == true)
     XCTAssertTrue(AppLinks.nwsSCN2647.host?.contains("weather.gov") == true)
-    XCTAssertTrue(AppLinks.nwsSCN2647.absoluteString.contains("SCN26-47"))
     XCTAssertTrue(AppLinks.nwsSCN2647.pathExtension.lowercased() == "pdf")
     XCTAssertTrue(AppLinks.nwsSCN2648.pathExtension.lowercased() == "pdf")
   }
@@ -289,21 +294,37 @@ final class ForecastEraNoticeTests: XCTestCase {
   }
 
   func testScheduledOpenerKeepsCurrentSentence() {
+    var scheduled = ForecastEraNotice.fallback
+    scheduled.status = .scheduled
+    let opener = ForecastEraNotice.Copy.opener(
+      for: scheduled,
+      locale: Locale(identifier: "en_US")
+    )
+    XCTAssertEqual(
+      opener,
+      "On or around Nov 3, 2026, 6 AM CT, NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
+    )
+  }
+
+  func testSlippedOpenerDoesNotInventAReasonForTheSlip() {
+    // SCN 26-48 AAE gives no Critical Weather Day reason for the Oct 14 → Nov 3 move.
     let opener = ForecastEraNotice.Copy.opener(
       for: ForecastEraNotice.fallback,
       locale: Locale(identifier: "en_US")
     )
     XCTAssertEqual(
       opener,
-      "On or around Oct 14, 2026, 7 AM CT, NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
+      "NWS moved the switch to Nov 3, 2026, 6 AM CT. NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
     )
+    XCTAssertFalse(opener.localizedCaseInsensitiveContains("Critical Weather Day"))
+    XCTAssertFalse(opener.contains("Oct 14"))
   }
 
   func testCutoverFormatsInCentralTimeFromRemoteDate() {
     let en = Locale(identifier: "en_US")
     XCTAssertEqual(
       ForecastEraNotice.formattedCutoverDateTime(ForecastEraNotice.cutoverUTC, locale: en),
-      "Oct 14, 2026, 7 AM CT")
+      "Nov 3, 2026, 6 AM CT", "Nov 3 is after DST ends, so 1200 UTC is 6 AM CT")
     XCTAssertEqual(
       ForecastEraNotice.formattedCutoverDateTime(utc("2026-10-15T12:00:00Z"), locale: en),
       "Oct 15, 2026, 7 AM CT", "a slip must move the date")
@@ -315,14 +336,17 @@ final class ForecastEraNoticeTests: XCTestCase {
       ForecastEraNotice.formattedCutoverDateTime(utc("2026-11-10T12:00:00Z"), locale: en),
       "Nov 10, 2026, 6 AM CT")
     XCTAssertEqual(
-      ForecastEraNotice.formattedCutoverShort(ForecastEraNotice.cutoverUTC, locale: en), "Oct 14")
+      ForecastEraNotice.formattedCutoverShort(ForecastEraNotice.cutoverUTC, locale: en), "Nov 3")
   }
 
   func testSettingsRowTitleAndBannerFollowTheConfig() {
     let en = Locale(identifier: "en_US")
     XCTAssertEqual(
       ForecastEraNotice.Copy.settingsRowTitle(for: ForecastEraNotice.fallback, locale: en),
-      "NWS model change (Oct 14)")
+      "NWS model change (Nov 3)")
+    var scheduled = ForecastEraNotice.fallback
+    scheduled.cutoverUTC = utc("2026-10-14T12:00:00Z")
+    scheduled.status = .scheduled
     var slipped = ForecastEraNotice.fallback
     slipped.cutoverUTC = utc("2026-10-15T12:00:00Z")
     slipped.status = .slipped
@@ -330,8 +354,11 @@ final class ForecastEraNoticeTests: XCTestCase {
       ForecastEraNotice.Copy.settingsRowTitle(for: slipped, locale: en),
       "NWS model change (Oct 15)")
     XCTAssertEqual(
-      ForecastEraNotice.Copy.banner(for: ForecastEraNotice.fallback, locale: en),
+      ForecastEraNotice.Copy.banner(for: scheduled, locale: en),
       "Upstream NWS models change Oct 14, 2026, 7 AM CT")
+    XCTAssertEqual(
+      ForecastEraNotice.Copy.banner(for: ForecastEraNotice.fallback, locale: en),
+      "Upstream NWS model change moved to Nov 3, 2026, 6 AM CT")
     XCTAssertEqual(
       ForecastEraNotice.Copy.banner(for: slipped, locale: en),
       "Upstream NWS model change moved to Oct 15, 2026, 7 AM CT")
@@ -343,7 +370,7 @@ final class ForecastEraNoticeTests: XCTestCase {
     var config = ForecastEraNotice.fallback
     config.status = .done
     let opener = ForecastEraNotice.Copy.opener(for: config, locale: Locale(identifier: "en_US"))
-    XCTAssertTrue(opener.hasPrefix("On Oct 14, 2026, 7 AM CT, NCEP replaced"))
+    XCTAssertTrue(opener.hasPrefix("On Nov 3, 2026, 6 AM CT, NCEP replaced"))
   }
 
   func testRetiringStayingLineShowsForEveryStatus() async {

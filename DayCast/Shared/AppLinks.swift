@@ -12,15 +12,15 @@ enum AppLinks {
   static let openMeteo = URL(string: "https://open-meteo.com/")!
   static let appStore = AppReviewPrompt.appStoreURL
   static let writeReview = AppReviewPrompt.writeReviewURL
-  /// NWS SCN 26-48 — RRFS + REFS implementation (Oct 14, 2026, 1200 UTC).
+  /// NWS SCN 26-48 Updated (AAE, Oct 2 2026) — RRFS + REFS implementation, Nov 3, 2026, 1200 UTC.
   static let nwsSCN2648 = URL(
     string:
-      "https://www.weather.gov/media/notification/pdf_2026/scn26-048_Updated_RRFS_and_REFS_Implementation_aad.pdf"
+      "https://www.weather.gov/media/notification/pdf_2026/scn26-048_Updated_RRFS_and_REFS_Implementation_aae.pdf"
   )!
-  /// NWS SCN 26-47 — retire NAM, SREF, HREF, HiresW, NAM MOS.
+  /// NWS SCN 26-47 Updated (AAC, Oct 2 2026) — retire NAM, SREF, HREF, HiresW, NAM MOS on Nov 3.
   static let nwsSCN2647 = URL(
     string:
-      "https://www.weather.gov/media/notification/pdf_2026/SCN26-47_Updated_Retire_NAM_SREF_HREF_HiresW_NAM_MOS.aab.pdf"
+      "https://www.weather.gov/media/notification/pdf_2026/scn26-47_Updated_Retirement_of_NAM_SREF_HREF_HiresW_NAM_MOS_aac.pdf"
   )!
 }
 

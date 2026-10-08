@@ -27,7 +27,7 @@ struct EraNoticeConfig: Codable, Equatable, Sendable {
 
 enum ForecastEraNotice {
   /// Bump / remote slip to re-show after a dismiss. One id per window.
-  static let fallbackId = "scn-26-48-2026-10-14"
+  static let fallbackId = "rrfs-2026-11-03"
   static var id: String { effective().id }
 
   static let dismissedIdKey = "daycast.forecastEraNotice.dismissedId"
@@ -41,12 +41,13 @@ enum ForecastEraNotice {
   /// Tests replace this. Production hits `GET /era-notice`.
   nonisolated(unsafe) static var dataLoader: @Sendable () async -> Data? = liveLoad
 
-  /// NCEP production implementation, 1200 UTC. May slip on a Critical Weather Day.
-  static let cutoverUTC = utc("2026-10-14T12:00:00Z")
-  /// 7 days before cutover.
+  /// NCEP production implementation, 1200 UTC (SCN 26-48 Updated AAE, Oct 2 2026; was Oct 14).
+  /// May slip again on a Critical Weather Day. Matches the worker KV `current`.
+  static let cutoverUTC = utc("2026-11-03T12:00:00Z")
+  /// Opened 7 days before the original Oct 14 date; kept so the slip notice stays up.
   static let windowStartUTC = utc("2026-10-07T12:00:00Z")
   /// 14 days after cutover (exclusive).
-  static let windowEndUTC = utc("2026-10-28T12:00:00Z")
+  static let windowEndUTC = utc("2026-11-17T12:00:00Z")
   static let earliestUTC = utc("2026-10-01T00:00:00Z")
   static let latestUTC = utc("2026-12-31T23:59:59Z")
 
@@ -55,8 +56,8 @@ enum ForecastEraNotice {
     cutoverUTC: cutoverUTC,
     windowStartUTC: windowStartUTC,
     windowEndUTC: windowEndUTC,
-    status: .scheduled,
-    updatedAt: utc("2026-10-03T00:00:00Z")
+    status: .slipped,
+    updatedAt: utc("2026-10-08T00:00:00Z")
   )
 
   static func effective(defaults: UserDefaults = store) -> EraNoticeConfig {
@@ -170,7 +171,7 @@ enum ForecastEraNotice {
   /// reads the same through CST/CDT.
   static let displayTimeZone = TimeZone(identifier: "America/Chicago") ?? .current
 
-  /// "Oct 14, 2026, 7 AM CT". Minutes only when non-zero. Follows the remote `cutoverUTC`.
+  /// "Nov 3, 2026, 6 AM CT". Minutes only when non-zero. Follows the remote `cutoverUTC`.
   static func formattedCutoverDateTime(_ date: Date, locale: Locale = .current) -> String {
     let formatter = DateFormatter()
     formatter.locale = locale
@@ -181,7 +182,7 @@ enum ForecastEraNotice {
     return formatter.string(from: date) + " CT"
   }
 
-  /// "Oct 14" (Central), for compact labels.
+  /// "Nov 3" (Central), for compact labels.
   static func formattedCutoverShort(_ date: Date, locale: Locale = .current) -> String {
     let formatter = DateFormatter()
     formatter.locale = locale
@@ -229,7 +230,7 @@ enum ForecastEraNotice {
           "On or around \(date), NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
       case .slipped:
         return
-          "NWS moved the switch to \(date) after a Critical Weather Day. NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
+          "NWS moved the switch to \(date). NCEP is replacing older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
       case .done:
         return
           "On \(date), NCEP replaced older short-range systems (NAM, HREF, SREF, HiresW) with RRFS and REFS."
