@@ -4,4 +4,4 @@ Radar: clearer Site Doppler underlay, HUD that does not collide with the locatio
 
 Free includes Near Me + 1 saved city. Settings shows Monthly vs Yearly unlocks. Sky Check photo check explains itself when AI is unavailable.
 
-DayCast Pro: Monthly = AI + unlimited places. Yearly adds Future radar, widgets, and Live Activity.
+DayCast Pro: widgets and Live Activity now come with Monthly too, alongside AI and unlimited places. Yearly adds Future radar.

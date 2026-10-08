@@ -16,20 +16,22 @@ SHORT TERM
 • Next-hour / Next 2 Hours precipitation
 • Hourly and 10-day forecasts
 
-AI (DayCast Pro — Monthly or Yearly)
+DAYCAST PRO (Monthly or Yearly)
 • Sky Check — chat with current conditions; photo check when you want
 • Explain Radar — a plain-language read of the frame
 • Morning brief — a short written summary from Today's Take
-
-YEARLY ONLY
-• Future radar
 • Home Screen and Lock Screen widgets
 • Live Activity (updates when the app refreshes weather)
+• Unlimited saved locations
+
+YEARLY ONLY
+• Future radar — 12-hour scrub on the Radar tab
 
 WHAT'S FREE
 Radar, NWS alerts, SPC products, forecasts, and next-hour precipitation
-are free. Monthly adds AI and unlimited saved locations. Yearly adds
-Future radar, widgets, and Live Activity. AI has a daily limit.
+are free. Pro (Monthly or Yearly) adds AI, unlimited saved locations,
+widgets, and Live Activity. Yearly also adds Future radar. AI has a daily
+limit.
 
 DATA SOURCES
 Open-Meteo, the National Weather Service, the Storm Prediction Center, NEXRAD
