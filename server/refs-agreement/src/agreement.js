@@ -11,7 +11,8 @@ export const LIKELY_MAX_HOURS = 4;
 export const LIKELY_MIN_PEAK = 40;
 export const HRRR_WET_MM = 0.254;
 export const LIGHT_PRECIP_MM = 0.254;
-export const CUTOVER_UTC = Date.parse("2026-10-14T12:00:00Z");
+// RRFS/REFS production cutover (SCN 26-48 Updated AAE; was Oct 14). `parallel` is true until then.
+export const CUTOVER_UTC = Date.parse("2026-11-03T12:00:00Z");
 
 export function floorHour(date) {
   return new Date(Math.floor(date.getTime() / 3_600_000) * 3_600_000);

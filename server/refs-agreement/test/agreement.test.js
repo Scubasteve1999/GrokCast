@@ -125,9 +125,11 @@ test("hour labels stay on the hour", () => {
   );
 });
 
-test("parallel flips at the October 2026 cutover", () => {
-  assert.equal(parallelAt(new Date("2026-10-14T11:59:00Z")), true);
-  assert.equal(parallelAt(new Date("2026-10-14T12:00:00Z")), false);
+test("parallel flips at the November 3 2026 cutover", () => {
+  // The original Oct 14 date slipped (SCN 26-48 Updated AAE); REFS stays parallel through it.
+  assert.equal(parallelAt(new Date("2026-10-14T12:00:00Z")), true);
+  assert.equal(parallelAt(new Date("2026-11-03T11:59:00Z")), true);
+  assert.equal(parallelAt(new Date("2026-11-03T12:00:00Z")), false);
 });
 
 test("stub is marked, parallel, and not a minute clock", () => {

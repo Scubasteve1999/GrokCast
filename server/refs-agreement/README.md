@@ -8,7 +8,7 @@ Source is the NOAA operational parallel bucket `s3://noaa-rrfs-ops-pds` (HTTPS, 
 
 The 1-hour light-precip field is the `eas` message `APCP … prob >0.254 … process=197`. The worker reads the `.idx`, byte-ranges that message, and decodes one grid point. HRRR hourly precip, when the point is in CONUS or Alaska, comes from `s3://noaa-hrrr-bdp-pds` the same way. A HRRR miss leaves the REFS window up without a divergence sentence.
 
-`parallel` is `true` until 2026-10-14 12:00 UTC.
+`parallel` is `true` until 2026-11-03 12:00 UTC (SCN 26-48 Updated AAE moved it from Oct 14).
 
 ## Endpoints
 
@@ -38,7 +38,7 @@ Until that string is set, the chip stays hidden. DEBUG → Settings → Develope
 
 ## Era notice (slip-date)
 
-`GET /era-notice` is the Today banner / “What this means” dates. The worker reads KV `ERA_NOTICE` key `current`. A miss or invalid payload returns the app’s baked-in October 14 defaults.
+`GET /era-notice` is the Today banner / “What this means” dates. The worker reads KV `ERA_NOTICE` key `current`. A miss or invalid payload returns the app’s baked-in defaults (November 3, `slipped`).
 
 Move the date without an app release (from this directory, after `npx wrangler deploy`):
 

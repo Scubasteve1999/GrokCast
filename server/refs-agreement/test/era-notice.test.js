@@ -22,6 +22,17 @@ async function eraNotice(env) {
   return worker.fetch(new Request("https://refs.example/era-notice"), env);
 }
 
+test("defaults are the November 3 slip and pass their own validation", () => {
+  assert.equal(DEFAULT_ERA_NOTICE.id, "rrfs-2026-11-03");
+  assert.equal(DEFAULT_ERA_NOTICE.cutoverUTC, "2026-11-03T12:00:00Z");
+  assert.equal(DEFAULT_ERA_NOTICE.windowEndUTC, "2026-11-17T12:00:00Z");
+  assert.equal(DEFAULT_ERA_NOTICE.status, "slipped");
+  assert.deepEqual(sanitizeEraNotice({ ...DEFAULT_ERA_NOTICE, id: "x" }), {
+    ...DEFAULT_ERA_NOTICE,
+    id: "x",
+  });
+});
+
 test("sanitize returns defaults for missing or empty input", () => {
   assert.deepEqual(sanitizeEraNotice(null), DEFAULT_ERA_NOTICE);
   assert.deepEqual(sanitizeEraNotice(""), DEFAULT_ERA_NOTICE);

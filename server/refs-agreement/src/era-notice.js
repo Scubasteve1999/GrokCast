@@ -3,13 +3,15 @@
  * Missing or invalid KV falls back to the same dates the app ships as constants.
  */
 
+// SCN 26-48 Updated (AAE, Oct 2 2026) moved the cutover from Oct 14 to Nov 3.
+// Keep in lockstep with `ForecastEraNotice.fallback` in the app.
 export const DEFAULT_ERA_NOTICE = {
-  id: "scn-26-48-2026-10-14",
-  cutoverUTC: "2026-10-14T12:00:00Z",
+  id: "rrfs-2026-11-03",
+  cutoverUTC: "2026-11-03T12:00:00Z",
   windowStartUTC: "2026-10-07T12:00:00Z",
-  windowEndUTC: "2026-10-28T12:00:00Z",
-  status: "scheduled",
-  updatedAt: "2026-10-03T00:00:00Z",
+  windowEndUTC: "2026-11-17T12:00:00Z",
+  status: "slipped",
+  updatedAt: "2026-10-08T00:00:00Z",
 };
 
 const MIN_MS = Date.parse("2026-10-01T00:00:00Z");
