@@ -113,5 +113,5 @@ struct DayCastSmallWeatherWidget: Widget {
     date: .now, snapshot: nil, alertSummary: nil, isStale: false,
     emptyReason: .locationMismatch(locationName: "Memphis, TN"))
   WeatherWidgetEntry(
-    date: .now, snapshot: nil, alertSummary: nil, isStale: false, emptyReason: .requiresYearly)
+    date: .now, snapshot: nil, alertSummary: nil, isStale: false, emptyReason: .requiresPro)
 }

@@ -2,21 +2,23 @@ import Foundation
 
 /// App Group persistence for widget weather snapshots and saved locations.
 enum WidgetDataStore {
+  /// Any Pro plan (Monthly or Yearly). Widgets gate on this.
   static let isProKey = "daycast_is_pro"
-  /// Yearly extras. Do not hydrate this from `isProKey` — monthly must not flash widgets.
+  /// Yearly extras (Future radar). Do not hydrate this from `isProKey`.
   static let isYearlyKey = "daycast_is_yearly"
   static let snapshotsKey = "daycast_widget_weather_snapshots"
   static let legacySnapshotKey = "daycast_widget_weather_snapshot"
   static let alertSummariesKey = "daycast_widget_alert_summaries"
   static let savedLocationsKey = "daycast_saved_locations"
 
-  static var isYearlySubscriber: Bool {
-    groupDefaults?.bool(forKey: isYearlyKey) ?? false
+  /// Written by the app on every StoreKit refresh, for Monthly and Yearly alike.
+  static var isProSubscriber: Bool {
+    groupDefaults?.bool(forKey: isProKey) ?? false
   }
 
-  /// Home Screen / Lock Screen weather. Yearly App Group flag only — not monthly `isPro`.
-  static func canRenderWeather(isYearlySubscriber: Bool) -> Bool {
-    isYearlySubscriber
+  /// Home Screen / Lock Screen weather. Pro App Group flag — Monthly or Yearly, never free.
+  static func canRenderWeather(isProSubscriber: Bool) -> Bool {
+    isProSubscriber
   }
 
   private static var groupDefaults: UserDefaults? {

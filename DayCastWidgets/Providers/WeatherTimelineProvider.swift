@@ -129,13 +129,13 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
     WidgetDataStore.migrateLegacySnapshotIfNeeded()
 
     guard WidgetDataStore.canRenderWeather(
-      isYearlySubscriber: WidgetDataStore.isYearlySubscriber)
+      isProSubscriber: WidgetDataStore.isProSubscriber)
     else {
       return ResolvedWidgetWeather(
         snapshot: nil,
         alertSummary: nil,
         isStale: false,
-        emptyReason: .requiresYearly
+        emptyReason: .requiresPro
       )
     }
 

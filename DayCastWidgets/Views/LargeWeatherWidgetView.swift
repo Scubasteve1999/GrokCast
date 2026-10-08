@@ -221,5 +221,5 @@ struct DayCastLargeWeatherWidget: Widget {
   WeatherWidgetEntry(
     date: .now, snapshot: nil, alertSummary: nil, isStale: false, emptyReason: .noData)
   WeatherWidgetEntry(
-    date: .now, snapshot: nil, alertSummary: nil, isStale: false, emptyReason: .requiresYearly)
+    date: .now, snapshot: nil, alertSummary: nil, isStale: false, emptyReason: .requiresPro)
 }

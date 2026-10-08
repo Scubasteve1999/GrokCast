@@ -66,10 +66,10 @@ final class DayCastEntitlementTests: XCTestCase {
     let hasKey = GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey)
     // Future radar, Live Activity, and widgets are purchase-only.
     XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: false))
-    XCTAssertFalse(WidgetDataStore.canRenderWeather(isYearlySubscriber: false))
+    XCTAssertFalse(WidgetDataStore.canRenderWeather(isProSubscriber: false))
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: false, isPro: false, proxyConfigured: false, hasDeveloperKey: hasKey))
+        isPro: false, proxyConfigured: false, hasDeveloperKey: hasKey))
     XCTAssertTrue(
       RadarFutureChipPresentation.showsProLock(
         canUseYearlyExtras: DayCastEntitlements.canUseYearlyExtras(isYearly: false)))
@@ -77,10 +77,22 @@ final class DayCastEntitlementTests: XCTestCase {
 
   func testPersonalKeyGrantsMonthlyUserNoYearlyFeatures() {
     let hasKey = GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey)
+    // Monthly gets the widget one-liner from its plan; the key adds no Future radar.
+    XCTAssertTrue(
+      GrokAccessRules.canUseWidgetGrokBrief(
+        isPro: true, proxyConfigured: true, hasDeveloperKey: hasKey))
+    XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: false))
+  }
+
+  func testPersonalKeyStillGrantsNoWidgetsOrLiveActivity() {
+    let hasKey = GrokAPIConfiguration.isWellFormedDeveloperKey(fakePersonalKey)
+    XCTAssertTrue(hasKey)
+    // A key never sets `isPro`; only a StoreKit purchase does.
+    XCTAssertFalse(DayCastEntitlements.canUseProSurfaces(isPro: false))
+    XCTAssertFalse(WidgetDataStore.canRenderWeather(isProSubscriber: false))
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: false, isPro: true, proxyConfigured: true, hasDeveloperKey: hasKey))
-    XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: false))
+        isPro: false, proxyConfigured: true, hasDeveloperKey: hasKey))
   }
 
   func testPersonalKeyGrantsNoMonthlyFeaturesBeyondAI() {
@@ -98,19 +110,18 @@ final class DayCastEntitlementTests: XCTestCase {
   func testYearlyWithPersonalKeyStillGetsWidgetBrief() {
     XCTAssertTrue(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: true, isPro: true, proxyConfigured: false, hasDeveloperKey: true))
+        isPro: true, proxyConfigured: false, hasDeveloperKey: true))
   }
 
-  func testMonthlyUnlocksAIButNotWidgetBrief() {
+  func testMonthlyUnlocksAIAndWidgetBrief() {
     XCTAssertTrue(
       GrokAccessRules.canUseGrokAI(
         isPro: true, proxyConfigured: true, hasDeveloperKey: false))
     XCTAssertTrue(
       GrokAccessRules.canUseMorningBrief(
         isPro: true, proxyConfigured: true, hasDeveloperKey: false))
-    XCTAssertFalse(
+    XCTAssertTrue(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: false,
         isPro: true,
         proxyConfigured: true,
         hasDeveloperKey: false
@@ -120,7 +131,6 @@ final class DayCastEntitlementTests: XCTestCase {
   func testYearlyUnlocksAIAndWidgetBrief() {
     XCTAssertTrue(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: true,
         isPro: true,
         proxyConfigured: true,
         hasDeveloperKey: false
@@ -133,30 +143,73 @@ final class DayCastEntitlementTests: XCTestCase {
         isPro: false, proxyConfigured: false, hasDeveloperKey: true))
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: false,
         isPro: false,
         proxyConfigured: false,
         hasDeveloperKey: true
       ))
   }
 
-  func testHomeScreenWidgetsRequireYearlyFlag() {
+  func testHomeScreenWidgetsRequireProFlag() {
     XCTAssertFalse(
-      WidgetDataStore.canRenderWeather(isYearlySubscriber: false))
+      WidgetDataStore.canRenderWeather(isProSubscriber: false))
     XCTAssertTrue(
-      WidgetDataStore.canRenderWeather(isYearlySubscriber: true))
-    XCTAssertEqual(WidgetEmptyReason.requiresYearly.title, "Yearly unlocks widgets")
-    XCTAssertEqual(WidgetEmptyReason.requiresYearly.message, "Tap to open DayCast.")
+      WidgetDataStore.canRenderWeather(isProSubscriber: true))
+    XCTAssertEqual(WidgetEmptyReason.requiresPro.title, "Pro unlocks widgets")
+    XCTAssertEqual(WidgetEmptyReason.requiresPro.message, "Tap to open DayCast.")
   }
 
-  func testMonthlyResolvedEntitlementDoesNotUnlockWidgetSurface() {
+  func testWidgetGateReadsTheProKeyNotTheYearlyKey() throws {
+    // Monthly subscribers already have `daycast_is_pro` written; no migration needed.
+    XCTAssertEqual(WidgetDataStore.isProKey, "daycast_is_pro")
+    XCTAssertEqual(WidgetDataStore.isYearlyKey, "daycast_is_yearly")
+    guard let defaults = WidgetAppGroup.userDefaults else {
+      throw XCTSkip("App Group container unavailable in this test host")
+    }
+    let savedPro = defaults.object(forKey: WidgetDataStore.isProKey)
+    let savedYearly = defaults.object(forKey: WidgetDataStore.isYearlyKey)
+    defer {
+      defaults.set(savedPro, forKey: WidgetDataStore.isProKey)
+      defaults.set(savedYearly, forKey: WidgetDataStore.isYearlyKey)
+    }
+    defaults.set(true, forKey: WidgetDataStore.isProKey)
+    defaults.set(false, forKey: WidgetDataStore.isYearlyKey)
+    XCTAssertTrue(WidgetDataStore.isProSubscriber, "a Monthly App Group renders widgets")
+    defaults.set(false, forKey: WidgetDataStore.isProKey)
+    defaults.set(true, forKey: WidgetDataStore.isYearlyKey)
+    XCTAssertFalse(WidgetDataStore.isProSubscriber, "the Yearly key alone is not the gate")
+  }
+
+  func testMonthlyResolvedEntitlementUnlocksWidgetSurface() {
     let monthly = DayCastProProducts.resolvedEntitlement(productIDs: [
       DayCastProProducts.monthly
     ])
     XCTAssertTrue(monthly.isPro)
     XCTAssertFalse(monthly.isYearly)
-    XCTAssertFalse(
-      WidgetDataStore.canRenderWeather(isYearlySubscriber: monthly.isYearly))
+    XCTAssertTrue(
+      WidgetDataStore.canRenderWeather(isProSubscriber: monthly.isPro))
+  }
+
+  func testMonthlyGetsWidgetsAndLiveActivity() {
+    let monthly = DayCastProProducts.resolvedEntitlement(productIDs: [
+      DayCastProProducts.monthly
+    ])
+    XCTAssertTrue(DayCastEntitlements.canUseProSurfaces(isPro: monthly.isPro))
+    XCTAssertTrue(WidgetDataStore.canRenderWeather(isProSubscriber: monthly.isPro))
+  }
+
+  func testMonthlyIsStillLockedOutOfFutureRadar() {
+    let monthly = DayCastProProducts.resolvedEntitlement(productIDs: [
+      DayCastProProducts.monthly
+    ])
+    XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: monthly.isYearly))
+    XCTAssertEqual(RadarFutureLock.resolve(isPro: monthly.isPro, isYearly: monthly.isYearly), .yearly)
+  }
+
+  func testFreeGetsNeitherWidgetsNorLiveActivity() {
+    let free = DayCastProProducts.resolvedEntitlement(productIDs: [])
+    XCTAssertFalse(DayCastEntitlements.canUseProSurfaces(isPro: free.isPro))
+    XCTAssertFalse(WidgetDataStore.canRenderWeather(isProSubscriber: free.isPro))
+    XCTAssertFalse(DayCastEntitlements.canUseYearlyExtras(isYearly: free.isYearly))
   }
 
   func testYearlyResolvedEntitlementUnlocksWidgetSurface() {
@@ -165,7 +218,7 @@ final class DayCastEntitlementTests: XCTestCase {
     ])
     XCTAssertTrue(yearly.isYearly)
     XCTAssertTrue(
-      WidgetDataStore.canRenderWeather(isYearlySubscriber: yearly.isYearly))
+      WidgetDataStore.canRenderWeather(isProSubscriber: yearly.isPro))
   }
 
   func testNamedSavedCountIgnoresGPSPins() {
@@ -280,7 +333,6 @@ final class DayCastEntitlementTests: XCTestCase {
       DayCastEntitlements.canUseYearlyExtras(isYearly: false))
     XCTAssertFalse(
       GrokAccessRules.canUseWidgetGrokBrief(
-        isYearly: false,
         isPro: false,
         proxyConfigured: true,
         hasDeveloperKey: false

@@ -47,8 +47,8 @@ struct LockScreenWeatherWidgetView: View {
 
   private var inlineEmptyMessage: String {
     switch entry.emptyReason {
-    case .requiresYearly:
-      WidgetEmptyReason.requiresYearly.title
+    case .requiresPro:
+      WidgetEmptyReason.requiresPro.title
     case .locationMismatch(let name):
       "Open \(name) in DayCast"
     case .noData:
@@ -60,8 +60,8 @@ struct LockScreenWeatherWidgetView: View {
 
   private var rectangularEmptyMessage: String {
     switch entry.emptyReason {
-    case .requiresYearly:
-      WidgetEmptyReason.requiresYearly.message
+    case .requiresPro:
+      WidgetEmptyReason.requiresPro.message
     case .locationMismatch(let name):
       "Select \(name) in the app to update."
     case .noData:

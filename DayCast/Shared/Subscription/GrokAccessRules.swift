@@ -14,14 +14,13 @@ enum GrokAccessRules {
     return isPro && proxyConfigured
   }
 
-  /// Home Screen AI one-liner needs Yearly. A personal key only powers the AI text.
+  /// Home Screen AI one-liner needs Pro (Monthly or Yearly). A personal key only powers the AI text.
   static func canUseWidgetGrokBrief(
-    isYearly: Bool,
     isPro: Bool,
     proxyConfigured: Bool,
     hasDeveloperKey: Bool
   ) -> Bool {
-    guard DayCastEntitlements.canUseYearlyExtras(isYearly: isYearly) else { return false }
+    guard DayCastEntitlements.canUseProSurfaces(isPro: isPro) else { return false }
     return canUseGrokAI(
       isPro: isPro, proxyConfigured: proxyConfigured, hasDeveloperKey: hasDeveloperKey)
   }

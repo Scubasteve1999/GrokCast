@@ -9,7 +9,7 @@ final class SubscriptionManager {
 
   private(set) var products: [Product] = []
   private(set) var isPro = false
-  /// Yearly extras (Future radar, Live Activity, Pro widgets). Monthly is not this.
+  /// Yearly extras (Future radar). Widgets and Live Activity follow `isPro`.
   private(set) var isYearly = false
   /// Apple-signed proof of entitlement, sent to the Grok proxy on every AI call.
   /// The proxy verifies it against Apple's root, so nothing else here is trusted.
@@ -37,8 +37,8 @@ final class SubscriptionManager {
   #endif
 
   private init() {
-    // Split App Group flags: monthly keeps AI on cold launch; yearly extras
-    // stay off until StoreKit confirms the yearly product (no monthly flash).
+    // Split App Group flags: Pro (AI, widgets, Live Activity) is on at cold launch;
+    // Future radar stays off until StoreKit confirms the yearly product.
     let defaults = WidgetAppGroup.userDefaults
     isPro = defaults?.bool(forKey: WidgetDataStore.isProKey) ?? false
     isYearly = defaults?.bool(forKey: WidgetDataStore.isYearlyKey) ?? false
@@ -168,7 +168,15 @@ final class SubscriptionManager {
 
   private func syncFlagsToAppGroup(isPro: Bool, isYearly: Bool) {
     let defaults = WidgetAppGroup.userDefaults
+    let changed =
+      defaults?.bool(forKey: WidgetDataStore.isProKey) != isPro
+      || defaults?.bool(forKey: WidgetDataStore.isYearlyKey) != isYearly
     defaults?.set(isPro, forKey: WidgetDataStore.isProKey)
     defaults?.set(isYearly, forKey: WidgetDataStore.isYearlyKey)
+    // Widgets gate on the Pro flag. Reload so a purchase or lapse shows without waiting
+    // for the next weather save.
+    if changed {
+      WidgetTimelineReloader.requestReload()
+    }
   }
 }

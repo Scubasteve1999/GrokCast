@@ -24,7 +24,7 @@ struct WidgetWeatherSnapshot: Codable, Equatable {
   let grokCastScore: Int?
   let grokCastScoreLabel: String?
   let minutecastMessage: String?
-  /// First line of the daily Grok brief. Still written when yearly-gated;
+  /// First line of the daily Grok brief. Nil unless Pro (Monthly or Yearly);
   /// glance widgets no longer show sparkles chrome for it.
   let grokBriefOneLiner: String?
 

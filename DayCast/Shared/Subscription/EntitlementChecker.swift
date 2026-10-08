@@ -44,18 +44,17 @@ enum EntitlementChecker {
     DayCastEntitlements.canUseYearlyExtras(isYearly: subscription.isYearly)
   }
 
-  /// Yearly only. A personal xAI key never unlocks Live Activity.
+  /// Any Pro plan, Monthly or Yearly. A personal xAI key never unlocks Live Activity.
   static func canUseLiveActivity(subscription: SubscriptionManager) -> Bool {
-    DayCastEntitlements.canUseYearlyExtras(isYearly: subscription.isYearly)
+    DayCastEntitlements.canUseProSurfaces(isPro: subscription.isPro)
   }
 
-  /// Widget AI one-liner needs Yearly. A personal key can only power the AI text.
+  /// Widget AI one-liner needs Pro. A personal key can only power the AI text.
   static func canUseWidgetGrokBrief(
     subscription: SubscriptionManager,
     hasDeveloperKey: Bool
   ) -> Bool {
     GrokAccessRules.canUseWidgetGrokBrief(
-      isYearly: subscription.isYearly,
       isPro: subscription.isPro,
       proxyConfigured: GrokProxyConfiguration.isConfigured,
       hasDeveloperKey: hasDeveloperKey
@@ -86,9 +85,14 @@ enum EntitlementChecker {
   }
 }
 
-/// Future radar, Live Activity, and Pro widgets. Not monthly.
-/// Purchase-only: a personal xAI key powers AI requests, never these.
+/// Purchase-only surfaces: a personal xAI key powers AI requests, never these.
 enum DayCastEntitlements {
+  /// Home Screen / Lock Screen widgets and Live Activity. Monthly and Yearly.
+  static func canUseProSurfaces(isPro: Bool) -> Bool {
+    isPro
+  }
+
+  /// 12-hr Future radar. Yearly only.
   static func canUseYearlyExtras(isYearly: Bool) -> Bool {
     isYearly
   }
