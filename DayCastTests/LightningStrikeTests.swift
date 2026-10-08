@@ -203,4 +203,24 @@ final class LightningStrikeTests: XCTestCase {
       ]
     }
     """.data(using: .utf8)!
+
+  // MARK: - Failed feed is visible
+
+  func testFailedFeedShowsAQuietNoticeInsteadOfAnEmptyOverlay() {
+    for reason in [LightningFetchQuietReason.network, .insufficientScope] {
+      let snapshot = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: reason)
+      XCTAssertTrue(LightningStore.showsQuietAttribution(for: snapshot), "\(reason)")
+      XCTAssertEqual(
+        LightningStore.attributionLabel(for: snapshot),
+        RadarChromeCopy.lightningTemporarilyUnavailable)
+    }
+  }
+
+  func testGenuineEmptyAndMissingKeyStayOffTheMap() {
+    for reason in [LightningFetchQuietReason.empty, .missingKey] {
+      let snapshot = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: reason)
+      XCTAssertFalse(LightningStore.showsQuietAttribution(for: snapshot), "\(reason)")
+    }
+    XCTAssertFalse(LightningStore.showsQuietAttribution(for: LightningSnapshot()))
+  }
 }

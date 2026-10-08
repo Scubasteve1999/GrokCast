@@ -209,6 +209,14 @@ final class RadarState {
 
   var hasFutureFrames: Bool { timeline.hasForecast }
 
+  /// True when the loader reported the 12-hr outage (not the pre-load placeholder).
+  var forecastIsTemporarilyUnavailable: Bool {
+    if case .unavailable(let message) = forecastTileAvailability {
+      return message == RadarChromeCopy.futureTemporarilyUnavailable
+    }
+    return false
+  }
+
   var autoResumeAfterScrub = true
 
   var currentFrame: RadarFrame? {
@@ -261,6 +269,12 @@ final class RadarState {
     }
     if !showsFuture, selectedProduct.isSiteProduct, let note = siteProductAdvisory {
       return RadarStatusFooter(text: note, style: .warning)
+    }
+    // The 12-hr chip is greyed out because every forecast source failed. Say so, since a
+    // disabled control with no reason reads as broken.
+    if !showsFuture, !pickerShowsFuture, !hasFutureFrames, forecastIsTemporarilyUnavailable {
+      return RadarStatusFooter(
+        text: RadarChromeCopy.futureTemporarilyUnavailable, style: .warning)
     }
     if let provider = activeLiveProvider {
       return RadarStatusFooter(
@@ -427,8 +441,21 @@ final class RadarState {
       return fallback.availability.hasFrames
     }
 
+    // No tiles and no frames: drop the timeline so the chip disables instead of entering
+    // an empty 12-hr map that reads as "no rain".
+    if !availability.hasFrames { timeline.forecast = [] }
     forecastTileAvailability = availability
     return availability.hasFrames
+  }
+
+  /// Backs out of a 12-hr switch whose forecast just failed, keeping the failure note.
+  func abortTransitionKeepingForecastStatus(expectedID: UUID) {
+    guard let activeTransition = transition, activeTransition.id == expectedID else { return }
+    restorePlaybackIndex(
+      savedIndex: activeTransition.savedIndex,
+      wasFuture: activeTransition.savedWasFuture
+    )
+    transition = nil
   }
 
   private func beginTransition(targetIsFuture: Bool) {
@@ -694,6 +721,10 @@ extension RadarState {
   }
 
   /// Simulates a failed redundant site refresh (transient miss) for tests.
+  func setForecastAvailabilityForTesting(_ availability: RadarTileAvailability) {
+    forecastTileAvailability = availability
+  }
+
   func applyFailedSiteRefreshForTesting() {
     applyFailedSiteRefresh()
   }

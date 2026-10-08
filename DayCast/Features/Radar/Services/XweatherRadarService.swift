@@ -41,9 +41,29 @@ final class XweatherRadarService {
     DeveloperAPIKey.xweatherMapsAuth != nil
   }
 
+  /// False only when probes have run and failed (inside their cache TTL). An unprobed
+  /// service counts as healthy, so the first paint is never delayed by a probe. Live is
+  /// down when both `radar-global` and `radar` failed. Future is down when `fradar` failed.
+  /// Gates the MapsGL SDK, which has no tile-error hook of its own.
+  static func mapsHealthy(future: Bool) -> Bool {
+    if future {
+      return cachedProbe(for: probeCacheKey(layer: .fradar, offset: "+1hour", retina: true))
+        != false
+    }
+    let live = [XweatherRadarLayer.radarGlobal, .radar].map {
+      cachedProbe(for: probeCacheKey(layer: $0, offset: "current", retina: true))
+    }
+    return !live.allSatisfy { $0 == false }
+  }
+
   /// User-facing hint when probes fail but keys are configured (e.g. daily quota).
   static var userFacingUnavailableMessage: String? {
     guard let failure = currentProbeFailure(preferringLive: true) else { return nil }
+    #if !DEBUG
+      // Key names, quota and HTTP details are for developers. Users get one honest line.
+      _ = failure
+      return RadarChromeCopy.radarTemporarilyUnavailable
+    #else
     switch failure {
     case .quotaExceeded:
       return "Xweather daily map quota exceeded. Tiles refresh when quota resets."
@@ -52,6 +72,12 @@ final class XweatherRadarService {
     case .other(let detail):
       return "Xweather radar unavailable. \(detail)"
     }
+    #endif
+  }
+
+  /// Full failure detail for `radarLog` only. Never shown to users.
+  static var debugFailureDescription: String? {
+    currentProbeFailure(preferringLive: false).map { "\($0)" }
   }
 
   private enum FrameTimelineDirection {
@@ -227,7 +253,7 @@ final class XweatherRadarService {
     lock.unlock()
   }
 
-  private static func probeCacheKey(layer: XweatherRadarLayer, offset: String, retina: Bool) -> String {
+  static func probeCacheKey(layer: XweatherRadarLayer, offset: String, retina: Bool) -> String {
     "\(layer.rawValue)/\(offset)/\(retina ? "2x" : "1x")"
   }
 
@@ -382,7 +408,7 @@ final class XweatherRadarService {
     return entry.result
   }
 
-  private static func storeProbe(_ result: Bool, for key: String) {
+  static func storeProbe(_ result: Bool, for key: String) {
     lock.lock()
     probeCache[key] = (result, Date())
     lock.unlock()

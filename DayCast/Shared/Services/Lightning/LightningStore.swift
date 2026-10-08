@@ -20,12 +20,22 @@ final class LightningStore {
 
   private init() {}
 
-  /// Map chrome only when there is lightning to attribute. Empty/error stays off the map.
-  var showsQuietAttribution: Bool {
-    !snapshot.strikes.isEmpty
+  /// Map chrome when there is lightning to attribute, or when the feed failed (an empty
+  /// overlay would otherwise read as "no lightning"). A genuine empty result and a missing
+  /// key stay off the map.
+  var showsQuietAttribution: Bool { Self.showsQuietAttribution(for: snapshot) }
+
+  var attributionLabel: String { Self.attributionLabel(for: snapshot) }
+
+  nonisolated static func showsQuietAttribution(for snapshot: LightningSnapshot) -> Bool {
+    if !snapshot.strikes.isEmpty { return true }
+    switch snapshot.quietReason {
+    case .network, .insufficientScope: return true
+    case .empty, .missingKey, nil: return false
+    }
   }
 
-  var attributionLabel: String {
+  nonisolated static func attributionLabel(for snapshot: LightningSnapshot) -> String {
     guard let reason = snapshot.quietReason, snapshot.strikes.isEmpty else {
       return "Lightning · \(LightningSnapshot.attribution)"
     }
@@ -34,10 +44,9 @@ final class LightningStore {
       return "No lightning · \(LightningSnapshot.attribution)"
     case .missingKey:
       return "Lightning needs Xweather keys"
-    case .insufficientScope:
-      return "Lightning not licensed · \(LightningSnapshot.attribution)"
-    case .network:
-      return "Lightning unavailable · \(LightningSnapshot.attribution)"
+    case .insufficientScope, .network:
+      // A 403 can be a license gap or an exhausted quota; users get one honest line.
+      return RadarChromeCopy.lightningTemporarilyUnavailable
     }
   }
 

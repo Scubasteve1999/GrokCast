@@ -519,7 +519,7 @@ private struct RadarDisplayOptionsSheet: View {
     MapsGLRadarPalette.showsRasterColorScheme(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
-      keysPresent: MapsGLRadarHost.keysPresent
+      keysPresent: MapsGLRadarHost.isUsable(future: radarState.showsFuture)
     )
   }
 

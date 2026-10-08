@@ -167,7 +167,7 @@ struct RadarFeedCard: View {
       hoisted: hoisted,
       hasDrawableSweep: sweep != nil && !polarFailed,
       mapboxPresent: RadarPreviewSource.mapboxTokenPresent,
-      mapsGLKeysPresent: MapsGLRadarHost.keysPresent
+      mapsGLKeysPresent: MapsGLRadarHost.isUsable(future: false)
     )
   }
 

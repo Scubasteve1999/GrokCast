@@ -513,7 +513,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       let mapsGLRain = MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: radarState.showRadarOverlay,
         isSiteProduct: radarState.selectedProduct.isSiteProduct,
-        keysPresent: MapsGLRadarHost.keysPresent,
+        keysPresent: MapsGLRadarHost.isUsable(future: radarState.showsFuture),
         nationalUsesMRMS: radarState.nationalUsesMRMSPaint
       )
       // Encoded MapsGL rain replaces baked PNG only after the Metal layer is up.

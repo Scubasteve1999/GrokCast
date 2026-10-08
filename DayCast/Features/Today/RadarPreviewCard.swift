@@ -67,6 +67,9 @@ struct RadarPreviewCard: View {
 
   @State private var nationalFrame: RadarFrame?
   @State private var nationalTilesFailed = false
+  /// Optimistic until the Xweather probe says otherwise. The MapsGL SDK cannot report
+  /// rejected tiles, so a failing probe sends the teaser to the National PNG tiles.
+  @State private var xweatherMapsHealthy = true
 
   private var coordinate: CLLocationCoordinate2D? {
     guard let loc = store.currentLocation else { return nil }
@@ -85,7 +88,8 @@ struct RadarPreviewCard: View {
       paint: paint,
       hasCoordinate: coordinate != nil,
       hasSweep: sweep != nil,
-      mapsGLReady: RadarPreviewSource.usesMapsGL(keysPresent: MapsGLRadarHost.keysPresent),
+      mapsGLReady: RadarPreviewSource.usesMapsGL(
+        keysPresent: MapsGLRadarHost.isUsable(future: showsFuture) && xweatherMapsHealthy),
       mapboxPresent: RadarPreviewSource.mapboxTokenPresent
     )
     Group {
@@ -119,6 +123,19 @@ struct RadarPreviewCard: View {
     .task(id: nationalLoadKey(shown)) {
       await loadNationalTilesIfNeeded(shown)
     }
+    .task(id: showsFuture) {
+      await refreshXweatherMapsHealth()
+    }
+  }
+
+  private func refreshXweatherMapsHealth() async {
+    guard MapsGLRadarHost.keysPresent else { return }
+    let healthy =
+      showsFuture
+      ? await XweatherRadarService.probeForecastAvailability()
+      : await XweatherRadarService.probeAvailability()
+    guard !Task.isCancelled else { return }
+    xweatherMapsHealthy = healthy
   }
 
   @ViewBuilder

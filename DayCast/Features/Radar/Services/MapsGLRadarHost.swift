@@ -46,6 +46,12 @@ final class MapsGLRadarHost {
     return true
   }
 
+  /// Keys present AND the Xweather Maps probe is not known to be failing. The SDK cannot
+  /// report rejected tiles, so a failing probe must send painting back to the PNG path.
+  nonisolated static func isUsable(future: Bool) -> Bool {
+    keysPresent && XweatherRadarService.mapsHealthy(future: future)
+  }
+
   func attach(to mapView: MapView) {
     guard Self.keysPresent else { return }
     if attachedMapView === mapView, controller != nil { return }
@@ -114,7 +120,7 @@ final class MapsGLRadarHost {
     lastOverlayOn = true
     lastIsSiteProduct = false
     let want = MapsGLRadarPalette.shouldUseMapsGL(
-      overlayOn: true, isSiteProduct: false, keysPresent: Self.keysPresent
+      overlayOn: true, isSiteProduct: false, keysPresent: Self.isUsable(future: future)
     )
     guard let controller else {
       lastVisible = want
@@ -148,7 +154,7 @@ final class MapsGLRadarHost {
     let want = MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
-      keysPresent: Self.keysPresent,
+      keysPresent: Self.isUsable(future: radarState.showsFuture),
       nationalUsesMRMS: radarState.nationalUsesMRMSPaint
     )
     guard let controller else {
@@ -182,7 +188,7 @@ final class MapsGLRadarHost {
     let rainWant = MapsGLLiveRainLayers.shouldAttachRadar(
       overlayOn: lastOverlayOn ?? false,
       isSiteProduct: lastIsSiteProduct ?? true,
-      keysPresent: Self.keysPresent,
+      keysPresent: Self.isUsable(future: lastFuture ?? false),
       nationalUsesMRMS: lastNationalUsesMRMS ?? false
     )
     applyVisibility(rainWant, on: controller)
@@ -369,7 +375,7 @@ final class MapsGLRadarHost {
     return MapsGLLiveRainLayers.shouldShow(
       overlayOn: lastOverlayOn ?? false,
       isSiteProduct: lastIsSiteProduct ?? true,
-      keysPresent: Self.keysPresent,
+      keysPresent: Self.isUsable(future: false),
       isLive: lastFuture != true
     )
   }

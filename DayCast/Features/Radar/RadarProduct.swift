@@ -149,6 +149,11 @@ enum RadarChromeCopy {
   static let liveChip = "Live"
   /// Matches `RadarTimelineConfig.forecastHorizonHours` (Now through +11h).
   static let futureChip = "12-hr"
+  /// Shown when the 12-hr source and every fallback fail. No provider, key or quota detail.
+  static let futureTemporarilyUnavailable = "12-hr radar is temporarily unavailable."
+  /// Generic Live/provider outage line. Detailed reasons stay in `radarLog` and DEBUG builds.
+  static let radarTemporarilyUnavailable = "Radar data is temporarily unavailable."
+  static let lightningTemporarilyUnavailable = "Lightning temporarily unavailable"
   /// Locked Future entry for free users. Yearly sees plain `futureChip`.
   static let futureLockedChip = "12-hr · Pro"
   /// Locked Future entry for Monthly Pro. Future radar is Yearly-only.

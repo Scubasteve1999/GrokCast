@@ -143,13 +143,12 @@ final class RadarLoader {
           return .available
         }
 
-        let message =
-          XweatherRadarService.userFacingUnavailableMessage
-          ?? "Xweather forecast radar unavailable."
-        radarLog("[Xweather] FUTURE probe failed — timeline-only")
-        return .timelineOnly(message: message)
+        radarLog(
+          "[Xweather] FUTURE probe failed — \(XweatherRadarService.debugFailureDescription ?? "unknown")"
+        )
+        return .unavailable(message: RadarChromeCopy.futureTemporarilyUnavailable)
       }
-      return .timelineOnly(message: "Xweather keys not configured for forecast.")
+      return .unavailable(message: RadarChromeCopy.futureTemporarilyUnavailable)
     case .mrms:
       return .unavailable(message: "Forecast radar unavailable.")
     case .openWeatherMap:
@@ -331,29 +330,17 @@ final class RadarLoader {
           return fallback
         }
 
-        // Auth failures cannot paint tiles — don't keep a fake Xweather timeline.
-        if XweatherRadarService.lastFailureIsUnauthorized {
-          let message =
-            XweatherRadarService.userFacingUnavailableMessage
-            ?? "Xweather Maps keys invalid or lack Maps access."
-          radarLog("[RadarLoader] Forecast unavailable — Xweather auth failed, no fallback")
-          return LoadOutcome(
-            frames: [],
-            provider: nil,
-            availability: .unavailable(message: message)
-          )
-        }
-
-        let message =
-          XweatherRadarService.userFacingUnavailableMessage
-          ?? "Xweather forecast radar unavailable."
+        // Whatever the reason (auth, quota, network), Xweather cannot paint tiles and nothing
+        // else can either. A timeline with no echoes would look like "no rain", so don't
+        // offer one: report the outage honestly and let the chip show it.
         radarLog(
-          "[RadarLoader] Forecast timeline-only (\(xwFrames.count) frames) — \(message)"
+          "[RadarLoader] Forecast unavailable — Xweather probe failed, no fallback: "
+            + (XweatherRadarService.debugFailureDescription ?? "unknown")
         )
         return LoadOutcome(
-          frames: xwFrames,
-          provider: .xweather,
-          availability: .timelineOnly(message: message)
+          frames: [],
+          provider: nil,
+          availability: .unavailable(message: RadarChromeCopy.futureTemporarilyUnavailable)
         )
       }
     }
@@ -363,9 +350,9 @@ final class RadarLoader {
     }
 
     let message =
-      XweatherRadarService.userFacingUnavailableMessage
-      ?? OpenWeatherMapRadarService.userFacingUnavailableMessage
-      ?? "Forecast radar unavailable."
+      XweatherRadarService.userFacingUnavailableMessage != nil
+      ? RadarChromeCopy.futureTemporarilyUnavailable
+      : (OpenWeatherMapRadarService.userFacingUnavailableMessage ?? "Forecast radar unavailable.")
     radarLog("[RadarLoader] Forecast timeline unavailable (no valid provider)")
     return LoadOutcome(
       frames: [],

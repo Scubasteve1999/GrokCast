@@ -504,9 +504,13 @@ struct RadarView: View {
     }
 
     if activeTransition.targetIsFuture {
-      _ = await radarState.refreshForecastTileAvailability()
+      let forecastReady = await radarState.refreshForecastTileAvailability()
       guard !Task.isCancelled, radarState.transition?.id == activeTransition.id else {
         radarState.abortTransition(expectedID: activeTransition.id)
+        return
+      }
+      guard forecastReady else {
+        radarState.abortTransitionKeepingForecastStatus(expectedID: activeTransition.id)
         return
       }
     }
