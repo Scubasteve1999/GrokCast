@@ -168,9 +168,12 @@ final class RefsAgreementTests: XCTestCase {
   }
 
   func testParallelFlipsAtCutover() {
-    XCTAssertTrue(RefsAgreement.parallel(at: utc("2026-10-14T11:59:00Z")))
-    XCTAssertFalse(RefsAgreement.parallel(at: utc("2026-10-14T12:00:00Z")))
-    XCTAssertEqual(RefsAgreement.cutoverUTC, utc("2026-10-14T12:00:00Z"))
+    // Oct 14 slipped to Nov 3 (SCN 26-48 Updated AAE); REFS stays parallel through Oct 14.
+    XCTAssertTrue(RefsAgreement.parallel(at: utc("2026-10-14T12:00:00Z")))
+    XCTAssertTrue(RefsAgreement.parallel(at: utc("2026-11-03T11:59:00Z")))
+    XCTAssertFalse(RefsAgreement.parallel(at: utc("2026-11-03T12:00:00Z")))
+    XCTAssertEqual(RefsAgreement.cutoverUTC, utc("2026-11-03T12:00:00Z"))
+    XCTAssertEqual(RefsAgreement.cutoverUTC, ForecastEraNotice.cutoverUTC)
   }
 
   func testDecodeDropsSoftPeakWithoutAWindowAndStripsEASCopy() throws {

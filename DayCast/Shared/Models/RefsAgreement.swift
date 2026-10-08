@@ -97,8 +97,9 @@ enum RefsAgreement {
   static let likelyMaxHours = 4
   static let likelyMinPeak = 40.0
   static let hrrrWetMillimeters = 0.254
-  /// NCEP production cutover. `parallel` stays true until this instant.
-  static let cutoverUTC = Date(timeIntervalSince1970: 1_791_979_200)
+  /// NCEP production cutover, 2026-11-03 12:00 UTC (SCN 26-48 Updated AAE; was Oct 14).
+  /// `parallel` stays true until this instant. Matches worker `CUTOVER_UTC`.
+  static let cutoverUTC = Date(timeIntervalSince1970: 1_793_707_200)
 
   struct HourSample: Equatable, Sendable {
     var valid: Date
