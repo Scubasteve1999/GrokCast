@@ -43,17 +43,25 @@ enum AlertsActiveCopy {
     return parts.joined(separator: " · ")
   }
 
+  /// Shown instead of NWS status when the location is outside NWS coverage.
+  static let officialAlertsUnavailable = "Official alerts aren't available here"
+
   /// Always-on NWS status for the Alerts screen. Never invents a warning count.
+  /// Outside NWS coverage the line stays silent about NWS (hard rule: NWS is additive).
   static func authorityLine(
     locationName: String?,
     nwsCount: Int,
     checkedAt: Date?,
     loadState: AlertsLoadState,
     hasCachedAlerts: Bool,
+    isNWSCovered: Bool = true,
     now: Date = Date()
   ) -> String {
-    var parts = ["NWS"]
     let place = locationName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard isNWSCovered else {
+      return ([place, officialAlertsUnavailable].filter { !$0.isEmpty }).joined(separator: " · ")
+    }
+    var parts = ["NWS"]
     if !place.isEmpty { parts.append(place) }
 
     switch loadState {
@@ -82,6 +90,22 @@ enum AlertsActiveCopy {
       }
     }
     return parts.joined(separator: " · ")
+  }
+
+  static func emptyStateDescription(locationName: String?, isNWSCovered: Bool) -> String {
+    guard isNWSCovered else {
+      return
+        "Official weather alerts aren't available for \(locationName ?? "this location") yet. Forecast and radar still work as usual."
+    }
+    return
+      "No active or recent NWS alerts for \(locationName ?? "your location"). Severe weather warnings and watches will appear here."
+  }
+
+  static func loadFailedDescription(locationName: String?, isNWSCovered: Bool) -> String {
+    let place = locationName ?? "this location"
+    return isNWSCovered
+      ? "Couldn't check NWS alerts for \(place). Try again."
+      : "Couldn't check alerts for \(place). Try again."
   }
 
   static func lastCheckPhrase(_ checkedAt: Date, now: Date = Date()) -> String {

@@ -17,6 +17,30 @@ final class AlertsActiveCopyTests: XCTestCase {
     XCTAssertTrue(AlertsActiveCopy.grokFollowsOfficialAlerts)
   }
 
+  func testOutsideNWSCoverageCopyNeverMentionsNWS() {
+    let line = AlertsActiveCopy.authorityLine(
+      locationName: "London",
+      nwsCount: 0,
+      checkedAt: Date(),
+      loadState: .loaded,
+      hasCachedAlerts: false,
+      isNWSCovered: false
+    )
+    XCTAssertEqual(line, "London · Official alerts aren't available here")
+    let empty = AlertsActiveCopy.emptyStateDescription(locationName: "London", isNWSCovered: false)
+    let failed = AlertsActiveCopy.loadFailedDescription(locationName: "London", isNWSCovered: false)
+    for copy in [line, empty, failed] {
+      XCTAssertFalse(copy.contains("NWS"), copy)
+      XCTAssertFalse(copy.contains("National Weather Service"), copy)
+    }
+  }
+
+  func testUSEmptyStateKeepsNWSAttribution() {
+    let copy = AlertsActiveCopy.emptyStateDescription(
+      locationName: "Olive Branch, MS", isNWSCovered: true)
+    XCTAssertTrue(copy.hasPrefix("No active or recent NWS alerts for Olive Branch, MS."))
+  }
+
   func testStateLineLeadsWithPlaceThenCountThenFreshness() {
     let now = date(year: 2026, month: 8, day: 25, hour: 12)
     let checked = now.addingTimeInterval(-120)

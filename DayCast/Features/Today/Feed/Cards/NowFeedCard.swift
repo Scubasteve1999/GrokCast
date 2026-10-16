@@ -26,6 +26,11 @@ struct NowFeedCard: View {
 
   /// 160pt at Large. Grows with Dynamic Type so the larger lines are not clipped.
   @ScaledMetric(relativeTo: .body) private var heroHeight = TodayGlanceLayout.nowBudgetHeight
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+  /// At accessibility sizes the supporting lines wrap instead of truncating
+  /// ("H 73° |…" hid the low), so the hero can't keep a fixed height.
+  private var wrapsSupportingLines: Bool { dynamicTypeSize.isAccessibilitySize }
 
   var body: some View {
     TimelineView(.everyMinute) { context in
@@ -74,16 +79,18 @@ struct NowFeedCard: View {
           .font(DesignTokens.Typography.callout())
           .foregroundStyle(Color.white.opacity(0.95))
           .monospacedDigit()
-          .lineLimit(1)
-          .minimumScaleFactor(0.75)
+          .lineLimit(wrapsSupportingLines ? nil : 1)
+          .minimumScaleFactor(wrapsSupportingLines ? 1 : 0.75)
+          .fixedSize(horizontal: false, vertical: wrapsSupportingLines)
           .shadow(color: .black.opacity(0.4), radius: 4, y: 1)
 
           if let rainLine, !rainLine.isEmpty {
             Text(rainLine)
               .font(DesignTokens.Typography.callout())
               .foregroundStyle(Color.white.opacity(0.92))
-              .lineLimit(1)
-              .minimumScaleFactor(0.85)
+              .lineLimit(wrapsSupportingLines ? nil : 1)
+              .minimumScaleFactor(wrapsSupportingLines ? 1 : 0.85)
+              .fixedSize(horizontal: false, vertical: wrapsSupportingLines)
               .shadow(color: .black.opacity(0.4), radius: 4, y: 1)
               .accessibilityIdentifier(DayCastAccessibility.Today.precip)
           }
@@ -98,7 +105,7 @@ struct NowFeedCard: View {
         .frame(
           maxWidth: .infinity,
           minHeight: heroHeight,
-          maxHeight: heroHeight,
+          maxHeight: wrapsSupportingLines ? nil : heroHeight,
           alignment: .topLeading
         )
         .clipped()

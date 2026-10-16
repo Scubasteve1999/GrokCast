@@ -343,13 +343,19 @@ struct AlertsView: View {
     .padding(.bottom, DesignTokens.Spacing.space16)
   }
 
+  /// NWS only covers the US; elsewhere the screen must not mention it.
+  private var isNWSCovered: Bool {
+    store.currentLocation.map(NewsDataService.isLikelyUS) ?? true
+  }
+
   private var alertsAuthorityLine: some View {
     let line = AlertsActiveCopy.authorityLine(
       locationName: store.currentLocation?.name,
       nwsCount: activeAlerts.count,
       checkedAt: store.lastAlertsFetchAt,
       loadState: store.alertsLoadState,
-      hasCachedAlerts: !store.displayableGroupedAlerts.isEmpty
+      hasCachedAlerts: !store.displayableGroupedAlerts.isEmpty,
+      isNWSCovered: isNWSCovered
     )
     return Text(line)
       .font(DesignTokens.Typography.caption())
@@ -394,7 +400,8 @@ struct AlertsView: View {
           )
         } description: {
           Text(
-            "Couldn't check NWS alerts for \(store.currentLocation?.name ?? "this location"). Try again."
+            AlertsActiveCopy.loadFailedDescription(
+              locationName: store.currentLocation?.name, isNWSCovered: isNWSCovered)
           )
         } actions: {
           Button("Try Again") {
@@ -422,7 +429,8 @@ struct AlertsView: View {
           Label("No Alerts", systemImage: "checkmark.shield")
         } description: {
           Text(
-            "No active or recent NWS alerts for \(store.currentLocation?.name ?? "your location"). Severe weather Warnings and Watches will appear here."
+            AlertsActiveCopy.emptyStateDescription(
+              locationName: store.currentLocation?.name, isNWSCovered: isNWSCovered)
           )
         } actions: {
           Button("Refresh") {

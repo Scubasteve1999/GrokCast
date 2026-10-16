@@ -170,6 +170,7 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertFalse(gate.allowsPicker)
     XCTAssertTrue(gate.isCTADisabled)
     XCTAssertEqual(SkyCheckDeskCopy.photoUnavailableCTA, "Photo check unavailable")
+    // Tests build Debug, where the developer key field exists; Release copy omits Settings.
     XCTAssertTrue(
       SkyCheckDeskCopy.photoUnavailableExplanation.localizedCaseInsensitiveContains("Settings"))
     XCTAssertFalse(SkyCheckDeskCopy.photoUnavailableExplanation.isEmpty)

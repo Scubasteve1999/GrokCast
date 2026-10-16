@@ -37,18 +37,22 @@ struct GrokAPIKeyEmptyStateView: View {
           .tint(DesignTokens.Palette.accent)
         }
 
-        let useOwnKey = Button("Use my own key") {
-          Haptic.impact(.light)
-          store.selectedTab = .settings
-        }
+        // The key field in Settings only exists in Debug builds, so the BYOK
+        // button would be a dead end in Release.
+        #if DEBUG
+          let useOwnKey = Button("Use my own key") {
+            Haptic.impact(.light)
+            store.selectedTab = .settings
+          }
 
-        // Pro subscribers seeing this card have no Pro button to press, so the
-        // BYOK path becomes the primary action.
-        if subscription.isPro {
-          useOwnKey.buttonStyle(.borderedProminent).tint(DesignTokens.Palette.accent)
-        } else {
-          useOwnKey.buttonStyle(.bordered)
-        }
+          // Pro subscribers seeing this card have no Pro button to press, so the
+          // BYOK path becomes the primary action.
+          if subscription.isPro {
+            useOwnKey.buttonStyle(.borderedProminent).tint(DesignTokens.Palette.accent)
+          } else {
+            useOwnKey.buttonStyle(.bordered)
+          }
+        #endif
       }
     }
     .padding(DesignTokens.Spacing.space16)

@@ -6,8 +6,14 @@ enum SkyCheckDeskCopy {
   static let photoCTA = "Check this sky"
   static let checkAnotherCTA = "Check another"
   static let photoUnavailableCTA = "Photo check unavailable"
-  static let photoUnavailableExplanation =
-    "Sky Check needs a working AI connection. Add your own key in Settings, or try again later."
+  #if DEBUG
+    static let photoUnavailableExplanation =
+      "Sky Check needs a working AI connection. Add your own key in Settings, or try again later."
+  #else
+    // Release has no key field in Settings, so don't send people there.
+    static let photoUnavailableExplanation =
+      "Sky Check needs a working AI connection. Try again in a few minutes."
+  #endif
   static let cameraSource = "Camera"
   static let librarySource = "Photo Library"
   static let photoGlyph = "camera"
