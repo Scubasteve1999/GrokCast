@@ -242,10 +242,15 @@ struct RadarFeedCard: View {
 
   private var plate: some View {
     ZStack(alignment: .bottom) {
-      map
-        .allowsHitTesting(false)
-        .contentShape(Rectangle())
-        .onTapGesture { openRadarTab() }
+      // A real button (not a tap gesture) so VoiceOver can reach and open Radar.
+      Button(action: openRadarTab) {
+        map
+          .allowsHitTesting(false)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(
+        OutlookRadarCopy.accessibilityLabel(sentence: outlook.plateSentence, product: product))
 
       VStack(alignment: .leading, spacing: 0) {
         HStack {

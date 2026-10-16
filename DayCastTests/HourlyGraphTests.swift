@@ -165,6 +165,20 @@ final class HourlyGraphTests: XCTestCase {
     }
   }
 
+  func testSunCaptionStaysOnTopWhenNoLabelIsThere() {
+    let y = HourlyGraphLayout.sunCaptionY(
+      x: 48, labelCenters: [CGPoint(x: 16, y: 60), CGPoint(x: 112, y: 12)], plotHeight: 100)
+    XCTAssertEqual(y, HourlyGraphLayout.sunCaptionTopY)
+  }
+
+  func testSunCaptionDropsBelowWhenNowLabelSitsAtTheTop() {
+    // Evening: "Now" is the warmest hour, so its label rides the top edge
+    // right where Sunset would be drawn.
+    let y = HourlyGraphLayout.sunCaptionY(
+      x: 24, labelCenters: [CGPoint(x: 16, y: 14)], plotHeight: 100)
+    XCTAssertEqual(y, 100 - HourlyGraphLayout.sunCaptionTopY)
+  }
+
   private func hour(
     at time: Date, temp: Double, precipChance: Int = 1, rain: Double? = nil
   ) -> HourlyForecast {

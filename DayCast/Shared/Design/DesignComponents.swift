@@ -171,6 +171,7 @@ struct MoreHubSheet: View {
                 store.selectedTab = tab
                 dismiss()
               }
+              .accessibilityAddTraits(store.selectedTab == tab ? .isSelected : [])
               .accessibilityIdentifier(DayCastAccessibility.MoreHub.row(tab))
             }
           }

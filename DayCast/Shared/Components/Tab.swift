@@ -278,6 +278,7 @@ struct CompactTabBar: View {
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel(for: tab))
         .accessibilityValue(accessibilityValue(for: tab))
+        .accessibilityAddTraits(tab.isSelected(for: selection) ? .isSelected : [])
         .accessibilityHint(tab == .more ? "Opens Locations, Settings, and Sky Check" : "")
         .accessibilityIdentifier(DayCastAccessibility.Tabs.item(tab))
         .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)

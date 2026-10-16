@@ -319,6 +319,23 @@ enum HourlyGraphLayout {
     return topPad + usable * (1 - CGFloat(t))
   }
 
+  /// Value labels sit just above the curve, or just below when the point hugs the top.
+  static func valueLabelCenterY(curveY: CGFloat, topPad: CGFloat = plotTopPad) -> CGFloat {
+    curveY < topPad ? curveY + 14 : curveY - 12
+  }
+
+  static let sunCaptionTopY: CGFloat = 10
+
+  /// Sunrise/Sunset captions ride the top of the plot unless a value label is
+  /// already there (a high "Now" temp at sunset drew "Sunset" over "61°").
+  /// Then the caption drops to the bottom edge, where the curve is not.
+  static func sunCaptionY(x: CGFloat, labelCenters: [CGPoint], plotHeight: CGFloat) -> CGFloat {
+    let collides = labelCenters.contains {
+      abs($0.x - x) < columnWidth * 1.25 && abs($0.y - sunCaptionTopY) < 18
+    }
+    return collides ? plotHeight - sunCaptionTopY : sunCaptionTopY
+  }
+
   /// Now, then every 3 hours. Never a glyph per hour.
   static func labeledIndexes(count: Int) -> [Int] {
     guard count > 0 else { return [] }
@@ -720,21 +737,40 @@ struct HourlyGraphView: View {
           .monospacedDigit()
           .lineLimit(1)
           .minimumScaleFactor(0.8)
-          .position(x: x, y: y < metrics.plotTopPad ? y + 14 : y - 12)
+          .position(
+            x: x, y: HourlyGraphLayout.valueLabelCenterY(curveY: y, topPad: metrics.plotTopPad))
       }
     }
     .frame(width: canvasWidth, height: metrics.plotHeight, alignment: .topLeading)
     .allowsHitTesting(false)
   }
 
+  private var valueLabelCenters: [CGPoint] {
+    let values = seriesValues
+    let bounds = HourlyGraphLayout.valueBounds(values: values, series: series)
+    return labelIndexes.filter { values.indices.contains($0) }.map { index in
+      let curveY = HourlyGraphLayout.y(
+        value: values[index], min: bounds.min, max: bounds.max,
+        plotHeight: metrics.plotHeight, topPad: metrics.plotTopPad,
+        bottomPad: metrics.plotBottomPad)
+      return CGPoint(
+        x: HourlyGraphLayout.columnWidth * (CGFloat(index) + 0.5),
+        y: HourlyGraphLayout.valueLabelCenterY(curveY: curveY, topPad: metrics.plotTopPad))
+    }
+  }
+
   private var sunCaptions: some View {
-    ZStack(alignment: .topLeading) {
+    let labels = valueLabelCenters
+    return ZStack(alignment: .topLeading) {
       ForEach(Array(resolvedSunEvents.enumerated()), id: \.offset) { _, event in
         if let x = sunTickX(event.date) {
           Text(event.title)
             .font(DesignTokens.Typography.caption())
             .foregroundStyle(DesignTokens.Palette.accentWarm)
-            .position(x: x, y: 10)
+            .position(
+              x: x,
+              y: HourlyGraphLayout.sunCaptionY(
+                x: x, labelCenters: labels, plotHeight: metrics.plotHeight))
         }
       }
     }

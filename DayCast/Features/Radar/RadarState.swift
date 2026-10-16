@@ -1,5 +1,6 @@
 import CoreLocation
 import Foundation
+import UIKit
 
 struct RadarStatusFooter: Equatable {
   enum Style: Equatable {
@@ -418,7 +419,8 @@ final class RadarState {
     // Auto-play FUTURE so switching into it animates the forecast immediately
     // instead of sitting paused on frame 1 (beginTransition stopped playback).
     // Live open/resume goes through `presentLiveNow()` so SCAN starts on now.
-    if committedIsFuture, activeFrameCount > 0 {
+    // Reduce Motion: park on frame 1 and let the user press play.
+    if committedIsFuture, activeFrameCount > 0, !UIAccessibility.isReduceMotionEnabled {
       playback.start()
     }
   }
