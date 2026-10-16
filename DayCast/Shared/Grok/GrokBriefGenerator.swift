@@ -46,15 +46,22 @@ enum GrokBriefGenerator {
       feature: feature,
       maxTokens: takeMaxTokens
     )
-    let raw =
-      streamed.isEmpty
-      ? LocalWeatherBrief.make(
+    let localBrief = {
+      LocalWeatherBrief.make(
         weather: weather,
         unit: unit,
         locationName: location,
         activeAlerts: alertEvents
       )
-      : streamed
+    }
+    var raw = streamed.isEmpty ? localBrief() : streamed
+    // Only Grok text the keyword screen already accepted is worth a second opinion.
+    if !streamed.isEmpty,
+      let accepted = GrokContentFilter.acceptedText(GrokBriefText.visible(streamed)),
+      await GrokOutputVerifier.verify(.brief(accepted)).blocks
+    {
+      raw = localBrief()
+    }
 
     guard
       let brief = GrokBriefText.finalize(

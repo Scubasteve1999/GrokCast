@@ -13,7 +13,7 @@ export class QuotaLedger {
   }
 
   reserve({ id, subject, bucket, limit, globalLimit, now }) {
-    if (!['chat', 'image', 'owm'].includes(bucket) || !id || !subject ||
+    if (!['chat', 'image', 'owm', 'verify'].includes(bucket) || !id || !subject ||
         !Number.isSafeInteger(limit) || limit < 1 ||
         !Number.isSafeInteger(globalLimit) || globalLimit < 1 || !Number.isFinite(now)) {
       throw new Error('Invalid quota reservation');
@@ -32,7 +32,8 @@ export class QuotaLedger {
       ).toArray()[0].count;
       const base = { used, limit, remaining: Math.max(0, limit - used), resetsAt: resetsAt(now) };
       if (used >= limit) return { ...base, ok: false, reason: 'subscriber' };
-      if (bucket !== 'owm' && global >= globalLimit) return { ...base, ok: false, reason: 'global' };
+      // Weather and verification are not AI generation, so they never compete for the global AI cap.
+      if (bucket !== 'owm' && bucket !== 'verify' && global >= globalLimit) return { ...base, ok: false, reason: 'global' };
       this.sql.exec('INSERT INTO reservations(id, subject, bucket, day) VALUES (?, ?, ?, ?)',
         id, subject, bucket, dayKey(now));
       return { ...base, used: used + 1, ok: true, remaining: limit - used - 1, reservationID: id };
@@ -51,7 +52,8 @@ export class QuotaLedger {
       COALESCE(SUM(bucket = 'chat'), 0) AS chat,
       COALESCE(SUM(bucket = 'image'), 0) AS image,
       COALESCE(SUM(bucket = 'owm'), 0) AS owm,
-      COUNT(DISTINCT CASE WHEN bucket != 'owm' THEN subject END) AS subscribers
+      COALESCE(SUM(bucket = 'verify'), 0) AS verify,
+      COUNT(DISTINCT CASE WHEN bucket IN ('chat', 'image') THEN subject END) AS subscribers
       FROM reservations WHERE refunded = 0`).toArray()[0];
     const global = totals.chat + totals.image;
     return { ...totals, day: dayKey(now), global, threshold: alertThreshold,

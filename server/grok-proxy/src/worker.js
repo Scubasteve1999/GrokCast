@@ -18,12 +18,16 @@
  *   QUOTA_START_DAY
  * Secrets, continued:
  *   OWM_API_KEY           OpenWeatherMap key; One Call 4.0 is billed per request
+ *   TYPESAFE_API_KEY      TypeSafe key for /v1/verify (Grok output checks)
+ * Vars, continued:
+ *   DAILY_VERIFY_LIMIT, VERIFY_DISABLED, TYPESAFE_MODEL
  */
 
 import { dailyQuota, quotaSnapshot, quotaActive } from "./quota-ledger.js";
 import { validatedBody, RequestPolicyError } from "./request-policy.js";
 import { TransactionError, verifyTransaction } from "./appleTransaction.js";
 import { handleOpenWeather } from "./openweather.js";
+import { runVerify, verifyRequest } from "./verify.js";
 import {
   GLOBAL_SUBJECT,
   lastReportDay,
@@ -88,6 +92,91 @@ function usageHeaders(result) {
     "X-DayCast-Remaining": String(result.remaining),
     "X-DayCast-Reset": new Date(result.resetsAt).toISOString(),
   };
+}
+
+/** Returns `{ entitlement }` for a verified Pro subscriber, else `{ rejection }` (a 403). */
+async function subscriberEntitlement(request, env, rootCertificate, now) {
+  try {
+    const entitlement = await verifyTransaction(request.headers.get(TRANSACTION_HEADER), {
+      bundleId: env.BUNDLE_ID ?? "com.scubasteve1999.DayCast",
+      productIds: listVar(env, "PRO_PRODUCT_IDS", [
+        "com.scubasteve1999.DayCast.pro.monthly",
+        "com.scubasteve1999.DayCast.pro.yearly",
+      ]),
+      environments: listVar(env, "ALLOWED_ENVIRONMENTS", ["Production", "Sandbox"]),
+      rootCertificate,
+      now,
+    });
+    return { entitlement };
+  } catch (error) {
+    if (error instanceof TransactionError) {
+      // Surfaced in `wrangler tail`. A rejection returns before metering, so
+      // without this a refused call is indistinguishable from a served one.
+      console.log(`entitlement rejected: ${error.message}`);
+      return {
+        rejection: errorResponse(403, `DayCast Pro required: ${error.message}`, "entitlement_error"),
+      };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Grok output verification (TypeSafe). Pro-only like the replies it checks, and
+ * metered in its own `verify` bucket so it never spends the subscriber's chat budget.
+ * Any failure is a non-200 the app reads as "no verdict" and ignores.
+ */
+async function handleVerify(request, env, { rootCertificate, fetchImpl, now }) {
+  if (request.method !== "POST") {
+    return errorResponse(405, "Method not allowed", "invalid_request_error");
+  }
+  if (env.DISABLED === "1" || env.VERIFY_DISABLED === "1") {
+    return errorResponse(503, "Verification is temporarily unavailable.", "service_disabled");
+  }
+  if (!env.TYPESAFE_API_KEY) {
+    return errorResponse(503, "Verification is not configured.", "service_disabled");
+  }
+  if (!env.USAGE || !env.QUOTAS) {
+    return errorResponse(503, "Quota/report store is not bound.", "service_disabled");
+  }
+  if (!authorized(request, env)) {
+    return errorResponse(401, "Unauthorized", "authentication_error");
+  }
+  const { entitlement, rejection } = await subscriberEntitlement(request, env, rootCertificate, now);
+  if (rejection) return rejection;
+  if (!quotaActive(env, now)) {
+    return errorResponse(503, "Verification is temporarily unavailable.", "service_disabled");
+  }
+
+  let prepared;
+  try {
+    prepared = await verifyRequest(request);
+  } catch (error) {
+    if (error instanceof RequestPolicyError) return errorResponse(error.status, error.message, "invalid_request_error");
+    throw error;
+  }
+
+  const ledger = dailyQuota(env, now);
+  const reservation = await ledger.reserve({
+    id: crypto.randomUUID(), bucket: "verify", subject: entitlement.originalTransactionId,
+    limit: numberVar(env, "DAILY_VERIFY_LIMIT", 300),
+    globalLimit: numberVar(env, "GLOBAL_DAILY_LIMIT", 5000), now,
+  });
+  if (!reservation.ok) {
+    return errorResponse(429, "Verification limit reached for today.", "daily_limit_exceeded",
+      usageHeaders(reservation));
+  }
+
+  const result = await runVerify(prepared, env, { fetchImpl });
+  if (result.status !== 200) {
+    // Same rule as chat: refund explicit 4xx rejections; a 5xx or timeout may be billed.
+    if (result.upstreamStatus >= 400 && result.upstreamStatus < 500) await ledger.refund(reservation.reservationID);
+    console.log(`verify upstream failed: ${result.upstreamStatus ?? "network"}`);
+    return errorResponse(502, "Verification is temporarily unavailable.", "upstream_error");
+  }
+  // Verdict and reasons only — never the text — so block rates can be watched in `wrangler tail`.
+  console.log(`verify ${result.body.verdict} ${result.body.reasons.join(",")}`);
+  return jsonResponse(200, result.body, usageHeaders(reservation));
 }
 
 /**
@@ -187,6 +276,10 @@ async function handle(request, env, options = {}) {
     });
   }
 
+  if (url.pathname === "/v1/verify") {
+    return handleVerify(request, env, { rootCertificate, fetchImpl, now });
+  }
+
   const route = ROUTES[url.pathname];
   if (!route) return errorResponse(404, "Not found", "invalid_request_error");
   if (request.method !== "POST") {
@@ -209,27 +302,8 @@ async function handle(request, env, options = {}) {
     return errorResponse(401, "Unauthorized", "authentication_error");
   }
 
-  let entitlement;
-  try {
-    entitlement = await verifyTransaction(request.headers.get(TRANSACTION_HEADER), {
-      bundleId: env.BUNDLE_ID ?? "com.scubasteve1999.DayCast",
-      productIds: listVar(env, "PRO_PRODUCT_IDS", [
-        "com.scubasteve1999.DayCast.pro.monthly",
-        "com.scubasteve1999.DayCast.pro.yearly",
-      ]),
-      environments: listVar(env, "ALLOWED_ENVIRONMENTS", ["Production", "Sandbox"]),
-      rootCertificate,
-      now,
-    });
-  } catch (error) {
-    if (error instanceof TransactionError) {
-      // Surfaced in `wrangler tail`. A rejection returns before metering, so
-      // without this a refused call is indistinguishable from a served one.
-      console.log(`entitlement rejected: ${error.message}`);
-      return errorResponse(403, `DayCast Pro required: ${error.message}`, "entitlement_error");
-    }
-    throw error;
-  }
+  const { entitlement, rejection } = await subscriberEntitlement(request, env, rootCertificate, now);
+  if (rejection) return rejection;
 
   if (!quotaActive(env, now)) return errorResponse(503, "AI is temporarily unavailable.", "service_disabled");
 

@@ -6,6 +6,7 @@ compatibility_date = "2026-08-01"
 #   XAI_API_KEY    the daycast-proxy-prod key
 #   PROXY_SECRET   shared string the app sends; public by necessity
 #   OWM_API_KEY    OpenWeatherMap key (One Call 4.0 is billed per request)
+#   TYPESAFE_API_KEY  TypeSafe key for /v1/verify; unset = verify returns 503 (app stays silent)
 
 [vars]
 # Required at first deployment: next UTC day after disabling the legacy Worker.
@@ -22,6 +23,11 @@ GLOBAL_DAILY_LIMIT = "5000"
 ALERT_THRESHOLD = "500"
 # Kill switch: `wrangler deploy --var DISABLED:1` stops all AI without an app release.
 DISABLED = "0"
+
+# Grok output verification (TypeSafe, /v1/verify). Separate kill switch so a
+# TypeSafe problem never takes Grok down with it. ~500 input tokens per check.
+DAILY_VERIFY_LIMIT = "300"
+VERIFY_DISABLED = "0"
 
 # OpenWeatherMap data API. One Call 4.0 is billed per request, so the key lives
 # here rather than in the app. Only cache misses are billed, hence the TTL.

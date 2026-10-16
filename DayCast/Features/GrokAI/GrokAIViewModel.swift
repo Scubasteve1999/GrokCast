@@ -686,6 +686,11 @@ final class GrokAIViewModel {
     if RadarExplainCopy.inventsPrecipitationAtPin(accepted, context: context) {
       return RadarExplainCopy.localExplanation(for: context)
     }
+    if await GrokOutputVerifier.verify(RadarExplainCopy.verifierSubject(accepted, context: context))
+      .blocks
+    {
+      return RadarExplainCopy.localExplanation(for: context)
+    }
     return accepted
   }
 
@@ -713,7 +718,9 @@ final class GrokAIViewModel {
       feature: .alertsSummary,
       maxTokens: 360
     )
-    if let accepted = GrokContentFilter.acceptedText(raw) {
+    if let accepted = GrokContentFilter.acceptedText(raw),
+      !(await GrokOutputVerifier.verify(.brief(GrokBriefText.visible(accepted))).blocks)
+    {
       return GrokBriefText.visible(accepted)
     }
     return GrokBriefText.visible(

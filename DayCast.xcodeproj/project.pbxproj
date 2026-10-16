@@ -70,6 +70,7 @@
 		315AC9DAB087F41A19C7BA81 /* WeekDayChipStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB7FB35415F7C5BB5D926970 /* WeekDayChipStrip.swift */; };
 		32DDD77DC8AD403027C148DA /* WeatherLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C2161C514FC0B94D3D78EA /* WeatherLiveActivityWidget.swift */; };
 		32FF7B01937F553DB7019D71 /* GrokBriefSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA836E076434C4855D633891 /* GrokBriefSafetyTests.swift */; };
+		17FF15CC89AB7C9C354072C3 /* GrokOutputVerifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3124A09E8C5D176A909D8CD1 /* GrokOutputVerifierTests.swift */; };
 		333F681A818532B3BCA2AFD6 /* RadarStatePreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17543378FDF6091A61B11432 /* RadarStatePreferencesTests.swift */; };
 		33A1FDAC0785D28C9089D60E /* LocationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF1689F1E6B8CBBC6659A92 /* LocationsView.swift */; };
 		33AA47BBEFF311D00B41B7AD /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B72CDEA7ED3178F84CBA255 /* CoreLocation.framework */; };
@@ -245,6 +246,7 @@
 		A6E6C7F5324F57FF553015FC /* GrokStormSpotterButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5089FC6E13A5CA75B0ADE66A /* GrokStormSpotterButton.swift */; };
 		A726A0857A73D90C40428AEB /* TonightOutlookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 134CC4541E4D03E801F27A06 /* TonightOutlookTests.swift */; };
 		A7367342D8B69602DE566B23 /* GrokBriefGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3D8CD954F1FE8D31908313 /* GrokBriefGenerator.swift */; };
+		2EFC3BC4E6D0917C96C91C89 /* GrokOutputVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBDAB91E9FD622CA3F4F28FE /* GrokOutputVerifier.swift */; };
 		A7C96A7404A54C514CE81760 /* OpenWeatherMapService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6650C048F6CA59F0AD726F7E /* OpenWeatherMapService.swift */; };
 		A8AACF3D69AA080FC4AF7908 /* SkyCheckPhotoIntake.swift in Sources */ = {isa = PBXBuildFile; fileRef = F205123AA7F04F4E8DCB310B /* SkyCheckPhotoIntake.swift */; };
 		A90E01EFBDEF8BCD79BC0B22 /* AppReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C39E4354D382B96A752F190 /* AppReviewPrompt.swift */; };
@@ -590,6 +592,7 @@
 		7A58AB2A21809CEDB7773FB7 /* RadarFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarFrame.swift; sourceTree = "<group>"; };
 		7AB0DB4C2E458E445EDC0E3D /* GrokProducts.storekit */ = {isa = PBXFileReference; path = GrokProducts.storekit; sourceTree = "<group>"; };
 		7C3D8CD954F1FE8D31908313 /* GrokBriefGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefGenerator.swift; sourceTree = "<group>"; };
+		CBDAB91E9FD622CA3F4F28FE /* GrokOutputVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokOutputVerifier.swift; sourceTree = "<group>"; };
 		7C66B6B55D978BA67FACD2C5 /* AirQualityAndMoonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirQualityAndMoonTests.swift; sourceTree = "<group>"; };
 		7C6FA010DD5E336453535FDB /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		7CB6F193540F15639B2BAE31 /* SkyCheckGlance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyCheckGlance.swift; sourceTree = "<group>"; };
@@ -694,6 +697,7 @@
 		C9BD2279DC1DCEA2A4CC57E8 /* SafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariView.swift; sourceTree = "<group>"; };
 		CA7A41096F01DF0C5EDA8F96 /* GrokAuthResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokAuthResolver.swift; sourceTree = "<group>"; };
 		CA836E076434C4855D633891 /* GrokBriefSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefSafetyTests.swift; sourceTree = "<group>"; };
+		3124A09E8C5D176A909D8CD1 /* GrokOutputVerifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokOutputVerifierTests.swift; sourceTree = "<group>"; };
 		CB6513F466629BAD8F714FDB /* GrokBriefReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokBriefReport.swift; sourceTree = "<group>"; };
 		CB671C40840164D603BD500B /* DayCastAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayCastAppIntents.swift; sourceTree = "<group>"; };
 		CCF1689F1E6B8CBBC6659A92 /* LocationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationsView.swift; sourceTree = "<group>"; };
@@ -1049,6 +1053,7 @@
 				ACE02B6B5C8371EDB6C2893F /* GrokAccessRulesTests.swift */,
 				E19CDB9A004475F7737C31CD /* GrokBriefCacheTests.swift */,
 				CA836E076434C4855D633891 /* GrokBriefSafetyTests.swift */,
+				3124A09E8C5D176A909D8CD1 /* GrokOutputVerifierTests.swift */,
 				9A15C5E0675C1F05E2A91A1F /* GrokUsageLimiterTests.swift */,
 				56513E7BC2195AFBE168BDFD /* HonestyStripCopyTests.swift */,
 				E3049625A2F18937DEF5D733 /* HourlyGraphTests.swift */,
@@ -1233,6 +1238,7 @@
 				A901D67FFAF1A7F2237ECDB2 /* GrokBriefCache.swift */,
 				2B235B9CBAA953293A277D1D /* GrokBriefCopy.swift */,
 				7C3D8CD954F1FE8D31908313 /* GrokBriefGenerator.swift */,
+				CBDAB91E9FD622CA3F4F28FE /* GrokOutputVerifier.swift */,
 				CB6513F466629BAD8F714FDB /* GrokBriefReport.swift */,
 				82AFDBD5FA7F7FC588A7F9B5 /* GrokBriefSafety.swift */,
 				A7B5FE3A26D1DE38086ED0EC /* GrokContentFilter.swift */,
@@ -1756,6 +1762,7 @@
 				62B2BA71DF593418B4C33F62 /* GrokAccessRulesTests.swift in Sources */,
 				CEE76050B36DF69DC7544CF5 /* GrokBriefCacheTests.swift in Sources */,
 				32FF7B01937F553DB7019D71 /* GrokBriefSafetyTests.swift in Sources */,
+				17FF15CC89AB7C9C354072C3 /* GrokOutputVerifierTests.swift in Sources */,
 				72BBDBFD282D519CC1A0198A /* GrokUsageLimiterTests.swift in Sources */,
 				E891FAED0958E207480C91B2 /* HonestyStripCopyTests.swift in Sources */,
 				B095626A5A2B2AE76BCFE511 /* HourlyGraphTests.swift in Sources */,
@@ -1881,6 +1888,7 @@
 				FC24FFEB61F5CBCCF0F10E90 /* GrokBriefCache.swift in Sources */,
 				40D667C89DBD62BD8BC2797C /* GrokBriefCopy.swift in Sources */,
 				A7367342D8B69602DE566B23 /* GrokBriefGenerator.swift in Sources */,
+				2EFC3BC4E6D0917C96C91C89 /* GrokOutputVerifier.swift in Sources */,
 				155C8BA21F4FCB11F2BE818E /* GrokBriefReport.swift in Sources */,
 				727EDB8342EED3D4401D4B46 /* GrokBriefSafety.swift in Sources */,
 				FD4527F5B9B3550F698E59CF /* GrokContentFilter.swift in Sources */,

@@ -80,6 +80,19 @@ enum RadarExplainCopy {
     return prompt
   }
 
+  /// What the proxy verifier checks. Only reached at or above `meaningfulPrecipChance`,
+  /// where `inventsPrecipitationAtPin` never fires — so this is the pin grounding check.
+  /// Without a loaded condition there is no forecast to compare against.
+  static func verifierSubject(_ text: String, context: RadarExplainContext)
+    -> GrokOutputVerifier.Subject
+  {
+    guard let condition = context.conditionText, let chance = context.precipitationChance else {
+      return .brief(text)
+    }
+    return .radar(
+      text, location: context.locationName, condition: condition, precipitationChance: chance)
+  }
+
   static func inventsPrecipitationAtPin(_ text: String, context: RadarExplainContext) -> Bool {
     guard shouldUseLocalExplanation(context) else { return false }
     let lower = text.lowercased()
