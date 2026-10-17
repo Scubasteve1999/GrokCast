@@ -22,6 +22,12 @@ final class GrokAIViewModel {
   @ObservationIgnored private var activeGenerationID = UUID()
   private(set) var generationWasCancelled = false
 
+  /// Full streamed reply, including the held-back last word. Only screened text
+  /// reaches `responseText` / `stormAnalysisText`, so a blocked word is never drawn.
+  @ObservationIgnored private var skyCheckStreamRaw = ""
+  @ObservationIgnored private var skyCheckScreenedCount = 0
+  @ObservationIgnored private(set) var skyCheckStreamBlocked = false
+
   private(set) var lastStormImageData: Data?
   private(set) var lastStormNotes: String?
 
@@ -115,6 +121,7 @@ final class GrokAIViewModel {
     stormAnalysisMode = false
     isStreaming = true
     responseText = ""
+    resetSkyCheckStream()
     errorMessage = nil
 
     await ensureWeatherContext()
@@ -145,7 +152,7 @@ final class GrokAIViewModel {
         for try await token in try GrokAPIService.stream(
           messages: apiMessages, feature: .chat)
         {
-          if Task.isCancelled || !self.isStreaming { break }
+          if Task.isCancelled || !self.isStreaming || self.skyCheckStreamBlocked { break }
           tokenCount += 1
           self.appendSkyCheckStreamToken(token)
         }
@@ -158,8 +165,8 @@ final class GrokAIViewModel {
       guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
 
-      if !self.responseText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        self.commitFinishedSkyCheckReply(self.responseText, asPhotoTurn: false)
+      if !self.skyCheckStreamRaw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        self.commitFinishedSkyCheckReply(self.skyCheckStreamRaw, asPhotoTurn: false)
       } else if !Task.isCancelled && self.generationWasCancelled == false {
         self.errorMessage = "AI returned an empty response. Check your connection and try again."
       }
@@ -187,6 +194,7 @@ final class GrokAIViewModel {
     isStreaming = true
     responseText = ""
     stormAnalysisText = ""
+    resetSkyCheckStream()
     errorMessage = nil
 
     lastStormImageData = imageData
@@ -235,7 +243,7 @@ final class GrokAIViewModel {
           userNotes: userNotes,
           unit: weatherStore.temperatureUnit
         ) {
-          if Task.isCancelled || !isStreaming { break }
+          if Task.isCancelled || !isStreaming || self.skyCheckStreamBlocked { break }
           self.appendSkyCheckStreamToken(token)
         }
       } catch {
@@ -246,8 +254,8 @@ final class GrokAIViewModel {
       // A newer generation replaced this one — don't touch shared state it now owns.
       guard self.activeGenerationID == generationID else { return }
       self.isStreaming = false
-      if !self.stormAnalysisText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        self.commitFinishedSkyCheckReply(self.stormAnalysisText, asPhotoTurn: true)
+      if !self.skyCheckStreamRaw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        self.commitFinishedSkyCheckReply(self.skyCheckStreamRaw, asPhotoTurn: true)
       } else if !Task.isCancelled && self.generationWasCancelled == false {
         self.responseText = ""
         self.errorMessage = SkyCheckDeskCopy.emptyReply
@@ -275,12 +283,29 @@ final class GrokAIViewModel {
   }
 
   /// One writer per job. Photo tokens never land in `responseText`.
+  /// Each token is screened before it is shown; on a block the partial reply is
+  /// cleared at once and the stream loop stops (commit then shows the hidden notice).
   func appendSkyCheckStreamToken(_ token: String) {
-    if stormAnalysisMode {
-      stormAnalysisText += token
+    guard !skyCheckStreamBlocked else { return }
+    skyCheckStreamRaw += token
+    let screen = GrokContentFilter.screenSkyCheckStream(
+      skyCheckStreamRaw, alreadyScreenedCount: skyCheckScreenedCount)
+    if screen.blocked {
+      skyCheckStreamBlocked = true
     } else {
-      responseText += token
+      skyCheckScreenedCount = screen.screenedCount
     }
+    if stormAnalysisMode {
+      stormAnalysisText = screen.visible
+    } else {
+      responseText = screen.visible
+    }
+  }
+
+  private func resetSkyCheckStream() {
+    skyCheckStreamRaw = ""
+    skyCheckScreenedCount = 0
+    skyCheckStreamBlocked = false
   }
 
   /// After a finished Sky Check stream. Screens, then commits. Never writes blocked raw.

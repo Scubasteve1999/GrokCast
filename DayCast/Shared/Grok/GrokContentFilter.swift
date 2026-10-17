@@ -56,6 +56,55 @@ enum GrokContentFilter {
   static func acceptedSkyCheckText(_ text: String) -> String? {
     acceptedText(text, maxCharacterCount: skyCheckMaxCharacterCount)
   }
+
+  struct StreamScreen: Equatable {
+    /// Text safe to show now: everything up to the last finished word.
+    let visible: String
+    /// Characters of `visible` that have been screened (pass back on the next token).
+    let screenedCount: Int
+    let blocked: Bool
+  }
+
+  /// Longest blocklist phrase is well under this; re-screen this much before the
+  /// new text so a phrase split across tokens is still caught.
+  static let streamScreenOverlap = 120
+
+  /// Screens a Sky Check reply while it streams, so a blocked word is never drawn.
+  /// The trailing unfinished word is held back: `\b` would otherwise match a
+  /// fragment ("ass" of "assessment") and flash it before it's complete.
+  static func screenSkyCheckStream(_ raw: String, alreadyScreenedCount: Int) -> StreamScreen {
+    let settled: String
+    if let boundary = raw.lastIndex(where: isStreamWordBoundary) {
+      settled = String(raw[...boundary])
+    } else {
+      settled = ""
+    }
+    if settled.count > skyCheckMaxCharacterCount {
+      return StreamScreen(visible: "", screenedCount: 0, blocked: true)
+    }
+    guard settled.count > alreadyScreenedCount else {
+      return StreamScreen(visible: settled, screenedCount: settled.count, blocked: false)
+    }
+
+    // Start the window on a word boundary so a cut-off fragment can't match.
+    var start = settled.index(
+      settled.startIndex, offsetBy: max(0, alreadyScreenedCount - streamScreenOverlap))
+    if start != settled.startIndex,
+      let nextBoundary = settled[start...].firstIndex(where: isStreamWordBoundary)
+    {
+      start = nextBoundary
+    }
+    let window = String(settled[start...])
+    if case .blocked(let reason) = screen(window, maxCharacterCount: .max), reason != .empty {
+      return StreamScreen(visible: "", screenedCount: 0, blocked: true)
+    }
+    return StreamScreen(visible: settled, screenedCount: settled.count, blocked: false)
+  }
+
+  private static func isStreamWordBoundary(_ character: Character) -> Bool {
+    if character == "'" || character == "’" { return false }
+    return character.isWhitespace || character.isPunctuation
+  }
 }
 
 /// Screens a Grok brief and falls back to the deterministic local take when needed.

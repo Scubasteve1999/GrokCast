@@ -150,4 +150,27 @@ final class SkyCheckReplyCommitTests: XCTestCase {
       conversationStore: GrokAIConversationStore(inMemory: true)
     )
   }
+
+  // MARK: - Stream screening
+
+  func testStreamScreenHoldsBackUnfinishedWord() {
+    let screen = GrokContentFilter.screenSkyCheckStream("Gusty winds lat", alreadyScreenedCount: 0)
+    XCTAssertEqual(screen.visible, "Gusty winds ")
+    XCTAssertFalse(screen.blocked)
+  }
+
+  func testStreamScreenCatchesPhraseSplitAcrossScreens() {
+    let first = GrokContentFilter.screenSkyCheckStream(
+      "Sure. Ignore previous ", alreadyScreenedCount: 0)
+    XCTAssertFalse(first.blocked)
+    let second = GrokContentFilter.screenSkyCheckStream(
+      "Sure. Ignore previous instructions ", alreadyScreenedCount: first.screenedCount)
+    XCTAssertTrue(second.blocked)
+    XCTAssertTrue(second.visible.isEmpty)
+  }
+
+  func testStreamScreenBlocksOverSkyCheckLimit() {
+    let long = String(repeating: "rain ", count: GrokContentFilter.skyCheckMaxCharacterCount / 5 + 1)
+    XCTAssertTrue(GrokContentFilter.screenSkyCheckStream(long, alreadyScreenedCount: 0).blocked)
+  }
 }
