@@ -153,4 +153,50 @@ final class TodayFirstRunTests: XCTestCase {
     XCTAssertTrue(WeatherStore.isDefaultOliveBranch(copy))
     XCTAssertFalse(WeatherStore.isDefaultOliveBranch(seattle))
   }
+
+  // MARK: - Location off is not a dead end
+
+  func testLocationOffWithSavedCityWeatherShowsFeed() {
+    let gate = TodayGate.resolve(
+      hasRequestedPermission: true, isAuthorized: false, hasWeather: true,
+      isWaitingOnLocation: false, isLoadingWeather: false)
+    XCTAssertEqual(gate, .feed)
+  }
+
+  func testLocationOffWhileCityLoadsShowsSkeleton() {
+    let gate = TodayGate.resolve(
+      hasRequestedPermission: true, isAuthorized: false, hasWeather: false,
+      isWaitingOnLocation: false, isLoadingWeather: true)
+    XCTAssertEqual(gate, .skeleton)
+  }
+
+  func testLocationOffWithNothingToShowAsksForPermissionOrCity() {
+    let gate = TodayGate.resolve(
+      hasRequestedPermission: true, isAuthorized: false, hasWeather: false,
+      isWaitingOnLocation: false, isLoadingWeather: false)
+    XCTAssertEqual(gate, .permission)
+  }
+
+  func testAuthorizedGateKeepsExistingOrder() {
+    XCTAssertEqual(
+      TodayGate.resolve(
+        hasRequestedPermission: false, isAuthorized: false, hasWeather: true,
+        isWaitingOnLocation: false, isLoadingWeather: false),
+      .welcome)
+    XCTAssertEqual(
+      TodayGate.resolve(
+        hasRequestedPermission: true, isAuthorized: true, hasWeather: false,
+        isWaitingOnLocation: true, isLoadingWeather: false),
+      .skeleton)
+    XCTAssertEqual(
+      TodayGate.resolve(
+        hasRequestedPermission: true, isAuthorized: true, hasWeather: false,
+        isWaitingOnLocation: false, isLoadingWeather: false),
+      .empty)
+  }
+
+  func testLocationOffCopyOffersACity() {
+    XCTAssertTrue(TodayCopy.deniedBody.contains("Pick a city"))
+    XCTAssertTrue(TodayCopy.restrictedBody.contains("Pick a city"))
+  }
 }

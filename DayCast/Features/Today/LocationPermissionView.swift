@@ -3,6 +3,17 @@ import SwiftUI
 struct LocationPermissionView: View {
   @Environment(WeatherStore.self) private var store
 
+  @State private var showCitySearch = false
+  @State private var pendingLocationsPaywall = false
+
+  /// Denied/restricted users can still pick a city — location is never required.
+  private var offersCitySearch: Bool {
+    switch store.locationService.authorizationStatus {
+    case .denied, .restricted: true
+    default: false
+    }
+  }
+
   var body: some View {
     TodayFirstRunStage {
       TodayFirstRunCard {
@@ -27,8 +38,51 @@ struct LocationPermissionView: View {
           )
           .accessibilityIdentifier(action.identifier)
         }
+
+        if offersCitySearch {
+          citySearchButton
+        }
       }
     }
+    .sheet(isPresented: $showCitySearch, onDismiss: presentPendingLocationsPaywall) {
+      AddCitySearchSheet {
+        pendingLocationsPaywall = true
+        showCitySearch = false
+      }
+      .presentationDetents([.medium, .large])
+      .presentationDragIndicator(.visible)
+    }
+  }
+
+  @ViewBuilder
+  private var citySearchButton: some View {
+    // Restricted has no Settings fix, so city search is the primary action there.
+    if action == nil {
+      TodayPrimaryCTA(title: TodayCopy.searchCity, systemImage: "magnifyingglass") {
+        openCitySearch()
+      }
+      .accessibilityIdentifier(DayCastAccessibility.Today.searchCity)
+    } else {
+      Button(action: openCitySearch) {
+        Label(TodayCopy.searchCity, systemImage: "magnifyingglass")
+          .font(DesignTokens.Typography.headline())
+          .foregroundStyle(DesignTokens.Palette.accent)
+          .frame(maxWidth: .infinity, minHeight: DesignTokens.Layout.minHitTarget)
+      }
+      .buttonStyle(.plain)
+      .accessibilityIdentifier(DayCastAccessibility.Today.searchCity)
+    }
+  }
+
+  private func openCitySearch() {
+    Haptic.impact(.light)
+    showCitySearch = true
+  }
+
+  private func presentPendingLocationsPaywall() {
+    guard pendingLocationsPaywall else { return }
+    pendingLocationsPaywall = false
+    PaywallCoordinator.shared.present(.locations, source: .locations)
   }
 
   private var title: String {

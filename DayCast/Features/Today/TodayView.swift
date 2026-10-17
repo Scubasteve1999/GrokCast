@@ -24,16 +24,37 @@ enum TodayCopy {
   static let permissionPrivacy =
     "Your location is only used for weather — we don’t track or store it."
 
+  static let searchCity = "Search for a city"
+
   static let deniedTitle = "Location is off"
   static let deniedBody =
-    "Location access was denied. Enable it in Settings to use your current position for Now and alerts."
+    "Pick a city to see its weather, or turn on location in Settings to use where you are."
   static let restrictedTitle = "Location is restricted"
   static let restrictedBody =
-    "Location access is restricted on this device. Check Settings > Screen Time or parental controls."
+    "Location access is restricted on this device. Pick a city to see its weather instead."
 
   static let trustNow = "Now"
   static let trustAlerts = "Alerts"
   static let trustNextHour = PrecipOutlookCopy.title
+}
+
+/// Which Today screen to show. Location off is not a dead end: a saved city's
+/// weather still shows, and the permission screen only covers an empty Today.
+enum TodayGate: Equatable {
+  case welcome, permission, skeleton, feed, empty
+
+  static func resolve(
+    hasRequestedPermission: Bool,
+    isAuthorized: Bool,
+    hasWeather: Bool,
+    isWaitingOnLocation: Bool,
+    isLoadingWeather: Bool
+  ) -> TodayGate {
+    if !hasRequestedPermission { return .welcome }
+    if hasWeather { return .feed }
+    if isLoadingWeather || (isAuthorized && isWaitingOnLocation) { return .skeleton }
+    return isAuthorized ? .empty : .permission
+  }
 }
 
 /// Storm-first skeleton slots — must match the glance cards, not the old tactical grid.
@@ -70,19 +91,24 @@ struct TodayView: View {
         let authorized = status == .authorizedWhenInUse || status == .authorizedAlways
         let waitingOnLocation =
           store.isAcquiringDeviceLocation || store.locationService.isLoading
-        if !store.hasRequestedLocationPermission {
+        switch TodayGate.resolve(
+          hasRequestedPermission: store.hasRequestedLocationPermission,
+          isAuthorized: authorized,
+          hasWeather: weather != nil,
+          isWaitingOnLocation: waitingOnLocation,
+          isLoadingWeather: store.isLoadingWeather
+        ) {
+        case .welcome:
           firstLaunchWelcome()
             .padding(.bottom, bottomTabClearance)
-        } else if !authorized {
+        case .permission:
           LocationPermissionView()
             .padding(.bottom, bottomTabClearance)
-        } else if weather == nil
-          && (waitingOnLocation || store.isLoadingWeather)
-        {
+        case .skeleton:
           TodaySkeleton(statusText: waitingOnLocation ? TodayCopy.gettingLocation : nil)
-        } else if let w = weather {
-          TodayFeedView(weather: w)
-        } else {
+        case .feed:
+          if let w = weather { TodayFeedView(weather: w) }
+        case .empty:
           emptyLocationGate()
             .padding(.bottom, bottomTabClearance)
         }

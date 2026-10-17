@@ -50,6 +50,7 @@ enum DayCastAccessibility {
     static let continuePermission = "daycast.today.continuePermission"
     static let enableLocation = "daycast.today.enableLocation"
     static let openSettings = "daycast.today.openSettings"
+    static let searchCity = "daycast.today.searchCity"
     static let statusPill = "daycast.today.statusPill"
     static let alertsSlot = "daycast.today.alertsSlot"
     static let honestyStrip = "daycast.today.honestyStrip"
