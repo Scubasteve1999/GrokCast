@@ -1838,8 +1838,45 @@ final class WeatherStore {
       })
     else { return true }
     savedLocations.append(location)
+    // Undo must not restore a city on top of a new one (and past the free limit).
+    recentlyRemovedLocation = nil
     saveLocations()
     return true
+  }
+
+  struct RemovedLocation: Equatable {
+    let location: SavedLocation
+    let index: Int
+    let wasCurrent: Bool
+  }
+
+  /// Last city the user deleted from Locations, kept so the screen can offer Undo.
+  private(set) var recentlyRemovedLocation: RemovedLocation?
+
+  /// User-initiated delete. Same as `removeLocation`, but remembers the city for Undo.
+  func removeLocationWithUndo(_ location: SavedLocation) {
+    guard let index = savedLocations.firstIndex(where: { $0.id == location.id }) else { return }
+    let wasCurrent = currentLocation?.id == location.id
+    removeLocation(location)
+    recentlyRemovedLocation = RemovedLocation(
+      location: location, index: index, wasCurrent: wasCurrent)
+  }
+
+  /// Puts the last deleted city back where it was, and re-selects it if it was showing.
+  func undoRemoveLocation() {
+    guard let removed = recentlyRemovedLocation else { return }
+    recentlyRemovedLocation = nil
+    guard !savedLocations.contains(where: { $0.id == removed.location.id }) else { return }
+    savedLocations.insert(removed.location, at: min(removed.index, savedLocations.count))
+    saveLocations()
+    if removed.wasCurrent {
+      selectLocation(removed.location)
+    }
+    WidgetTimelineReloader.requestReload()
+  }
+
+  func dismissRemovedLocationUndo() {
+    recentlyRemovedLocation = nil
   }
 
   func removeLocation(_ location: SavedLocation) {

@@ -338,6 +338,36 @@ final class CriticalFlowsUITests: DayCastUITestCase {
       app.activate()
     }
   }
+
+  /// Deleting a saved city offers Undo, and Undo puts the city back.
+  func testDeletedCityCanBeUndone() throws {
+    XCTAssertTrue(waitForTabBar())
+    openMoreHubThen(.locations)
+
+    let field = app.descendants(matching: .any)["daycast.locations.searchField"]
+    XCTAssertTrue(field.waitForExistence(timeout: 6))
+    field.tap()
+    field.typeText("Seattle")
+
+    let result = app.descendants(matching: .any)["daycast.locations.result.Seattle, WA"]
+    XCTAssertTrue(result.waitForExistence(timeout: 10), "No Seattle search result")
+    result.tap()
+
+    let row = app.descendants(matching: .any)["daycast.locations.saved.Seattle, WA"]
+    XCTAssertTrue(row.waitForExistence(timeout: 8), "Seattle was not saved")
+
+    row.press(forDuration: 1.0)
+    let delete = app.buttons["Delete"]
+    XCTAssertTrue(delete.waitForExistence(timeout: 4))
+    delete.tap()
+
+    let undo = app.buttons["daycast.locations.undoDelete"]
+    XCTAssertTrue(undo.waitForExistence(timeout: 3), "Undo toast did not appear")
+    XCTAssertFalse(row.exists)
+    undo.tap()
+
+    XCTAssertTrue(row.waitForExistence(timeout: 4), "Undo did not restore Seattle")
+  }
 }
 
 /// Runs as a free user (`-UITestingFreeUser`), so the paywall entry exists in Settings.

@@ -131,6 +131,61 @@ extension WeatherStoreFallbackTests {
     return weather
   }
 
+  // MARK: - Undo city delete
+
+  @MainActor
+  func testUndoPutsDeletedCityBackInPlaceAndReselectsIt() async {
+    // removeLocation / addLocation persist; restore so the app host never inherits them.
+    await preservingLocationDefaults {
+      let store = WeatherStore(loadPersistedState: false)
+      let denver = SavedLocation(name: "Denver, CO", latitude: 39.74, longitude: -104.99)
+      store.savedLocations = [olive, seattle, denver]
+      store.currentLocation = seattle
+
+      store.removeLocationWithUndo(seattle)
+      XCTAssertEqual(store.savedLocations.map(\.id), [olive.id, denver.id])
+      XCTAssertEqual(store.recentlyRemovedLocation?.location.id, seattle.id)
+
+      store.undoRemoveLocation()
+      XCTAssertEqual(store.savedLocations.map(\.id), [olive.id, seattle.id, denver.id])
+      XCTAssertEqual(store.currentLocation?.id, seattle.id)
+      XCTAssertNil(store.recentlyRemovedLocation)
+    }
+  }
+
+  @MainActor
+  func testAddingACityDropsPendingUndo() async {
+    // removeLocation / addLocation persist; restore so the app host never inherits them.
+    await preservingLocationDefaults {
+      let store = WeatherStore(loadPersistedState: false)
+      store.savedLocations = [olive, seattle]
+      store.removeLocationWithUndo(seattle)
+      XCTAssertNotNil(store.recentlyRemovedLocation)
+
+      let denver = SavedLocation(name: "Denver, CO", latitude: 39.74, longitude: -104.99)
+      _ = store.addLocation(denver)
+      // Whether or not the add was allowed, Undo must not stack a city on top.
+      if store.savedLocations.contains(where: { $0.id == denver.id }) {
+        XCTAssertNil(store.recentlyRemovedLocation)
+      }
+      store.undoRemoveLocation()
+      XCTAssertFalse(
+        store.savedLocations.contains(where: { $0.id == seattle.id })
+          && store.savedLocations.contains(where: { $0.id == denver.id }))
+    }
+  }
+
+  @MainActor
+  func testPlainRemoveDoesNotOfferUndo() async {
+    // removeLocation / addLocation persist; restore so the app host never inherits them.
+    await preservingLocationDefaults {
+      let store = WeatherStore(loadPersistedState: false)
+      store.savedLocations = [olive, seattle]
+      store.removeLocation(seattle)
+      XCTAssertNil(store.recentlyRemovedLocation)
+    }
+  }
+
   @MainActor
   func testOfflineUnitSwitchClearsOldValuesAndShowsRecoverableError() async {
     let store = WeatherStore(loadPersistedState: false, fetchers: .init(forecast: { _, _ in

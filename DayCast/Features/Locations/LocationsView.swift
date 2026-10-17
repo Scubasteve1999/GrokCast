@@ -8,6 +8,11 @@ enum LocationsCopy {
   static let freeLimitChip = "Free includes Near Me + 1 saved city"
   static let saveUnlimitedCTA = "Save unlimited places"
   static let emptySaved = "No saved cities yet. Search above to add one."
+  static let undo = "Undo"
+  static let undoSeconds: Double = 5
+
+  static func deleted(_ name: String) -> String { "Deleted \(name)" }
+  static func deleteLabel(_ name: String) -> String { "Delete \(name)" }
 }
 
 struct LocationsView: View {
@@ -64,6 +69,7 @@ struct LocationsView: View {
         }
       }
       .environment(\.editMode, $editMode)
+      .overlay(alignment: .bottom) { undoToast }
       .onChange(of: isShowingSearch) { _, showing in
         if showing { editMode = .inactive }
       }
@@ -248,8 +254,9 @@ struct LocationsView: View {
             if index > 0 { SettingsDivider() }
             LocationsSwipeDeleteRow(
               deleteAccessibilityID: DayCastAccessibility.Locations.deleteSaved(loc.name),
+              deleteLabel: LocationsCopy.deleteLabel(loc.name),
               isEditing: editMode.isEditing,
-              onDelete: { store.removeLocation(loc) }
+              onDelete: { store.removeLocationWithUndo(loc) }
             ) {
               LocationRow(
                 location: loc,
@@ -263,7 +270,7 @@ struct LocationsView: View {
               .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
               .contextMenu {
                 Button("Delete", role: .destructive) {
-                  store.removeLocation(loc)
+                  store.removeLocationWithUndo(loc)
                 }
               }
             }
@@ -329,9 +336,9 @@ struct LocationsView: View {
           store.selectLocation(loc)
         }
         .accessibilityIdentifier(DayCastAccessibility.Locations.savedRow(loc.name))
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
           Button("Delete", role: .destructive) {
-            store.removeLocation(loc)
+            store.removeLocationWithUndo(loc)
           }
           .accessibilityIdentifier(DayCastAccessibility.Locations.deleteSaved(loc.name))
         }
@@ -446,10 +453,47 @@ struct LocationsView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 
+  @ViewBuilder
+  private var undoToast: some View {
+    if let removed = store.recentlyRemovedLocation {
+      HStack(spacing: DesignTokens.Spacing.space12) {
+        Text(LocationsCopy.deleted(removed.location.name))
+          .font(DesignTokens.Typography.callout())
+          .foregroundStyle(DesignTokens.Palette.textPrimary)
+          .lineLimit(2)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        Button(LocationsCopy.undo) {
+          Haptic.impact(.light)
+          store.undoRemoveLocation()
+        }
+        .font(DesignTokens.Typography.headline())
+        .foregroundStyle(DesignTokens.Palette.accent)
+        .frame(minWidth: DesignTokens.Layout.minHitTarget, minHeight: DesignTokens.Layout.minHitTarget)
+        .accessibilityIdentifier(DayCastAccessibility.Locations.undoDelete)
+      }
+      .padding(.horizontal, DesignTokens.Spacing.space16)
+      .padding(.vertical, DesignTokens.Spacing.space4)
+      .glassCardStyle(cornerRadius: DesignTokens.Radius.medium)
+      .padding(.horizontal, DesignTokens.Spacing.space20)
+      .padding(.bottom, DesignTokens.Layout.tabBarScrollClearance)
+      .transition(.move(edge: .bottom).combined(with: .opacity))
+      .task(id: removed.location.id) {
+        // VoiceOver users need longer to reach the button.
+        let seconds = LocationsCopy.undoSeconds * (UIAccessibility.isVoiceOverRunning ? 2 : 1)
+        try? await Task.sleep(for: .seconds(seconds))
+        guard !Task.isCancelled, store.recentlyRemovedLocation == removed else { return }
+        store.dismissRemovedLocationUndo()
+      }
+      .onAppear {
+        AccessibilityNotification.Announcement(LocationsCopy.deleted(removed.location.name)).post()
+      }
+    }
+  }
+
   private func deleteLocations(at offsets: IndexSet) {
     let saved = CitySearch.listedSavedLocations(from: store.savedLocations)
     for index in offsets {
-      store.removeLocation(saved[index])
+      store.removeLocationWithUndo(saved[index])
     }
   }
 
@@ -708,6 +752,7 @@ enum LocationRowLayout {
 /// Reveal a Delete control on swipe or when Edit is on.
 private struct LocationsSwipeDeleteRow<Content: View>: View {
   let deleteAccessibilityID: String
+  let deleteLabel: String
   let isEditing: Bool
   let onDelete: () -> Void
   @ViewBuilder var content: () -> Content
@@ -726,7 +771,7 @@ private struct LocationsSwipeDeleteRow<Content: View>: View {
           .background(DesignTokens.Palette.danger)
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("Delete")
+      .accessibilityLabel(deleteLabel)
       .accessibilityIdentifier(deleteAccessibilityID)
 
       content()

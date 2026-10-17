@@ -105,6 +105,7 @@ enum DayCastAccessibility {
   }
 
   enum Locations {
+    static let undoDelete = "daycast.locations.undoDelete"
     static let searchField = "daycast.locations.searchField"
     static let searchSubmit = "daycast.locations.searchSubmit"
     static let chips = "daycast.locations.chips"
