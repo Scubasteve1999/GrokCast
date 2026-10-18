@@ -170,7 +170,7 @@ struct RadarPreviewCard: View {
     let loader = RadarLoader()
     let frame: RadarFrame?
     if showsFuture {
-      frame = await loader.loadNewestNationalForecastFrame()
+      frame = await loader.loadNewestNationalForecastFrame(coordinate: coordinate)
     } else {
       frame = await loader.loadNewestNationalLiveFrame(coordinate: coordinate)
     }

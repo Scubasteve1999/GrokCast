@@ -76,7 +76,8 @@ final class RadarLoader {
       rainViewerLive: rainViewer.live,
       xweatherLiveOK: xweatherLiveOK
     )
-    let forecastOutcome = await resolveForecast(rainViewerNowcast: rainViewer.nowcast)
+    let forecastOutcome = await resolveForecast(
+      rainViewerNowcast: rainViewer.nowcast, coordinate: coordinate)
 
     return RadarDatasetResult(
       live: liveOutcome.frames,
@@ -89,9 +90,9 @@ final class RadarLoader {
   }
 
   /// Today Outlook plate: do not offer Future without a real forecast timeline.
-  func probeForecastFramesAvailable() async -> Bool {
+  func probeForecastFramesAvailable(coordinate: CLLocationCoordinate2D?) async -> Bool {
     let nowcast = await RainViewerRadarService.loadNowcastFrames()
-    let outcome = await resolveForecast(rainViewerNowcast: nowcast)
+    let outcome = await resolveForecast(rainViewerNowcast: nowcast, coordinate: coordinate)
     return !outcome.frames.isEmpty && outcome.availability.hasFrames
   }
 
@@ -114,9 +115,9 @@ final class RadarLoader {
   }
 
   /// Newest National forecast/nowcast frame for the Outlook Future pill.
-  func loadNewestNationalForecastFrame() async -> RadarFrame? {
+  func loadNewestNationalForecastFrame(coordinate: CLLocationCoordinate2D) async -> RadarFrame? {
     let nowcast = await RainViewerRadarService.loadNowcastFrames()
-    let outcome = await resolveForecast(rainViewerNowcast: nowcast)
+    let outcome = await resolveForecast(rainViewerNowcast: nowcast, coordinate: coordinate)
     guard outcome.availability.hasFrames else { return nil }
     return Self.newestNationalTeaserFrame(from: outcome.frames)
   }
@@ -151,6 +152,9 @@ final class RadarLoader {
       return .unavailable(message: RadarChromeCopy.futureTemporarilyUnavailable)
     case .mrms:
       return .unavailable(message: "Forecast radar unavailable.")
+    case .hrrr:
+      // The loader only hands out HRRR frames after probing the run's last lead time.
+      return .available
     case .openWeatherMap:
       guard OpenWeatherMapRadarService.apiKeyConfigured else {
         return .timelineOnly(message: "OpenWeatherMap API key not configured.")
@@ -167,6 +171,19 @@ final class RadarLoader {
       radarLog("[OpenWeatherMap] FUTURE probe failed — using timeline-only")
       return .timelineOnly(message: message)
     }
+  }
+
+  /// 12-hr rescue when Xweather's forecast dies mid-session (quota, lapsed plan): the same
+  /// HRRR → RainViewer nowcast → OpenWeatherMap chain a fresh load would use.
+  func loadForecastFallback(coordinate: CLLocationCoordinate2D?) async -> (
+    frames: [RadarFrame], availability: RadarTileAvailability
+  )? {
+    let nowcast = await RainViewerRadarService.loadNowcastFrames()
+    guard
+      let outcome = await firstWorkingForecastFallback(
+        rainViewerNowcast: nowcast, coordinate: coordinate)
+    else { return nil }
+    return (outcome.frames, outcome.availability)
   }
 
   /// Loads OpenWeatherMap PR0 forecast frames when the probe succeeds.
@@ -311,7 +328,9 @@ final class RadarLoader {
     }
   }
 
-  private func resolveForecast(rainViewerNowcast: [RadarFrame]) async -> LoadOutcome {
+  private func resolveForecast(
+    rainViewerNowcast: [RadarFrame], coordinate: CLLocationCoordinate2D?
+  ) async -> LoadOutcome {
     if XweatherRadarService.mapsAuthConfigured {
       let xwFrames = XweatherRadarService.loadForecastRadarFrames()
       if !xwFrames.isEmpty {
@@ -325,9 +344,14 @@ final class RadarLoader {
           )
         }
 
-        radarLog("[RadarLoader] Xweather forecast probe failed — trying RainViewer nowcast / OWM")
-        if let fallback = await firstWorkingForecastFallback(rainViewerNowcast: rainViewerNowcast) {
+        radarLog("[RadarLoader] Xweather forecast probe failed — trying HRRR / RainViewer nowcast / OWM")
+        if let fallback = await firstWorkingForecastFallback(
+          rainViewerNowcast: rainViewerNowcast, coordinate: coordinate)
+        {
           return fallback
+        }
+        if let outsideMessage = Self.forecastOutsideCoverageMessage(coordinate: coordinate) {
+          return LoadOutcome(frames: [], provider: nil, availability: .unavailable(message: outsideMessage))
         }
 
         // Whatever the reason (auth, quota, network), Xweather cannot paint tiles and nothing
@@ -345,8 +369,13 @@ final class RadarLoader {
       }
     }
 
-    if let fallback = await firstWorkingForecastFallback(rainViewerNowcast: rainViewerNowcast) {
+    if let fallback = await firstWorkingForecastFallback(
+      rainViewerNowcast: rainViewerNowcast, coordinate: coordinate)
+    {
       return fallback
+    }
+    if let outsideMessage = Self.forecastOutsideCoverageMessage(coordinate: coordinate) {
+      return LoadOutcome(frames: [], provider: nil, availability: .unavailable(message: outsideMessage))
     }
 
     let message =
@@ -361,10 +390,28 @@ final class RadarLoader {
     )
   }
 
-  /// RainViewer nowcast, then OpenWeatherMap PR0 — used when Xweather Maps is down.
+  /// Outside CONUS the free HRRR fallback cannot help, so say where 12-hr works instead
+  /// of calling a permanent gap "temporary".
+  nonisolated static func forecastOutsideCoverageMessage(
+    coordinate: CLLocationCoordinate2D?
+  ) -> String? {
+    guard let coordinate, !IEMRadarService.isWithinCONUS(coordinate) else { return nil }
+    return RadarChromeCopy.futureUSOnly
+  }
+
+  /// NOAA HRRR (CONUS), RainViewer nowcast, then OpenWeatherMap PR0 — used when Xweather
+  /// Maps is down or not configured.
   private func firstWorkingForecastFallback(
-    rainViewerNowcast: [RadarFrame]
+    rainViewerNowcast: [RadarFrame],
+    coordinate: CLLocationCoordinate2D?
   ) async -> LoadOutcome? {
+    if let coordinate {
+      let hrrrFrames = await IEMHRRRForecastService.loadForecastFrames(coordinate: coordinate)
+      if !hrrrFrames.isEmpty {
+        radarLog("[RadarLoader] Forecast timeline ready (\(hrrrFrames.count) frames) — NOAA HRRR")
+        return LoadOutcome(frames: hrrrFrames, provider: .hrrr, availability: .available)
+      }
+    }
     if !rainViewerNowcast.isEmpty {
       radarLog(
         "[RadarLoader] Forecast timeline ready (\(rainViewerNowcast.count) frames) — RainViewer nowcast"

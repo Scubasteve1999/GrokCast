@@ -200,8 +200,9 @@ struct RadarFeedCard: View {
       .task(id: loadKey) {
         await loadSiteSweepIfNeeded()
       }
-      .task {
-        futureFramesAvailable = await RadarLoader().probeForecastFramesAvailable()
+      .task(id: loadKey) {
+        futureFramesAvailable = await RadarLoader().probeForecastFramesAvailable(
+          coordinate: store.currentLocation?.coordinate)
         fallBackToRadarIfFutureLocked()
       }
       .onChange(of: canUseFuture) { _, _ in

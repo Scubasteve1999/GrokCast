@@ -378,6 +378,7 @@ struct RadarControlPanel: View {
 
 private struct RadarDisplayOptionsSheet: View {
   @Environment(\.dismiss) private var dismiss
+  @Environment(LightningStore.self) private var lightningStore
   @Bindable var radarState: RadarState
   @Binding var opacity: Double
   @Binding var isDecluttered: Bool
@@ -426,16 +427,18 @@ private struct RadarDisplayOptionsSheet: View {
               }
             )
           )
-          namedSwitch(
-            RadarChromeCopy.lightningLayerSwitch,
-            isOn: Binding(
-              get: { radarState.showLightningLayer },
-              set: { newValue in
-                radarState.showLightningLayer = newValue
-                Analytics.track(.lightningLayerToggle, parameters: ["on": newValue ? "1" : "0"])
-              }
+          if !lightningStore.isLayerUnavailable {
+            namedSwitch(
+              RadarChromeCopy.lightningLayerSwitch,
+              isOn: Binding(
+                get: { radarState.showLightningLayer },
+                set: { newValue in
+                  radarState.showLightningLayer = newValue
+                  Analytics.track(.lightningLayerToggle, parameters: ["on": newValue ? "1" : "0"])
+                }
+              )
             )
-          )
+          }
           Picker("Base map", selection: $radarState.baseMapStyle) {
             ForEach(RadarBaseMapStyle.allCases) { style in
               Label(style.displayName, systemImage: style.systemImage).tag(style)
@@ -519,7 +522,8 @@ private struct RadarDisplayOptionsSheet: View {
     MapsGLRadarPalette.showsRasterColorScheme(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
-      keysPresent: MapsGLRadarHost.isUsable(future: radarState.showsFuture)
+      keysPresent: MapsGLRadarHost.isUsable(
+        future: radarState.showsFuture, forecastProvider: radarState.activeForecastProvider)
     )
   }
 

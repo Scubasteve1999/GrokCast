@@ -34,7 +34,7 @@ struct RadarView: View {
 
   /// Lightning is Live-only observed CG. Hidden in 12-hr.
   private var showsLightningOverlay: Bool {
-    radarState.showLightningLayer && !radarState.showsFuture
+    radarState.showLightningLayer && !radarState.showsFuture && !lightningStore.isLayerUnavailable
   }
 
   /// Combined so tab-open and location-id changes share one `handleLiveOpen`.
@@ -119,6 +119,9 @@ struct RadarView: View {
           lightningStore.startPolling(around: selectedMapCenter)
         } else {
           lightningStore.stopPolling()
+          if store.selectedTab == .radar {
+            lightningStore.checkAvailabilityIfNeeded(around: selectedMapCenter)
+          }
         }
       }
       .onChange(of: radarState.showFireLayer) { _, isOn in
@@ -171,6 +174,8 @@ struct RadarView: View {
           guard store.selectedTab == .radar else { return }
           if showsLightningOverlay {
             lightningStore.startPolling(around: selectedMapCenter)
+          } else {
+            lightningStore.checkAvailabilityIfNeeded(around: selectedMapCenter)
           }
           Task {
             // reloadIfStale carries its own thresholds, so a brief trip to the app

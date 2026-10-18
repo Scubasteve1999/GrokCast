@@ -1,3 +1,4 @@
+import CoreLocation
 import XCTest
 
 @testable import DayCast
@@ -91,6 +92,22 @@ final class RadarUnavailableTests: XCTestCase {
     XCTAssertTrue(XweatherRadarService.mapsHealthy(future: false))
   }
 
+  func testTwelveHourMapsGLStaysOffWhenHRRROwnsTheTimeline() {
+    resetXweatherProbes()
+    defer { resetXweatherProbes() }
+    // Unprobed (or a failure aged out of its cache) counts as healthy, which is exactly
+    // when MapsGL used to cover the HRRR frames with an empty Xweather layer.
+    XCTAssertTrue(XweatherRadarService.mapsHealthy(future: true))
+    XCTAssertFalse(MapsGLRadarHost.isUsable(future: true, forecastProvider: .hrrr))
+    XCTAssertFalse(MapsGLRadarHost.isUsable(future: true, forecastProvider: nil))
+    XCTAssertEqual(
+      MapsGLRadarHost.isUsable(future: true, forecastProvider: .xweather),
+      MapsGLRadarHost.isUsable(future: true))
+    XCTAssertEqual(
+      MapsGLRadarHost.isUsable(future: false, forecastProvider: .hrrr),
+      MapsGLRadarHost.isUsable(future: false), "Live is not affected by the forecast source")
+  }
+
   func testMapsGLIsNotUsableWhileTheProbeIsFailing() {
     resetXweatherProbes()
     defer { resetXweatherProbes() }
@@ -134,6 +151,27 @@ final class RadarUnavailableTests: XCTestCase {
     let footer = state.statusFooterContent
     XCTAssertEqual(footer.text, RadarChromeCopy.futureTemporarilyUnavailable)
     XCTAssertEqual(footer.style, .warning)
+  }
+
+  @MainActor
+  func testChipNoteSaysTwelveHourIsUSOnlyOutsideCoverage() {
+    let state = RadarState()
+    state.setForecastAvailabilityForTesting(.unavailable(message: RadarChromeCopy.futureUSOnly))
+    XCTAssertFalse(state.forecastIsTemporarilyUnavailable, "a coverage gap is not an outage")
+    XCTAssertEqual(state.statusFooterContent.text, RadarChromeCopy.futureUSOnly)
+    XCTAssertEqual(state.statusFooterContent.style, .warning)
+  }
+
+  func testUSOnlyMessageOnlyAppliesOutsideCONUS() {
+    let memphis = CLLocationCoordinate2D(latitude: 35.15, longitude: -90.05)
+    let london = CLLocationCoordinate2D(latitude: 51.5, longitude: -0.12)
+    XCTAssertNil(RadarLoader.forecastOutsideCoverageMessage(coordinate: memphis))
+    XCTAssertNil(RadarLoader.forecastOutsideCoverageMessage(coordinate: nil))
+    XCTAssertEqual(
+      RadarLoader.forecastOutsideCoverageMessage(coordinate: london), RadarChromeCopy.futureUSOnly)
+    for forbidden in ["temporarily", "xweather", "key", "quota"] {
+      XCTAssertFalse(RadarChromeCopy.futureUSOnly.localizedCaseInsensitiveContains(forbidden))
+    }
   }
 
   @MainActor

@@ -128,9 +128,14 @@ enum ChaseRadarHUDLogic {
   static func lookingAtLine(
     product: RadarProduct,
     showsFuture: Bool,
-    siteID: String? = nil
+    siteID: String? = nil,
+    forecastProvider: RadarTileProvider? = nil
   ) -> String {
     _ = siteID
+    // Model output (HRRR) is simulated radar, not observed scans; name the source instead.
+    if showsFuture, let source = forecastProvider?.forecastSourceLabel {
+      return "\(RadarChromeCopy.futureChip) · \(source)"
+    }
     if showsFuture { return "\(RadarChromeCopy.futureChip) · \(product.displayName)" }
     return product.displayName
   }
@@ -303,7 +308,8 @@ struct ChaseRadarHUD: View {
           ChaseRadarHUDLogic.lookingAtLine(
             product: radarState.selectedProduct,
             showsFuture: radarState.showsFuture,
-            siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id
+            siteID: radarState.activeSiteProductSite?.id ?? radarState.nearestSite?.id,
+            forecastProvider: radarState.activeForecastProvider
           )
         )
         .font(.caption)

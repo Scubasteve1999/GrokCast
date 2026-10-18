@@ -9,12 +9,12 @@ import ImageIO
 /// non-fatal and returns empty/nil on failure so callers keep the composite view.
 final class IEMRadarService {
 
-  private static let baseTileHost = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0"
+  static let baseTileHost = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0"
   private static let scanListBase = "https://mesonet.agron.iastate.edu/json/radar"
   private static let siteListURL = URL(
     string: "https://mesonet.agron.iastate.edu/json/network.py?network=NEXRAD")!
-  private static let userAgent = "DayCast/1.0 (https://daycast.app)"
-  private static let requestTimeout: TimeInterval = 8
+  static let userAgent = "DayCast/1.0 (https://daycast.app)"
+  static let requestTimeout: TimeInterval = 8
 
   /// Beyond this the site's low-level beam is too high to be useful (and we're likely non-US).
   private static let maxSiteDistanceMeters: CLLocationDistance = 400_000
@@ -570,4 +570,182 @@ final class IEMRadarService {
       return nil
     }
   }
+}
+
+/// 12-hr Forecast radar from NOAA's HRRR model (simulated reflectivity), tiled by IEM.
+/// Free and public domain, CONUS only. Frames are pinned to one model run so a new run
+/// landing mid-animation cannot mix two forecasts in one timeline.
+enum IEMHRRRForecastService {
+  private static let baseTileHost = IEMRadarService.baseTileHost
+  private static let latestRunURL = URL(
+    string: "https://mesonet.agron.iastate.edu/data/gis/images/4326/hrrr/refd_0000.json")!
+  private static let userAgent = IEMRadarService.userAgent
+  private static let requestTimeout = IEMRadarService.requestTimeout
+  /// HRRR hourly runs publish reflectivity out to +18 h (1080 minutes).
+  static let maxLeadMinutes = 18 * 60
+  /// IEM caches tiles for 5 minutes; re-checking the run any sooner only adds load.
+  private static let runCacheTTL: TimeInterval = 5 * 60
+  /// A failed lookup (IEM down, run not rendered) is not retried for this long, so the
+  /// Today card, its preview and Radar do not each wait out the timeouts again.
+  static let failureCacheTTL: TimeInterval = 60
+  /// One CONUS tile (z5) used to confirm the run's last lead time is rendered.
+  private static let probeTilePath = "5/8/12.png"
+
+  /// The network calls run selection makes. Tests swap in fakes.
+  struct RunSource: Sendable {
+    var latestInitTime: @Sendable () async -> Date?
+    var tileIsServed: @Sendable (_ initTime: Date, _ leadMinutes: Int) async -> Bool
+
+    static let live = RunSource(
+      latestInitTime: { await fetchLatestInitTime() },
+      tileIsServed: { await IEMHRRRForecastService.tileIsServed(initTime: $0, leadMinutes: $1) }
+    )
+  }
+
+  /// Valid only for the UTC hour it was probed in: the timeline's last lead moves an hour
+  /// later each hour, and that new lead has not been confirmed as rendered.
+  @MainActor private static var cachedRun: (initTime: Date, hour: Date, checkedAt: Date)?
+  @MainActor private static var lastFailureAt: Date?
+  /// Callers that arrive together (Today card, its preview, Radar) share one lookup.
+  @MainActor private static var inFlight: Task<Date?, Never>?
+
+  /// Frames for `Now … +11h` from the newest HRRR run whose last lead is served.
+  /// Empty outside CONUS or when IEM is unreachable.
+  @MainActor
+  static func loadForecastFrames(
+    coordinate: CLLocationCoordinate2D,
+    now: Date = Date()
+  ) async -> [RadarFrame] {
+    guard IEMRadarService.isWithinCONUS(coordinate) else { return [] }
+    guard let initTime = await usableRun(now: now) else { return [] }
+    return frames(initTime: initTime, now: now)
+  }
+
+  /// Hourly valid times from the top of the current UTC hour, each pointing at the
+  /// run's lead minutes for that time. Drops any frame the run does not cover.
+  static func frames(
+    initTime: Date,
+    now: Date,
+    maxFrames: Int = RadarTimelineConfig.forecastMaxFrames,
+    intervalMinutes: Int = RadarTimelineConfig.forecastIntervalMinutes
+  ) -> [RadarFrame] {
+    let start = floorToHour(now)
+    return (0..<maxFrames).compactMap { step -> RadarFrame? in
+      let valid = start.addingTimeInterval(TimeInterval(step * intervalMinutes * 60))
+      let lead = Int(valid.timeIntervalSince(initTime) / 60)
+      guard lead >= 0, lead <= maxLeadMinutes else { return nil }
+      return RadarFrame(
+        provider: .hrrr,
+        kind: .forecastPrecipitation,
+        tileEpoch: Int(valid.timeIntervalSince1970),
+        timestamp: valid,
+        tileURLTemplates: [tileTemplate(initTime: initTime, leadMinutes: lead)]
+      )
+    }
+  }
+
+  /// `…/hrrr::REFD-F0660-202610180400/{z}/{x}/{y}.png`
+  static func tileTemplate(initTime: Date, leadMinutes: Int) -> String {
+    "\(baseTileHost)/\(layerName(initTime: initTime, leadMinutes: leadMinutes))/{z}/{x}/{y}.png"
+  }
+
+  static func layerName(initTime: Date, leadMinutes: Int) -> String {
+    let lead = String(format: "%04d", leadMinutes)
+    return "hrrr::REFD-F\(lead)-\(runFormatter.string(from: initTime))"
+  }
+
+  /// Cached run for this hour, else one shared lookup. Failures are remembered briefly.
+  @MainActor
+  static func usableRun(now: Date, source: RunSource = .live) async -> Date? {
+    if let cachedRun, cachedRun.hour == floorToHour(now),
+      now.timeIntervalSince(cachedRun.checkedAt) < runCacheTTL
+    {
+      return cachedRun.initTime
+    }
+    if let lastFailureAt, now.timeIntervalSince(lastFailureAt) < failureCacheTTL {
+      return nil
+    }
+    if let inFlight { return await inFlight.value }
+
+    let lookup = Task { await selectRun(now: now, source: source) }
+    inFlight = lookup
+    let initTime = await lookup.value
+    inFlight = nil
+    if let initTime {
+      cachedRun = (initTime, floorToHour(now), now)
+      lastFailureAt = nil
+    } else {
+      cachedRun = nil
+      lastFailureAt = now
+    }
+    return initTime
+  }
+
+  @MainActor
+  static func resetRunCacheForTesting() {
+    cachedRun = nil
+    lastFailureAt = nil
+    inFlight = nil
+  }
+
+  /// Newest run first, then the one before it: a run IEM just listed may not have its
+  /// later lead times rendered yet, and a missing tile would read as "no rain".
+  static func selectRun(now: Date, source: RunSource) async -> Date? {
+    let newest =
+      await source.latestInitTime() ?? floorToHour(now).addingTimeInterval(-2 * 3600)
+    for initTime in [newest, newest.addingTimeInterval(-3600)] {
+      let timeline = frames(initTime: initTime, now: now)
+      guard timeline.count == RadarTimelineConfig.forecastMaxFrames, let lastFrame = timeline.last
+      else { continue }
+      let lead = Int(lastFrame.timestamp.timeIntervalSince(initTime) / 60)
+      if await source.tileIsServed(initTime, lead) {
+        return initTime
+      }
+    }
+    radarLog("[HRRR] No usable run near \(newest)")
+    return nil
+  }
+
+  private static func fetchLatestInitTime() async -> Date? {
+    var request = URLRequest(url: latestRunURL)
+    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+    request.timeoutInterval = requestTimeout
+    guard let (data, response) = try? await URLSession.shared.data(for: request),
+      (response as? HTTPURLResponse)?.statusCode == 200
+    else { return nil }
+    return parseInitTime(from: data)
+  }
+
+  static func parseInitTime(from data: Data) -> Date? {
+    struct Run: Decodable { let model_init_utc: String }
+    guard let run = try? JSONDecoder().decode(Run.self, from: data) else { return nil }
+    return ISO8601DateFormatter().date(from: run.model_init_utc)
+  }
+
+  /// IEM answers a missing lead with HTTP 503 text, so require a PNG body.
+  private static func tileIsServed(initTime: Date, leadMinutes: Int) async -> Bool {
+    let path = "\(baseTileHost)/\(layerName(initTime: initTime, leadMinutes: leadMinutes))/\(probeTilePath)"
+    guard let url = URL(string: path) else { return false }
+    var request = URLRequest(url: url)
+    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+    request.timeoutInterval = requestTimeout
+    guard let (_, response) = try? await URLSession.shared.data(for: request),
+      let http = response as? HTTPURLResponse
+    else { return false }
+    let isPNG = http.value(forHTTPHeaderField: "Content-Type")?.lowercased()
+      .contains("image/png") ?? false
+    return http.statusCode == 200 && isPNG
+  }
+
+  private static func floorToHour(_ date: Date) -> Date {
+    Date(timeIntervalSince1970: (date.timeIntervalSince1970 / 3600).rounded(.down) * 3600)
+  }
+
+  private static let runFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)
+    formatter.dateFormat = "yyyyMMddHHmm"
+    return formatter
+  }()
 }

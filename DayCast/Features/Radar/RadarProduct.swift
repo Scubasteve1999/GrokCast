@@ -151,6 +151,7 @@ enum RadarChromeCopy {
   static let futureChip = "12-hr"
   /// Shown when the 12-hr source and every fallback fail. No provider, key or quota detail.
   static let futureTemporarilyUnavailable = "12-hr radar is temporarily unavailable."
+  static let futureUSOnly = "12-hr radar covers the continental US only."
   /// Generic Live/provider outage line. Detailed reasons stay in `radarLog` and DEBUG builds.
   static let radarTemporarilyUnavailable = "Radar data is temporarily unavailable."
   static let lightningTemporarilyUnavailable = "Lightning temporarily unavailable"

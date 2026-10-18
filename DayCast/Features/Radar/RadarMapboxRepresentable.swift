@@ -513,7 +513,8 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
       let mapsGLRain = MapsGLRadarPalette.shouldUseMapsGL(
         overlayOn: radarState.showRadarOverlay,
         isSiteProduct: radarState.selectedProduct.isSiteProduct,
-        keysPresent: MapsGLRadarHost.isUsable(future: radarState.showsFuture),
+        keysPresent: MapsGLRadarHost.isUsable(
+          future: radarState.showsFuture, forecastProvider: radarState.activeForecastProvider),
         nationalUsesMRMS: radarState.nationalUsesMRMSPaint
       )
       // Encoded MapsGL rain replaces baked PNG only after the Metal layer is up.
@@ -598,7 +599,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     /// IEM tiles are CDN-cached (max-age 300); lower prefetch to avoid melting mesonet servers.
     private static func prefetchZoomDelta(for provider: RadarTileProvider, isAnimating: Bool) -> Double {
       switch provider {
-      case .iem, .mrms:
+      case .iem, .mrms, .hrrr:
         return isAnimating ? 1 : 0
       case .rainViewer, .openWeatherMap, .xweather:
         return isAnimating ? 2 : 1
@@ -608,7 +609,7 @@ struct RadarMapboxRepresentable: UIViewRepresentable {
     /// Match provider cache headers where known (IEM `Cache-Control: max-age=300`).
     private static func minimumTileUpdateInterval(for provider: RadarTileProvider) -> Double {
       switch provider {
-      case .iem: 300
+      case .iem, .hrrr: 300
       case .mrms: 60
       default: 0
       }

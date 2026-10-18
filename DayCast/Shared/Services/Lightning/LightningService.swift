@@ -54,7 +54,9 @@ enum LightningService {
     }
 
     if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-      if http.statusCode == 403 { throw LightningServiceError.insufficientScope }
+      if http.statusCode == 401 || http.statusCode == 403 {
+        throw LightningServiceError.insufficientScope
+      }
       throw LightningServiceError.badResponse
     }
 
@@ -64,7 +66,8 @@ enum LightningService {
   static func parse(data: Data, now: Date = Date()) throws -> [LightningStrike] {
     let envelope = try JSONDecoder().decode(Envelope.self, from: data)
     if let code = envelope.error?.code?.lowercased() {
-      if code.contains("insufficient") || code.contains("scope") {
+      // `invalid_client` is how the Data API reports an expired or deleted app's keys.
+      if code.contains("insufficient") || code.contains("scope") || code.contains("invalid_client") {
         throw LightningServiceError.insufficientScope
       }
     }

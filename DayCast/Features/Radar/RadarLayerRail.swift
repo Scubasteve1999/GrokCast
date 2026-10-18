@@ -18,22 +18,26 @@ enum RadarMapChromeLayout {
 
 /// Vertical map-edge layer toggles. Product / map options stay in Layers.
 struct RadarLayerRail: View {
+  @Environment(LightningStore.self) private var lightningStore
   @Bindable var radarState: RadarState
   var onOpenLayers: () -> Void
 
   var body: some View {
     VStack(spacing: DesignTokens.Spacing.space8) {
-      railButton(
-        systemImage: "bolt.fill",
-        selected: radarState.showLightningLayer && !radarState.showsFuture,
-        disabled: radarState.showsFuture,
-        label: RadarChromeCopy.lightningLayerSwitch
-      ) {
-        radarState.showLightningLayer.toggle()
-        Analytics.track(
-          .lightningLayerToggle,
-          parameters: ["on": radarState.showLightningLayer ? "1" : "0"]
-        )
+      // No working Xweather key: a lightning button would toggle an empty layer.
+      if !lightningStore.isLayerUnavailable {
+        railButton(
+          systemImage: "bolt.fill",
+          selected: radarState.showLightningLayer && !radarState.showsFuture,
+          disabled: radarState.showsFuture,
+          label: RadarChromeCopy.lightningLayerSwitch
+        ) {
+          radarState.showLightningLayer.toggle()
+          Analytics.track(
+            .lightningLayerToggle,
+            parameters: ["on": radarState.showLightningLayer ? "1" : "0"]
+          )
+        }
       }
 
       railButton(

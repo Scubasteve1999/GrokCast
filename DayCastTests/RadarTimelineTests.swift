@@ -201,6 +201,143 @@ final class RadarTimelineTests: XCTestCase {
     )
     XCTAssertTrue(frame.tileKey.hasPrefix("iem:12:"))
   }
+  // MARK: - NOAA HRRR forecast (IEM)
+
+  private func utc(_ text: String) -> Date {
+    ISO8601DateFormatter().date(from: text)!
+  }
+
+  func testHRRRFramesUseValidTimesAndPinnedRunLeads() {
+    // 04Z run, viewed at 05:47Z: frames start at 05Z ("Now") with lead +60m.
+    let initTime = utc("2026-10-18T04:00:00Z")
+    let frames = IEMHRRRForecastService.frames(initTime: initTime, now: utc("2026-10-18T05:47:16Z"))
+    XCTAssertEqual(frames.count, RadarTimelineConfig.forecastMaxFrames)
+    XCTAssertEqual(frames.first?.timestamp, utc("2026-10-18T05:00:00Z"))
+    XCTAssertEqual(frames.last?.timestamp, utc("2026-10-18T16:00:00Z"))
+    XCTAssertEqual(
+      frames.first?.tileURLTemplates,
+      [
+        "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/hrrr::REFD-F0060-202610180400/{z}/{x}/{y}.png"
+      ])
+    XCTAssertTrue(frames.last!.tileURLTemplates[0].contains("REFD-F0720-202610180400"))
+    XCTAssertTrue(frames.allSatisfy { $0.provider == .hrrr && $0.kind == .forecastPrecipitation })
+    XCTAssertEqual(Set(frames.map(\.tileKey)).count, frames.count, "each frame needs its own tiles")
+  }
+
+  func testHRRRDropsFramesBeyondTheRunsEighteenHours() {
+    let initTime = utc("2026-10-18T00:00:00Z")
+    let frames = IEMHRRRForecastService.frames(initTime: initTime, now: utc("2026-10-18T10:30:00Z"))
+    // 10Z…18Z are within +18h of 00Z; 19Z…21Z are not.
+    XCTAssertEqual(frames.count, 9)
+    XCTAssertTrue(frames.last!.tileURLTemplates[0].contains("REFD-F1080-"))
+  }
+
+  func testHRRRReadsTheLatestRunFromIEM() {
+    let json = """
+      {"model_init_utc": "2026-10-18T04:00:00Z", "forecast_minute": 0.0, "model_forecast_utc": "2026-10-18T04:00:00Z"}
+      """.data(using: .utf8)!
+    XCTAssertEqual(IEMHRRRForecastService.parseInitTime(from: json), utc("2026-10-18T04:00:00Z"))
+    XCTAssertNil(IEMHRRRForecastService.parseInitTime(from: Data("nope".utf8)))
+  }
+
+  func testHRRRLabelsItselfAsAModelForecast() {
+    XCTAssertTrue(RadarTileProvider.hrrr.forecastFooterLabel.contains("HRRR"))
+    XCTAssertTrue(RadarTileProvider.hrrr.forecastFooterLabel.localizedCaseInsensitiveContains("model"))
+  }
+
+  // MARK: - HRRR run selection
+
+  /// Counts lookups so cache tests can tell a network call from a cache hit.
+  private actor LookupLog {
+    var latestCalls = 0
+    var probedLeads: [Int] = []
+    func noteLatest() { latestCalls += 1 }
+    func noteProbe(_ lead: Int) { probedLeads.append(lead) }
+  }
+
+  private func source(
+    latest: Date?, served: Set<Int>, log: LookupLog
+  ) -> IEMHRRRForecastService.RunSource {
+    IEMHRRRForecastService.RunSource(
+      latestInitTime: {
+        await log.noteLatest()
+        return latest
+      },
+      tileIsServed: { _, lead in
+        await log.noteProbe(lead)
+        return served.contains(lead)
+      })
+  }
+
+  func testHRRRFallsBackToThePreviousRunWhenTheNewestIsNotRendered() async {
+    // 05:47Z: newest run 04Z needs F0720 (16Z); it is not rendered yet. 03Z needs F0780.
+    let log = LookupLog()
+    let run = await IEMHRRRForecastService.selectRun(
+      now: utc("2026-10-18T05:47:00Z"),
+      source: source(latest: utc("2026-10-18T04:00:00Z"), served: [780], log: log))
+    XCTAssertEqual(run, utc("2026-10-18T03:00:00Z"))
+    let probed = await log.probedLeads
+    XCTAssertEqual(probed, [720, 780])
+  }
+
+  func testHRRRReportsNoRunWhenNeitherIsRendered() async {
+    let log = LookupLog()
+    let run = await IEMHRRRForecastService.selectRun(
+      now: utc("2026-10-18T05:47:00Z"),
+      source: source(latest: utc("2026-10-18T04:00:00Z"), served: [], log: log))
+    XCTAssertNil(run)
+  }
+
+  @MainActor
+  func testHRRRRunCacheHoldsWithinTheHourAndReProbesTheNext() async {
+    IEMHRRRForecastService.resetRunCacheForTesting()
+    defer { IEMHRRRForecastService.resetRunCacheForTesting() }
+    let log = LookupLog()
+    let src = source(latest: utc("2026-10-18T04:00:00Z"), served: [720, 780], log: log)
+    _ = await IEMHRRRForecastService.usableRun(now: utc("2026-10-18T05:56:00Z"), source: src)
+    _ = await IEMHRRRForecastService.usableRun(now: utc("2026-10-18T05:59:00Z"), source: src)
+    var calls = await log.latestCalls
+    XCTAssertEqual(calls, 1, "same hour, inside the TTL: cache hit")
+    // 06:01Z is inside the 5-minute TTL but a new hour, so the last lead is now F0780.
+    _ = await IEMHRRRForecastService.usableRun(now: utc("2026-10-18T06:01:00Z"), source: src)
+    calls = await log.latestCalls
+    XCTAssertEqual(calls, 2)
+    let probed = await log.probedLeads
+    XCTAssertEqual(probed.last, 780)
+  }
+
+  @MainActor
+  func testHRRRRemembersAFailureBrieflyThenRetries() async {
+    IEMHRRRForecastService.resetRunCacheForTesting()
+    defer { IEMHRRRForecastService.resetRunCacheForTesting() }
+    let log = LookupLog()
+    let src = source(latest: utc("2026-10-18T04:00:00Z"), served: [], log: log)
+    let failedAt = utc("2026-10-18T05:30:00Z")
+    _ = await IEMHRRRForecastService.usableRun(now: failedAt, source: src)
+    _ = await IEMHRRRForecastService.usableRun(
+      now: failedAt.addingTimeInterval(IEMHRRRForecastService.failureCacheTTL - 1), source: src)
+    var calls = await log.latestCalls
+    XCTAssertEqual(calls, 1, "callers inside the failure window do not wait out timeouts again")
+    _ = await IEMHRRRForecastService.usableRun(
+      now: failedAt.addingTimeInterval(IEMHRRRForecastService.failureCacheTTL), source: src)
+    calls = await log.latestCalls
+    XCTAssertEqual(calls, 2)
+  }
+
+  @MainActor
+  func testHRRRCallersArrivingTogetherShareOneLookup() async {
+    IEMHRRRForecastService.resetRunCacheForTesting()
+    defer { IEMHRRRForecastService.resetRunCacheForTesting() }
+    let log = LookupLog()
+    let src = source(latest: utc("2026-10-18T04:00:00Z"), served: [720], log: log)
+    let now = utc("2026-10-18T05:47:00Z")
+    async let first = IEMHRRRForecastService.usableRun(now: now, source: src)
+    async let second = IEMHRRRForecastService.usableRun(now: now, source: src)
+    let runs = await [first, second]
+    XCTAssertEqual(runs, [utc("2026-10-18T04:00:00Z"), utc("2026-10-18T04:00:00Z")])
+    let calls = await log.latestCalls
+    XCTAssertEqual(calls, 1)
+  }
 }
 
 final class RadarExplainCopyTests: XCTestCase {

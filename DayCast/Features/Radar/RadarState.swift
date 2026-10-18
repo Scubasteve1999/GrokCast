@@ -212,10 +212,15 @@ final class RadarState {
 
   /// True when the loader reported the 12-hr outage (not the pre-load placeholder).
   var forecastIsTemporarilyUnavailable: Bool {
-    if case .unavailable(let message) = forecastTileAvailability {
-      return message == RadarChromeCopy.futureTemporarilyUnavailable
-    }
-    return false
+    forecastUnavailableReason == RadarChromeCopy.futureTemporarilyUnavailable
+  }
+
+  /// Why the 12-hr chip is greyed out: a temporary outage or a location outside the free
+  /// forecast's coverage. Nil for the pre-load placeholder and other states.
+  var forecastUnavailableReason: String? {
+    guard case .unavailable(let message) = forecastTileAvailability else { return nil }
+    let reasons = [RadarChromeCopy.futureTemporarilyUnavailable, RadarChromeCopy.futureUSOnly]
+    return reasons.contains(message) ? message : nil
   }
 
   var autoResumeAfterScrub = true
@@ -273,9 +278,8 @@ final class RadarState {
     }
     // The 12-hr chip is greyed out because every forecast source failed. Say so, since a
     // disabled control with no reason reads as broken.
-    if !showsFuture, !pickerShowsFuture, !hasFutureFrames, forecastIsTemporarilyUnavailable {
-      return RadarStatusFooter(
-        text: RadarChromeCopy.futureTemporarilyUnavailable, style: .warning)
+    if !showsFuture, !pickerShowsFuture, !hasFutureFrames, let reason = forecastUnavailableReason {
+      return RadarStatusFooter(text: reason, style: .warning)
     }
     if let provider = activeLiveProvider {
       return RadarStatusFooter(
@@ -436,10 +440,14 @@ final class RadarState {
       return true
     }
 
-    if provider == .xweather, let fallback = await loader.loadOpenWeatherMapForecastIfAvailable() {
+    if provider == .xweather,
+      let fallback = await loader.loadForecastFallback(coordinate: lastLoadedCoordinate)
+    {
       timeline.forecast = fallback.frames
       forecastTileAvailability = fallback.availability
-      radarLog("[RadarState] Switched FUTURE provider to OpenWeatherMap after Xweather probe failed")
+      radarLog(
+        "[RadarState] Switched FUTURE provider to \(fallback.frames.first?.provider.displayName ?? "fallback") after Xweather probe failed"
+      )
       return fallback.availability.hasFrames
     }
 

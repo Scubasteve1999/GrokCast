@@ -55,6 +55,9 @@ struct RadarFrame: Equatable {
       return "iem:\(polar)\(tileEpoch):\(templateFingerprint)"
     case (.mrms, .livePrecipitation), (.mrms, .forecastPrecipitation):
       return "mrms:\(tileEpoch):\(templateFingerprint)"
+    case (.hrrr, .livePrecipitation), (.hrrr, .forecastPrecipitation):
+      // Fingerprint carries the model run and lead minutes from the layer path.
+      return "hrrr:\(tileEpoch):\(templateFingerprint)"
     }
   }
 

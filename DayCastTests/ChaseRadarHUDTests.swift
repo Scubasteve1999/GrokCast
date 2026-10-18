@@ -124,6 +124,11 @@ final class ChaseRadarHUDTests: XCTestCase {
       "12-hr · National radar"
     )
     XCTAssertEqual(
+      ChaseRadarHUDLogic.lookingAtLine(
+        product: .reflectivity, showsFuture: true, forecastProvider: .hrrr),
+      "12-hr · NOAA HRRR model"
+    )
+    XCTAssertEqual(
       ChaseRadarHUDLogic.lookingAtLine(product: .stormRelativeVelocity, showsFuture: false),
       "Storm winds"
     )

@@ -26,6 +26,7 @@ final class MapsGLRadarHost {
   private var lastOverlayOn: Bool?
   private var lastIsSiteProduct: Bool?
   private var lastNationalUsesMRMS: Bool?
+  private var lastForecastProvider: RadarTileProvider?
   private var pendingOpacity: Double = RadarPreferences.defaultRadarOpacity
   private var lastAppliedOpacity: Double?
   /// Latest pending wins; intermediates while the slider is moving are skipped.
@@ -50,6 +51,14 @@ final class MapsGLRadarHost {
   /// report rejected tiles, so a failing probe must send painting back to the PNG path.
   nonisolated static func isUsable(future: Bool) -> Bool {
     keysPresent && XweatherRadarService.mapsHealthy(future: future)
+  }
+
+  /// MapsGL's 12-hr layer is Xweather's forecast. When the 12-hr timeline came from another
+  /// provider (NOAA HRRR), those PNG frames must paint instead. Otherwise MapsGL returns
+  /// as soon as a failed Xweather probe ages out of its cache and covers HRRR with nothing.
+  nonisolated static func isUsable(future: Bool, forecastProvider: RadarTileProvider?) -> Bool {
+    if future, forecastProvider != .xweather { return false }
+    return isUsable(future: future)
   }
 
   func attach(to mapView: MapView) {
@@ -108,6 +117,7 @@ final class MapsGLRadarHost {
     lastOverlayOn = nil
     lastIsSiteProduct = nil
     lastNationalUsesMRMS = nil
+    lastForecastProvider = nil
     lastAppliedOpacity = nil
     opacityReplaceTask?.cancel()
     opacityReplaceTask = nil
@@ -151,10 +161,12 @@ final class MapsGLRadarHost {
     lastOverlayOn = radarState.showRadarOverlay
     lastIsSiteProduct = radarState.selectedProduct.isSiteProduct
     lastNationalUsesMRMS = radarState.nationalUsesMRMSPaint
+    lastForecastProvider = radarState.activeForecastProvider
     let want = MapsGLRadarPalette.shouldUseMapsGL(
       overlayOn: radarState.showRadarOverlay,
       isSiteProduct: radarState.selectedProduct.isSiteProduct,
-      keysPresent: Self.isUsable(future: radarState.showsFuture),
+      keysPresent: Self.isUsable(
+        future: radarState.showsFuture, forecastProvider: radarState.activeForecastProvider),
       nationalUsesMRMS: radarState.nationalUsesMRMSPaint
     )
     guard let controller else {
@@ -188,7 +200,7 @@ final class MapsGLRadarHost {
     let rainWant = MapsGLLiveRainLayers.shouldAttachRadar(
       overlayOn: lastOverlayOn ?? false,
       isSiteProduct: lastIsSiteProduct ?? true,
-      keysPresent: Self.isUsable(future: lastFuture ?? false),
+      keysPresent: Self.isUsable(future: lastFuture ?? false, forecastProvider: lastForecastProvider),
       nationalUsesMRMS: lastNationalUsesMRMS ?? false
     )
     applyVisibility(rainWant, on: controller)

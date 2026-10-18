@@ -5,7 +5,8 @@ import Foundation
 /// Live National: NOAA MRMS XYZ (when timestamps are fresh) → MapsGL rain
 ///                over Xweather/IEM/RainViewer frames.
 /// Live site:     Level III N0B polar (IEM N0B PNG fallback) / IEM N0S.
-/// Forecast:      Xweather fradar → RainViewer nowcast → OpenWeatherMap PR0
+/// Forecast:      Xweather fradar → NOAA HRRR via IEM (CONUS) → RainViewer nowcast
+///                → OpenWeatherMap PR0
 enum RadarTileProvider: String, Equatable, CaseIterable {
   case rainViewer
   case xweather
@@ -14,6 +15,8 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
   case iem
   /// NOAA MRMS MergedReflectivityQCComposite, pre-tiled on Mac/CDN. Live National.
   case mrms
+  /// NOAA HRRR model simulated reflectivity via the IEM tile cache. Forecast-only, CONUS.
+  case hrrr
 
   static let preferredLive: RadarTileProvider = .xweather
   static let preferredForecast: RadarTileProvider = .xweather
@@ -25,6 +28,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .openWeatherMap: "OpenWeatherMap"
     case .iem: "NWS NEXRAD"
     case .mrms: "National radar"
+    case .hrrr: "NOAA HRRR"
     }
   }
 
@@ -36,6 +40,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .openWeatherMap: "OWM"
     case .iem: "CONUS"
     case .mrms: "NATIONAL"
+    case .hrrr: "HRRR"
     }
   }
 
@@ -46,6 +51,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .openWeatherMap: "Radar · OpenWeatherMap"
     case .iem: "Live radar · National radar"
     case .mrms: "Live radar · National radar"
+    case .hrrr: "Model radar · NOAA HRRR"
     }
   }
 
@@ -57,6 +63,16 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
       "Forecast radar · OpenWeatherMap"
     case .iem: "Forecast radar · NWS NEXRAD"
     case .mrms: "Forecast radar · National radar"
+    case .hrrr: "Forecast · \(forecastSourceLabel ?? displayName)"
+    }
+  }
+
+  /// What the 12-hr HUD names instead of the product when frames are model output, not
+  /// observed radar. Nil for providers whose forecast reads as radar.
+  var forecastSourceLabel: String? {
+    switch self {
+    case .hrrr: "NOAA HRRR model"
+    case .rainViewer, .xweather, .openWeatherMap, .iem, .mrms: nil
     }
   }
 
@@ -68,6 +84,7 @@ enum RadarTileProvider: String, Equatable, CaseIterable {
     case .openWeatherMap: 7
     case .iem: MapsGLRadarPalette.iemDisplayMaxZoom
     case .mrms: 8
+    case .hrrr: 8  // 3 km model grid; deeper zoom only magnifies pixels.
     }
   }
 }

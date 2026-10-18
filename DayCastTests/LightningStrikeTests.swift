@@ -206,21 +206,61 @@ final class LightningStrikeTests: XCTestCase {
 
   // MARK: - Failed feed is visible
 
-  func testFailedFeedShowsAQuietNoticeInsteadOfAnEmptyOverlay() {
-    for reason in [LightningFetchQuietReason.network, .insufficientScope] {
-      let snapshot = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: reason)
-      XCTAssertTrue(LightningStore.showsQuietAttribution(for: snapshot), "\(reason)")
-      XCTAssertEqual(
-        LightningStore.attributionLabel(for: snapshot),
-        RadarChromeCopy.lightningTemporarilyUnavailable)
-    }
+  func testNetworkFailureShowsAQuietNoticeInsteadOfAnEmptyOverlay() {
+    let snapshot = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: .network)
+    XCTAssertTrue(LightningStore.showsQuietAttribution(for: snapshot))
+    XCTAssertEqual(
+      LightningStore.attributionLabel(for: snapshot),
+      RadarChromeCopy.lightningTemporarilyUnavailable)
+    XCTAssertFalse(LightningStore.isLayerUnavailable(for: snapshot), "a blip must not hide the button")
   }
 
-  func testGenuineEmptyAndMissingKeyStayOffTheMap() {
-    for reason in [LightningFetchQuietReason.empty, .missingKey] {
+  func testGenuineEmptyMissingKeyAndRefusedKeyStayOffTheMap() {
+    for reason in [LightningFetchQuietReason.empty, .missingKey, .insufficientScope] {
       let snapshot = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: reason)
       XCTAssertFalse(LightningStore.showsQuietAttribution(for: snapshot), "\(reason)")
     }
     XCTAssertFalse(LightningStore.showsQuietAttribution(for: LightningSnapshot()))
+  }
+
+  // MARK: - Dead key hides the layer
+
+  func testMissingOrRefusedKeyHidesTheLightningControls() {
+    for reason in [LightningFetchQuietReason.missingKey, .insufficientScope] {
+      let snapshot = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: reason)
+      XCTAssertTrue(LightningStore.isLayerUnavailable(for: snapshot), "\(reason)")
+    }
+  }
+
+  func testUncheckedOrWorkingFeedKeepsTheLightningControls() {
+    XCTAssertFalse(LightningStore.isLayerUnavailable(for: LightningSnapshot()), "not checked yet")
+    let quiet = LightningSnapshot(strikes: [], lastUpdated: Date(), quietReason: .empty)
+    XCTAssertFalse(LightningStore.isLayerUnavailable(for: quiet))
+  }
+
+  func testRefusedKeyIsReCheckedAfterTheInterval() {
+    let checkedAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let refused = LightningSnapshot(strikes: [], lastUpdated: checkedAt, quietReason: .insufficientScope)
+    let soon = checkedAt.addingTimeInterval(LightningStore.unavailableRecheckInterval - 1)
+    let later = checkedAt.addingTimeInterval(LightningStore.unavailableRecheckInterval)
+    XCTAssertFalse(LightningStore.needsAvailabilityCheck(for: refused, now: soon))
+    XCTAssertTrue(LightningStore.needsAvailabilityCheck(for: refused, now: later))
+  }
+
+  func testWorkingFeedIsNotReCheckedButAnUncheckedOneIs() {
+    let checkedAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let working = LightningSnapshot(strikes: [], lastUpdated: checkedAt, quietReason: .empty)
+    XCTAssertFalse(
+      LightningStore.needsAvailabilityCheck(for: working, now: checkedAt.addingTimeInterval(86_400)))
+    XCTAssertTrue(LightningStore.needsAvailabilityCheck(for: LightningSnapshot(), now: checkedAt))
+  }
+
+  func testInvalidClientIsTreatedAsARefusedKey() {
+    let json = """
+      {"success":false,"error":{"code":"invalid_client","description":"Invalid client credentials"},"response":[]}
+      """.data(using: .utf8)!
+    XCTAssertThrowsError(try LightningService.parse(data: json)) { error in
+      XCTAssertEqual(error as? LightningServiceError, .insufficientScope)
+    }
   }
 }
