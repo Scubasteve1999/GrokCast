@@ -49,13 +49,13 @@ enum PaywallPeriodCopy {
 
   /// Settings free-state + general Pro paywall. Official weather stays free.
   static let generalProPitch =
-    "Monthly and Yearly include AI, unlimited locations, widgets, and Live Activity. Yearly adds 12-hr Future radar."
+    "Monthly and Yearly include AI, unlimited locations, widgets, and Live Activity. Yearly adds 12-hr Future radar (continental US)."
   static let officialWeatherStaysFree =
     "Official weather, radar, and NWS stay free."
 
   /// Active-plan unlock lines — same facts as the paywall inclusion copy, without billing.
   static let monthlyUnlocks = "AI, locations, widgets, Live Activity"
-  static let yearlyUnlocks = "AI, locations, Future radar, widgets, Live Activity"
+  static let yearlyUnlocks = "AI, locations, US Future radar, widgets, Live Activity"
 
   static var monthlyInclusion: String { "\(monthlyUnlocks). Billed monthly." }
   static var yearlyInclusion: String { "\(yearlyUnlocks). Billed yearly." }

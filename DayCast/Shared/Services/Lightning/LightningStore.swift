@@ -19,7 +19,7 @@ final class LightningStore {
 
   static let pollInterval: TimeInterval = 45
   /// How long a refused key stays trusted before Radar asks Xweather again.
-  static let unavailableRecheckInterval: TimeInterval = 15 * 60
+  nonisolated static let unavailableRecheckInterval: TimeInterval = 15 * 60
   private static let moveThresholdDegrees = 0.35
 
   private init() {}

@@ -36,7 +36,7 @@ final class PaywallPeriodTests: XCTestCase {
     XCTAssertEqual(PaywallPeriodCopy.subtitle(productID: id), PaywallPeriodCopy.yearlyInclusion)
     XCTAssertEqual(
       PaywallPeriodCopy.yearlyInclusion,
-      "AI, locations, Future radar, widgets, Live Activity. Billed yearly."
+      "AI, locations, US Future radar, widgets, Live Activity. Billed yearly."
     )
     XCTAssertEqual(
       PaywallPeriodCopy.subscribeTitle(productID: id, displayPrice: "$29.99"),
@@ -97,11 +97,11 @@ final class PaywallPeriodTests: XCTestCase {
     let pitch = PaywallPeriodCopy.generalProPitch
     XCTAssertEqual(
       pitch,
-      "Monthly and Yearly include AI, unlimited locations, widgets, and Live Activity. Yearly adds 12-hr Future radar."
+      "Monthly and Yearly include AI, unlimited locations, widgets, and Live Activity. Yearly adds 12-hr Future radar (continental US)."
     )
     let severe = PaywallFeature.severeAlerts.subheadline
     XCTAssertTrue(severe.contains("DayCast Pro adds AI, extra locations, widgets, and Live Activity."))
-    XCTAssertTrue(severe.hasSuffix("Yearly adds Future radar."))
+    XCTAssertTrue(severe.hasSuffix("Yearly adds US Future radar."))
     for copy in [pitch, severe] {
       XCTAssertFalse(copy.contains("Yearly adds Future radar, widgets"), copy)
     }
@@ -152,7 +152,7 @@ final class PaywallPeriodTests: XCTestCase {
     XCTAssertEqual(PaywallPeriodCopy.monthlyUnlocks, "AI, locations, widgets, Live Activity")
     XCTAssertEqual(
       PaywallPeriodCopy.yearlyUnlocks,
-      "AI, locations, Future radar, widgets, Live Activity"
+      "AI, locations, US Future radar, widgets, Live Activity"
     )
     XCTAssertFalse(PaywallPeriodCopy.monthlyUnlocks.localizedCaseInsensitiveContains("Future"))
     XCTAssertTrue(PaywallPeriodCopy.monthlyUnlocks.contains("widgets"))

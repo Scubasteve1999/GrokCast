@@ -94,7 +94,7 @@ struct PaywallView: View {
       paywallRow(
         "12-hr forecast radar",
         "cloud.rain.fill",
-        "12-hour outlook you can scrub on the Radar tab",
+        "12-hour outlook you can scrub on the Radar tab (continental US)",
         yearly: true
       )
       paywallRow(
@@ -349,7 +349,7 @@ enum PaywallFeature: Equatable {
     case .grokAI:
       "DayCast Pro unlocks Sky Check, Today's Take, Explain Radar, and AI chat. Official weather, radar, and NWS stay free."
     case .radarFuture:
-      "Yearly unlocks 12-hr forecast radar so you can scrub ahead on the Radar tab."
+      "Yearly unlocks 12-hr forecast radar for the continental US so you can scrub ahead on the Radar tab."
     case .locations:
       "Free includes Near Me + 1 saved city. DayCast Pro unlocks unlimited places so you can switch between home, work, and the next storm. Weather, radar, and NWS stay free."
     case .liveActivity:
@@ -357,7 +357,7 @@ enum PaywallFeature: Equatable {
     case .morningBrief:
       "Schedule a local morning notification from your cached Today's Take. DayCast Pro includes the AI that writes it."
     case .severeAlerts:
-      "NWS warnings and watches with notifications are free for all users. DayCast Pro adds AI, extra locations, widgets, and Live Activity. Yearly adds Future radar."
+      "NWS warnings and watches with notifications are free for all users. DayCast Pro adds AI, extra locations, widgets, and Live Activity. Yearly adds US Future radar."
     }
   }
 

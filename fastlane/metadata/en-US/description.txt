@@ -4,7 +4,7 @@ RADAR
 • Site Doppler — nearest WSR-88D Level III reflectivity (polar gates)
 • National radar with animation and frame scrubbing
 • Storm winds — storm-relative velocity on Live (Layers)
-• Future radar — 12-hour scrub on the Radar tab (Yearly)
+• Future radar — 12-hour scrub on the Radar tab (Yearly, continental US)
 
 SEVERE WEATHER
 • SPC Day 1 outlook, mesoscale discussions
@@ -25,12 +25,12 @@ DAYCAST PRO (Monthly or Yearly)
 • Unlimited saved locations
 
 YEARLY ONLY
-• Future radar — 12-hour scrub on the Radar tab
+• Future radar — 12-hour scrub on the Radar tab (continental US)
 
 WHAT'S FREE
 Radar, NWS alerts, SPC products, forecasts, and next-hour precipitation
 are free. Pro (Monthly or Yearly) adds AI, unlimited saved locations,
-widgets, and Live Activity. Yearly also adds Future radar. AI has a daily
+widgets, and Live Activity. Yearly also adds US Future radar. AI has a daily
 limit.
 
 DATA SOURCES

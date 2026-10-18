@@ -224,13 +224,13 @@ final class GrokAccessRulesTests: XCTestCase {
     XCTAssertEqual(AlertsGrokSummaryCard.unlockCTATitle, "Unlock with Pro")
   }
 
-  func testAppBundleVersionIs1015Build171() {
+  func testAppBundleVersionIs1016Build174() {
     let bundle = Bundle.main
     XCTAssertEqual(
       bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
-      "1.0.15")
+      "1.0.16")
     XCTAssertEqual(
       bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
-      "171")
+      "174")
   }
 }
