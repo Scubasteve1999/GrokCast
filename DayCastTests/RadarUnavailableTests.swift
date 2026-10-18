@@ -146,7 +146,7 @@ final class RadarUnavailableTests: XCTestCase {
     let state = RadarState()
     state.setForecastAvailabilityForTesting(
       .unavailable(message: RadarChromeCopy.futureTemporarilyUnavailable))
-    XCTAssertTrue(state.forecastIsTemporarilyUnavailable)
+    XCTAssertEqual(state.forecastUnavailableReason, RadarChromeCopy.futureTemporarilyUnavailable)
     XCTAssertFalse(state.hasFutureFrames)
     let footer = state.statusFooterContent
     XCTAssertEqual(footer.text, RadarChromeCopy.futureTemporarilyUnavailable)
@@ -157,7 +157,7 @@ final class RadarUnavailableTests: XCTestCase {
   func testChipNoteSaysTwelveHourIsUSOnlyOutsideCoverage() {
     let state = RadarState()
     state.setForecastAvailabilityForTesting(.unavailable(message: RadarChromeCopy.futureUSOnly))
-    XCTAssertFalse(state.forecastIsTemporarilyUnavailable, "a coverage gap is not an outage")
+    XCTAssertEqual(state.forecastUnavailableReason, RadarChromeCopy.futureUSOnly, "a coverage gap is not an outage")
     XCTAssertEqual(state.statusFooterContent.text, RadarChromeCopy.futureUSOnly)
     XCTAssertEqual(state.statusFooterContent.style, .warning)
   }
@@ -177,7 +177,7 @@ final class RadarUnavailableTests: XCTestCase {
   @MainActor
   func testChipNoteIgnoresThePreLoadPlaceholder() {
     let state = RadarState()
-    XCTAssertFalse(state.forecastIsTemporarilyUnavailable)
+    XCTAssertNil(state.forecastUnavailableReason)
     XCTAssertNotEqual(state.statusFooterContent.text, RadarChromeCopy.futureTemporarilyUnavailable)
   }
 }

@@ -210,17 +210,14 @@ final class RadarState {
 
   var hasFutureFrames: Bool { timeline.hasForecast }
 
-  /// True when the loader reported the 12-hr outage (not the pre-load placeholder).
-  var forecastIsTemporarilyUnavailable: Bool {
-    forecastUnavailableReason == RadarChromeCopy.futureTemporarilyUnavailable
-  }
-
   /// Why the 12-hr chip is greyed out: a temporary outage or a location outside the free
   /// forecast's coverage. Nil for the pre-load placeholder and other states.
   var forecastUnavailableReason: String? {
     guard case .unavailable(let message) = forecastTileAvailability else { return nil }
-    let reasons = [RadarChromeCopy.futureTemporarilyUnavailable, RadarChromeCopy.futureUSOnly]
-    return reasons.contains(message) ? message : nil
+    let isExplained =
+      message == RadarChromeCopy.futureTemporarilyUnavailable
+      || message == RadarChromeCopy.futureUSOnly
+    return isExplained ? message : nil
   }
 
   var autoResumeAfterScrub = true
@@ -440,13 +437,11 @@ final class RadarState {
       return true
     }
 
-    if provider == .xweather,
-      let fallback = await loader.loadForecastFallback(coordinate: lastLoadedCoordinate)
-    {
+    if let fallback = await loader.loadForecastFallback(coordinate: lastLoadedCoordinate) {
       timeline.forecast = fallback.frames
       forecastTileAvailability = fallback.availability
       radarLog(
-        "[RadarState] Switched FUTURE provider to \(fallback.frames.first?.provider.displayName ?? "fallback") after Xweather probe failed"
+        "[RadarState] FUTURE \(provider.displayName) probe failed — now \(fallback.provider?.displayName ?? "outside coverage")"
       )
       return fallback.availability.hasFrames
     }

@@ -200,7 +200,8 @@ struct RadarFeedCard: View {
       .task(id: loadKey) {
         await loadSiteSweepIfNeeded()
       }
-      .task(id: loadKey) {
+      // Keyed on the city, not `loadKey`: hoisting or a GPS jitter must not re-probe 12-hr.
+      .task(id: store.currentLocation?.id) {
         futureFramesAvailable = await RadarLoader().probeForecastFramesAvailable(
           coordinate: store.currentLocation?.coordinate)
         fallBackToRadarIfFutureLocked()

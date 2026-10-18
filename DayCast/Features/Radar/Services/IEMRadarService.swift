@@ -310,7 +310,7 @@ final class IEMRadarService {
     return response.stations.isEmpty ? nil : response.stations
   }
 
-  private static func fetchJSON<T: Decodable>(_ url: URL) async -> T? {
+  static func fetchJSON<T: Decodable>(_ url: URL) async -> T? {
     var request = URLRequest(url: url)
     request.timeoutInterval = requestTimeout
     request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
@@ -353,7 +353,8 @@ final class IEMRadarService {
     return f
   }()
 
-  private static func layerTimestamp(from date: Date) -> String {
+  /// IEM tile-layer time token (`yyyyMMddHHmm`, UTC). Shared with the HRRR layers.
+  static func layerTimestamp(from date: Date) -> String {
     layerFormatter.string(from: date)
   }
 
@@ -576,11 +577,8 @@ final class IEMRadarService {
 /// Free and public domain, CONUS only. Frames are pinned to one model run so a new run
 /// landing mid-animation cannot mix two forecasts in one timeline.
 enum IEMHRRRForecastService {
-  private static let baseTileHost = IEMRadarService.baseTileHost
   private static let latestRunURL = URL(
     string: "https://mesonet.agron.iastate.edu/data/gis/images/4326/hrrr/refd_0000.json")!
-  private static let userAgent = IEMRadarService.userAgent
-  private static let requestTimeout = IEMRadarService.requestTimeout
   /// HRRR hourly runs publish reflectivity out to +18 h (1080 minutes).
   static let maxLeadMinutes = 18 * 60
   /// IEM caches tiles for 5 minutes; re-checking the run any sooner only adds load.
@@ -646,12 +644,12 @@ enum IEMHRRRForecastService {
 
   /// `…/hrrr::REFD-F0660-202610180400/{z}/{x}/{y}.png`
   static func tileTemplate(initTime: Date, leadMinutes: Int) -> String {
-    "\(baseTileHost)/\(layerName(initTime: initTime, leadMinutes: leadMinutes))/{z}/{x}/{y}.png"
+    "\(IEMRadarService.baseTileHost)/\(layerName(initTime: initTime, leadMinutes: leadMinutes))/{z}/{x}/{y}.png"
   }
 
   static func layerName(initTime: Date, leadMinutes: Int) -> String {
     let lead = String(format: "%04d", leadMinutes)
-    return "hrrr::REFD-F\(lead)-\(runFormatter.string(from: initTime))"
+    return "hrrr::REFD-F\(lead)-\(IEMRadarService.layerTimestamp(from: initTime))"
   }
 
   /// Cached run for this hour, else one shared lookup. Failures are remembered briefly.
@@ -706,29 +704,27 @@ enum IEMHRRRForecastService {
     return nil
   }
 
+  /// IEM's `refd_0000.json`: which HRRR run the `-0` (latest) layers point at.
+  private struct LatestRun: Decodable { let model_init_utc: String }
+
   private static func fetchLatestInitTime() async -> Date? {
-    var request = URLRequest(url: latestRunURL)
-    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-    request.timeoutInterval = requestTimeout
-    guard let (data, response) = try? await URLSession.shared.data(for: request),
-      (response as? HTTPURLResponse)?.statusCode == 200
-    else { return nil }
-    return parseInitTime(from: data)
+    let run: LatestRun? = await IEMRadarService.fetchJSON(latestRunURL)
+    return run.flatMap { ISO8601DateFormatter().date(from: $0.model_init_utc) }
   }
 
   static func parseInitTime(from data: Data) -> Date? {
-    struct Run: Decodable { let model_init_utc: String }
-    guard let run = try? JSONDecoder().decode(Run.self, from: data) else { return nil }
+    guard let run = try? JSONDecoder().decode(LatestRun.self, from: data) else { return nil }
     return ISO8601DateFormatter().date(from: run.model_init_utc)
   }
 
   /// IEM answers a missing lead with HTTP 503 text, so require a PNG body.
   private static func tileIsServed(initTime: Date, leadMinutes: Int) async -> Bool {
-    let path = "\(baseTileHost)/\(layerName(initTime: initTime, leadMinutes: leadMinutes))/\(probeTilePath)"
+    let path =
+      "\(IEMRadarService.baseTileHost)/\(layerName(initTime: initTime, leadMinutes: leadMinutes))/\(probeTilePath)"
     guard let url = URL(string: path) else { return false }
     var request = URLRequest(url: url)
-    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-    request.timeoutInterval = requestTimeout
+    request.setValue(IEMRadarService.userAgent, forHTTPHeaderField: "User-Agent")
+    request.timeoutInterval = IEMRadarService.requestTimeout
     guard let (_, response) = try? await URLSession.shared.data(for: request),
       let http = response as? HTTPURLResponse
     else { return false }
@@ -740,12 +736,4 @@ enum IEMHRRRForecastService {
   private static func floorToHour(_ date: Date) -> Date {
     Date(timeIntervalSince1970: (date.timeIntervalSince1970 / 3600).rounded(.down) * 3600)
   }
-
-  private static let runFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "en_US_POSIX")
-    formatter.timeZone = TimeZone(secondsFromGMT: 0)
-    formatter.dateFormat = "yyyyMMddHHmm"
-    return formatter
-  }()
 }
